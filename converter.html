@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+	<meta charset="utf-8">
+	<title>converter</title>
+</head>
+<body>
+	<h1>ダンおに 音ズレ修正 Converter</h1>
+	
+	<h3>説明</h3>
+
+	<p>ダンシングおにぎりの矢印のタイミング調整機能が無いswfのスコアデータ (.txt) を変換し、音ズレを修正します。</p>
+	<p>修正フレーム数について:<p>
+	<ul>
+		<li>（＋方向）矢印到達が遅くなります。</li>
+		<li>（ー方向）矢印到達が早くなります。</li>
+	</ul>
+	<p style="color:red;"><strong>注意1：必ずスコアデータのバックアップを取ってから実行してください。壊れた譜面データが出力される可能性があります。</strong></p>
+	<p style="color:red;"><strong>注意2：Google Chromeでのみ動作確認しています。</strong></p>
+
+	<h3>入力</h3>
+	<textarea id="score-input" rows=10 cols=100></textarea>
+	
+	
+	<div style="padding-top:20px;">
+		修正フレーム数：<input type="number" id="diff"></input>
+		<button onClick="convert();">Convert!</button>
+	</div>
+
+	<h3>出力</h3>
+	<textarea id="score-output" rows=10 cols=100></textarea>
+
+	<p>2020/5/20. Written by <a href="https://twitter.com/kakira9618">@kakira9618</a>.</p>
+
+	<script src="main.js"></script>
+</body>
+</html>
+
+
