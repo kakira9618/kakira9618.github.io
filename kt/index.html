@@ -189,7 +189,7 @@ while(1) {
         appearLine(nextLineId);
         nextLineId++;
     }
-    if (getkey(1) == 1) {
+    if (getkey(1) == 1 || $touches[0].touched == 1) {
         for(t in lines) {
             t.vx = rnd(5) - 2;
             t.vy = -rnd(10) - 5;
