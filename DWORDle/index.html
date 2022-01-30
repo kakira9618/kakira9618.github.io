@@ -7,7 +7,7 @@
 <script src="https://edit.tonyu.jp/images/mapchip.png.js"></script>
 <script src="https://edit.tonyu.jp/js/lib/jquery-1.10.1.js" type="text/javascript"></script>
 <script src="https://edit.tonyu.jp/js/g2/runScript_concat.min.js" type="text/javascript"></script>
-<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1643550356631' >/** 
+<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1643567199216' >/** 
  * DWORDle by @kakira9618
  * This program is inspired by wordle (https://www.powerlanguage.co.uk/wordle/)
 */
@@ -37,12 +37,7 @@ t = 0;
 function init() {
     pID = 0;
     while (!pID || pID <= 0 || pID > 9999) {
-        pID = promptNumber("Problem No. (1-9999)", rnd(9999) + 1, {
-            left: 80,
-            top: $screenHeight / 2 - 90,
-            width: $screenWidth - 80,
-            height: 180
-        });
+        pID = promptNumber("Problem No. (1-9999)", rnd(9999) + 1);
     }
     
     $logic = new Logic{seed: pID};
@@ -152,6 +147,17 @@ function init() {
         size: 15,
         color: color(255, 255, 255),
         layer: $frontLayer,
+    };
+    
+    // help text
+    helpText = new HelpText{
+        x: 20,
+        y: 25,
+        text: "Rules",
+        size: 15,
+        color: color(255, 255, 255),
+        layer: $frontLayer,
+        align: "left middle"
     };
     
     // keyboard area
@@ -693,7 +699,92 @@ while (1) {
     update();
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='HelpWindow.tonyu' data-lastupdate='1643536420204' >// to be implemented</script>
+<script language='text/tonyu' type='text/tonyu' data-filename='HelpWindow.tonyu' data-lastupdate='1643567194163' >// to be implemented
+
+tmW = $screenWidth - 40;
+tmH = $screenHeight - 80 - 200;
+mW = 0;
+mH = 0;
+
+modal = new Actor({
+    x: 20,
+    y: 80,
+    width: $screenWidth - 40,
+    height: $screenHeight - 80 - 200,
+    fillStyle: color(0, 0, 0),
+    layer: $frontLayer,
+    alpha: 200,
+    align: "left top",
+    lifeKeeper: this,
+});
+
+titleText = new Actor({
+    x: $screenWidth / 2,
+    y: 150,
+    text: "Rules",
+    align: "center middle",
+    size: 40,
+    layer: $frontLayer,
+    lifeKeeper: this,
+});
+
+new Actor({
+    x: $screenWidth / 2,
+    y: 220,
+    text: "基本的には「wordle」とルールは同じです",
+    align: "center middle",
+    size: 18,
+    layer: $frontLayer,
+    lifeKeeper: this,
+});
+
+new Actor({
+    x: $screenWidth / 2,
+    y: 270,
+    text: "10回以内の試行で、\n2つの正解単語の「どちらか」を当ててください",
+    align: "center middle",
+    size: 18,
+    layer: $frontLayer,
+    lifeKeeper: this,
+});
+
+new Actor({
+    x: $screenWidth / 2,
+    y: 340,
+    text: "判定は正解単語のどちらかについての情報です。",
+    align: "center middle",
+    size: 18,
+    layer: $frontLayer,
+    lifeKeeper: this,
+});
+
+new Actor({
+    x: $screenWidth / 2,
+    y: 390,
+    text: "全部緑であっても正解単語とは限りません\n(その場合ゲーム続行となります)",
+    align: "center middle",
+    size: 18,
+    layer: $frontLayer,
+    lifeKeeper: this,
+});
+
+t = 0;
+
+while(1) {
+    mW = 0.85 * mW + 0.15 * tmW;
+    mH = 0.85 * mH + 0.15 * tmH;
+    modal.width = mW;
+    modal.height = mH;
+    
+    if (t > 30 && $touches[0].touched) {
+        $gameState = "guess";
+        
+        die();
+    }
+    
+    t++;
+    update();
+}</script>
 
 <script language='text/tonyu' type='text/tonyu' data-filename='WordList.tonyu' data-lastupdate='1643539197775' >allWordsList = [];
 candWordsList = [];
@@ -711,6 +802,16 @@ nowait function init() {
 }
 
 init();</script>
+
+<script language='text/tonyu' type='text/tonyu' data-filename='HelpText.tonyu' data-lastupdate='1643566214722' >while (1) {
+    t = findTouch();
+    if ($gameState != "help" && t) {
+        $gameState = "help";
+        
+        helpWindow = new HelpWindow{};
+    }
+    update();
+}</script>
 
 <script language='text/tonyu' type='text/tonyu' data-filename='options.json' data-lastupdate='1643535149260' >
 {
@@ -740,7 +841,7 @@ init();</script>
     "version": 1639557686041
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1643550364638' >
+<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1643567260382' >
 {
     "images": [
         {
