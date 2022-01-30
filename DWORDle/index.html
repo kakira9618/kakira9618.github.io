@@ -389,11 +389,10 @@ while(1) {
 }
 </script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='Logic.tonyu' data-lastupdate='1643540649812' >wordList = new WordList{};
+<script language='text/tonyu' type='text/tonyu' data-filename='Logic.tonyu' data-lastupdate='1643541658551' >wordList = new WordList{};
 allWordsListHash = {};
 ans1 = "";
 ans2 = "";
-seed = 0;
 
 function debugWordsInsert(char1, char2) {
     N = 5;
@@ -421,12 +420,20 @@ function init() {
     pickAns(seed);
 }
 
+prevx = 0;
+function getNextInt(N) {
+    ret = prevx * 48271 % N;
+    prevx = ret;
+    return ret;
+}
+
 // pick distinct words at random
 function pickAns(seed) {
-    randomize(seed);
+    
+    prevx = seed;
     
     N = wordList.candWordsList.length;
-    ans1ind = rnd(N);
+    ans1ind = getNextInt(N);
     ans1 = wordList.candWordsList[ans1ind];
     
     // swap
@@ -434,7 +441,8 @@ function pickAns(seed) {
     wordList.candWordsList[N - 1] = ans1; 
     wordList.candWordsList[ans1ind] = temp;
     
-    ans2 = wordList.candWordsList[rnd(N - 1)];
+    ans2ind = getNextInt(N - 1);
+    ans2 = wordList.candWordsList[ans2ind];
     
     // print("ans1: ", ans1); // for debug
     // print("ans2: ", ans2); // for debug
@@ -723,7 +731,7 @@ init();</script>
     "version": 1639557686041
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1643540729074' >
+<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1643541660843' >
 {
     "images": [
         {
