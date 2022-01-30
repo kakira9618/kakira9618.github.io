@@ -485,7 +485,7 @@ function isGameClear(word) {
 
 init();</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='GameResult.tonyu' data-lastupdate='1643540720309' >
+<script language='text/tonyu' type='text/tonyu' data-filename='GameResult.tonyu' data-lastupdate='1643542904417' >
 t = 0;
 
 tmW = $screenWidth - 40;
@@ -556,7 +556,11 @@ lineEffect2 = new Actor({
 });
 
 function handleShareButton() {
-    shareText = "DWORDle No." + $logic.seed + " " + $guessCount + " / " + $guessCountMax + "\n\n";
+    if ($gameResult == "gameClear") {
+        shareText = "DWORDle No." + $logic.seed + " " + $guessCount + " / " + $guessCountMax + "\n\n";
+    } else {
+        shareText = "DWORDle No." + $logic.seed + " X / " + $guessCountMax + "\n\n";
+    }
     for (guess in $guessHistory) {
         for (i = 0; i < 5; i++) {
             if (guess[i] == "unused") {
@@ -731,7 +735,7 @@ init();</script>
     "version": 1639557686041
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1643541660843' >
+<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1643542942656' >
 {
     "images": [
         {
