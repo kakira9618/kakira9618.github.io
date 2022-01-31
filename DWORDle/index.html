@@ -699,7 +699,7 @@ while (1) {
     update();
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='HelpWindow.tonyu' data-lastupdate='1643593431588' >// to be implemented
+<script language='text/tonyu' type='text/tonyu' data-filename='HelpWindow.tonyu' data-lastupdate='1643594371635' >// to be implemented
 
 tmW = $screenWidth - 40;
 tmH = $screenHeight - 80 - 200;
@@ -751,7 +751,7 @@ new Actor({
 new Actor({
     x: $screenWidth / 2,
     y: 360,
-    text: "判定は正解単語のどちらかについての情報です。",
+    text: "緑・黄判定は片方の正解単語についての情報です\n灰判定の場合は、文字が両方共に存在しません",
     align: "center middle",
     size: 18,
     layer: $frontLayer,
@@ -760,7 +760,7 @@ new Actor({
 
 new Actor({
     x: $screenWidth / 2,
-    y: 410,
+    y: 430,
     text: "全部緑であっても正解単語とは限りません\n(その場合ゲーム続行となります)",
     align: "center middle",
     size: 18,
@@ -841,7 +841,7 @@ init();</script>
     "version": 1639557686041
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1643593445414' >
+<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1643594398000' >
 {
     "images": [
         {
