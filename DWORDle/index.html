@@ -803,9 +803,9 @@ nowait function init() {
 
 init();</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='HelpText.tonyu' data-lastupdate='1643566214722' >while (1) {
+<script language='text/tonyu' type='text/tonyu' data-filename='HelpText.tonyu' data-lastupdate='1643630237415' >while (1) {
     t = findTouch();
-    if ($gameState != "help" && t) {
+    if ($gameState == "guess" && t) {
         $gameState = "help";
         
         helpWindow = new HelpWindow{};
@@ -841,7 +841,7 @@ init();</script>
     "version": 1639557686041
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1643618590725' >
+<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1643630251631' >
 {
     "images": [
         {
