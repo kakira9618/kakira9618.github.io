@@ -7,7 +7,7 @@
 <script src="https://edit.tonyu.jp/images/mapchip.png.js"></script>
 <script src="https://edit.tonyu.jp/js/lib/jquery-1.10.1.js" type="text/javascript"></script>
 <script src="https://edit.tonyu.jp/js/g2/runScript_concat.min.js" type="text/javascript"></script>
-<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1643594797670' >/** 
+<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1643723489607' >/** 
  * DWORDle by @kakira9618
  * This program is inspired by wordle (https://www.powerlanguage.co.uk/wordle/)
 */
@@ -35,85 +35,93 @@ result = [];
 t = 0;
 
 function init() {
+    
+    title = new Title();
+    
     pID = 0;
     while (!pID || pID <= 0 || pID > 9999) {
         pID = promptNumber("Problem No. (1-9999)", rnd(9999) + 1);
     }
+    
+    title.die();
     
     $logic = new Logic{seed: pID};
     
     genNewCells();
     
     buttonData = [
-    {text: "q", left: 20, top: $screenHeight - 150},
-    {text: "w", left: 60, top: $screenHeight - 150},
-    {text: "e", left: 100, top: $screenHeight - 150}, 
-    {text: "r", left: 140, top: $screenHeight - 150},
-    {text: "t", left: 180, top: $screenHeight - 150},
-    {text: "y", left: 220, top: $screenHeight - 150}, 
-    {text: "u", left: 260, top: $screenHeight - 150},
-    {text: "i", left: 300, top: $screenHeight - 150},
-    {text: "o", left: 340, top: $screenHeight - 150}, 
-    {text: "p", left: 380, top: $screenHeight - 150}, 
+    {text: "q", left: 20, top: $screenHeight - 180},
+    {text: "w", left: 60, top: $screenHeight - 180},
+    {text: "e", left: 100, top: $screenHeight - 180}, 
+    {text: "r", left: 140, top: $screenHeight - 180},
+    {text: "t", left: 180, top: $screenHeight - 180},
+    {text: "y", left: 220, top: $screenHeight - 180}, 
+    {text: "u", left: 260, top: $screenHeight - 180},
+    {text: "i", left: 300, top: $screenHeight - 180},
+    {text: "o", left: 340, top: $screenHeight - 180}, 
+    {text: "p", left: 380, top: $screenHeight - 180}, 
             
-    {text: "a", left: 40, top: $screenHeight - 100},
-    {text: "s", left: 80, top: $screenHeight - 100},
-    {text: "d", left: 120, top: $screenHeight - 100}, 
-    {text: "f", left: 160, top: $screenHeight - 100},
-    {text: "g", left: 200, top: $screenHeight - 100},
-    {text: "h", left: 240, top: $screenHeight - 100}, 
-    {text: "j", left: 280, top: $screenHeight - 100},
-    {text: "k", left: 320, top: $screenHeight - 100},
-    {text: "l", left: 360, top: $screenHeight - 100}, 
+    {text: "a", left: 40, top: $screenHeight - 120},
+    {text: "s", left: 80, top: $screenHeight - 120},
+    {text: "d", left: 120, top: $screenHeight - 120}, 
+    {text: "f", left: 160, top: $screenHeight - 120},
+    {text: "g", left: 200, top: $screenHeight - 120},
+    {text: "h", left: 240, top: $screenHeight - 120}, 
+    {text: "j", left: 280, top: $screenHeight - 120},
+    {text: "k", left: 320, top: $screenHeight - 120},
+    {text: "l", left: 360, top: $screenHeight - 120}, 
             
-    {text: "z", left: 60, top: $screenHeight - 50},
-    {text: "x", left: 100, top: $screenHeight - 50},
-    {text: "c", left: 140, top: $screenHeight - 50}, 
-    {text: "v", left: 180, top: $screenHeight - 50},
-    {text: "b", left: 220, top: $screenHeight - 50},
-    {text: "n", left: 260, top: $screenHeight - 50}, 
-    {text: "m", left: 300, top: $screenHeight - 50},
+    {text: "z", left: 60, top: $screenHeight - 60},
+    {text: "x", left: 100, top: $screenHeight - 60},
+    {text: "c", left: 140, top: $screenHeight - 60}, 
+    {text: "v", left: 180, top: $screenHeight - 60},
+    {text: "b", left: 220, top: $screenHeight - 60},
+    {text: "n", left: 260, top: $screenHeight - 60}, 
+    {text: "m", left: 300, top: $screenHeight - 60},
     ];
     
     // char button
     for (button in buttonData) {
-        new Button{
-            top: button.top, 
-            left: button.left, 
-            width: 30, 
-            height: 40, 
+        new RoundedButton{
+            top: button.top - 5, 
+            left: button.left - 12, 
+            width: 30 + 5, 
+            height: 50 + 5, 
             text: button.text, 
-            padding: 5,
+            padding: 11,
             fillStyle: "gray",
             onClick: handleCharKey,
             key: button.text,
+            round: 5
         };
     }
     
     // Backspace Button
-    new Button{
-        top: $screenHeight - 150, 
-        left: 420, 
+    new RoundedButton{
+        top: $screenHeight - 180 - 5, 
+        left: 420 - 2, 
         width: 40, 
-        height: 40, 
+        height: 50 + 5, 
         text: "←", 
-        padding: 5,
+        padding: 11,
         fillStyle: "gray",
         onClick: handleDelete,
         key: "bs",
+        round: 5
     };
     
     // Enter Button
-    new Button{
-        top: $screenHeight - 50, 
+    new RoundedButton{
+        top: $screenHeight - 60 - 5, 
         left: 400, 
         width: 60, 
-        height: 40, 
+        height: 50 + 5, 
         text: "↩", 
-        padding: 5,
+        padding: 11,
         fillStyle: "gray",
         onClick: handleEnter,
-        key: "enter"
+        key: "enter",
+        round: 5
     };
     
     // title bar
@@ -163,9 +171,9 @@ function init() {
     // keyboard area
     new Actor{
         x: 0,
-        y: $screenHeight - 170,
+        y: $screenHeight - 200,
         width: $screenWidth,
-        height: 170,
+        height: 200,
         fillStyle: "black",
         alpha: 200,
         zOrder: 10,
@@ -240,7 +248,7 @@ function handleEnter() {
     
     $gameState = "checking";
     scrollMode = "auto";
-    tscrollY = max(0, activeCells[0].ty - 380);
+    tscrollY = max(0, activeCells[0].ty - 350);
     t = 0; nextOpenIndex = 0;
 }
 
@@ -276,7 +284,7 @@ while(1) {
             }
             scrollY += scrollVY;
             if (scrollY < 0) scrollY = 0;
-            if (scrollY > max(0, activeCells[0].ty - 450)) scrollY = max(0, activeCells[0].ty - 450);
+            if (scrollY > max(0, activeCells[0].ty - 420)) scrollY = max(0, activeCells[0].ty - 420);
         }
         $Screen.scrollTo(0, scrollY);
     } else if ($gameState == "miss") {
@@ -400,7 +408,7 @@ while(1) {
 }
 </script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='Logic.tonyu' data-lastupdate='1643618587849' >wordList = new WordList{};
+<script language='text/tonyu' type='text/tonyu' data-filename='Logic.tonyu' data-lastupdate='1643720409528' >wordList = new WordList{};
 allWordsListHash = {};
 ans1 = "";
 ans2 = "";
@@ -480,9 +488,13 @@ function queryWord(word) {
         for (j = 0; j < 5; j++) {
             if (i == j) continue;
             
-            if ((flags[0][j] == 0 && word[i] == ans1[j]) || 
-            (flags[1][j] == 0 && word[i] == ans2[j])) {
+            if (flags[0][j] == 0 && word[i] == ans1[j]) {
                 result[i] = "used";
+                flags[0][j] = 1;
+                break;
+            } else if (flags[1][j] == 0 && word[i] == ans2[j]) {
+                result[i] = "used";
+                flags[1][j] = 1;
                 break;
             }
         }
@@ -813,7 +825,94 @@ init();</script>
     update();
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='options.json' data-lastupdate='1643535149260' >
+<script language='text/tonyu' type='text/tonyu' data-filename='RoundedButton.tonyu' data-lastupdate='1643723182693' >extends Button;
+
+var round;
+if (!round) round = 10;
+
+if (key) {
+    on("keyDown",key) \(keyEvent) {
+        if (disabled) return;
+        doStartClick();
+        keyEvent.on("up",doEndClick);
+    };
+}
+on("touch") \(touchEvent) {
+    if (disabled) return;
+    var f=touchEvent.finger;
+    doStartClick();
+    f.on("end",doEndClick);
+};
+\handleClickEvent() {
+    fireEvent("click");
+    if (typeof onClick==="function") onClick(this);
+}
+
+\draw(c) {
+    var e=curEffect;
+    c.globalAlpha=e.alpha/255;
+    c.fillStyle=e.fillStyle ? e.fillStyle+"" : "gray";
+    c.strokeStyle=e.strokeStyle ? e.strokeStyle+"" : "black";
+    //if (disabled) c.strokeStyle=disabledStrokeStyle+"";
+    var eleft=left, etop=top;
+    if (e.move) {
+        eleft+=e.move.x||0;
+        etop+=e.move.y||0;
+    }
+    //c.fillRect(eleft, etop, e.width, e.height);
+    //c.strokeRect(eleft, etop, e.width, e.height);
+    roundedRect(c, eleft, etop, e.width, e.height, round, true);
+    roundedRect(c, eleft, etop, e.width, e.height, round, false);
+    var size=e.height-e.padding*2;
+    var f=c.font.replace(/^[0-9]+px /,"");
+    c.font=size+"px "+f;//monospace";
+    c.textBaseline="top";
+    c.fillStyle=e.strokeStyle;
+    //clicked?clickedStyle+"":
+    //disabled?disabledStrokeStyle+"":strokeStyle+"";
+    var r=c.measureText(text);
+    c.fillText(text, eleft+e.width/2-r.width/2, etop+e.padding);
+}
+
+function roundedRect(ctx, x, y, width, height, radius, fill) {
+    ctx.beginPath();
+    ctx.moveTo(x, y + radius);
+    ctx.lineTo(x, y + height - radius);
+    ctx.arcTo(x, y + height, x + radius, y + height, radius);
+    ctx.lineTo(x + width - radius, y + height);
+    ctx.arcTo(x + width, y + height, x + width, y + height - radius, radius);
+    ctx.lineTo(x + width, y + radius);
+    ctx.arcTo(x + width, y, x + width - radius, y, radius);
+    ctx.lineTo(x + radius, y);
+    ctx.arcTo(x, y, x, y + radius, radius);
+    if (fill) ctx.fill(); else ctx.stroke();
+}</script>
+
+<script language='text/tonyu' type='text/tonyu' data-filename='Title.tonyu' data-lastupdate='1643723734162' >// title text
+new Actor{
+    x: $screenWidth / 2,
+    y: 120,
+    size: 60,
+    text: "DWORDle",
+    align: "center middle",
+    lifeKeeper: this
+};
+
+// cregit
+new Actor{
+    x: $screenWidth / 2,
+    y: 170,
+    size: 20,
+    text: "by @kakira9618",
+    align: "center middle",
+    lifeKeeper: this
+};
+
+while (true) {
+    update();
+}</script>
+
+<script language='text/tonyu' type='text/tonyu' data-filename='options.json' data-lastupdate='1643719698302' >
 {
     "compiler": {
         "namespace": "user",
@@ -822,7 +921,9 @@ init();</script>
             {
                 "namespace": "kernel"
             }
-        ]
+        ],
+        "noLoopCheck": false,
+        "field_strict": false
     },
     "run": {
         "mainClass": "user.Main",
@@ -838,10 +939,15 @@ init();</script>
     },
     "kernelEditable": false,
     "language": "tonyu",
-    "version": 1639557686041
+    "version": 1639557686041,
+    "social": {
+        "prjName": "dwordle",
+        "title": "dwordle",
+        "whenPrjDirExists": "selectPolicy"
+    }
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1643630251631' >
+<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1643723784227' >
 {
     "images": [
         {
@@ -873,7 +979,7 @@ init();</script>
     "sounds": []
 }</script>
 
-</head><body><div id='splash' style='position:relative; height: 100%;'>
+</head><body style="text-size-adjust: 100%;"><div id='splash' style='position:relative; height: 100%;'>
     <!--ここに，ロード中に表示する内容を記述できます。-->
     <!--You can write here what you want to show while loading. -->
     <div class='progress'>
