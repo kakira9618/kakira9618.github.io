@@ -1,3 +1,16 @@
-body { font-size: 2.5vh; }
-input { margin-top: 1.0vh; margin-bottom: 1.0vh;}
-button { margin: 0.0vw 5.0vw 0.0vw 0.0vw; height: 4.0vh; vertical-align: middle; }
+/* ダイアログ全体 */
+div[role="dialog"] { 
+    font-size: 2.5vh; /* ダイアログUIのフォントの大きさを大きくする（スマホ入力時での自動拡大防止） */
+}
+
+/* ダイアログの入力欄 */
+input { 
+    margin-top: 1.0vh;
+    margin-bottom: 1.0vh; 
+}
+
+/* ダイアログボタン */
+button { 
+    margin: 0.0vh 5.0vh 0.0vh 0.0vh; /* OK と キャンセル ボタンがくっつかないようにする */
+    vertical-align: middle; /* 英語と日本語が交じるテキストのボタンのy位置がずれないようにする */
+}
