@@ -513,11 +513,11 @@ function isGameClear(word) {
 
 init();</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='GameResult.tonyu' data-lastupdate='1643595666717' >
+<script language='text/tonyu' type='text/tonyu' data-filename='GameResult.tonyu' data-lastupdate='1643774102077' >
 t = 0;
 
 tmW = $screenWidth - 40;
-tmH = $screenHeight - 80 - 200;
+tmH = $screenHeight - 80 - 230;
 mW = 0;
 mH = 0;
 
@@ -532,7 +532,7 @@ modal = new Actor({
     align: "left top",
 });
 
-tty = modal.y + 70;
+tty = modal.y + 60;
 title = new Actor({
     x: $screenWidth / 2,
     y: modal.y + modal.height / 2,
@@ -543,7 +543,7 @@ title = new Actor({
 
 ansText1 = new Actor({
     x: 100,
-    y: modal.y + 150,
+    y: modal.y + 140,
     text: "",
     size: 20,
     layer: $frontLayer,
@@ -552,7 +552,7 @@ ansText1 = new Actor({
 
 ansText2 = new Actor({
     x: 100,
-    y: modal.y + 220,
+    y: modal.y + 210,
     text: "",
     size: 20,
     layer: $frontLayer,
@@ -674,7 +674,7 @@ while (1) {
     if (t == 150) {
         new Button {
             left: 100, 
-            top: modal.y + 300, 
+            top: modal.y + 290, 
             width: $screenWidth - 200, 
             height: 30, 
             text: "Share via Twitter", 
@@ -685,7 +685,7 @@ while (1) {
         
         new Button {
             left: 100, 
-            top: modal.y + 340, 
+            top: modal.y + 330, 
             width: $screenWidth - 200, 
             height: 30, 
             text: "Retry", 
@@ -716,10 +716,10 @@ while (1) {
     update();
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='HelpWindow.tonyu' data-lastupdate='1643594371635' >// to be implemented
+<script language='text/tonyu' type='text/tonyu' data-filename='HelpWindow.tonyu' data-lastupdate='1643773923806' >// to be implemented
 
 tmW = $screenWidth - 40;
-tmH = $screenHeight - 80 - 200;
+tmH = $screenHeight - 80 - 230;
 mW = 0;
 mH = 0;
 
@@ -737,7 +737,7 @@ modal = new Actor({
 
 titleText = new Actor({
     x: $screenWidth / 2,
-    y: 150,
+    y: 130,
     text: "Rules",
     align: "center middle",
     size: 40,
@@ -747,7 +747,7 @@ titleText = new Actor({
 
 new Actor({
     x: $screenWidth / 2,
-    y: 220,
+    y: 200,
     text: "基本的には「wordle」とルールは同じですが、\n正解単語が「2つ」あります",
     align: "center middle",
     size: 18,
@@ -757,7 +757,7 @@ new Actor({
 
 new Actor({
     x: $screenWidth / 2,
-    y: 290,
+    y: 270,
     text: "10回以内の試行で、\n2つの正解単語の「どちらか」を当ててください",
     align: "center middle",
     size: 18,
@@ -767,7 +767,7 @@ new Actor({
 
 new Actor({
     x: $screenWidth / 2,
-    y: 360,
+    y: 340,
     text: "緑・黄判定は片方の正解単語についての情報です\n灰判定の場合は、文字が両方共に存在しません",
     align: "center middle",
     size: 18,
@@ -777,7 +777,7 @@ new Actor({
 
 new Actor({
     x: $screenWidth / 2,
-    y: 430,
+    y: 410,
     text: "全部緑であっても正解単語とは限りません\n(その場合ゲーム続行となります)",
     align: "center middle",
     size: 18,
@@ -1037,7 +1037,7 @@ mainLoop();</script>
     }
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1643771753406' >
+<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1643774140206' >
 {
     "images": [
         {
