@@ -7,7 +7,7 @@
 <script src="https://edit.tonyu.jp/images/mapchip.png.js"></script>
 <script src="https://edit.tonyu.jp/js/lib/jquery-1.10.1.js" type="text/javascript"></script>
 <script src="https://edit.tonyu.jp/js/g2/runScript_concat.min.js" type="text/javascript"></script>
-<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1643771747064' >/** 
+<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1643802160040' >/** 
  * DWORDle by @kakira9618
  * This program is inspired by wordle (https://www.powerlanguage.co.uk/wordle/)
 */
@@ -18,12 +18,15 @@ $Screen.setBGColor("#202020");
 $Screen.resize(465, 700); // default: 465, 465
 
 activeCells = [];
+alphabets = "abcdefghijklmnopqrstuvwxyz";
+buttonObjects = {};
 tscrollY = 0;
 scrollY = 0;
 scrollVY = 0;
 scrollMode = "auto"; // "manual"
 inputIndex = 0;
 nextOpenIndex = 0;
+buttonStates = {};
 $logic = {};
 $gameState = "guess"; // "miss", "checking", "finish", "help"
 $gameResult = "game"; // "gameClear", "gameOver"
@@ -31,6 +34,7 @@ $guessCount = 0;
 $guessCountMax = 10;
 $guessHistory = [];
 $Main = this;
+$styles = new Styles{};
 
 result = [];
 t = 0;
@@ -85,16 +89,23 @@ function init() {
     {text: "m", left: 300, top: $screenHeight - 60},
     ];
     
+    buttonStates = {};
+    for (c of alphabets) {
+        buttonStates[c] = "guessing";
+    }
+    
     // char button
     for (button in buttonData) {
-        new RoundedButton{
+        buttonObjects[button.text] = new RoundedButton{
             top: button.top - 5, 
             left: button.left - 12, 
             width: 30 + 5, 
             height: 50 + 5, 
             text: button.text, 
             padding: 11,
-            fillStyle: "gray",
+            fillStyle: $styles.box[buttonStates[button.text]]["background"],
+            strokeStyle: $styles.box[buttonStates[button.text]]["text"],
+            clickedStyle: $styles.box[buttonStates[button.text]]["clicked"],
             onClick: handleCharKey,
             key: button.text,
             round: 5
@@ -109,7 +120,7 @@ function init() {
         height: 50 + 5, 
         text: "←", 
         padding: 11,
-        fillStyle: "gray",
+        fillStyle: "white",
         onClick: handleDelete,
         key: "bs",
         round: 5
@@ -123,7 +134,7 @@ function init() {
         height: 50 + 5, 
         text: "↩", 
         padding: 11,
-        fillStyle: "gray",
+        fillStyle: "white",
         onClick: handleEnter,
         key: "enter",
         round: 5
@@ -250,11 +261,33 @@ function handleEnter() {
 
     result = $logic.queryWord(word);
     $guessHistory.push(result);
+    updateButtonStates(word, result);
     
     $gameState = "checking";
     scrollMode = "auto";
     tscrollY = max(0, activeCells[0].ty - 350);
     t = 0; nextOpenIndex = 0;
+}
+
+function getResultPriority(resultState) {
+    priority = {
+        "guessing": 0,
+        "unused": 1,
+        "used": 2,
+        "correct": 3,
+    };
+    return priority[resultState];
+}
+
+function updateButtonStates(word, result) {
+    for (i = 0; i < 5; i++) {
+        c = word[i];
+        buttonState = buttonStates[c];
+        resultState = result[i];
+        if (getResultPriority(buttonState) < getResultPriority(resultState)) {
+            buttonStates[c] = result[i];
+        }
+    }
 }
 
 function missInit() {
@@ -301,6 +334,12 @@ while(1) {
         if (t % 10 == 0) {
             if (nextOpenIndex < 5) {
                 activeCells[nextOpenIndex].changeState(result[nextOpenIndex]);
+                word = getGuessWord();
+                c = word[nextOpenIndex];
+                buttonObjects[c].fillStyle = $styles.box[buttonStates[c]]["background"];
+                buttonObjects[c].strokeStyle = $styles.box[buttonStates[c]]["text"];
+                buttonObjects[c].clickedStyle = $styles.box[buttonStates[c]]["clicked"];
+     
                 nextOpenIndex++;
             } else if (t >= 70) {
                 if ($logic.isGameClear(getGuessWord())) {
@@ -330,31 +369,14 @@ while(1) {
     update();
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='Cell.tonyu' data-lastupdate='1643536100828' >p = -1;
+<script language='text/tonyu' type='text/tonyu' data-filename='Cell.tonyu' data-lastupdate='1643802002382' >p = -1;
 trot = 0;
 tscaleX = 1.0;
 t = 1;
 state = "guessing"; // "unused", "used", "correct"
 vx = 0;
 
-styles = {
-    "guessing": {
-        "cell": color(255, 255, 255),
-        "cellchar": color(0, 0, 0),
-    },
-    "unused": {
-        "cell": color(120, 124, 126),
-        "cellchar": color(255, 255, 255),
-    },
-    "used": {
-        "cell": color(201, 180, 88),
-        "cellchar": color(255, 255, 255),
-    },
-    "correct": {
-        "cell": color(106, 170, 100),
-        "cellchar": color(255, 255, 255),
-    },
-};
+styles = $styles.box;
 
 dispChar = new CellChar{
     x: x, 
@@ -393,8 +415,8 @@ while (1) {
         x += vx;
     }
     if (t == 0) {
-        fillStyle = styles[state]["cell"];
-        dispChar.fillStyle = styles[state]["cellchar"];
+        fillStyle = styles[state]["background"];
+        dispChar.fillStyle = styles[state]["text"];
     }
     t++;
     update();
@@ -830,7 +852,7 @@ init();</script>
     update();
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='RoundedButton.tonyu' data-lastupdate='1643723182693' >extends Button;
+<script language='text/tonyu' type='text/tonyu' data-filename='RoundedButton.tonyu' data-lastupdate='1643801544754' >extends Button;
 
 var round;
 if (!round) round = 10;
@@ -1002,6 +1024,30 @@ createMainObject();
 progress();
 mainLoop();</script>
 
+<script language='text/tonyu' type='text/tonyu' data-filename='Styles.tonyu' data-lastupdate='1643802103911' >box = {
+    "guessing": {
+        "background": color(255, 255, 255),
+        "text": color(0, 0, 0),
+        "clicked": color(128, 128, 128),
+    },
+    "unused": {
+        "background": color(120, 124, 126),
+        "text": color(255, 255, 255),
+        "clicked": color(128, 128, 128),
+    },
+    "used": {
+        "background": color(201, 180, 88),
+        "text": color(255, 255, 255),
+        "clicked": color(128, 128, 128),
+    },
+    "correct": {
+        "background": color(106, 170, 100),
+        "text": color(255, 255, 255),
+        "clicked": color(128, 128, 128),
+    },
+};
+</script>
+
 <script language='text/tonyu' type='text/tonyu' data-filename='options.json' data-lastupdate='1643736572410' >
 {
     "compiler": {
@@ -1037,7 +1083,7 @@ mainLoop();</script>
     }
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1643774140206' >
+<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1643802287365' >
 {
     "images": [
         {
