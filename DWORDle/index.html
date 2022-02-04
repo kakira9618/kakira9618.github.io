@@ -7,11 +7,11 @@
 <script src="https://edit.tonyu.jp/images/mapchip.png.js"></script>
 <script src="https://edit.tonyu.jp/js/lib/jquery-1.10.1.js" type="text/javascript"></script>
 <script src="https://edit.tonyu.jp/js/g2/runScript_concat.min.js" type="text/javascript"></script>
-<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1643869617902' >/** 
+<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1643992739288' >/** 
  * DWORDle by @kakira9618
  * This program is inspired by wordle (https://www.powerlanguage.co.uk/wordle/)
 */
-$version = "1.0.4";
+$version = "1.0.5";
 
 $Screen.setBGColor("#202020");
 
@@ -27,36 +27,123 @@ scrollMode = "auto"; // "manual"
 inputIndex = 0;
 nextOpenIndex = 0;
 buttonStates = {};
+$currentGame = {};
 $logic = {};
 $gameState = "guess"; // "miss", "checking", "finish", "help"
 $gameResult = "game"; // "gameClear", "gameOver"
 $guessCount = 0;
 $guessCountMax = 10;
-$guessHistory = [];
+$guessResultHistory = [];
+$problemID = 0;
+
 $Main = this;
 $styles = new Styles{};
 
 result = [];
 t = 0;
 
-function init() {
-    title = new Title();
-    wait(10); // for waiting custom css to be loaded
-    pID = 0;
-    while (!pID || pID <= 0 || pID > 9999) {
-        pID = promptNumber({
-            title: "Start",
-            body: "Problem No. 1-9999:"
-        }, rnd(9999) + 1, {
-            
-        });
+function loadHistory() {
+    $historyFile = file("history.json");
+    if ($historyFile.exists()) {
+        $allHistory = $historyFile.obj();
+    } else {
+        $allHistory = {version: $version};
     }
-    
-    title.die();
-    
-    $logic = new Logic{seed: pID};
-    
+}
+
+
+function deleteHistory() {
+    $historyFile.obj({});
+}
+
+function saveHistory(game) {
+    $allHistory[game.startTime] = {
+        startTime: game.startTime,
+        problemID: game.problemID,
+        complete: game.complete,
+        guessWord: game.guessWord,
+    };
+    $historyFile.obj($allHistory);
+}
+
+function findOnGoingGame() {
+    for (time, game in $allHistory) {
+        if (time == "version") continue;
+        if (game.complete == false) {
+            return game;
+        }
+    }
+    return {
+        startTime: getTime(), 
+        problemID: 0,
+        complete: false,
+        guessWord: [],
+    };
+}
+
+function printGame(game) {
+    print("startTime", game.startTime);
+    print("problemID", game.problemID);
+    print("complete", game.complete);
+    print("guessWord", game.guessWord);
+}
+
+function printAllGame() {
+    for (k, v of $allHistory) {
+        print(k);
+        printGame(v);
+    }
+}
+
+function resumeGame(game) {
+    while(!$logic.ans1 || $logic.ans1 == "") {}
     genNewCells();
+    for (word of game.guessWord) {
+        result = $logic.queryWord(word);
+        
+        $guessResultHistory.push(result);
+        for (i = 0; i < 5; i++) {
+            while(!activeCells[i].dispChar) {}
+            activeCells[i].changeChar(word[i]);
+            activeCells[i].changeState(result[i]);
+        }
+        updateButtonStates(word, result);
+        
+        genNewCells();
+    }
+}
+
+function getTime() {
+    return floor(new Date().getTime() / 1000);
+}
+
+function init() {
+    loadHistory(); 
+    $currentGame = findOnGoingGame();
+    
+    buttonStates = {};
+    for (c of alphabets) {
+        buttonStates[c] = "guessing";
+    }
+
+    pID = $currentGame.problemID;
+    if (pID == 0) {
+        
+        title = new Title();
+        wait(10); // for waiting custom css to be loaded
+        while (!pID || pID <= 0 || pID > 9999) {
+            pID = promptNumber({
+                title: "Game Start",
+                body: "Problem No. 1-9999:"
+            }, rnd(9999) + 1);
+        }
+        $currentGame.problemID = pID;
+        title.die();
+    }
+
+    $logic = new Logic{seed: $currentGame.problemID};
+    
+    resumeGame($currentGame);
     
     buttonData = [
     {text: "q", left: 20, top: $screenHeight - 180},
@@ -88,11 +175,6 @@ function init() {
     {text: "n", left: 260, top: $screenHeight - 60}, 
     {text: "m", left: 300, top: $screenHeight - 60},
     ];
-    
-    buttonStates = {};
-    for (c of alphabets) {
-        buttonStates[c] = "guessing";
-    }
     
     // char button
     for (button in buttonData) {
@@ -229,6 +311,8 @@ function genNewCells() {
         });
     }
     $guessCount++;
+    scrollMode = "auto";
+    tscrollY = max(0, activeCells[0].ty - 420);
     t = -60;
 }
 
@@ -264,12 +348,14 @@ function handleEnter() {
     }
 
     result = $logic.queryWord(word);
-    $guessHistory.push(result);
+    $currentGame.guessWord.push(word);
+    saveHistory($currentGame);
+    $guessResultHistory.push(result);
     updateButtonStates(word, result);
     
+    
     $gameState = "checking";
-    scrollMode = "auto";
-    tscrollY = max(0, activeCells[0].ty - 350);
+
     t = 0; nextOpenIndex = 0;
 }
 
@@ -348,10 +434,14 @@ while(1) {
                 if ($logic.isGameClear(getGuessWord())) {
                     $gameState = "finish";
                     $gameResult = "gameClear";
+                    $currentGame.complete = true;
+                    saveHistory($currentGame);
                     t = -10;
                 } else if ($guessCount == $guessCountMax) {
                     $gameState = "finish";
                     $gameResult = "gameOver";
+                    $currentGame.complete = true;
+                    saveHistory($currentGame);
                     t = -10;
                 } else {
                     $gameState = "guess";
@@ -537,7 +627,7 @@ function isGameClear(word) {
 
 init();</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='GameResult.tonyu' data-lastupdate='1643774102077' >
+<script language='text/tonyu' type='text/tonyu' data-filename='GameResult.tonyu' data-lastupdate='1643991651039' >
 t = 0;
 
 tmW = $screenWidth - 40;
@@ -613,7 +703,7 @@ function handleShareButton() {
     } else {
         shareText = "DWORDle No." + $logic.seed + " X/" + $guessCountMax + "\n\n";
     }
-    for (guess in $guessHistory) {
+    for (guess in $guessResultHistory) {
         for (i = 0; i < 5; i++) {
             if (guess[i] == "unused") {
                 shareText += "⬜";
@@ -1104,7 +1194,7 @@ mainLoop();</script>
     }
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1643869659337' >
+<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1643992778629' >
 {
     "images": [
         {
