@@ -7,7 +7,7 @@
 <script src="https://edit.tonyu.jp/images/mapchip.png.js"></script>
 <script src="https://edit.tonyu.jp/js/lib/jquery-1.10.1.js" type="text/javascript"></script>
 <script src="https://edit.tonyu.jp/js/g2/runScript_concat.min.js" type="text/javascript"></script>
-<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1643992739288' >/** 
+<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1643992886986' >/** 
  * DWORDle by @kakira9618
  * This program is inspired by wordle (https://www.powerlanguage.co.uk/wordle/)
 */
@@ -57,12 +57,7 @@ function deleteHistory() {
 }
 
 function saveHistory(game) {
-    $allHistory[game.startTime] = {
-        startTime: game.startTime,
-        problemID: game.problemID,
-        complete: game.complete,
-        guessWord: game.guessWord,
-    };
+    $allHistory[game.startTime] = game;
     $historyFile.obj($allHistory);
 }
 
@@ -75,6 +70,7 @@ function findOnGoingGame() {
     }
     return {
         startTime: getTime(), 
+        gameMode: "normal",
         problemID: 0,
         complete: false,
         guessWord: [],
@@ -83,6 +79,7 @@ function findOnGoingGame() {
 
 function printGame(game) {
     print("startTime", game.startTime);
+    print("gameMode", game.gameMode);
     print("problemID", game.problemID);
     print("complete", game.complete);
     print("guessWord", game.guessWord);
@@ -1194,7 +1191,7 @@ mainLoop();</script>
     }
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1643992778629' >
+<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1643992969901' >
 {
     "images": [
         {
