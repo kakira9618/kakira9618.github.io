@@ -7,7 +7,7 @@
 <script src="https://edit.tonyu.jp/images/mapchip.png.js"></script>
 <script src="https://edit.tonyu.jp/js/lib/jquery-1.10.1.js" type="text/javascript"></script>
 <script src="https://edit.tonyu.jp/js/g2/runScript_concat.min.js" type="text/javascript"></script>
-<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1643992886986' >/** 
+<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1643993109383' >/** 
  * DWORDle by @kakira9618
  * This program is inspired by wordle (https://www.powerlanguage.co.uk/wordle/)
 */
@@ -135,6 +135,7 @@ function init() {
             }, rnd(9999) + 1);
         }
         $currentGame.problemID = pID;
+        saveHistory($currentGame);
         title.die();
     }
 
@@ -1191,7 +1192,7 @@ mainLoop();</script>
     }
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1643992969901' >
+<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1643993117816' >
 {
     "images": [
         {
