@@ -7,18 +7,18 @@
 <script src="https://edit.tonyu.jp/images/mapchip.png.js"></script>
 <script src="https://edit.tonyu.jp/js/lib/jquery-1.10.1.js" type="text/javascript"></script>
 <script src="https://edit.tonyu.jp/js/g2/runScript_concat.min.js" type="text/javascript"></script>
-<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1644039983648' >/** 
+<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1644087241286' >/** 
  * DWORDle by @kakira9618
  * This program is inspired by wordle (https://www.powerlanguage.co.uk/wordle/)
 */
 native Math;
 
-$version = "1.0.6";
+$version = "1.0.7";
 
 $Screen.setBGColor("#202020");
 
-$Screen.resize(465, 700); // default: 465, 465
-
+$screenP = 2;
+$Screen.resize(465 * $screenP, 700 * $screenP); // default: 465, 465
 
 activeCells = [];
 alphabets = "abcdefghijklmnopqrstuvwxyz";
@@ -45,6 +45,8 @@ $styles = new Styles{};
 
 result = [];
 t = 0;
+
+
 
 function loadHistory() {
     $historyFile = file("history.json");
@@ -147,82 +149,82 @@ function init() {
     resumeGame($currentGame);
     
     buttonData = [
-    {text: "q", left: 20, top: $screenHeight - 180},
-    {text: "w", left: 60, top: $screenHeight - 180},
-    {text: "e", left: 100, top: $screenHeight - 180}, 
-    {text: "r", left: 140, top: $screenHeight - 180},
-    {text: "t", left: 180, top: $screenHeight - 180},
-    {text: "y", left: 220, top: $screenHeight - 180}, 
-    {text: "u", left: 260, top: $screenHeight - 180},
-    {text: "i", left: 300, top: $screenHeight - 180},
-    {text: "o", left: 340, top: $screenHeight - 180}, 
-    {text: "p", left: 380, top: $screenHeight - 180}, 
+    {text: "q", left: 20 * $screenP, top: $screenHeight - 180 * $screenP},
+    {text: "w", left: 60 * $screenP, top: $screenHeight - 180 * $screenP},
+    {text: "e", left: 100 * $screenP, top: $screenHeight - 180 * $screenP}, 
+    {text: "r", left: 140 * $screenP, top: $screenHeight - 180 * $screenP},
+    {text: "t", left: 180 * $screenP, top: $screenHeight - 180 * $screenP},
+    {text: "y", left: 220 * $screenP, top: $screenHeight - 180 * $screenP}, 
+    {text: "u", left: 260 * $screenP, top: $screenHeight - 180 * $screenP},
+    {text: "i", left: 300 * $screenP, top: $screenHeight - 180 * $screenP},
+    {text: "o", left: 340 * $screenP, top: $screenHeight - 180 * $screenP}, 
+    {text: "p", left: 380 * $screenP, top: $screenHeight - 180 * $screenP}, 
             
-    {text: "a", left: 40, top: $screenHeight - 120},
-    {text: "s", left: 80, top: $screenHeight - 120},
-    {text: "d", left: 120, top: $screenHeight - 120}, 
-    {text: "f", left: 160, top: $screenHeight - 120},
-    {text: "g", left: 200, top: $screenHeight - 120},
-    {text: "h", left: 240, top: $screenHeight - 120}, 
-    {text: "j", left: 280, top: $screenHeight - 120},
-    {text: "k", left: 320, top: $screenHeight - 120},
-    {text: "l", left: 360, top: $screenHeight - 120}, 
+    {text: "a", left: 40 * $screenP, top: $screenHeight - 120 * $screenP},
+    {text: "s", left: 80 * $screenP, top: $screenHeight - 120 * $screenP},
+    {text: "d", left: 120 * $screenP, top: $screenHeight - 120 * $screenP}, 
+    {text: "f", left: 160 * $screenP, top: $screenHeight - 120 * $screenP},
+    {text: "g", left: 200 * $screenP, top: $screenHeight - 120 * $screenP},
+    {text: "h", left: 240 * $screenP, top: $screenHeight - 120 * $screenP}, 
+    {text: "j", left: 280 * $screenP, top: $screenHeight - 120 * $screenP},
+    {text: "k", left: 320 * $screenP, top: $screenHeight - 120 * $screenP},
+    {text: "l", left: 360 * $screenP, top: $screenHeight - 120 * $screenP}, 
             
-    {text: "z", left: 60, top: $screenHeight - 60},
-    {text: "x", left: 100, top: $screenHeight - 60},
-    {text: "c", left: 140, top: $screenHeight - 60}, 
-    {text: "v", left: 180, top: $screenHeight - 60},
-    {text: "b", left: 220, top: $screenHeight - 60},
-    {text: "n", left: 260, top: $screenHeight - 60}, 
-    {text: "m", left: 300, top: $screenHeight - 60},
+    {text: "z", left: 60 * $screenP, top: $screenHeight - 60 * $screenP},
+    {text: "x", left: 100 * $screenP, top: $screenHeight - 60 * $screenP},
+    {text: "c", left: 140 * $screenP, top: $screenHeight - 60 * $screenP}, 
+    {text: "v", left: 180 * $screenP, top: $screenHeight - 60 * $screenP},
+    {text: "b", left: 220 * $screenP, top: $screenHeight - 60 * $screenP},
+    {text: "n", left: 260 * $screenP, top: $screenHeight - 60 * $screenP}, 
+    {text: "m", left: 300 * $screenP, top: $screenHeight - 60 * $screenP},
     ];
     
     // char button
     for (button in buttonData) {
         buttonObjects[button.text] = new RoundedButton{
-            top: button.top - 5, 
-            left: button.left - 12, 
-            width: 30 + 5, 
-            height: 50 + 5, 
+            top: button.top - 5 * $screenP, 
+            left: button.left - 12 * $screenP, 
+            width: 30 * $screenP + 5 * $screenP, 
+            height: 50 * $screenP + 5 * $screenP, 
             text: button.text, 
-            padding: 11,
+            padding: 11 * $screenP,
             fillStyle: $styles.box[buttonStates[button.text]]["background"],
             strokeStyle: $styles.box[buttonStates[button.text]]["text"],
             clickedStyle: $styles.box[buttonStates[button.text]]["clicked"],
             onClick: handleCharKey,
             key: button.text,
-            round: 5
+            round: 5 * $screenP
         };
     }
     
     // Backspace Button
     new RoundedButton{
-        top: $screenHeight - 180 - 5, 
-        left: 420 - 2, 
-        width: 40, 
-        height: 50 + 5, 
+        top: $screenHeight - 180 * $screenP - 5 * $screenP, 
+        left: 420 * $screenP - 2 * $screenP, 
+        width: 40 * $screenP, 
+        height: 50 * $screenP + 5 * $screenP, 
         text: "←", 
-        padding: 11,
+        padding: 11 * $screenP,
         fillStyle: "white",
         clickedStyle: "gray",
         onClick: handleDelete,
         key: "bs",
-        round: 5
+        round: 5 * $screenP
     };
     
     // Enter Button
     new RoundedButton{
-        top: $screenHeight - 60 - 5, 
-        left: 400, 
-        width: 60, 
-        height: 50 + 5, 
+        top: $screenHeight - 60 * $screenP - 5 * $screenP, 
+        left: 400 * $screenP, 
+        width: 60 * $screenP, 
+        height: 50 * $screenP + 5 * $screenP, 
         text: "↩", 
-        padding: 11,
+        padding: 11 * $screenP,
         fillStyle: "white",
         clickedStyle: "gray",
         onClick: handleEnter,
         key: "enter",
-        round: 5
+        round: 5 * $screenP
     };
     
     // title bar
@@ -230,7 +232,7 @@ function init() {
         x: 0,
         y: 0,
         width: $screenWidth,
-        height: 50,
+        height: 50 * $screenP,
         fillStyle: "black",
         alpha: 200,
         zOrder: 10,
@@ -241,9 +243,9 @@ function init() {
     // title text
     new Actor{
         x: $screenWidth / 2,
-        y: 15,
+        y: 15 * $screenP,
         text: "DWORDle",
-        size: 25,
+        size: 25 * $screenP,
         color: color(255, 255, 255),
         layer: $frontLayer,
     };
@@ -251,19 +253,19 @@ function init() {
     // guess counter
     new Label{
         x: $screenWidth / 2,
-        y: 40,
+        y: 40 * $screenP,
         template: "$guessCount / $guessCountMax",
-        size: 15,
+        size: 15 * $screenP,
         color: color(255, 255, 255),
         layer: $frontLayer,
     };
     
     // help text
     helpText = new HelpText{
-        x: 20,
-        y: 25,
+        x: 20 * $screenP,
+        y: 25 * $screenP,
         text: "Rules",
-        size: 15,
+        size: 15 * $screenP,
         color: color(255, 255, 255),
         layer: $frontLayer,
         align: "left middle"
@@ -272,9 +274,9 @@ function init() {
     // keyboard area
     keyboardArea = new Actor{
         x: 0,
-        y: $screenHeight - 200,
+        y: $screenHeight - 200 * $screenP,
         width: $screenWidth,
-        height: 200,
+        height: 200 * $screenP,
         fillStyle: "black",
         alpha: 200,
         zOrder: 10,
@@ -284,20 +286,20 @@ function init() {
     
     // seed text
     new Label{
-        x: $screenWidth - 10,
-        y: 15,
+        x: $screenWidth - 10 * $screenP,
+        y: 15 * $screenP,
         template: "No. $logic.seed",
-        size: 20,
+        size: 20 * $screenP,
         align: "right top",
         layer: $frontLayer
     };
 
     // scroll Bar
     scrollBar = new ScrollBar{
-        sx: $screenWidth - 10,
-        sy: titleBar.height + 5,
-        dx: $screenWidth - 5,
-        dy: keyboardArea.y - 5,
+        sx: $screenWidth - 10 * $screenP,
+        sy: titleBar.height + 5 * $screenP,
+        dx: $screenWidth - 5 * $screenP,
+        dy: keyboardArea.y - 5 * $screenP,
         contentH: $screenHeight - titleBar.height - keyboardArea.height,
         layer: $frontLayer,
     };
@@ -312,18 +314,18 @@ function genNewCells() {
         activeCells.push(new Cell{
             x:sx, 
             y:sy, 
-            tx:$screenWidth / 2 + (i - 2) * 60, 
-            ty:130 + $guessCount * 70,
+            tx:$screenWidth / 2 + (i - 2) * 60 * $screenP, 
+            ty:130 * $screenP + $guessCount * 70 * $screenP,
             rot: rnd(1000) - 500,
-            width: 50, 
-            height:50, 
+            width: 50 * $screenP, 
+            height:50 * $screenP, 
             fillStyle: "white",
             zOrder: 15,
         });
     }
     $guessCount++;
     scrollMode = "auto";
-    tscrollY = max(0, activeCells[0].ty - 420);
+    tscrollY = max(0, activeCells[0].ty - 420 * $screenP);
     scrollp = 0.95;
     t = -60;
 }
@@ -339,7 +341,7 @@ function getGuessWord() {
 function handleCharKey(button) {
     if ($gameState != "guess") return;
     scrollMode = "auto";
-    tscrollY = max(0, activeCells[0].ty - 420);
+    tscrollY = max(0, activeCells[0].ty - 420 * $screenP);
     scrollp = 0.95;
     if (inputIndex <= 4) {
         ret = activeCells[inputIndex].changeChar(button.text);
@@ -399,7 +401,7 @@ function missInit() {
         activeCells[i].x -= 10;
     }
     t = -40;
-    tscrollY = max(0, activeCells[0].ty - 420);
+    tscrollY = max(0, activeCells[0].ty - 420 * $screenP);
     $gameState = "miss";
 }
 
@@ -419,11 +421,11 @@ init();
 prevMaxSY = 0;
 prevScrollY = 0;
 while(1) {
-    if (prevMaxSY != max(0, activeCells[0].ty - 420)
+    if (prevMaxSY != max(0, activeCells[0].ty - 420 * $screenP)
     || floor(prevScrollY) != floor(scrollY)) {
         scrollBar.popUp();
     }
-    prevMaxSY = max(0, activeCells[0].ty - 420);
+    prevMaxSY = max(0, activeCells[0].ty - 420 * $screenP);
     prevScrollY = scrollY;
     
     if ($gameState == "guess") {
@@ -434,15 +436,15 @@ while(1) {
         if (scrollMode == "auto") {
             scrollY = scrollp * scrollY + (1 - scrollp) * tscrollY;
         } else {
-            maxSY = max(0, activeCells[0].ty - 420);
+            maxSY = max(0, activeCells[0].ty - 420 * $screenP);
             if ($touches[0].touched > 0) {
                 scrollBar.popUp();
                 nextSY = scrollY + scrollVY;
                 if (nextSY < 0) {
-                    c = Math.exp((-0.01 * (1 + abs(nextSY - 0))));
+                    c = Math.exp((-0.01 * $screenP * (1 + abs(nextSY - 0))));
                     scrollVY = -$touches[0].vy * c;
                 } else if (nextSY > maxSY) {
-                    c = Math.exp((-0.01 * (1 + abs(nextSY - maxSY))));
+                    c = Math.exp((-0.01 * $screenP * (1 + abs(nextSY - maxSY))));
                     scrollVY = -$touches[0].vy * c;
                 } else {
                     scrollVY = -$touches[0].vy;
@@ -515,7 +517,7 @@ while(1) {
     update();
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='Cell.tonyu' data-lastupdate='1643802002382' >p = -1;
+<script language='text/tonyu' type='text/tonyu' data-filename='Cell.tonyu' data-lastupdate='1644084505115' >p = -1;
 trot = 0;
 tscaleX = 1.0;
 t = 1;
@@ -528,7 +530,7 @@ dispChar = new CellChar{
     x: x, 
     y: y, 
     text: " ", 
-    size: 30, 
+    size: 30 * $screenP, 
     fillStyle: color(0, 0, 0), 
     parent: this
 };
@@ -581,7 +583,7 @@ while(1) {
 }
 </script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='Logic.tonyu' data-lastupdate='1643720409528' >wordList = new WordList{};
+<script language='text/tonyu' type='text/tonyu' data-filename='Logic.tonyu' data-lastupdate='1644086285578' >wordList = new WordList{};
 allWordsListHash = {};
 ans1 = "";
 ans2 = "";
@@ -681,48 +683,48 @@ function isGameClear(word) {
 
 init();</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='GameResult.tonyu' data-lastupdate='1643991651039' >
+<script language='text/tonyu' type='text/tonyu' data-filename='GameResult.tonyu' data-lastupdate='1644084719214' >
 t = 0;
 
-tmW = $screenWidth - 40;
-tmH = $screenHeight - 80 - 230;
+tmW = $screenWidth - 40 * $screenP;
+tmH = $screenHeight - 80 * $screenP - 230 * $screenP;
 mW = 0;
 mH = 0;
 
 modal = new Actor({
-    x: 20,
-    y: 80,
-    width: $screenWidth - 40,
-    height: $screenHeight - 80 - 200,
+    x: 20 * $screenP,
+    y: 80 * $screenP,
+    width: $screenWidth - 40 * $screenP,
+    height: $screenHeight - 80 * $screenP - 200 * $screenP,
     fillStyle: color(0, 0, 0),
     layer: $frontLayer,
     alpha: 200,
     align: "left top",
 });
 
-tty = modal.y + 60;
+tty = modal.y + 60 * $screenP;
 title = new Actor({
     x: $screenWidth / 2,
     y: modal.y + modal.height / 2,
     text: $gameResult == "gameClear" ? "GAME CLEAR" : "GAME OVER",
-    size: 40,
+    size: 40 * $screenP,
     layer: $frontLayer,
 });
 
 ansText1 = new Actor({
-    x: 100,
-    y: modal.y + 140,
+    x: 100 * $screenP,
+    y: modal.y + 140 * $screenP,
     text: "",
-    size: 20,
+    size: 20 * $screenP,
     layer: $frontLayer,
     align: "left top",
 });
 
 ansText2 = new Actor({
-    x: 100,
-    y: modal.y + 210,
+    x: 100 * $screenP,
+    y: modal.y + 210 * $screenP,
     text: "",
-    size: 20,
+    size: 20 * $screenP,
     layer: $frontLayer,
     align: "left top",
 });
@@ -731,9 +733,9 @@ l1tx = 0;
 l1tW = 0;
 lineEffect1 = new Actor({
     x: $screenWidth,
-    y: title.y - 40,
+    y: title.y - 40 * $screenP,
     width: $screenWidth,
-    height: 2,
+    height: 2 * $screenP,
     fillStyle: color(255, 255, 255),
     layer: $frontLayer,
     align: "left top",
@@ -743,9 +745,9 @@ l2tx = $screenWidth;
 l2tW = $screenWidth;
 lineEffect2 = new Actor({
     x: 0,
-    y: title.y + 40,
+    y: title.y + 40 * $screenP,
     width: 0,
-    height: 2,
+    height: 2 * $screenP,
     fillStyle: color(255, 255, 255),
     layer: $frontLayer,
     align: "left top",
@@ -804,17 +806,17 @@ while (1) {
     if (t == 110) {
         ansText1.text = "Word 1: ";
         new Actor{
-            x: 200,
-            y: ansText1.y - 20,
-            size: 40,
+            x: 200 * $screenP,
+            y: ansText1.y - 20 * $screenP,
+            size: 40 * $screenP,
             text: getSpacedWord($logic.ans1),
             layer: $frontLayer,
             align: "left top",
         };
         if ($Main.getGuessWord() == $logic.ans1) {
             new GuessFlag{
-                x: ansText1.x - 40,
-                y: ansText1.y + 10,
+                x: ansText1.x - 40 * $screenP,
+                y: ansText1.y + 10 * $screenP,
                 layer: $frontLayer,
             };
         }
@@ -822,9 +824,9 @@ while (1) {
     if (t == 130) {
         ansText2.text = "Word 2: ";
         new Actor{
-            x: 200,
-            y: ansText2.y - 20,
-            size: 40,
+            x: 200 * $screenP,
+            y: ansText2.y - 20 * $screenP,
+            size: 40 * $screenP,
             text: getSpacedWord($logic.ans2),
             layer: $frontLayer,
             align: "left top",
@@ -832,8 +834,8 @@ while (1) {
         
         if ($Main.getGuessWord() == $logic.ans2) {
             new GuessFlag{
-                x: ansText2.x - 40,
-                y: ansText2.y + 10,
+                x: ansText2.x - 40 * $screenP,
+                y: ansText2.y + 10 * $screenP,
                 layer: $frontLayer,
             };
         }
@@ -841,23 +843,23 @@ while (1) {
     
     if (t == 150) {
         new Button {
-            left: 100, 
-            top: modal.y + 290, 
-            width: $screenWidth - 200, 
-            height: 30, 
+            left: 100 * $screenP, 
+            top: modal.y + 290 * $screenP, 
+            width: $screenWidth - 200 * $screenP, 
+            height: 30 * $screenP, 
             text: "Share via Twitter", 
-            padding: 5,
+            padding: 5 * $screenP,
             fillStyle: color(0, 172, 238),
             onClick: handleShareButton,
         };
         
         new Button {
-            left: 100, 
-            top: modal.y + 330, 
-            width: $screenWidth - 200, 
-            height: 30, 
+            left: 100 * $screenP, 
+            top: modal.y + 330 * $screenP, 
+            width: $screenWidth - 200 * $screenP, 
+            height: 30 * $screenP, 
             text: "Retry", 
-            padding: 5,
+            padding: 5 * $screenP,
             fillStyle: color(106, 170, 100),
             onClick: handleRetryButton,
         };
@@ -866,16 +868,26 @@ while (1) {
     update();
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='GuessFlag.tonyu' data-lastupdate='1643535667667' >t = 0;
-r = 20;
+<script language='text/tonyu' type='text/tonyu' data-filename='GuessFlag.tonyu' data-lastupdate='1644086081091' >t = 0;
+r = 20 * $screenP;
 p = -1;
 
 \draw(ctx) {
-    drawLine(x, y - r, x, y + r * 0.66, "white");
-    drawLine(x - r / 4, y + r * 0.66, x + r / 4, y + r * 0.66, "white");
+    drawLineWithThickness(ctx, $screenP, x, y - r, x, y + r * 0.66, "white");
+    drawLineWithThickness(ctx, $screenP, x - r / 4, y + r * 0.66, x + r / 4, y + r * 0.66, "white");
     
-    drawLine(x, y - r, x + r * cos(t), y - r / 2 + r * sin(t) * 0.5, "white");
-    drawLine(x, y, x + r * cos(t), y - r / 2 + r * sin(t) * 0.5, "white");
+    drawLineWithThickness(ctx, $screenP, x, y - r, x + r * cos(t), y - r / 2 + r * sin(t) * 0.5, "white");
+    drawLineWithThickness(ctx, $screenP, x, y, x + r * cos(t), y - r / 2 + r * sin(t) * 0.5, "white");
+}
+
+function drawLineWithThickness(ctx, thickness, sx, sy, dx, dy, fillStyle) {
+    ctx.lineWidth = thickness;
+    ctx.strokeStyle = fillStyle;
+    
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    ctx.lineTo(dx, dy);
+    ctx.stroke();
 }
 
 while (1) {
@@ -884,22 +896,22 @@ while (1) {
     update();
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='HelpWindow.tonyu' data-lastupdate='1643818549253' >// to be implemented
+<script language='text/tonyu' type='text/tonyu' data-filename='HelpWindow.tonyu' data-lastupdate='1644084413839' >// to be implemented
 
 native window;
 
 
 lang = window.navigator.language;
-tmW = $screenWidth - 40;
-tmH = $screenHeight - 80 - 230;
+tmW = $screenWidth - 40 * $screenP;
+tmH = $screenHeight - $Main.titleBar.height - $Main.keyboardArea.height - 50 * $screenP;
 mW = 0;
 mH = 0;
 
 modal = new Actor({
-    x: 20,
-    y: 80,
-    width: $screenWidth - 40,
-    height: $screenHeight - 80 - 200,
+    x: 20 * $screenP,
+    y: 80 * $screenP,
+    width: 0,
+    height: 0,
     fillStyle: color(0, 0, 0),
     layer: $frontLayer,
     alpha: 200,
@@ -909,10 +921,10 @@ modal = new Actor({
 
 titleText = new Actor({
     x: $screenWidth / 2,
-    y: 130,
+    y: 130 * $screenP,
     text: "Rules",
     align: "center middle",
-    size: 40,
+    size: 40 * $screenP,
     layer: $frontLayer,
     lifeKeeper: this,
 });
@@ -924,10 +936,10 @@ desc1_dy = lang == "ja" ? 0 : 0;
 
 new Actor({
     x: $screenWidth / 2,
-    y: 200 + desc1_dy,
+    y: 200 * $screenP + desc1_dy * $screenP,
     text: lang == "ja" ? desc1_ja : desc1_en,
     align: "center middle",
-    size: sentenceSize,
+    size: sentenceSize * $screenP,
     layer: $frontLayer,
     lifeKeeper: this,
 });
@@ -937,10 +949,10 @@ desc2_en = "You must guess *either* of them in within 10 tries.";
 desc2_dy = lang == "ja" ? 0 : 10;
 new Actor({
     x: $screenWidth / 2,
-    y: 270 + desc2_dy,
+    y: 270 * $screenP + desc2_dy * $screenP,
     text: lang == "ja" ? desc2_ja : desc2_en,
     align: "center middle",
-    size: sentenceSize,
+    size: sentenceSize * $screenP,
     layer: $frontLayer,
     lifeKeeper: this,
 });
@@ -950,10 +962,10 @@ desc3_en = "Green and Yellow show info about *either* of them. \n\nGray means th
 desc3_dy = lang == "ja" ? 0 : -10;
 new Actor({
     x: $screenWidth / 2,
-    y: 340 + desc3_dy,
+    y: 340 * $screenP + desc3_dy * $screenP,
     text: lang == "ja" ? desc3_ja : desc3_en,
     align: "center middle",
-    size: sentenceSize,
+    size: sentenceSize * $screenP,
     layer: $frontLayer,
     lifeKeeper: this,
 });
@@ -964,10 +976,10 @@ desc4_dy = lang == "ja" ? 0 : -10;
 
 new Actor({
     x: $screenWidth / 2,
-    y: 410 + desc4_dy,
+    y: 410 * $screenP + desc4_dy * $screenP,
     text: lang == "ja" ? desc4_ja : desc4_en,
     align: "center middle",
-    size: sentenceSize,
+    size: sentenceSize * $screenP,
     layer: $frontLayer,
     lifeKeeper: this,
 });
@@ -1017,7 +1029,7 @@ init();</script>
     update();
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='RoundedButton.tonyu' data-lastupdate='1643801544754' >extends Button;
+<script language='text/tonyu' type='text/tonyu' data-filename='RoundedButton.tonyu' data-lastupdate='1644087080947' >extends Button;
 
 var round;
 if (!round) round = 10;
@@ -1068,6 +1080,7 @@ on("touch") \(touchEvent) {
 
 function roundedRect(ctx, x, y, width, height, radius, fill) {
     ctx.beginPath();
+    
     ctx.moveTo(x, y + radius);
     ctx.lineTo(x, y + height - radius);
     ctx.arcTo(x, y + height, x + radius, y + height, radius);
@@ -1077,14 +1090,17 @@ function roundedRect(ctx, x, y, width, height, radius, fill) {
     ctx.arcTo(x + width, y, x + width - radius, y, radius);
     ctx.lineTo(x + radius, y);
     ctx.arcTo(x, y, x, y + radius, radius);
-    if (fill) ctx.fill(); else ctx.stroke();
+    if (fill) ctx.fill(); else {
+        ctx.lineWidth = $screenP;
+        ctx.stroke();
+    }
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='Title.tonyu' data-lastupdate='1643767607110' >// title text
+<script language='text/tonyu' type='text/tonyu' data-filename='Title.tonyu' data-lastupdate='1644085252225' >// title text
 titleText = new Label{
     x: $screenWidth / 2,
-    y: 120,
-    size: 60,
+    y: 120 * $screenP,
+    size: 60 * $screenP,
     text: "DWORDle",
     align: "center middle",
     lifeKeeper: this,
@@ -1094,8 +1110,8 @@ titleText = new Label{
 // cregit
 cregitText = new Label{
     x: $screenWidth / 2,
-    y: 170,
-    size: 20,
+    y: 170 * $screenP,
+    size: 20 * $screenP,
     text: "by @kakira9618",
     align: "center middle",
     lifeKeeper: this,
@@ -1106,7 +1122,7 @@ cregitText = new Label{
 versionText = new Label {
     x: $screenWidth,
     y: $screenHeight,
-    size: 20,
+    size: 20 * $screenP,
     template: "version $version",
     align: "right bottom",
     lifeKeeper: this,
@@ -1117,7 +1133,7 @@ versionText = new Label {
 noticeText = new Label {
     x: $screenWidth / 2,
     y: $screenHeight / 2,
-    size: 20,
+    size: 20 * $screenP,
     template: "if you see this, \nplease reload page",
     align: "middle center",
     lifeKeeper: this,
@@ -1130,7 +1146,7 @@ while (true) {
     update();
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='CustomBoot.tonyu' data-lastupdate='1643736628360' >extends Boot;
+<script language='text/tonyu' type='text/tonyu' data-filename='CustomBoot.tonyu' data-lastupdate='1644086263117' >extends Boot;
 includes T2MediaPlayer;
 
 native $;
@@ -1172,6 +1188,7 @@ link.href = "custom.css";
 link.rel = "stylesheet";
 link.type = "text/css";
 document.body.appendChild(link);
+$imageSmoothingDisabled = false;
 
 initGlobals();
 //initEvents();
@@ -1213,11 +1230,11 @@ mainLoop();</script>
 };
 </script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='ScrollBar.tonyu' data-lastupdate='1644039884289' >\draw(ctx) {
+<script language='text/tonyu' type='text/tonyu' data-filename='ScrollBar.tonyu' data-lastupdate='1644087178936' >\draw(ctx) {
     ctx.fillStyle = "#ffffff" + Number(floor(alpha)).toString(16);
     if (ctx.fillStyle == "#000000") return;
     if (ctx.fillStyle == "#808080") return;
-    roundedRect(ctx, x, y, width, height, 3, true);
+    roundedRect(ctx, x, y, width, height, 3 * $screenP, true);
 }
 
 function roundedRect(ctx, x, y, width, height, radius, fill) {
@@ -1245,7 +1262,7 @@ function calc() {
         if (alpha < 0) alpha = 0;
     }
     
-    scrollableH = max(0, $Main.activeCells[0].ty - 420);
+    scrollableH = max(0, $Main.activeCells[0].ty - 420 * $screenP);
     if ($Main.scrollY >= 0 && $Main.scrollY <= scrollableH) {
         height = (dy - sy) * contentH / (contentH + scrollableH);
         y = sy + ((dy - sy) - height) * ($Main.scrollY / scrollableH);
@@ -1259,7 +1276,7 @@ function calc() {
 }
 
 function popUp() {
-    if (max(0, $Main.activeCells[0].ty - 420) > 0) {
+    if (max(0, $Main.activeCells[0].ty - 420 * $screenP) > 0) {
         t = 0;
     }
 }
@@ -1319,7 +1336,7 @@ while (1) {
     }
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1644039938591' >
+<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1644087242871' >
 {
     "images": [
         {
