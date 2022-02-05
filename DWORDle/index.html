@@ -7,15 +7,18 @@
 <script src="https://edit.tonyu.jp/images/mapchip.png.js"></script>
 <script src="https://edit.tonyu.jp/js/lib/jquery-1.10.1.js" type="text/javascript"></script>
 <script src="https://edit.tonyu.jp/js/g2/runScript_concat.min.js" type="text/javascript"></script>
-<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1643993109383' >/** 
+<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1644039983648' >/** 
  * DWORDle by @kakira9618
  * This program is inspired by wordle (https://www.powerlanguage.co.uk/wordle/)
 */
-$version = "1.0.5";
+native Math;
+
+$version = "1.0.6";
 
 $Screen.setBGColor("#202020");
 
 $Screen.resize(465, 700); // default: 465, 465
+
 
 activeCells = [];
 alphabets = "abcdefghijklmnopqrstuvwxyz";
@@ -23,6 +26,7 @@ buttonObjects = {};
 tscrollY = 0;
 scrollY = 0;
 scrollVY = 0;
+scrollp = 0.95;
 scrollMode = "auto"; // "manual"
 inputIndex = 0;
 nextOpenIndex = 0;
@@ -125,7 +129,6 @@ function init() {
 
     pID = $currentGame.problemID;
     if (pID == 0) {
-        
         title = new Title();
         wait(10); // for waiting custom css to be loaded
         while (!pID || pID <= 0 || pID > 9999) {
@@ -223,7 +226,7 @@ function init() {
     };
     
     // title bar
-    new Actor{
+    titleBar = new Actor{
         x: 0,
         y: 0,
         width: $screenWidth,
@@ -267,7 +270,7 @@ function init() {
     };
     
     // keyboard area
-    new Actor{
+    keyboardArea = new Actor{
         x: 0,
         y: $screenHeight - 200,
         width: $screenWidth,
@@ -280,14 +283,24 @@ function init() {
     };
     
     // seed text
-    new Label({
+    new Label{
         x: $screenWidth - 10,
         y: 15,
         template: "No. $logic.seed",
         size: 20,
         align: "right top",
         layer: $frontLayer
-    });
+    };
+
+    // scroll Bar
+    scrollBar = new ScrollBar{
+        sx: $screenWidth - 10,
+        sy: titleBar.height + 5,
+        dx: $screenWidth - 5,
+        dy: keyboardArea.y - 5,
+        contentH: $screenHeight - titleBar.height - keyboardArea.height,
+        layer: $frontLayer,
+    };
 }
 
 function genNewCells() {
@@ -311,6 +324,7 @@ function genNewCells() {
     $guessCount++;
     scrollMode = "auto";
     tscrollY = max(0, activeCells[0].ty - 420);
+    scrollp = 0.95;
     t = -60;
 }
 
@@ -325,6 +339,8 @@ function getGuessWord() {
 function handleCharKey(button) {
     if ($gameState != "guess") return;
     scrollMode = "auto";
+    tscrollY = max(0, activeCells[0].ty - 420);
+    scrollp = 0.95;
     if (inputIndex <= 4) {
         ret = activeCells[inputIndex].changeChar(button.text);
         if (ret == 0) inputIndex++;
@@ -383,6 +399,7 @@ function missInit() {
         activeCells[i].x -= 10;
     }
     t = -40;
+    tscrollY = max(0, activeCells[0].ty - 420);
     $gameState = "miss";
 }
 
@@ -394,30 +411,69 @@ function handleDelete() {
     }
 }
 
+function isInMainLayer(y) {
+    return y > titleBar.y && y < keyboardArea.y;
+}
+
 init();
+prevMaxSY = 0;
+prevScrollY = 0;
 while(1) {
+    if (prevMaxSY != max(0, activeCells[0].ty - 420)
+    || floor(prevScrollY) != floor(scrollY)) {
+        scrollBar.popUp();
+    }
+    prevMaxSY = max(0, activeCells[0].ty - 420);
+    prevScrollY = scrollY;
+    
     if ($gameState == "guess") {
-        if ($touches[0].vy != 0) {
+        if (scrollMode == "auto" && $touches[0].vy != 0 && isInMainLayer($touches[0].y)) {
             scrollMode = "manual";
+            scrollBar.popUp();
         }
         if (scrollMode == "auto") {
-            scrollY = 0.95 * scrollY + 0.05 * tscrollY;
+            scrollY = scrollp * scrollY + (1 - scrollp) * tscrollY;
         } else {
+            maxSY = max(0, activeCells[0].ty - 420);
             if ($touches[0].touched > 0) {
-                scrollVY = -$touches[0].vy;
+                scrollBar.popUp();
+                nextSY = scrollY + scrollVY;
+                if (nextSY < 0) {
+                    c = Math.exp((-0.01 * (1 + abs(nextSY - 0))));
+                    scrollVY = -$touches[0].vy * c;
+                } else if (nextSY > maxSY) {
+                    c = Math.exp((-0.01 * (1 + abs(nextSY - maxSY))));
+                    scrollVY = -$touches[0].vy * c;
+                } else {
+                    scrollVY = -$touches[0].vy;
+                }
             } else {
                 scrollVY *= 0.95;
             }
             scrollY += scrollVY;
-            if (scrollY < 0) scrollY = 0;
-            if (scrollY > max(0, activeCells[0].ty - 420)) scrollY = max(0, activeCells[0].ty - 420);
+            if ($touches[0].touched == 0) {
+                if (scrollY < 0 || scrollY > maxSY) {
+                    if (scrollY < 0) tscrollY = 0;
+                    else if (scrollY > maxSY) tscrollY = maxSY;
+                    scrollMode = "auto";
+                    scrollp = 0.88;
+                }
+            }
+            //if (scrollY < 0) scrollY = 0;
+            //if (scrollY > max(0, activeCells[0].ty - 420)) scrollY = max(0, activeCells[0].ty - 420);
         }
         $Screen.scrollTo(0, scrollY);
     } else if ($gameState == "miss") {
+        scrollY = scrollp * scrollY + (1 - scrollp) * tscrollY;
+        $Screen.scrollTo(0, scrollY);
         if (t == 0) {
+            scrollMode = "auto";
             $gameState = "guess";
         }
     } else if ($gameState == "checking") {
+        
+        scrollY = scrollp * scrollY + (1 - scrollp) * tscrollY;
+        $Screen.scrollTo(0, scrollY);
         if (t % 10 == 0) {
             if (nextOpenIndex < 5) {
                 activeCells[nextOpenIndex].changeState(result[nextOpenIndex]);
@@ -1157,6 +1213,77 @@ mainLoop();</script>
 };
 </script>
 
+<script language='text/tonyu' type='text/tonyu' data-filename='ScrollBar.tonyu' data-lastupdate='1644039884289' >\draw(ctx) {
+    ctx.fillStyle = "#ffffff" + Number(floor(alpha)).toString(16);
+    if (ctx.fillStyle == "#000000") return;
+    if (ctx.fillStyle == "#808080") return;
+    roundedRect(ctx, x, y, width, height, 3, true);
+}
+
+function roundedRect(ctx, x, y, width, height, radius, fill) {
+    ctx.beginPath();
+    ctx.moveTo(x, y + radius);
+    ctx.lineTo(x, y + height - radius);
+    ctx.arcTo(x, y + height, x + radius, y + height, radius);
+    ctx.lineTo(x + width - radius, y + height);
+    ctx.arcTo(x + width, y + height, x + width, y + height - radius, radius);
+    ctx.lineTo(x + width, y + radius);
+    ctx.arcTo(x + width, y, x + width - radius, y, radius);
+    ctx.lineTo(x + radius, y);
+    ctx.arcTo(x, y, x, y + radius, radius);
+    
+    if (fill) ctx.fill(); else ctx.stroke();
+}
+
+function calc() {
+    if ($gameState != "finish") {
+        if (t < 90) alpha = 255;
+        else alpha -= 5;
+        if (alpha < 0) alpha = 0;
+    } else {
+        alpha -= 20;
+        if (alpha < 0) alpha = 0;
+    }
+    
+    scrollableH = max(0, $Main.activeCells[0].ty - 420);
+    if ($Main.scrollY >= 0 && $Main.scrollY <= scrollableH) {
+        height = (dy - sy) * contentH / (contentH + scrollableH);
+        y = sy + ((dy - sy) - height) * ($Main.scrollY / scrollableH);
+    } else {
+        if ($Main.scrollY < 0) {
+            y = sy;
+        } else {
+            y = dy - height;
+        }
+    }
+}
+
+function popUp() {
+    if (max(0, $Main.activeCells[0].ty - 420) > 0) {
+        t = 0;
+    }
+}
+
+function move() {
+    calc();
+}
+
+function init() {
+    t = 1000;
+    alpha = 0;
+    x = sx;
+    y = sy;
+    width = dx - sx;
+    height = dy - sy;
+}
+
+init();
+while (1) {
+    move();
+    update();
+    t++;
+}</script>
+
 <script language='text/tonyu' type='text/tonyu' data-filename='options.json' data-lastupdate='1643736572410' >
 {
     "compiler": {
@@ -1192,7 +1319,7 @@ mainLoop();</script>
     }
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1643993117816' >
+<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1644039938591' >
 {
     "images": [
         {
