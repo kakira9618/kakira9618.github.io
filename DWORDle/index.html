@@ -18,7 +18,7 @@
 <script src="https://edit.tonyu.jp/images/mapchip.png.js"></script>
 <script src="https://edit.tonyu.jp/js/lib/jquery-1.10.1.js" type="text/javascript"></script>
 <script src="https://edit.tonyu.jp/js/g2/runScript_concat.min.js" type="text/javascript"></script>
-<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1644123703851' >/** 
+<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1644125697876' >/** 
  * DWORDle by @kakira9618
  * This program is inspired by wordle (https://www.powerlanguage.co.uk/wordle/)
 */
@@ -436,8 +436,8 @@ function handleDelete() {
     }
 }
 
-function isInMainLayer(y) {
-    return y > titleBar.y && y < keyboardArea.y;
+function isInMainLayer(x, y) {
+    return x >= 0 && x < $screenWidth && y > titleBar.y && y < keyboardArea.y;
 }
 
 init();
@@ -452,7 +452,7 @@ while(1) {
     prevScrollY = scrollY;
     
     if ($gameState == "guess") {
-        if (scrollMode == "auto" && $touches[0].vy != 0 && isInMainLayer($touches[0].y)) {
+        if (scrollMode == "auto" && $touches[0].vy != 0 && isInMainLayer($touches[0].x, $touches[0].y)) {
             scrollMode = "manual";
             scrollBar.popUp();
         }
@@ -540,7 +540,7 @@ while(1) {
     update();
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='Cell.tonyu' data-lastupdate='1644121389527' >p = -1;
+<script language='text/tonyu' type='text/tonyu' data-filename='Cell.tonyu' data-lastupdate='1644124289478' >p = -1;
 trot = 0;
 tscaleX = 1.0;
 t = 1;
@@ -1459,7 +1459,7 @@ while(1) {
     }
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1644124133586' >
+<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1644125704029' >
 {
     "images": [
         {
