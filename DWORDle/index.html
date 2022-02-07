@@ -611,7 +611,7 @@ while(1) {
 }
 </script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='Logic.tonyu' data-lastupdate='1644123710663' >wordList = new WordList{};
+<script language='text/tonyu' type='text/tonyu' data-filename='Logic.tonyu' data-lastupdate='1644230621847' >wordList = new WordList{};
 allWordsListHash = {};
 ans1 = "";
 ans2 = "";
@@ -709,9 +709,15 @@ function isGameClear(word) {
     return word == ans1 || word == ans2;
 }
 
+function matchWordNo(word) {
+    if (word == ans1) return 1;
+    if (word == ans2) return 2;
+    return 0;
+}
+
 init();</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='GameResult.tonyu' data-lastupdate='1644123388050' >
+<script language='text/tonyu' type='text/tonyu' data-filename='GameResult.tonyu' data-lastupdate='1644230599817' >
 t = 0;
 
 tmW = $screenWidth - 40 * $screenP;
@@ -802,6 +808,9 @@ function handleShareButton() {
         shareText += "\n";
     }
     shareText += "\n";
+    if ($gameResult == "gameClear") {
+        shareText += "You guessed Word " + $logic.matchWordNo($Main.getGuessWord()) + "!\n";
+    }
     $WebPage.openShareTweet(shareText);
 }
 
@@ -1459,7 +1468,7 @@ while(1) {
     }
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1644125704029' >
+<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1644230623762' >
 {
     "images": [
         {
