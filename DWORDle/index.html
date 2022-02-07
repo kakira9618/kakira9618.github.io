@@ -18,13 +18,13 @@
 <script src="https://edit.tonyu.jp/images/mapchip.png.js"></script>
 <script src="https://edit.tonyu.jp/js/lib/jquery-1.10.1.js" type="text/javascript"></script>
 <script src="https://edit.tonyu.jp/js/g2/runScript_concat.min.js" type="text/javascript"></script>
-<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1644230677787' >/** 
+<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1644253362411' >/** 
  * DWORDle by @kakira9618
  * This program is inspired by wordle (https://www.powerlanguage.co.uk/wordle/)
 */
 native Math;
 
-$version = "1.0.9";
+$version = "1.0.10";
 
 $Screen.setBGColor("#202020");
 
@@ -54,10 +54,12 @@ $problemID = 0;
 $Main = this;
 $Util = new Util{};
 $styles = new Styles{};
+$MHL = new MouseHoverListener{};
 
 result = [];
 t = 0;
 
+wait(1); // wait until global object is initialized
 function loadHistory() {
     $historyFile = file("history.json");
     if ($historyFile.exists()) {
@@ -257,7 +259,7 @@ function init() {
     // title text
     new StyledText{
         x: $screenWidth / 2,
-        y: 15 * $screenP,
+        y: 18 * $screenP,
         text: "DWORDle",
         fontName: "Helvetica Neue",
         style: "bold",
@@ -270,7 +272,7 @@ function init() {
     new Label{
         x: $screenWidth / 2,
         y: 40 * $screenP,
-        template: "$guessCount / $guessCountMax",
+        template: "$guessCount  / $guessCountMax",
         size: 15 * $screenP,
         color: color(255, 255, 255),
         layer: $frontLayer,
@@ -301,13 +303,23 @@ function init() {
     };
     
     // seed text
-    new Label{
+    seedTextTemplate = "No. $logic.seed";
+    seedText = new Label{
         x: $screenWidth - 10 * $screenP,
         y: 15 * $screenP,
-        template: "No. $logic.seed",
+        template: seedTextTemplate,
         size: 20 * $screenP,
         align: "right top",
         layer: $frontLayer
+    };
+    
+    $MHL.register(seedText);
+    seedText.on("touch") \() {
+        if (seedText.template == seedTextTemplate) {
+            seedText.template = "No. ????";
+        } else {
+            seedText.template = seedTextTemplate;
+        }
     };
 
     // scroll Bar
@@ -1072,18 +1084,24 @@ nowait function init() {
 
 init();</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='HelpText.tonyu' data-lastupdate='1643630237415' >while (1) {
+<script language='text/tonyu' type='text/tonyu' data-filename='HelpText.tonyu' data-lastupdate='1644252623247' >$MHL.register(this);
+while (1) {
     t = findTouch();
     if ($gameState == "guess" && t) {
         $gameState = "help";
         
         helpWindow = new HelpWindow{};
     }
+    
     update();
-}</script>
+}
 
-<script language='text/tonyu' type='text/tonyu' data-filename='RoundedButton.tonyu' data-lastupdate='1644122975545' >extends Button;
 
+</script>
+
+<script language='text/tonyu' type='text/tonyu' data-filename='RoundedButton.tonyu' data-lastupdate='1644252746724' >extends Button;
+
+$MHL.register(this);
 var round;
 var fontName;
 var style;
@@ -1369,7 +1387,7 @@ while (1) {
     update();
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='Util.tonyu' data-lastupdate='1644122751848' >function roundedRect(ctx, x, y, width, height, radius, fill) {
+<script language='text/tonyu' type='text/tonyu' data-filename='Util.tonyu' data-lastupdate='1644252280360' >function roundedRect(ctx, x, y, width, height, radius, fill) {
     ctx.beginPath();
     
     ctx.moveTo(x, y + radius);
@@ -1392,6 +1410,7 @@ function getFontString(fontSize, fontName, style) {
     return style + fontSize + "px " + fontName;
 }
 
+
 var messageBox;
 function popUpMessageBox(text) {
     if (!messageBox || messageBox.isDead()) {
@@ -1406,8 +1425,7 @@ function popUpMessageBox(text) {
     } else {
         messageBox.changeText(text);
     }
-}
-</script>
+}</script>
 
 <script language='text/tonyu' type='text/tonyu' data-filename='StyledText.tonyu' data-lastupdate='1644122758455' >\draw(ctx) {
     fontTemp = ctx.font;
@@ -1430,6 +1448,45 @@ while(1) {
 }
 
 while(1) {
+    update();
+}</script>
+
+<script language='text/tonyu' type='text/tonyu' data-filename='MouseHoverListener.tonyu' data-lastupdate='1644252608392' >native document;
+
+targets = [];
+
+function pointOn(t, x, y) {
+    r = t.getCrashRect();
+    
+    sx = r.x - r.width / 2;
+    tx = r.x + r.width / 2;
+    sy = r.y - r.height / 2;
+    ty = r.y + r.height / 2;
+    return x >= sx && x <= tx && y >= sy && y <= ty;
+}
+
+function mouseHover(t) {
+    return pointOn(t, $mouseX, $mouseY);
+}
+
+function mouseOnAnyObjects() {
+    return targets.some(\(o) {return mouseHover(o);});
+}
+
+function register(obj) {
+    targets.push(obj);
+}
+
+function changeMouseIcon(style) { // pointer, auto
+    document.getElementsByClassName('tonyu-canvas')[0].style.cursor = style;
+}
+
+while(1) {
+    if (mouseOnAnyObjects()) {
+        changeMouseIcon("pointer");
+    } else {
+        changeMouseIcon("auto");
+    }
     update();
 }</script>
 
@@ -1468,7 +1525,7 @@ while(1) {
     }
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1644230683996' >
+<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1644253567496' >
 {
     "images": [
         {
