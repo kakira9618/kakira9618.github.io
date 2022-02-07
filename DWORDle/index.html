@@ -18,7 +18,7 @@
 <script src="https://edit.tonyu.jp/images/mapchip.png.js"></script>
 <script src="https://edit.tonyu.jp/js/lib/jquery-1.10.1.js" type="text/javascript"></script>
 <script src="https://edit.tonyu.jp/js/g2/runScript_concat.min.js" type="text/javascript"></script>
-<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1644253362411' >/** 
+<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1644254915046' >/** 
  * DWORDle by @kakira9618
  * This program is inspired by wordle (https://www.powerlanguage.co.uk/wordle/)
 */
@@ -300,6 +300,25 @@ function init() {
         zOrder: 10,
         layer: $frontLayer,
         align: "left top"
+    };
+    
+    gameArea = new Actor{
+        x: 0,
+        y: titleBar.height,
+        width: $screenWidth,
+        height: $screenHeight - titleBar.height - keyboardArea.height,
+        fillStyle: "white",
+        alpha: 0,
+        align: "left top",
+        layer: $frontLayer,
+    };
+    gameAreaMHLhandler = $MHL.register(gameArea, "grab");
+    gameArea.on("touch") \(touchEvent) {
+        $MHL.change(gameAreaMHLhandler, "grabbing");
+        var f = touchEvent.finger;
+        f.on("end") \(endEvent) {
+            $MHL.change(gameAreaMHLhandler, "grab");
+        };
     };
     
     // seed text
@@ -729,7 +748,7 @@ function matchWordNo(word) {
 
 init();</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='GameResult.tonyu' data-lastupdate='1644230599817' >
+<script language='text/tonyu' type='text/tonyu' data-filename='GameResult.tonyu' data-lastupdate='1644257849098' >
 t = 0;
 
 tmW = $screenWidth - 40 * $screenP;
@@ -746,7 +765,12 @@ modal = new Actor({
     layer: $frontLayer,
     alpha: 200,
     align: "left top",
+    lifeKeeper: this,
 });
+modalMHLhandler = $MHL.register(modal, "auto", 200);
+modal.on("die") \() {
+    $MHL.unregister(modalMHLhandler);
+};
 
 tty = modal.y + 60 * $screenP;
 title = new StyledText({
@@ -757,6 +781,7 @@ title = new StyledText({
     text: $gameResult == "gameClear" ? "GAME CLEAR" : "GAME OVER",
     size: 40 * $screenP,
     layer: $frontLayer,
+    lifeKeeper: this,
 });
 
 ansText1 = new Actor({
@@ -766,6 +791,7 @@ ansText1 = new Actor({
     size: 20 * $screenP,
     layer: $frontLayer,
     align: "left middle",
+    lifeKeeper: this,
 });
 
 ansText2 = new Actor({
@@ -775,6 +801,7 @@ ansText2 = new Actor({
     size: 20 * $screenP,
     layer: $frontLayer,
     align: "left middle",
+    lifeKeeper: this,
 });
 
 l1tx = 0;
@@ -787,6 +814,7 @@ lineEffect1 = new Actor({
     fillStyle: color(255, 255, 255),
     layer: $frontLayer,
     align: "left top",
+    lifeKeeper: this,
 });
 
 l2tx = $screenWidth;
@@ -799,6 +827,7 @@ lineEffect2 = new Actor({
     fillStyle: color(255, 255, 255),
     layer: $frontLayer,
     align: "left top",
+    lifeKeeper: this,
 });
 
 function handleShareButton() {
@@ -866,6 +895,7 @@ while (1) {
                 text: $logic.ans1.toUpperCase()[i],
                 layer: $frontLayer,
                 align: "center middle",
+                lifeKeeper: this,
             };
         }
         
@@ -889,6 +919,7 @@ while (1) {
                 text: $logic.ans2.toUpperCase()[i],
                 layer: $frontLayer,
                 align: "center middle",
+                lifeKeeper: this,
             };
             
         }
@@ -898,6 +929,7 @@ while (1) {
                 x: ansText2.x - 35 * $screenP,
                 y: ansText2.y,
                 layer: $frontLayer,
+                lifeKeeper: this,
             };
         }
     }
@@ -914,6 +946,8 @@ while (1) {
             padding: 5 * $screenP,
             fillStyle: color(0, 172, 238),
             onClick: handleShareButton,
+            lifeKeeper: this,
+            mhlZ: 250
         };
         
         new RoundedButton {
@@ -927,6 +961,8 @@ while (1) {
             padding: 5 * $screenP,
             fillStyle: color(106, 170, 100),
             onClick: handleRetryButton,
+            lifeKeeper: this,
+            mhlZ: 250
         };
     }
     t++;
@@ -961,7 +997,7 @@ while (1) {
     update();
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='HelpWindow.tonyu' data-lastupdate='1644084413839' >// to be implemented
+<script language='text/tonyu' type='text/tonyu' data-filename='HelpWindow.tonyu' data-lastupdate='1644256651839' >// to be implemented
 
 native window;
 
@@ -983,6 +1019,11 @@ modal = new Actor({
     align: "left top",
     lifeKeeper: this,
 });
+
+modalMHLhandle = $MHL.register(modal, "pointer", 200);
+on("die") \() {
+    $MHL.unregister(modalMHLhandle);
+};
 
 titleText = new Actor({
     x: $screenWidth / 2,
@@ -1084,13 +1125,14 @@ nowait function init() {
 
 init();</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='HelpText.tonyu' data-lastupdate='1644252623247' >$MHL.register(this);
+<script language='text/tonyu' type='text/tonyu' data-filename='HelpText.tonyu' data-lastupdate='1644255322805' >$MHL.register(this);
 while (1) {
     t = findTouch();
     if ($gameState == "guess" && t) {
         $gameState = "help";
         
         helpWindow = new HelpWindow{};
+        $MHL.register(helpWindow, "pointer", 200);
     }
     
     update();
@@ -1099,9 +1141,10 @@ while (1) {
 
 </script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='RoundedButton.tonyu' data-lastupdate='1644252746724' >extends Button;
+<script language='text/tonyu' type='text/tonyu' data-filename='RoundedButton.tonyu' data-lastupdate='1644257826603' >extends Button;
 
-$MHL.register(this);
+if (!mhlZ) mhlZ = 100;
+$MHL.register(this, "pointer", mhlZ);
 var round;
 var fontName;
 var style;
@@ -1451,13 +1494,12 @@ while(1) {
     update();
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='MouseHoverListener.tonyu' data-lastupdate='1644252608392' >native document;
+<script language='text/tonyu' type='text/tonyu' data-filename='MouseHoverListener.tonyu' data-lastupdate='1644257328048' >native document;
 
-targets = [];
+targets = {};
 
 function pointOn(t, x, y) {
     r = t.getCrashRect();
-    
     sx = r.x - r.width / 2;
     tx = r.x + r.width / 2;
     sy = r.y - r.height / 2;
@@ -1470,11 +1512,30 @@ function mouseHover(t) {
 }
 
 function mouseOnAnyObjects() {
-    return targets.some(\(o) {return mouseHover(o);});
+    return Object.values(targets)
+    .filter(\(t) {return mouseHover(t.obj);})
+    .reduce(\(ta, tb) {return ta ? (ta.z > tb.z ? ta : tb) : tb;}, undefined);
 }
 
-function register(obj) {
-    targets.push(obj);
+nextHandler = 1;
+function register(obj, style, z) {
+    if (!style) style = "pointer";
+    if (!z) z = 100;
+    handler = nextHandler++;
+    targets[handler] = {
+        "obj": obj,
+        "style": style,
+        "z": z,
+    };
+    return handler;
+}
+
+function unregister(handle) {
+    delete targets[handle];
+}
+
+function change(handle, style) {
+    targets[handle].style = style;
 }
 
 function changeMouseIcon(style) { // pointer, auto
@@ -1482,8 +1543,9 @@ function changeMouseIcon(style) { // pointer, auto
 }
 
 while(1) {
-    if (mouseOnAnyObjects()) {
-        changeMouseIcon("pointer");
+    hoverOn = mouseOnAnyObjects();
+    if (hoverOn) {
+        changeMouseIcon(hoverOn.style);
     } else {
         changeMouseIcon("auto");
     }
@@ -1525,7 +1587,7 @@ while(1) {
     }
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1644253567496' >
+<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1644257914238' >
 {
     "images": [
         {
