@@ -18,53 +18,30 @@
 <script src="https://edit.tonyu.jp/images/mapchip.png.js"></script>
 <script src="https://edit.tonyu.jp/js/lib/jquery-1.10.1.js" type="text/javascript"></script>
 <script src="https://edit.tonyu.jp/js/g2/runScript_concat.min.js" type="text/javascript"></script>
-<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1644335309742' >/** 
+<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1644339561075' >/** 
  * DWORDle by @kakira9618
  * This program is inspired by wordle (https://www.powerlanguage.co.uk/wordle/)
 */
 native Math;
 
-$version = "1.0.10";
-
-$Screen.setBGColor("#202020");
-
-$screenP = 1;
-$Screen.resize(465 * $screenP, 700 * $screenP); // default: 465, 465
-
-var activeCells = [];
-var alphabets = "abcdefghijklmnopqrstuvwxyz";
-var buttonObjects = {};
-var tscrollY = 0;
+var activeCells;
+var alphabets;
+var buttonObjects;
 var titleBar;
 var helpText;
+var scrollManager;
 var keyboardArea;
 var seedText;
 var gameArea;
-var scrollBar;
-var scrollY = 0;
-var scrollVY = 0;
-var scrollp = 0.95;
-var scrollMode = "auto"; // "manual"
-var inputIndex = 0;
-var nextOpenIndex = 0;
-var buttonStates = {};
-var currentGame = {};
-$logic = {};
-$gameState = "guess"; // "miss", "checking", "finish", "help"
-$gameResult = "game"; // "gameClear", "gameOver"
-$guessCount = 0;
-$guessCountMax = 10;
-$guessResultHistory = [];
-$problemID = 0;
 
-$Main = this;
-$Util = new Util{};
-$styles = new Styles{};
-$MHL = new MouseHoverListener{};
-$RecordManager = new RecordManager{};
 
-var result = [];
-var t = 0;
+var inputIndex;
+var nextOpenIndex;
+var buttonStates;
+var currentGame;
+
+var result;
+var t;
 
 function resumeGame(game) {
     while(!$logic.ans1 || $logic.ans1 == "") {}
@@ -84,34 +61,7 @@ function resumeGame(game) {
     }
 }
 
-function init() {
-    
-    currentGame = $RecordManager.findOnGoingGame();
-    
-    buttonStates = {};
-    for (var c of alphabets) {
-        buttonStates[c] = "guessing";
-    }
-
-    var pID = currentGame.problemID;
-    if (pID == 0) {
-        var title = new Title();
-        wait(10); // for waiting custom css to be loaded
-        while (!pID || pID <= 0 || pID > 9999) {
-            pID = promptNumber({
-                title: "Game Start",
-                body: "Problem No. 1-9999:"
-            }, rnd(9999) + 1);
-        }
-        currentGame.problemID = pID;
-        $RecordManager.saveHistory(currentGame);
-        title.die();
-    }
-
-    $logic = new Logic{seed: currentGame.problemID};
-    
-    resumeGame(currentGame);
-    
+function UIinit() {
     var buttonData = [
     {text: "q", left: 20 * $screenP, top: $screenHeight - 180 * $screenP},
     {text: "w", left: 60 * $screenP, top: $screenHeight - 180 * $screenP},
@@ -292,21 +242,82 @@ function init() {
             seedText.template = seedTextTemplate;
         }
     };
-
-    // scroll Bar
-    scrollBar = new ScrollBar{
-        sx: $screenWidth - 10 * $screenP,
-        sy: titleBar.height + 5 * $screenP,
-        dx: $screenWidth - 5 * $screenP,
-        dy: keyboardArea.y - 5 * $screenP,
-        contentH: $screenHeight - titleBar.height - keyboardArea.height,
+    
+    scrollManager = new ScrollManager{
+        x:0,
+        y:titleBar.height,
+        width: $screenWidth,
+        height: $screenHeight - titleBar.height - keyboardArea.height,
+        fillStyle: "white",
+        alpha: 0,
         layer: $frontLayer,
+        align: "left top"
     };
+}
+
+function init() {
+    $version = "1.0.10";
+    
+    $screenP = 2;
+    $Screen.setBGColor("#202020");
+    $Screen.resize(465 * $screenP, 700 * $screenP); // default: 465, 465
+
+    alphabets = "abcdefghijklmnopqrstuvwxyz";
+    result = [];
+    t = 0;
+    
+    inputIndex = 0;
+    nextOpenIndex = 0;
+    
+    activeCells = [];
+    buttonObjects = {};
+
+    $logic = {};
+    $gameState = "guess"; // "miss", "checking", "finish", "help"
+    $gameResult = "game"; // "gameClear", "gameOver"
+    $guessCount = 0;
+    $guessCountMax = 10;
+    $guessResultHistory = [];
+    $problemID = 0;
+    
+    $Main = this;
+    $Util = new Util{};
+    $styles = new Styles{};
+    $MHL = new MouseHoverListener{};
+    $RecordManager = new RecordManager{};
+    
+    currentGame = $RecordManager.findOnGoingGame();
+    
+    buttonStates = {};
+    for (var c of alphabets) {
+        buttonStates[c] = "guessing";
+    }
+
+    var pID = currentGame.problemID;
+    if (pID == 0) {
+        var title = new Title();
+        wait(10); // for waiting custom css to be loaded
+        while (!pID || pID <= 0 || pID > 9999) {
+            pID = promptNumber({
+                title: "Game Start",
+                body: "Problem No. 1-9999:"
+            }, rnd(9999) + 1);
+        }
+        currentGame.problemID = pID;
+        $RecordManager.saveHistory(currentGame);
+        title.die();
+    }
+
+    $logic = new Logic{seed: currentGame.problemID};
+    
+    UIinit();
+    resumeGame(currentGame);
 }
 
 function genNewCells() {
     activeCells = [];
     for (var i = 0; i < 5; i++) {
+        var scrollY = scrollManager.getScrollY();
         t = rnd(360); var r = ($screenHeight + scrollY) * 2;
         var sx = $screenWidth / 2 + r * cos(t);
         var sy = ($screenHeight + scrollY) / 2 + r * sin(t);
@@ -324,9 +335,8 @@ function genNewCells() {
         });
     }
     $guessCount++;
-    scrollMode = "auto";
-    tscrollY = max(0, activeCells[0].ty - 420 * $screenP);
-    scrollp = 0.95;
+    
+    scrollManager.smoothScrollTo(max(0, activeCells[0].ty - 420 * $screenP), "auto", 0.95);
     t = -60;
 }
 
@@ -340,9 +350,8 @@ function getGuessWord() {
 
 function handleCharKey(button) {
     if ($gameState != "guess") return;
-    scrollMode = "auto";
-    tscrollY = max(0, activeCells[0].ty - 420 * $screenP);
-    scrollp = 0.95;
+    scrollManager.smoothScrollTo(max(0, activeCells[0].ty - 420 * $screenP), "auto", 0.95);
+    
     if (inputIndex <= 4) {
         var ret = activeCells[inputIndex].changeChar(button.text);
         if (ret == 0) inputIndex++;
@@ -368,7 +377,6 @@ function handleEnter() {
     $RecordManager.saveHistory(currentGame);
     $guessResultHistory.push(result);
     updateButtonStates(word, result);
-    
     
     $gameState = "checking";
 
@@ -401,8 +409,7 @@ function missInit(reason) {
         activeCells[i].x -= 10;
     }
     t = -40;
-    tscrollY = max(0, activeCells[0].ty - 420 * $screenP);
-    
+    scrollManager.smoothScrollTo(max(0, activeCells[0].ty - 420 * $screenP), "auto", 0.95);
     if (reason == "not_enough_letters") {
         $Util.popUpMessageBox("Not enough letters");
     } else if (reason == "not_in_word_list") {
@@ -419,74 +426,19 @@ function handleDelete() {
     }
 }
 
-function isInMainLayer(x, y) {
-    return x >= 0 && x < $screenWidth && y > titleBar.y && y < keyboardArea.y;
-}
-
 init();
-var prevMaxSY = 0;
-var prevScrollY = 0;
 while(1) {
-    if (prevMaxSY != max(0, activeCells[0].ty - 420 * $screenP)
-    || floor(prevScrollY) != floor(scrollY)) {
-        scrollBar.popUp();
-    }
-    prevMaxSY = max(0, activeCells[0].ty - 420 * $screenP);
-    prevScrollY = scrollY;
-    
-    if ($gameState == "guess") {
-        if (scrollMode == "auto" && $touches[0].vy != 0 && isInMainLayer($touches[0].x, $touches[0].y)) {
-            scrollMode = "manual";
-            scrollBar.popUp();
-        }
-        if (scrollMode == "auto") {
-            scrollY = scrollp * scrollY + (1 - scrollp) * tscrollY;
-        } else {
-            var maxSY = max(0, activeCells[0].ty - 420 * $screenP);
-            if ($touches[0].touched > 0) {
-                scrollBar.popUp();
-                var nextSY = scrollY + scrollVY;
-                if (nextSY < 0) {
-                    var c = Math.exp((-0.01 * $screenP * (1 + abs(nextSY - 0))));
-                    scrollVY = -$touches[0].vy * c;
-                } else if (nextSY > maxSY) {
-                    var c = Math.exp((-0.01 * $screenP * (1 + abs(nextSY - maxSY))));
-                    scrollVY = -$touches[0].vy * c;
-                } else {
-                    scrollVY = -$touches[0].vy;
-                }
-            } else {
-                scrollVY *= 0.95;
-            }
-            scrollY += scrollVY;
-            if ($touches[0].touched == 0) {
-                if (scrollY < 0 || scrollY > maxSY) {
-                    if (scrollY < 0) tscrollY = 0;
-                    else if (scrollY > maxSY) tscrollY = maxSY;
-                    scrollMode = "auto";
-                    scrollp = 0.88;
-                }
-            }
-            //if (scrollY < 0) scrollY = 0;
-            //if (scrollY > max(0, activeCells[0].ty - 420)) scrollY = max(0, activeCells[0].ty - 420);
-        }
-        $Screen.scrollTo(0, scrollY);
-    } else if ($gameState == "miss") {
-        scrollY = scrollp * scrollY + (1 - scrollp) * tscrollY;
-        $Screen.scrollTo(0, scrollY);
+    if ($gameState == "miss") {
         if (t == 0) {
-            scrollMode = "auto";
+            scrollManager.changeMode("auto");
             $gameState = "guess";
         }
     } else if ($gameState == "checking") {
-        
-        scrollY = scrollp * scrollY + (1 - scrollp) * tscrollY;
-        $Screen.scrollTo(0, scrollY);
         if (t % 10 == 0) {
             if (nextOpenIndex < 5) {
                 activeCells[nextOpenIndex].changeState(result[nextOpenIndex]);
                 var word = getGuessWord();
-                c = word[nextOpenIndex];
+                var c = word[nextOpenIndex];
                 buttonObjects[c].fillStyle = $styles.box[buttonStates[c]]["background"];
                 buttonObjects[c].strokeStyle = $styles.box[buttonStates[c]]["text"];
                 buttonObjects[c].clickedStyle = $styles.box[buttonStates[c]]["clicked"];
@@ -1393,7 +1345,7 @@ while (1) {
     update();
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='Util.tonyu' data-lastupdate='1644333624107' >var messageBox;
+<script language='text/tonyu' type='text/tonyu' data-filename='Util.tonyu' data-lastupdate='1644337208062' >var messageBox;
 
 function roundedRect(ctx, x, y, width, height, radius, fill) {
     ctx.beginPath();
@@ -1411,6 +1363,15 @@ function roundedRect(ctx, x, y, width, height, radius, fill) {
         ctx.lineWidth = $screenP;
         ctx.stroke();
     }
+}
+
+function pointOn(t, x, y) {
+    var r = t.getCrashRect();
+    var sx = r.x - r.width / 2;
+    var tx = r.x + r.width / 2;
+    var sy = r.y - r.height / 2;
+    var ty = r.y + r.height / 2;
+    return x >= sx && x <= tx && y >= sy && y <= ty;
 }
 
 function getFontString(fontSize, fontName, style) {
@@ -1466,7 +1427,7 @@ while(1) {
     update();
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='MouseHoverListener.tonyu' data-lastupdate='1644333709152' >native document;
+<script language='text/tonyu' type='text/tonyu' data-filename='MouseHoverListener.tonyu' data-lastupdate='1644337217235' >native document;
 
 var targets;
 var nextHandler;
@@ -1476,17 +1437,8 @@ var nextHandler;
     nextHandler = 1;
 }
 
-function pointOn(t, x, y) {
-    var r = t.getCrashRect();
-    var sx = r.x - r.width / 2;
-    var tx = r.x + r.width / 2;
-    var sy = r.y - r.height / 2;
-    var ty = r.y + r.height / 2;
-    return x >= sx && x <= tx && y >= sy && y <= ty;
-}
-
 function mouseHover(t) {
-    return pointOn(t, $mouseX, $mouseY);
+    return $Util.pointOn(t, $mouseX, $mouseY);
 }
 
 function mouseOnAnyObjects() {
@@ -1531,7 +1483,112 @@ while(1) {
 
 <script language='text/tonyu' type='text/tonyu' data-filename='Game.tonyu' data-lastupdate='1644332302854' ></script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='ScrollManager.tonyu' data-lastupdate='1644332898057' ></script>
+<script language='text/tonyu' type='text/tonyu' data-filename='ScrollManager.tonyu' data-lastupdate='1644339463892' >native Math;
+
+var prevMaxY;
+var prevScrollY;
+
+var scrollTY;
+var scrollBar;
+var scrollY;
+var scrollVY;
+var scrollp;
+var scrollMaxY;
+var scrollMode;
+
+\onAppear() {
+    prevMaxY = 0;
+    prevScrollY = 0;
+    scrollTY = 0;
+    scrollY = 0;
+    scrollVY = 0;
+    scrollp = 0.95;
+    scrollMaxY = 0;
+    scrollMode = "auto"; // "manual"
+    
+    // scroll Bar
+    scrollBar = new ScrollBar{
+        sx: $screenWidth - 10 * $screenP,
+        sy: y + 5 * $screenP,
+        dx: $screenWidth - 5 * $screenP,
+        dy: y + height - 5 * $screenP,
+        contentH: height,
+        layer: $frontLayer,
+    };
+}
+
+function getScrollY() {
+    return scrollY;
+}
+
+function setScrollRange(maxY) {
+    scrollMaxY = maxY;
+}
+
+function smoothScrollTo(ty, scrollp) {
+    scrollTY = ty;
+    scrollp = p;
+    scrollMode = "auto";
+}
+
+function isScrollable(px, py) {
+    return $Util.pointOn(this, px, py);
+}
+
+while(1) {
+    if (prevMaxY != scrollMaxY || floor(prevScrollY) != floor(scrollY)) {
+        scrollBar.popUp();
+    }
+    prevMaxY = scrollMaxY;
+    prevScrollY = scrollY;
+    
+    if ($gameState == "guess") {
+        if (scrollMode == "auto" && $touches[0].vy != 0 && isScrollable($touches[0].x, $touches[0].y)) {
+            scrollMode = "manual";
+            scrollBar.popUp();
+        }
+        if (scrollMode == "auto") {
+            scrollY = scrollp * scrollY + (1 - scrollp) * scrollTY;
+        } else {
+            var maxSY = scrollMaxY;
+            if ($touches[0].touched > 0) {
+                scrollBar.popUp();
+                var nextSY = scrollY + scrollVY;
+                if (nextSY < 0) {
+                    var c = Math.exp((-0.01 * $screenP * (1 + abs(nextSY - 0))));
+                    scrollVY = -$touches[0].vy * c;
+                } else if (nextSY > maxSY) {
+                    var c = Math.exp((-0.01 * $screenP * (1 + abs(nextSY - maxSY))));
+                    scrollVY = -$touches[0].vy * c;
+                } else {
+                    scrollVY = -$touches[0].vy;
+                }
+            } else {
+                scrollVY *= 0.95;
+            }
+            scrollY += scrollVY;
+            if ($touches[0].touched == 0) {
+                if (scrollY < 0 || scrollY > maxSY) {
+                    if (scrollY < 0) scrollTY = 0;
+                    else if (scrollY > maxSY) scrollTY = maxSY;
+                    scrollMode = "auto";
+                    scrollp = 0.88;
+                }
+            }
+        }
+        $Screen.scrollTo(0, scrollY);
+    } else if ($gameState == "miss") {
+        scrollY = scrollp * scrollY + (1 - scrollp) * scrollTY;
+        $Screen.scrollTo(0, scrollY);
+    } else if ($gameState == "checking") {
+        scrollY = scrollp * scrollY + (1 - scrollp) * scrollTY;
+        $Screen.scrollTo(0, scrollY);
+    }
+    
+    update();
+}
+
+</script>
 
 <script language='text/tonyu' type='text/tonyu' data-filename='RecordManager.tonyu' data-lastupdate='1644334207924' >var historyFile;
 var allHistory;
@@ -1625,7 +1682,7 @@ function printAllGame() {
     }
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1644335329272' >
+<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1644339664541' >
 {
     "images": [
         {
