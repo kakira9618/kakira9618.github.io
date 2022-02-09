@@ -1838,10 +1838,11 @@ while (1) {
 }
 </script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='StatWindow.tonyu' data-lastupdate='1644416108343' >
+<script language='text/tonyu' type='text/tonyu' data-filename='StatWindow.tonyu' data-lastupdate='1644419656971' >
 extends Window;
 var stats;
 var rects, freqTexts;
+var maxFreq;
 
 \onAppear() {
     super.onAppear();
@@ -1905,9 +1906,23 @@ function UIinit() {
         lifeKeeper: this,
     });
     
-    var maxFreq = 0;
+    maxFreq = 0;
     for (var i = 1; i <= $guessCountMax; i++) {
         maxFreq = max(maxFreq, stats.hist[i]);
+    }
+    
+    if (maxFreq == 0) {
+        new StyledText{
+            x: $screenWidth / 2,
+            y: 390 * $screenP,
+            text: "- No data avaiable -",
+            size: 15 * $screenP,
+            fontName: "Helvetica Neue",
+            align: "center bottom",
+            layer: $frontLayer,
+            lifeKeeper: this,
+        };
+        return;
     }
     
     rects = [];
@@ -1951,11 +1966,13 @@ function UIinit() {
 
 function move() {
     super.move();
-    for (var rect of rects) {
-        rect.height = 0.95 * rect.height + 0.05 * rect.heightT;
-    }
-    for (var i = 0; i < $guessCountMax; i++) {
-        freqTexts[i].y = rects[i].y - rects[i].height - 5 * $screenP;
+    if (maxFreq != 0) {
+        for (var rect of rects) {
+            rect.height = 0.95 * rect.height + 0.05 * rect.heightT;
+        }
+        for (var i = 0; i < $guessCountMax; i++) {
+            freqTexts[i].y = rects[i].y - rects[i].height - 5 * $screenP;
+        }
     }
 }
 
@@ -2054,7 +2071,7 @@ while(1) {
     }
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1644418501667' >
+<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1644419661554' >
 {
     "images": [
         {
