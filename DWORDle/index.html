@@ -18,13 +18,13 @@
 <script src="https://edit.tonyu.jp/images/mapchip.png.js"></script>
 <script src="https://edit.tonyu.jp/js/lib/jquery-1.10.1.js" type="text/javascript"></script>
 <script src="https://edit.tonyu.jp/js/g2/runScript_concat.min.js" type="text/javascript"></script>
-<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1644418497717' >/** 
+<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1644577616212' >/** 
  * DWORDle by @kakira9618
  * This program is inspired by wordle (https://www.powerlanguage.co.uk/wordle/)
 */
 
 function init() {
-    $version = "1.0.11";
+    $version = "1.0.12";
     
     $screenP = 2;
     $Screen.setBGColor("#202020");
@@ -1070,7 +1070,9 @@ while(1) {
     update();
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='Game.tonyu' data-lastupdate='1644411559812' >var gameInfo;
+<script language='text/tonyu' type='text/tonyu' data-filename='Game.tonyu' data-lastupdate='1644580212445' >native window;
+
+var gameInfo;
 
 var activeCells;
 var alphabets;
@@ -1122,8 +1124,21 @@ var t;
     $styles = new Styles{};
     $MHL = new MouseHoverListener{};
     
+    // wheel event
+    window.onmousewheel = \(event){
+        handleWheel(event);
+    };
+    
     UIinit();
     resumeGame(gameInfo);
+}
+
+function handleWheel(event) {
+    if ($gameState == "guess") {
+        scrollManager.setScrollMode("auto");
+        scrollManager.setScrollP(0.80);
+        scrollManager.scroll(-event.wheelDelta * 0.2);
+    }
 }
 
 function resumeGame(game) {
@@ -1395,6 +1410,8 @@ function handleCharKey(button) {
 function handleEnter() {
     if ($gameState != "guess") return;
     if (t <= 0) return;
+    scrollManager.smoothScrollTo(scrollMaxY, 0.95);
+    
     if (inputIndex != 5) {
         missInit("not_enough_letters");
         return;
@@ -1455,7 +1472,6 @@ function missInit(reason) {
         activeCells[i].x -= 10;
     }
     t = -40;
-    scrollManager.smoothScrollTo(scrollMaxY, 0.95);
     if (reason == "not_enough_letters") {
         $Util.popUpMessageBox("Not enough letters");
     } else if (reason == "not_in_word_list") {
@@ -1466,6 +1482,7 @@ function missInit(reason) {
 
 function handleDelete() {
     if ($gameState != "guess") return;
+    scrollManager.smoothScrollTo(scrollMaxY, 0.95);
     if (inputIndex >= 1) {
         inputIndex--;
         activeCells[inputIndex].changeChar(" ");
@@ -1525,7 +1542,7 @@ while(1) {
     update();
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='ScrollManager.tonyu' data-lastupdate='1644348213003' >native Math;
+<script language='text/tonyu' type='text/tonyu' data-filename='ScrollManager.tonyu' data-lastupdate='1644580803660' >native Math;
 
 var prevMaxY;
 var prevScrollY;
@@ -1564,6 +1581,12 @@ function getScrollY() {
     return scrollY;
 }
 
+function scroll(delta) {
+    scrollTY += delta;
+    if (scrollTY < 0) scrollTY = 0;
+    if (scrollTY > scrollMaxY) scrollTY = scrollMaxY;
+}
+
 function setScrollMode(mode) {
     scrollMode = mode;
 }
@@ -1578,6 +1601,10 @@ function smoothScrollTo(ty, p) {
     scrollMode = "auto";
 }
 
+function setScrollP(p) {
+    scrollp = p;
+}
+
 function isScrollable(px, py) {
     return $Util.pointOn(this, px, py);
 }
@@ -1589,49 +1616,43 @@ while(1) {
     prevMaxY = scrollMaxY;
     prevScrollY = scrollY;
     
+    if (scrollMode == "auto") {
+        scrollY = scrollp * scrollY + (1 - scrollp) * scrollTY;
+    } else {
+        var maxSY = scrollMaxY;
+        if ($gameState == "guess" && $touches[0].touched > 0) {
+            scrollBar.popUp();
+            var nextSY = scrollY + scrollVY;
+            if (nextSY < 0) {
+                var c = Math.exp((-0.01 * $screenP * (1 + abs(nextSY - 0))));
+                scrollVY = -$touches[0].vy * c;
+            } else if (nextSY > maxSY) {
+                var c = Math.exp((-0.01 * $screenP * (1 + abs(nextSY - maxSY))));
+                scrollVY = -$touches[0].vy * c;
+            } else {
+                scrollVY = -$touches[0].vy;
+            }
+        } else {
+            scrollVY *= 0.95;
+        }
+        scrollY += scrollVY;
+        if ($gameState == "guess" && $touches[0].touched == 0) {
+            if (scrollY < 0 || scrollY > maxSY) {
+                if (scrollY < 0) scrollTY = 0;
+                else if (scrollY > maxSY) scrollTY = maxSY;
+                scrollMode = "auto";
+                scrollp = 0.88;
+            }
+        }
+    }
+    
     if ($gameState == "guess") {
         if (scrollMode == "auto" && $touches[0].vy != 0 && isScrollable($touches[0].x, $touches[0].y)) {
             scrollMode = "manual";
             scrollBar.popUp();
         }
-        if (scrollMode == "auto") {
-            scrollY = scrollp * scrollY + (1 - scrollp) * scrollTY;
-        } else {
-            var maxSY = scrollMaxY;
-            if ($touches[0].touched > 0) {
-                scrollBar.popUp();
-                var nextSY = scrollY + scrollVY;
-                if (nextSY < 0) {
-                    var c = Math.exp((-0.01 * $screenP * (1 + abs(nextSY - 0))));
-                    scrollVY = -$touches[0].vy * c;
-                } else if (nextSY > maxSY) {
-                    var c = Math.exp((-0.01 * $screenP * (1 + abs(nextSY - maxSY))));
-                    scrollVY = -$touches[0].vy * c;
-                } else {
-                    scrollVY = -$touches[0].vy;
-                }
-            } else {
-                scrollVY *= 0.95;
-            }
-            scrollY += scrollVY;
-            if ($touches[0].touched == 0) {
-                if (scrollY < 0 || scrollY > maxSY) {
-                    if (scrollY < 0) scrollTY = 0;
-                    else if (scrollY > maxSY) scrollTY = maxSY;
-                    scrollMode = "auto";
-                    scrollp = 0.88;
-                }
-            }
-        }
-        $Screen.scrollTo(0, scrollY);
-    } else if ($gameState == "miss") {
-        scrollY = scrollp * scrollY + (1 - scrollp) * scrollTY;
-        $Screen.scrollTo(0, scrollY);
-    } else if ($gameState == "checking") {
-        scrollY = scrollp * scrollY + (1 - scrollp) * scrollTY;
-        $Screen.scrollTo(0, scrollY);
     }
-    
+    $Screen.scrollTo(0, scrollY);
     update();
 }
 
@@ -2071,7 +2092,7 @@ while(1) {
     }
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1644419661554' >
+<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1644580808272' >
 {
     "images": [
         {
