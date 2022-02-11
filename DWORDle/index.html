@@ -822,7 +822,7 @@ mainLoop();</script>
 }
 </script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='ScrollBar.tonyu' data-lastupdate='1644418391280' >var t;
+<script language='text/tonyu' type='text/tonyu' data-filename='ScrollBar.tonyu' data-lastupdate='1644583483947' >var t;
 var sx, sy, dx, dy;
 var contentH;
 var scrollManager;
@@ -1543,7 +1543,7 @@ while(1) {
     update();
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='ScrollManager.tonyu' data-lastupdate='1644580803660' >native Math;
+<script language='text/tonyu' type='text/tonyu' data-filename='ScrollManager.tonyu' data-lastupdate='1644593889910' >native Math;
 
 var prevMaxY;
 var prevScrollY;
@@ -1611,7 +1611,7 @@ function isScrollable(px, py) {
 }
 
 while(1) {
-    if (prevMaxY != scrollMaxY || floor(prevScrollY) != floor(scrollY)) {
+    if (floor(prevMaxY + 0.5) != floor(scrollMaxY + 0.5) || floor(prevScrollY + 0.5) != floor(scrollY + 0.5)) {
         scrollBar.popUp();
     }
     prevMaxY = scrollMaxY;
@@ -1637,6 +1637,7 @@ while(1) {
             scrollVY *= 0.95;
         }
         scrollY += scrollVY;
+        scrollTY = scrollY;
         if ($gameState == "guess" && $touches[0].touched == 0) {
             if (scrollY < 0 || scrollY > maxSY) {
                 if (scrollY < 0) scrollTY = 0;
@@ -2093,7 +2094,7 @@ while(1) {
     }
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1644582041755' >
+<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1644593936351' >
 {
     "images": [
         {
