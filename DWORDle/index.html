@@ -877,7 +877,7 @@ while (1) {
     update();
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='MessageBox.tonyu' data-lastupdate='1644344155697' >var innerText;
+<script language='text/tonyu' type='text/tonyu' data-filename='MessageBox.tonyu' data-lastupdate='1644582032809' >var innerText;
 var t;
 
 \onAppear() {
@@ -899,6 +899,7 @@ var t;
 \draw(ctx) {
     ctx.fillStyle = "#787c7e" + Number(floor(alpha)).toString(16);
     if (ctx.fillStyle[0] == "#") return;
+    if (ctx.fillStyle[5] == "2") return;
     $Util.roundedRect(ctx, x - width / 2, y - height / 2, width, height, 5 * $screenP, true);
 }
 
@@ -2092,7 +2093,7 @@ while(1) {
     }
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1644580808272' >
+<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1644582041755' >
 {
     "images": [
         {
