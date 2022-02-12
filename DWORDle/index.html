@@ -12,19 +12,19 @@
 <meta property="og:site_name" content="DWORDle" />
 <meta property="og:locale" content="ja_JP" />
 <meta http-equiv="Content-type" content="text/html; charset=utf-8"/>
-<script>WebSite={runType:'singleHTML', useEditButton:false};</script><script src="https://edit.tonyu.jp/images/base.png.js"></script>
+<script>WebSite={runType:'singleHTML', useEditButton:false};</script><link rel="stylesheet" href="https://edit.tonyu.jp//css/runtime.css"/><script src="https://edit.tonyu.jp/images/base.png.js"></script>
 <script src="https://edit.tonyu.jp/images/Sample.png.js"></script>
 <script src="https://edit.tonyu.jp/images/neko.png.js"></script>
 <script src="https://edit.tonyu.jp/images/mapchip.png.js"></script>
-<script src="https://edit.tonyu.jp/js/lib/jquery-1.10.1.js" type="text/javascript"></script>
+<script src="https://edit.tonyu.jp/js/lib/jquery-1.12.1.js" type="text/javascript"></script>
 <script src="https://edit.tonyu.jp/js/g2/runScript_concat.min.js" type="text/javascript"></script>
-<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1644635121779' >/** 
+<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1644667583813' >/** 
  * DWORDle by @kakira9618
  * This program is inspired by wordle (https://www.powerlanguage.co.uk/wordle/)
 */
 
 function init() {
-    $version = "1.0.13";
+    $version = "1.0.14";
     
     $screenP = 2;
     $Screen.setBGColor("#202020");
@@ -38,7 +38,6 @@ function init() {
     var pID = gameInfo.problemID;
     if (pID == 0) {
         var title = new Title();
-        wait(10); // for waiting custom css to be loaded
         while (!pID || pID <= 0 || pID > 19999) {
             pID = promptNumber({
                 title: "Start Game",
@@ -738,66 +737,6 @@ var noticeText;
 while (true) {
     update();
 }</script>
-
-<script language='text/tonyu' type='text/tonyu' data-filename='CustomBoot.tonyu' data-lastupdate='1644331256959' >extends Boot;
-includes T2MediaPlayer;
-
-native $;
-native $LASTPOS;
-native Key;
-native ImageList;
-native Tonyu;
-native SplashScreen;
-native Math;
-native JSON;
-native requestAnimationFrame;
-native console;
-native Array;
-native UIDiag;
-native performance;
-native Mezonet;
-native FS;
-native R;
-native RPGAtsumaru;
-native parent;
-native document;
-
-// old browser support
-if (typeof performance==="undefined") {
-    window.performance = {};
-}
-if (!performance.now) {
-    performance.now = function now() {
-        return Date.now();
-    };
-}
-
-Tonyu.resetLoopCheck(10000);
-$Boot=this;
-setScheduler(new Scheduler);
-
-var link = document.createElement('link');
-link.href = "custom.css";
-link.rel = "stylesheet";
-link.type = "text/css";
-document.body.appendChild(link);
-$imageSmoothingDisabled = false;
-
-initGlobals();
-//initEvents();
-initLayers();
-initPeripherals();
-loadPlugins();
-if ($customLoading) {
-    var tt=Tonyu.thread();
-    tt.apply(this,"loadAssets",[true]);
-    tt.steps();
-} else {
-    loadAssets();
-}
-createMainObject();
-progress();
-mainLoop();</script>
 
 <script language='text/tonyu' type='text/tonyu' data-filename='Styles.tonyu' data-lastupdate='1644334380016' >var box;
 
@@ -2064,7 +2003,7 @@ while(1) {
     update();
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='options.json' data-lastupdate='1644330793517' >
+<script language='text/tonyu' type='text/tonyu' data-filename='options.json' data-lastupdate='1644667417256' >
 {
     "compiler": {
         "namespace": "user",
@@ -2079,7 +2018,7 @@ while(1) {
     },
     "run": {
         "mainClass": "user.Main",
-        "bootClass": "CustomBoot",
+        "bootClass": "kernel.Boot",
         "globals": {
             "$defaultFPS": 60,
             "$imageSmoothingDisabled": true,
@@ -2099,7 +2038,7 @@ while(1) {
     }
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1644635042338' >
+<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1644667590873' >
 {
     "images": [
         {
