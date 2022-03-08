@@ -18,7 +18,7 @@
 <script src="https://edit.tonyu.jp/images/mapchip.png.js"></script>
 <script src="https://edit.tonyu.jp/js/lib/jquery-1.12.1.js" type="text/javascript"></script>
 <script src="https://edit.tonyu.jp/js/g2/runScript_concat.min.js" type="text/javascript"></script>
-<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1646760256331' >/** 
+<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1646760509870' >/** 
  * DWORDle by @kakira9618
  * This program is inspired by wordle (https://www.powerlanguage.co.uk/wordle/)
 */
@@ -37,13 +37,15 @@ function init() {
     var gameInfo = $RecordManager.findOnGoingGame();
 
     var pID = gameInfo.problemID;
+    var nextpID = 0;
     if (pID == -1) {
         var title = new Title();
         while (!$Util.isValidPID(pID)) {
             pID = promptNumber({
                 title: "Start Game",
                 body: "Enter Problem No.:\nNo.00000: Daily problem\nNo.00001-09999: Easy problem\nNo.10000-19999: Hard problem"
-            }, 0);
+            }, nextpID);
+            nextpID = rnd(9999) + 1;
             if (!(pID == 0) && !pID) {
                 pID = -1;
             } else {
@@ -157,7 +159,7 @@ while(1) {
 }
 </script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='Logic.tonyu' data-lastupdate='1646760295525' >var allWordsListHash;
+<script language='text/tonyu' type='text/tonyu' data-filename='Logic.tonyu' data-lastupdate='1646760562597' >var allWordsListHash;
 var wordList;
 var ans1, ans2;
 var ans1ind, ans2ind;
@@ -2119,7 +2121,7 @@ while(1) {
     }
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1646760314491' >
+<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1646760554546' >
 {
     "images": [
         {
