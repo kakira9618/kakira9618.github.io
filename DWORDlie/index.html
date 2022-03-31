@@ -158,7 +158,7 @@ while(1) {
 }
 </script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='Logic.tonyu' data-lastupdate='1647359014349' >var allWordsListHash;
+<script language='text/tonyu' type='text/tonyu' data-filename='Logic.tonyu' data-lastupdate='1648130813444' >var allWordsListHash;
 var wordList;
 var ans1, ans2;
 var ans1ind, ans2ind;
@@ -273,7 +273,7 @@ function matchWordNo(word) {
 }
 </script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='GameResult.tonyu' data-lastupdate='1647355965209' >
+<script language='text/tonyu' type='text/tonyu' data-filename='GameResult.tonyu' data-lastupdate='1648738948279' >
 var t;
 var tmW;
 var tmH;
@@ -380,17 +380,19 @@ function handleShareButton() {
     var shareText = "";
     var tweetSeed = $Util.isDailyPID($logic.seed) ? "Daily" : "No." + $logic.seed;
     if ($gameResult == "gameClear") {
-        shareText = "DWORDlie " + tweetSeed + " " + usoGuessResultHistory.length + "/" + $guessCountMax + "\n\n";
+        shareText = "[嘘] DWORDlie " + tweetSeed + " " + usoGuessResultHistory.length + "/" + $guessCountMax + "\n\n";
     } else {
-        shareText = "DWORDlie " + tweetSeed + " X/" + $guessCountMax + "\n\n";
+        shareText = "[嘘] DWORDlie " + tweetSeed + " X/" + $guessCountMax + "\n\n";
     }
-    for (var guess in usoGuessResultHistory) {
-        for (var i = 0; i < 5; i++) {
-            if (guess[i] == "unused") {
+    for (var i = 0; i < usoGuessResultHistory.length; i++) {
+        var usoGuess = usoGuessResultHistory[i];
+        var guess = guessResultHistory[i];
+        for (var j = 0; j < 5; j++) {
+            if (usoGuess[j] == "unused") {
                 shareText += "⬜";
-            } else if (guess[i] == "used") {
+            } else if (usoGuess[j] == "used") {
                 shareText += "🟨";
-            } else if (guess[i] == "correct") {
+            } else if (usoGuess[j] == "correct") {
                 shareText += "🟩";
             }
         }
@@ -539,7 +541,7 @@ while (1) {
     update();
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='HelpWindow.tonyu' data-lastupdate='1647357953605' >extends Window;
+<script language='text/tonyu' type='text/tonyu' data-filename='HelpWindow.tonyu' data-lastupdate='1648130240641' >extends Window;
 native window;
 
 var lang;
@@ -594,9 +596,9 @@ var lang;
         lifeKeeper: this,
     });
     
-    var desc2_ja = "15回以内の試行で、\n2つの正解単語の「どちらか」を当ててください";
-    var desc2_en = "You must guess *either* of them within 10 tries.";
-    var desc2_dy = lang == "ja" ? 0 : 10;
+    var desc2_ja = "例): 緑はDWORDleの黄もしくは灰色を表します。";
+    var desc2_en = "Ex) A green is a yellow or a gray in DWORDle";
+    var desc2_dy = lang == "ja" ? 0 : -10;
     new Actor({
         x: $screenWidth / 2,
         y: 270 * $screenP + desc2_dy * $screenP,
@@ -607,13 +609,13 @@ var lang;
         lifeKeeper: this,
     });
     
-    var desc3_ja = "緑・黄判定は片方の正解単語についての情報です\n灰判定の場合は、文字が両方共に存在しません";
-    var desc3_en = "Green and Yellow show info about *either* of them. \n\nGray means the char is not present in *both* words.";
-    var desc3_dy = lang == "ja" ? 0 : -10;
+    var desc3_ja = "15回以内の試行で、\n2つの正解単語の「どちらか」を当ててください";
+    var desc3_en = "You must guess *either* of them within 15 tries.";
+    var desc3_dy = lang == "ja" ? 0 : 10;
     
     new Actor({
         x: $screenWidth / 2,
-        y: 340 * $screenP + desc3_dy * $screenP,
+        y: 320 * $screenP + desc3_dy * $screenP,
         text: lang == "ja" ? desc3_ja : desc3_en,
         align: "center middle",
         size: sentenceSize * $screenP,
@@ -621,13 +623,13 @@ var lang;
         lifeKeeper: this,
     });
     
-    var desc4_ja = "全部緑であっても正解単語とは限りません\n(その場合ゲーム続行となります)";
-    var desc4_en = "All green doesn't always mean correct guess. \n\n(In this case, the game will continue.) ";
+    var desc4_ja = "嘘の判定は文字ごとに行われるため、\n同じ文字であっても結果が違うことがあります";
+    var desc4_en = "The judge will be made for each chars, \n\nso the results might be different among the same chars.";
     var desc4_dy = lang == "ja" ? 0 : -10;
     
     new Actor({
         x: $screenWidth / 2,
-        y: 410 * $screenP + desc4_dy * $screenP,
+        y: 390 * $screenP + desc4_dy * $screenP,
         text: lang == "ja" ? desc4_ja : desc4_en,
         align: "center middle",
         size: sentenceSize * $screenP,
@@ -730,7 +732,7 @@ on("touch") \(touchEvent) {
     c.font = tempFont;
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='Title.tonyu' data-lastupdate='1647358968747' >var titleText;
+<script language='text/tonyu' type='text/tonyu' data-filename='Title.tonyu' data-lastupdate='1648129460745' >var titleText;
 var cregitText;
 var versionText;
 var noticeText;
@@ -749,11 +751,24 @@ var noticeText;
         zOrder: 1
     };
     
-    titleText = new StyledLabel{
+    new StyledLabel{
         x: $screenWidth / 2,
         y: 140 * $screenP,
         size: 200 * $screenP,
         text: "嘘",        
+        fontName: "Helvetica Neue",
+        fillStyle: "rgb(200, 0, 0)",
+        style: "bold",
+        align: "center middle",
+        lifeKeeper: this,
+        zOrder: 10
+    };
+    
+    new StyledLabel{
+        x: $screenWidth / 2,
+        y: 25 * $screenP,
+        size: 20 * $screenP,
+        text: "う　そ　ぴ　ょ　ん",        
         fontName: "Helvetica Neue",
         fillStyle: "rgb(200, 0, 0)",
         style: "bold",
@@ -2145,7 +2160,7 @@ while(1) {
     }
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1647359011381' >
+<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1648739010523' >
 {
     "images": [
         {
