@@ -2,6 +2,7 @@ function setup() {
     var patternDiv = document.querySelector("#pattern-div");
     var resultDiv = document.querySelector("#result-div");
     document.querySelector("#save-to-png").disabled = false;
+    document.querySelector("#save-to-png-pattern").disabled = false;
     patternDiv.style.display = "inline";
     resultDiv.style.display = "inline";
 
@@ -56,9 +57,16 @@ function generate() {
 }
 
 function saveToPng() {
-    var canvas = document.querySelector('#result');
+    var canvas = document.querySelector("#result");
     var link = document.createElement("a");
     link.href = canvas.toDataURL();
     link.download = "arrow.png";
+    link.click();
+}
+function saveToPngPat() {
+    var canvas = document.querySelector("#pattern");
+    var link = document.createElement("a");
+    link.href = canvas.toDataURL();
+    link.download = "arrow-pattern.png";
     link.click();
 }
