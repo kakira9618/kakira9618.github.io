@@ -8,7 +8,7 @@ function setup() {
     var patternCanvas = document.querySelector("#pattern");
     var resultCanvas = document.querySelector("#result");
     var arrowWidth = +document.querySelector("#arrow-width").value;
-    patternCanvas.width = +document.querySelector("#pat-height").value / 2 + arrowWidth;
+    patternCanvas.width = +document.querySelector("#arrow-dx").value + arrowWidth;
     patternCanvas.height = document.querySelector("#pat-height").value;
     resultCanvas.width = patternCanvas.width * document.querySelector("#loop-freq").value;
     resultCanvas.height = document.querySelector("#pat-height").value;
@@ -18,21 +18,21 @@ function drawPattern(ctx, startX) {
     var patWidth = +document.querySelector("#pat-height").value;
     var patHeight = +document.querySelector("#pat-height").value;
     var arrowWidth = +document.querySelector("#arrow-width").value;
-    if (patWidth <= 0 || patHeight <= 0 || arrowWidth <= 0) return;
+    var arrowDx = +document.querySelector("#arrow-dx").value;
+    if (patWidth <= 0 || patHeight <= 0 || arrowWidth <= 0 || arrowDx <= 0) return;
 
     ctx.beginPath();
     ctx.fillStyle = document.querySelector("#bg-color").value;
     ctx.rect(startX, 0, patWidth, patHeight);
     ctx.fill();
 
-    var t = patHeight / 2;
     ctx.beginPath();
     ctx.fillStyle = document.querySelector("#arrow-color").value;
     ctx.moveTo(startX, 0);
-    ctx.lineTo(startX + t, t);
-    ctx.lineTo(startX, t * 2);
-    ctx.lineTo(startX + arrowWidth, t * 2);
-    ctx.lineTo(startX + arrowWidth + t, t);
+    ctx.lineTo(startX + arrowDx, patHeight / 2);
+    ctx.lineTo(startX, patHeight);
+    ctx.lineTo(startX + arrowWidth, patHeight);
+    ctx.lineTo(startX + arrowWidth + arrowDx, patHeight / 2);
     ctx.lineTo(startX + arrowWidth, 0);
     ctx.closePath();
     ctx.fill();
