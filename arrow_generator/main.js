@@ -15,8 +15,8 @@ function setup() {
 }
 
 function drawPattern(ctx, startX) {
-    var patWidth = +document.querySelector("#pat-height").value;
-    var patHeight = +document.querySelector("#pat-height").value;
+    var patWidth = +document.querySelector("#pattern").width;
+    var patHeight = +document.querySelector("#pattern").height;
     var arrowWidth = +document.querySelector("#arrow-width").value;
     var arrowDx = +document.querySelector("#arrow-dx").value;
     if (patWidth <= 0 || patHeight <= 0 || arrowWidth <= 0 || arrowDx <= 0) return;
