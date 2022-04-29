@@ -18,7 +18,7 @@
 <script src="https://edit.tonyu.jp/images/mapchip.png.js"></script>
 <script src="https://edit.tonyu.jp/js/lib/jquery-1.12.1.js" type="text/javascript"></script>
 <script src="https://edit.tonyu.jp/js/g2/runScript_concat.min.js" type="text/javascript"></script>
-<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1651253298948' >/** 
+<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1651259214618' >/** 
  * DWORDle by @kakira9618
  * This program is inspired by wordle (https://www.powerlanguage.co.uk/wordle/)
 */
@@ -1223,7 +1223,7 @@ while(1) {
     update();
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='Game.tonyu' data-lastupdate='1651251685708' >native window;
+<script language='text/tonyu' type='text/tonyu' data-filename='Game.tonyu' data-lastupdate='1651262716155' >native window;
 
 var gameInfo;
 
@@ -1288,7 +1288,7 @@ var gameResultWindow;
 }
 
 function handleWheel(event) {
-    if ($gameState == "guess" || $gameState == "finish") {
+    if ($gameState == "guess" || ($gameState == "finish" && $Game.gameResultWindow && $Game.gameResultWindow.state == "closing")) {
         scrollManager.setScrollMode("auto");
         scrollManager.setScrollP(0.80);
         scrollManager.scroll(-event.wheelDelta * 0.2);
@@ -2318,7 +2318,7 @@ while (1) {
     }
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1651259108580' >
+<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1651263109218' >
 {
     "images": [
         {
