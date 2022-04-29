@@ -18,14 +18,14 @@
 <script src="https://edit.tonyu.jp/images/mapchip.png.js"></script>
 <script src="https://edit.tonyu.jp/js/lib/jquery-1.12.1.js" type="text/javascript"></script>
 <script src="https://edit.tonyu.jp/js/g2/runScript_concat.min.js" type="text/javascript"></script>
-<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1646760509870' >/** 
+<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1651253298948' >/** 
  * DWORDle by @kakira9618
  * This program is inspired by wordle (https://www.powerlanguage.co.uk/wordle/)
 */
 
 function init() {
     
-    $version = "1.2.1";
+    $version = "1.3.1";
     
     $screenP = 2;
     $Screen.setBGColor("#202020");
@@ -67,13 +67,14 @@ function init() {
         $RecordManager.saveHistory(gameInfo);
         title.die();
     }
+    $Screen.selectLayer($backLayer);
     $logic = new Logic{seed: gameInfo.problemID};
     $Game = new Game{gameInfo: gameInfo};
 }
 
 init();</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='Cell.tonyu' data-lastupdate='1644347052174' >var trot;
+<script language='text/tonyu' type='text/tonyu' data-filename='Cell.tonyu' data-lastupdate='1651251347041' >var trot;
 var tscaleX;
 var t;
 var state;
@@ -99,6 +100,7 @@ var dispChar;
         fontName: "Helvetica Neue",
         style: "bold",
         fillStyle: color(0, 0, 0), 
+        layer: $backLayer,
         parent: this
     };
 }
@@ -159,7 +161,7 @@ while(1) {
 }
 </script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='Logic.tonyu' data-lastupdate='1646760562597' >var allWordsListHash;
+<script language='text/tonyu' type='text/tonyu' data-filename='Logic.tonyu' data-lastupdate='1651247244512' >var allWordsListHash;
 var wordList;
 var ans1, ans2;
 var ans1ind, ans2ind;
@@ -274,7 +276,8 @@ function matchWordNo(word) {
 }
 </script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='GameResult.tonyu' data-lastupdate='1646217231472' >
+<script language='text/tonyu' type='text/tonyu' data-filename='GameResult.tonyu' data-lastupdate='1651253233006' >native console;
+native document;
 var t;
 var tmW;
 var tmH;
@@ -285,10 +288,18 @@ var guessWord;
 var modal;
 var title;
 var ansText1, ansText2;
+var ansText1Pertial, ansText2Pertial;
 var l1tx, l2tx;
 var l1tW, l2tW;
 var tty;
 var lineEffect1, lineEffect2;
+var shareButton, retryButton;
+var guessFlag;
+var minimize;
+var minimizeButton;
+var screenShotButton;
+var resultIcon;
+var state;
 
 \onAppear() {
     t = 0;
@@ -297,6 +308,82 @@ var lineEffect1, lineEffect2;
     mW = 0;
     mH = 0;
     UIinit();
+    state = "showing";
+}
+
+function doNothing() {
+    
+}
+
+function handleMinimizeButton() {
+    if (modal) modal.alpha = 0;
+    if (title) title.alpha = 0;
+    if (ansText1) ansText1.alpha = 0;
+    if (ansText2) ansText2.alpha = 0;
+    if (lineEffect1) lineEffect1.alpha = 0;
+    if (lineEffect2) lineEffect2.alpha = 0;
+    if (guessFlag) guessFlag.alpha = 0;
+    for (var i = 0; i < 5; i++) {
+        if (ansText1Pertial[i]) ansText1Pertial[i].alpha = 0;
+        if (ansText2Pertial[i]) ansText2Pertial[i].alpha = 0;
+    }
+    
+    if (shareButton) shareButton.x *= 100;
+    if (shareButton) shareButton.onClick = doNothing;
+    if (retryButton) retryButton.x *= 100;
+    if (retryButton) retryButton.onClick = doNothing;
+    if (minimizeButton) minimizeButton.x *= 100;
+    if (minimizeButton) minimizeButton.onClick = doNothing;
+    if (screenShotButton) screenShotButton.x *= 100;
+    if (screenShotButton) screenShotButton.onClick = doNothing;
+    
+    if (modal) modal.die();
+    
+    if (!resultIcon || resultIcon.isDead()) {
+        resultIcon = new ResultIcon {
+            x: $screenWidth / 2 + 90 * $screenP,
+            y: 27 * $screenP,
+            r: 15 * $screenP,
+        };
+    }
+    state = "closing";
+}
+
+function resumeWindow() {
+    if (modal.isDead()) {
+        modal = new Actor({
+            x: 20 * $screenP,
+            y: 80 * $screenP,
+            width: $screenWidth - 40 * $screenP,
+            height: $screenHeight - 80 * $screenP - 200 * $screenP,
+            fillStyle: color(0, 0, 0),
+            layer: $frontLayer,
+            alpha: 200,
+            align: "left top",
+            lifeKeeper: this,
+            zOrder: 10
+        });
+        title.alpha = 255;
+        ansText1.alpha = 255;
+        ansText2.alpha = 255;
+        lineEffect1.alpha = 255;
+        lineEffect2.alpha = 255;
+        guessFlag.alpha = 255;
+        for (var i = 0; i < 5; i++) {
+            ansText1Pertial[i].alpha = 255;
+            ansText2Pertial[i].alpha = 255;
+        }
+        shareButton.x /= 100;
+        shareButton.onClick = handleShareButton;
+        retryButton.x /= 100;
+        retryButton.onClick = handleRetryButton;
+        minimizeButton.x /= 100;
+        minimizeButton.onClick = handleMinimizeButton;
+        screenShotButton.x /= 100;
+        screenShotButton.onClick = handleScreenShotButton;
+        resultIcon.die();
+    }
+    state = "showing";
 }
 
 function UIinit() {
@@ -331,7 +418,7 @@ function UIinit() {
     
     ansText1 = new Actor({
         x: 90 * $screenP,
-        y: modal.y + 150 * $screenP,
+        y: modal.y + 130 * $screenP,
         text: "",
         size: 20 * $screenP,
         layer: $frontLayer,
@@ -341,7 +428,7 @@ function UIinit() {
     
     ansText2 = new Actor({
         x: 90 * $screenP,
-        y: modal.y + 220 * $screenP,
+        y: modal.y + 200 * $screenP,
         text: "",
         size: 20 * $screenP,
         layer: $frontLayer,
@@ -403,6 +490,32 @@ function handleShareButton() {
     $WebPage.openShareTweet(shareText);
 }
 
+function handleScreenShotButton() {
+    console.log($camera2D);
+    var canvas = document.createElement("canvas");
+    canvas.width = $screenWidth;
+    canvas.height = 200 * $screenP + $guessCount * 70 * $screenP;
+    
+    var ctx = canvas.getContext("2d");
+    ctx.fillStyle = $Screen._color;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    ctx.fillStyle = "white";
+    var fontBack = ctx.font;
+    ctx.font = $Util.getFontString(20 * $screenP, "Helvetica Neue", "bold");
+    ctx.fillText("Answer: " + $logic.ans1.toUpperCase() + ", " + $logic.ans2.toUpperCase(), 
+    $screenWidth / 2 - 100 * $screenP, canvas.height - 60 * $screenP);
+    ctx.font = fontBack;
+    $backLayer.draw(ctx);
+    $mainLayer.draw(ctx);
+    
+    
+    var a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = 'download.png';
+    a.click();
+}
+
 function handleRetryButton() {
     loadPage(Main);
 }
@@ -424,8 +537,9 @@ while (1) {
     }
     if (t == 110) {
         ansText1.text = "Word 1: ";
+        ansText1Pertial = [];
         for (var i = 0; i < 5; i++) {
-            new StyledText{
+            ansText1Pertial.push(new StyledText{
                 x: 210 * $screenP + 45 * i * $screenP,
                 y: ansText1.y,
                 size: 30 * $screenP,
@@ -435,21 +549,24 @@ while (1) {
                 layer: $frontLayer,
                 align: "center middle",
                 lifeKeeper: this,
-            };
+            });
         }
         
         if (guessWord == $logic.ans1) {
-            new GuessFlag{
+            guessFlag = new GuessFlag{
                 x: ansText1.x - 35 * $screenP,
                 y: ansText1.y,
+                move: true,
                 layer: $frontLayer,
+                lifeKeeper: this,
             };
         }
     }
     if (t == 130) {
         ansText2.text = "Word 2: ";
+        ansText2Pertial = [];
         for (var i = 0; i < 5; i++) {
-            new StyledText{
+            ansText2Pertial.push(new StyledText{
                 x: 210 * $screenP + 45 * i * $screenP,
                 y: ansText2.y,
                 size: 30 * $screenP,
@@ -459,14 +576,15 @@ while (1) {
                 layer: $frontLayer,
                 align: "center middle",
                 lifeKeeper: this,
-            };
+            });
             
         }
         
         if (guessWord == $logic.ans2) {
-            new GuessFlag{
+            guessFlag = new GuessFlag{
                 x: ansText2.x - 35 * $screenP,
                 y: ansText2.y,
+                move: true,
                 layer: $frontLayer,
                 lifeKeeper: this,
             };
@@ -474,54 +592,88 @@ while (1) {
     }
     
     if (t == 150) {
-        new RoundedButton {
-            left: 100 * $screenP, 
-            top: modal.y + 290 * $screenP, 
-            width: $screenWidth - 200 * $screenP, 
-            height: 30 * $screenP, 
-            text: "Share on Twitter",
+        shareButton = new RoundedButton {
+            left: 50 * $screenP, 
+            top: modal.y + 250 * $screenP, 
+            width: 100 * $screenP, 
+            height: 100 * $screenP, 
+            text: "Twitter",
             fontName: "Helvetica Neue",
             style: "bold", 
-            padding: 5 * $screenP,
+            padding: 40 * $screenP,
             fillStyle: color(0, 172, 238),
             onClick: handleShareButton,
             lifeKeeper: this,
             mhlZ: 250
         };
         
-        new RoundedButton {
-            left: 100 * $screenP, 
-            top: modal.y + 330 * $screenP, 
-            width: $screenWidth - 200 * $screenP, 
-            height: 30 * $screenP, 
+        retryButton = new RoundedButton {
+            left: 50 * $screenP + 130 * $screenP, 
+            top: modal.y + 250 * $screenP, 
+            width: 100 * $screenP, 
+            height: 100 * $screenP, 
             text: "Retry", 
             fontName: "Helvetica Neue",
             style: "bold", 
-            padding: 5 * $screenP,
+            padding: 40 * $screenP,
             fillStyle: color(106, 170, 100),
             onClick: handleRetryButton,
             lifeKeeper: this,
             mhlZ: 250
         };
+        
+        screenShotButton = new RoundedButton {
+            left: 50 * $screenP + 2 * 130 * $screenP, 
+            top: modal.y + 250 * $screenP, 
+            width: 100 * $screenP, 
+            height: 100 * $screenP, 
+            text: "ScrShot", 
+            fontName: "Helvetica Neue",
+            style: "bold", 
+            padding: 40 * $screenP,
+            fillStyle: color(127, 127, 127),
+            onClick: handleScreenShotButton,
+            lifeKeeper: this,
+            mhlZ: 250
+        };
+        
+        minimizeButton = new RoundedButton {
+            left: modal.x + modal.width - 50 * $screenP, 
+            top: modal.y + 20 * $screenP, 
+            width: 30 * $screenP, 
+            height: 30 * $screenP, 
+            text: "×", 
+            fontName: "Helvetica Neue",
+            style: "bold", 
+            padding: 5 * $screenP,
+            fillStyle: "#FFFFFF",
+            onClick: handleMinimizeButton,
+            lifeKeeper: this,
+            mhlZ: 250
+        };
+        
     }
     t++;
     update();
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='GuessFlag.tonyu' data-lastupdate='1644343412463' >var t;
+<script language='text/tonyu' type='text/tonyu' data-filename='GuessFlag.tonyu' data-lastupdate='1651245740723' >var t;
 var r;
+var move;
 
 \onAppear() {
     t = 0;
-    r = 20 * $screenP;
+    if (!r) r = 20 * $screenP;
     p = -1;
 }
 
 \draw(ctx) {
-    drawLineWithThickness(ctx, 2 * $screenP, x, y - r, x, y + r * 0.66, "white");
-    drawLineWithThickness(ctx, 2 * $screenP, x - r / 4, y + r * 0.66, x + r / 4, y + r * 0.66, "white");
-    drawLineWithThickness(ctx, 2 * $screenP, x, y - r, x + r * cos(t), y - r / 2 + r * sin(t) * 0.5, "white");
-    drawLineWithThickness(ctx, 2 * $screenP, x, y, x + r * cos(t), y - r / 2 + r * sin(t) * 0.5, "white");
+    if (alpha > 0) {
+        drawLineWithThickness(ctx, 2 * $screenP, x, y - r, x, y + r * 0.66, "white");
+        drawLineWithThickness(ctx, 2 * $screenP, x - r / 4, y + r * 0.66, x + r / 4, y + r * 0.66, "white");
+        drawLineWithThickness(ctx, 2 * $screenP, x, y - r, x + r * cos(t), y - r / 2 + r * sin(t) * 0.5, "white");
+        drawLineWithThickness(ctx, 2 * $screenP, x, y, x + r * cos(t), y - r / 2 + r * sin(t) * 0.5, "white");
+    }
 }
 
 function drawLineWithThickness(ctx, thickness, sx, sy, dx, dy, fillStyle) {
@@ -535,7 +687,7 @@ function drawLineWithThickness(ctx, thickness, sx, sy, dx, dy, fillStyle) {
 }
 
 while (1) {
-    t++;
+    if (move) t++;
     update();
 }</script>
 
@@ -1071,7 +1223,7 @@ while(1) {
     update();
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='Game.tonyu' data-lastupdate='1646217363398' >native window;
+<script language='text/tonyu' type='text/tonyu' data-filename='Game.tonyu' data-lastupdate='1651251685708' >native window;
 
 var gameInfo;
 
@@ -1094,6 +1246,7 @@ var scrollMaxY;
 
 var result;
 var t;
+var gameResultWindow;
 
 \onAppear() {
     result = [];
@@ -1135,7 +1288,7 @@ var t;
 }
 
 function handleWheel(event) {
-    if ($gameState == "guess") {
+    if ($gameState == "guess" || $gameState == "finish") {
         scrollManager.setScrollMode("auto");
         scrollManager.setScrollP(0.80);
         scrollManager.scroll(-event.wheelDelta * 0.2);
@@ -1253,7 +1406,7 @@ function UIinit() {
         fillStyle: "black",
         alpha: 200,
         zOrder: 10,
-        layer: $frontLayer,
+        layer: $mainLayer,
         align: "left top"
     };
     
@@ -1266,7 +1419,7 @@ function UIinit() {
         style: "bold",
         size: 25 * $screenP,
         color: color(255, 255, 255),
-        layer: $frontLayer,
+        layer: $mainLayer,
     };
     
     // guess counter
@@ -1276,7 +1429,7 @@ function UIinit() {
         template: "$guessCount  / $guessCountMax",
         size: 15 * $screenP,
         color: color(255, 255, 255),
-        layer: $frontLayer,
+        layer: $mainLayer,
     };
     
     // help Icon
@@ -1286,7 +1439,7 @@ function UIinit() {
         text: "?",
         size: 15 * $screenP,
         color: color(255, 255, 255),
-        layer: $frontLayer,
+        layer: $mainLayer,
         align: "center middle"
     };
     
@@ -1294,7 +1447,7 @@ function UIinit() {
     statIcon = new StatIcon{
         x: 75 * $screenP,
         y: 25 * $screenP,
-        layer: $frontLayer,
+        layer: $mainLayer,
         align: "center middle"
     };
     
@@ -1341,7 +1494,7 @@ function UIinit() {
         template: seedTextTemplate,
         size: 20 * $screenP,
         align: "right top",
-        layer: $frontLayer
+        layer: $mainLayer
     };
     
     
@@ -1384,6 +1537,7 @@ function genNewCells() {
             width: 50 * $screenP, 
             height:50 * $screenP, 
             fillStyle: "white",
+            layer: $backLayer,
             zOrder: 15,
         });
     }
@@ -1534,20 +1688,18 @@ while(1) {
         }
     } else if ($gameState == "finish") {
         if (t == 0) {
-            new GameResult{
+            gameResultWindow = new GameResult{
                 layer: $frontLayer, 
                 guessWord: getGuessWord(),
                 guessResultHistory: guessResultHistory
             };
-            // if ($gameResult == "gameClear") print("GAME CLEAR!"); // for debug
-            // if ($gameResult == "gameOver") print("GAME OVER!"); // for debug
         }
     }
     t++;
     update();
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='ScrollManager.tonyu' data-lastupdate='1644593889910' >native Math;
+<script language='text/tonyu' type='text/tonyu' data-filename='ScrollManager.tonyu' data-lastupdate='1651248171697' >native Math;
 
 var prevMaxY;
 var prevScrollY;
@@ -1614,6 +1766,11 @@ function isScrollable(px, py) {
     return $Util.pointOn(this, px, py);
 }
 
+function isResponsible() {
+    return $gameState == "guess" || 
+    ($gameState == "finish" && $Game.gameResultWindow && $Game.gameResultWindow.state == "closing");
+}
+
 while(1) {
     if (floor(prevMaxY + 0.5) != floor(scrollMaxY + 0.5) || floor(prevScrollY + 0.5) != floor(scrollY + 0.5)) {
         scrollBar.popUp();
@@ -1625,7 +1782,7 @@ while(1) {
         scrollY = scrollp * scrollY + (1 - scrollp) * scrollTY;
     } else {
         var maxSY = scrollMaxY;
-        if ($gameState == "guess" && $touches[0].touched > 0) {
+        if (isResponsible() && $touches[0].touched > 0) {
             scrollBar.popUp();
             var nextSY = scrollY + scrollVY;
             if (nextSY < 0) {
@@ -1642,7 +1799,7 @@ while(1) {
         }
         scrollY += scrollVY;
         scrollTY = scrollY;
-        if ($gameState == "guess" && $touches[0].touched == 0) {
+        if (isResponsible() && $touches[0].touched == 0) {
             if (scrollY < 0 || scrollY > maxSY) {
                 if (scrollY < 0) scrollTY = 0;
                 else if (scrollY > maxSY) scrollTY = maxSY;
@@ -1652,7 +1809,7 @@ while(1) {
         }
     }
     
-    if ($gameState == "guess") {
+    if (isResponsible()) {
         if (scrollMode == "auto" && $touches[0].vy != 0 && isScrollable($touches[0].x, $touches[0].y)) {
             scrollMode = "manual";
             scrollBar.popUp();
@@ -1814,7 +1971,7 @@ function getStatistics() {
     loadHistory();
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='HelpIcon.tonyu' data-lastupdate='1644407178319' >native Math;
+<script language='text/tonyu' type='text/tonyu' data-filename='HelpIcon.tonyu' data-lastupdate='1651247132655' >native Math;
 
 var r;
 
@@ -1836,19 +1993,23 @@ var r;
     ctx.stroke();
 }
 
-while (1) {
+function canOpenWindow() {
     var t = findTouch();
-    if ($gameState == "guess" && t) {
-        $gameState = "help";
-        
-        var helpWindow = new HelpWindow{};
+    return ($gameState == "guess" || 
+    ($gameState == "finish" && $Game.gameResultWindow && $Game.gameResultWindow.state == "closing")) && t;
+}
+
+while (1) {
+    if (canOpenWindow()) {
+        var helpWindow = new HelpWindow{prevState: $gameState};
         $MHL.register(helpWindow, "pointer", 200);
+        $gameState = "help";
     }
     
     update();
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='StatIcon.tonyu' data-lastupdate='1644407580339' >var r;
+<script language='text/tonyu' type='text/tonyu' data-filename='StatIcon.tonyu' data-lastupdate='1651247129519' >var r;
 var p;
 
 \onAppear() {
@@ -1875,13 +2036,17 @@ function drawRectEx(ctx, x, y, w, h, col, lineWidth, fill) {
     if (fill) ctx.fill(); else ctx.stroke();
 }
 
-while (1) {
+function canOpenWindow() {
     var t = findTouch();
-    if ($gameState == "guess" && t) {
-        $gameState = "stat";
-        
-        var statWindow = new StatWindow{};
+    return ($gameState == "guess" || 
+    ($gameState == "finish" && $Game.gameResultWindow && $Game.gameResultWindow.state == "closing")) && t;
+}
+
+while (1) {
+    if (canOpenWindow()) {
+        var statWindow = new StatWindow{prevState: $gameState};
         $MHL.register(statWindow, "pointer", 200);
+        $gameState = "stat";
     }
     
     update();
@@ -2031,10 +2196,11 @@ while(1) {
     update();
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='Window.tonyu' data-lastupdate='1644408683180' >var tmW, tmH;
+<script language='text/tonyu' type='text/tonyu' data-filename='Window.tonyu' data-lastupdate='1651244566592' >var tmW, tmH;
 var mW, mH;
 var modal;
 var t;
+var prevState;
 
 \onAppear() {
     tmW = $screenWidth - 40 * $screenP;
@@ -2075,7 +2241,7 @@ function move() {
     modal.height = mH;
     
     if (closeCondition()) {
-        $gameState = "guess";
+        $gameState = prevState;
         die();
     }
     t++;
@@ -2083,6 +2249,37 @@ function move() {
 
 while(1) {
     move();
+    update();
+}</script>
+
+<script language='text/tonyu' type='text/tonyu' data-filename='ResultIcon.tonyu' data-lastupdate='1651246614313' >native Math;
+
+var guessFlag;
+var r;
+
+\onAppear() {
+    p = -1;
+    guessFlag = new GuessFlag{
+        x: x,
+        y: y,
+        r: r,
+        move: true,
+        layer: $frontLayer,
+        lifeKeeper: this,
+    };
+    $MHL.register(this);
+}
+
+\getCrashRect() {
+    return {x, y, width: 2 * r * $screenP, height: 2 * r * $screenP};
+}
+
+while (1) {
+    var t = findTouch();
+    if ($gameState == "finish" && t) {
+        $Game.gameResultWindow.resumeWindow();
+        $MHL.register($Game.gameResultWindow, "pointer", 200);
+    }
     update();
 }</script>
 
@@ -2121,7 +2318,7 @@ while(1) {
     }
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1646760554546' >
+<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1651253303480' >
 {
     "images": [
         {
