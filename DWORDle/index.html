@@ -25,7 +25,7 @@
 
 function init() {
     
-    $version = "1.3.1";
+    $version = "1.3.2";
     
     $screenP = 2;
     $Screen.setBGColor("#202020");
@@ -276,7 +276,7 @@ function matchWordNo(word) {
 }
 </script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='GameResult.tonyu' data-lastupdate='1651253986788' >native console;
+<script language='text/tonyu' type='text/tonyu' data-filename='GameResult.tonyu' data-lastupdate='1651259068586' >native console;
 native document;
 var t;
 var tmW;
@@ -316,28 +316,28 @@ function doNothing() {
 }
 
 function handleMinimizeButton() {
-    if (modal) modal.alpha = 0;
-    if (title) title.alpha = 0;
-    if (ansText1) ansText1.alpha = 0;
-    if (ansText2) ansText2.alpha = 0;
-    if (lineEffect1) lineEffect1.alpha = 0;
-    if (lineEffect2) lineEffect2.alpha = 0;
+    modal.alpha = 0;
+    title.alpha = 0;
+    ansText1.alpha = 0;
+    ansText2.alpha = 0;
+    lineEffect1.alpha = 0;
+    lineEffect2.alpha = 0;
     if (guessFlag) guessFlag.alpha = 0;
     for (var i = 0; i < 5; i++) {
         if (ansText1Pertial[i]) ansText1Pertial[i].alpha = 0;
         if (ansText2Pertial[i]) ansText2Pertial[i].alpha = 0;
     }
     
-    if (shareButton) shareButton.x *= 100;
-    if (shareButton) shareButton.onClick = doNothing;
-    if (retryButton) retryButton.x *= 100;
-    if (retryButton) retryButton.onClick = doNothing;
-    if (minimizeButton) minimizeButton.x *= 100;
-    if (minimizeButton) minimizeButton.onClick = doNothing;
-    if (screenShotButton) screenShotButton.x *= 100;
-    if (screenShotButton) screenShotButton.onClick = doNothing;
+    shareButton.x *= 100;
+    shareButton.onClick = doNothing;
+    retryButton.x *= 100;
+    retryButton.onClick = doNothing;
+    minimizeButton.x *= 100;
+    minimizeButton.onClick = doNothing;
+    screenShotButton.x *= 100;
+    screenShotButton.onClick = doNothing;
     
-    if (modal) modal.die();
+    modal.die();
     
     if (!resultIcon || resultIcon.isDead()) {
         resultIcon = new ResultIcon {
@@ -368,7 +368,7 @@ function resumeWindow() {
         ansText2.alpha = 255;
         lineEffect1.alpha = 255;
         lineEffect2.alpha = 255;
-        guessFlag.alpha = 255;
+        if (guessFlag) guessFlag.alpha = 255;
         for (var i = 0; i < 5; i++) {
             ansText1Pertial[i].alpha = 255;
             ansText2Pertial[i].alpha = 255;
@@ -512,7 +512,7 @@ function handleScreenShotButton() {
     
     var a = document.createElement('a');
     a.href = canvas.toDataURL('image/png');
-    a.download = "DWORDle_"+ $logic.seed + ".png";
+    a.download = "DWORDle_"+ $logic.seed + "_" + $Util.getTime() + ".png";
     a.click();
 }
 
@@ -2318,7 +2318,7 @@ while (1) {
     }
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1651254008598' >
+<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1651259108580' >
 {
     "images": [
         {
