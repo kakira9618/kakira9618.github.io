@@ -949,7 +949,7 @@ while (true) {
 }
 </script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='ScrollBar.tonyu' data-lastupdate='1644583483947' >var t;
+<script language='text/tonyu' type='text/tonyu' data-filename='ScrollBar.tonyu' data-lastupdate='1651278135147' >var t;
 var sx, sy, dx, dy;
 var contentH;
 var scrollManager;
@@ -970,12 +970,12 @@ var scrollManager;
 }
 
 function calc() {
-    if ($gameState != "finish") {
-        if (t < 90) alpha = 254;
-        else alpha -= 5;
+    if (($gameState == "finish" && $Game.gameResultWindow && $Game.gameResultWindow.state == "showing")) {
+        alpha -= 20;
         if (alpha < 0) alpha = 0;
     } else {
-        alpha -= 20;
+        if (t < 90) alpha = 254;
+        else alpha -= 5;
         if (alpha < 0) alpha = 0;
     }
     
@@ -2318,7 +2318,7 @@ while (1) {
     }
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1651263109218' >
+<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1651278211039' >
 {
     "images": [
         {
