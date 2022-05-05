@@ -18,14 +18,14 @@
 <script src="https://edit.tonyu.jp/images/mapchip.png.js"></script>
 <script src="https://edit.tonyu.jp/js/lib/jquery-1.12.1.js" type="text/javascript"></script>
 <script src="https://edit.tonyu.jp/js/g2/runScript_concat.min.js" type="text/javascript"></script>
-<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1651259214618' >/** 
+<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1651752337311' >/** 
  * DWORDle by @kakira9618
  * This program is inspired by wordle (https://www.powerlanguage.co.uk/wordle/)
 */
 
 function init() {
     
-    $version = "1.3.2";
+    $version = "1.4.0";
     
     $screenP = 2;
     $Screen.setBGColor("#202020");
@@ -276,7 +276,7 @@ function matchWordNo(word) {
 }
 </script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='GameResult.tonyu' data-lastupdate='1651259068586' >native console;
+<script language='text/tonyu' type='text/tonyu' data-filename='GameResult.tonyu' data-lastupdate='1651752219776' >native console;
 native document;
 var t;
 var tmW;
@@ -517,6 +517,9 @@ function handleScreenShotButton() {
 }
 
 function handleRetryButton() {
+    $Game.gameInfo.onGoing = false;
+    $RecordManager.saveHistory($Game.gameInfo);
+    
     loadPage(Main);
 }
 
@@ -1223,7 +1226,7 @@ while(1) {
     update();
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='Game.tonyu' data-lastupdate='1651262716155' >native window;
+<script language='text/tonyu' type='text/tonyu' data-filename='Game.tonyu' data-lastupdate='1651751922131' >native window;
 
 var gameInfo;
 
@@ -1299,16 +1302,13 @@ function resumeGame(game) {
     genNewCells();
     for (word of game.guessWord) {
         result = $logic.queryWord(word);
-        
         guessResultHistory.push(result);
         for (var i = 0; i < 5; i++) {
-            
             activeCells[i].changeChar(word[i]);
             activeCells[i].changeState(result[i]);
         }
         updateButtonStates(word, result);
-        
-        genNewCells();
+        updateGameStatus();
     }
     applyButtonStyles(buttonStates);
 }
@@ -1648,6 +1648,28 @@ function handleDelete() {
     }
 }
 
+function updateGameStatus() {
+    if ($logic.isGameClear(getGuessWord())) {
+        $gameState = "finish";
+        $gameResult = "gameClear";
+        gameInfo.complete = true;
+        gameInfo.endTime = $Util.getTime();
+        $RecordManager.saveHistory(gameInfo);
+        t = -10;
+    } else if ($guessCount == $guessCountMax) {
+        $gameState = "finish";
+        $gameResult = "gameOver";
+        gameInfo.complete = true;
+        gameInfo.endTime = $Util.getTime();
+        $RecordManager.saveHistory(gameInfo);
+        t = -10;
+    } else {
+        $gameState = "guess";
+        inputIndex = 0;
+        genNewCells();
+    }
+}
+
 while(1) {
     if ($gameState == "miss") {
         if (t == 0) {
@@ -1665,25 +1687,7 @@ while(1) {
                 
                 nextOpenIndex++;
             } else if (t >= 70) {
-                if ($logic.isGameClear(getGuessWord())) {
-                    $gameState = "finish";
-                    $gameResult = "gameClear";
-                    gameInfo.complete = true;
-                    gameInfo.endTime = $Util.getTime();
-                    $RecordManager.saveHistory(gameInfo);
-                    t = -10;
-                } else if ($guessCount == $guessCountMax) {
-                    $gameState = "finish";
-                    $gameResult = "gameOver";
-                    gameInfo.complete = true;
-                    gameInfo.endTime = $Util.getTime();
-                    $RecordManager.saveHistory(gameInfo);
-                    t = -10;
-                } else {
-                    $gameState = "guess";
-                    inputIndex = 0;
-                    genNewCells();
-                }
+                updateGameStatus();
             }
         }
     } else if ($gameState == "finish") {
@@ -1821,7 +1825,7 @@ while(1) {
 
 </script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='RecordManager.tonyu' data-lastupdate='1646219897606' >native Set;
+<script language='text/tonyu' type='text/tonyu' data-filename='RecordManager.tonyu' data-lastupdate='1651752149325' >native Set;
 var historyFile;
 var allHistory;
 var logic;
@@ -1857,6 +1861,9 @@ function findOnGoingGame() {
         if (game.complete == false) {
             return game;
         }
+        if (game.onGoing) {
+            return game;
+        }
     }
     return {
         version: $version,
@@ -1864,6 +1871,7 @@ function findOnGoingGame() {
         gameMode: "normal",
         problemID: -1,
         complete: false,
+        onGoing: true,
         guessWord: [],
     };
 }
@@ -1873,6 +1881,7 @@ function printGame(game) {
     print("gameMode", game.gameMode);
     print("problemID", game.problemID);
     print("complete", game.complete);
+    print("onGoing", game.onGoing);
     print("guessWord", game.guessWord);
 }
 
@@ -2318,7 +2327,7 @@ while (1) {
     }
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1651278211039' >
+<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1651752343818' >
 {
     "images": [
         {
