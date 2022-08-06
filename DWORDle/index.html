@@ -18,14 +18,16 @@
 <script src="https://edit.tonyu.jp/images/mapchip.png.js"></script>
 <script src="https://edit.tonyu.jp/js/lib/jquery-1.12.1.js" type="text/javascript"></script>
 <script src="https://edit.tonyu.jp/js/g2/runScript_concat.min.js" type="text/javascript"></script>
-<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1651752337311' >/** 
+<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1659795714698' >/** 
  * DWORDle by @kakira9618
  * This program is inspired by wordle (https://www.powerlanguage.co.uk/wordle/)
 */
+native navigator;
+native JSON;
 
 function init() {
     
-    $version = "1.4.0";
+    $version = "1.5.0";
     
     $screenP = 2;
     $Screen.setBGColor("#202020");
@@ -38,6 +40,7 @@ function init() {
 
     var pID = gameInfo.problemID;
     var nextpID = 0;
+    var cnt = 0;
     if (pID == -1) {
         var title = new Title();
         while (!$Util.isValidPID(pID)) {
@@ -48,6 +51,21 @@ function init() {
             nextpID = rnd(9999) + 1;
             if (!(pID == 0) && !pID) {
                 pID = -1;
+                cnt++;
+                if (cnt == 10) {
+                    if (navigator.clipboard) {
+                        var historyFile = file("history.json");
+                        var allHistory;
+                        if (historyFile.exists()) {
+                            allHistory = historyFile.obj();
+                        } else {
+                            allHistory = {version: $version};
+                        }
+                        var historyText = JSON.stringify(allHistory, null, 2);
+                        navigator.clipboard.writeText(historyText);
+                        print("Exported history.json to clipboard.");
+                    }
+                }
             } else {
                 var searchPID = pID == 0 ? $Util.getTodayInteger() : pID;
                 if ($RecordManager.isAlreadyPlayed(searchPID)) {
@@ -2327,7 +2345,7 @@ while (1) {
     }
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1651759882537' >
+<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1659795720292' >
 {
     "images": [
         {
