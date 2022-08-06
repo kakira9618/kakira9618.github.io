@@ -18,7 +18,7 @@
 <script src="https://edit.tonyu.jp/images/mapchip.png.js"></script>
 <script src="https://edit.tonyu.jp/js/lib/jquery-1.12.1.js" type="text/javascript"></script>
 <script src="https://edit.tonyu.jp/js/g2/runScript_concat.min.js" type="text/javascript"></script>
-<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1659799452154' >/** 
+<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1659800315006' >/** 
  * DWORDle by @kakira9618
  * This program is inspired by wordle (https://www.powerlanguage.co.uk/wordle/)
 */
@@ -30,7 +30,7 @@ native Blob;
 
 function init() {
     
-    $version = "1.5.1";
+    $version = "1.5.2";
     
     $screenP = 2;
     $Screen.setBGColor("#202020");
@@ -77,7 +77,7 @@ function init() {
                         dummy_a_el.href = window.URL.createObjectURL(blob);
                          
                         // a 要素の download 属性にファイル名をセット
-                        dummy_a_el.download = 'history.json';
+                        dummy_a_el.download = 'history.json.enc';
                          
                         // 疑似的に a 要素をクリックさせる
                         dummy_a_el.click();
@@ -2362,7 +2362,7 @@ while (1) {
     }
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1659799455523' >
+<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1659800317892' >
 {
     "images": [
         {
