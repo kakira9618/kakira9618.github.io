@@ -12,19 +12,21 @@
 <meta property="og:site_name" content="DWORDlie" />
 <meta property="og:locale" content="ja_JP" />
 <meta http-equiv="Content-type" content="text/html; charset=utf-8"/>
-<script>WebSite={runType:'singleHTML', useEditButton:false};</script><link rel="stylesheet" href="https://edit.tonyu.jp//css/runtime.css"/><script src="https://edit.tonyu.jp/images/base.png.js"></script>
+<script>WebSite={runType:'singleHTML', useEditButton:false};</script>
+<title>dwordle</title>
+<link rel="stylesheet" href="https://edit.tonyu.jp//css/runtime.css"/><script src="https://edit.tonyu.jp/images/base.png.js"></script>
 <script src="https://edit.tonyu.jp/images/Sample.png.js"></script>
 <script src="https://edit.tonyu.jp/images/neko.png.js"></script>
 <script src="https://edit.tonyu.jp/images/mapchip.png.js"></script>
 <script src="https://edit.tonyu.jp/js/lib/jquery-1.12.1.js" type="text/javascript"></script>
 <script src="https://edit.tonyu.jp/js/g2/runScript_concat.min.js" type="text/javascript"></script>
-<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1647357224171' >/** 
+<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1674179390014' >/** 
  * DWORDle by @kakira9618
  * This program is inspired by wordle (https://www.powerlanguage.co.uk/wordle/)
 */
 
 function init() {
-    $version = "2022.4.1";
+    $version = "2022.4.1.001";
     
     $screenP = 2;
     $Screen.setBGColor("#202020");
@@ -37,8 +39,10 @@ function init() {
 
     var pID = gameInfo.problemID;
     var nextpID = 0;
+    
     if (pID == -1) {
         var title = new Title();
+        var cnt = 0;
         while (!$Util.isValidPID(pID)) {
             pID = promptNumber({
                 title: "Start Game",
@@ -57,6 +61,10 @@ function init() {
                     });
                     if (!conf) pID = -1; 
                 }
+            }
+            cnt++;
+            if (cnt == 10) {
+                $RecordManager.dumpHistory();
             }
         }
         if (pID == 0) {
@@ -158,7 +166,7 @@ while(1) {
 }
 </script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='Logic.tonyu' data-lastupdate='1648130813444' >var allWordsListHash;
+<script language='text/tonyu' type='text/tonyu' data-filename='Logic.tonyu' data-lastupdate='1674179529256' >var allWordsListHash;
 var wordList;
 var ans1, ans2;
 var ans1ind, ans2ind;
@@ -1708,11 +1716,14 @@ while(1) {
 
 </script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='RecordManager.tonyu' data-lastupdate='1647357500963' >native Set;
+<script language='text/tonyu' type='text/tonyu' data-filename='RecordManager.tonyu' data-lastupdate='1674179370905' >native Set;
+native JSON;
+native navigator;
 var historyFile;
 var allHistory;
 var logic;
 var playedHash;
+
 
 function loadHistory() {
     historyFile = file("history.json");
@@ -1725,6 +1736,16 @@ function loadHistory() {
     for (var time, game in allHistory) {
         if (time == "version") continue;
         playedHash[game.problemID] = 1;
+    }
+}
+
+function dumpHistory() {
+    if (navigator.clipboard) {
+        return navigator.clipboard.writeText(JSON.stringify(allHistory, null, 2)).then(\(){
+            print("Successed to copy the history file to the clipboard.");
+        });
+    } else {
+        print("Failed to copy the history file to the clipboard.");
     }
 }
 
@@ -1926,7 +1947,7 @@ while (1) {
 }
 </script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='StatWindow.tonyu' data-lastupdate='1647357693784' >
+<script language='text/tonyu' type='text/tonyu' data-filename='StatWindow.tonyu' data-lastupdate='1674179574227' >
 extends Window;
 var stats;
 var rects, freqTexts;
@@ -1935,7 +1956,7 @@ var maxFreq;
 \onAppear() {
     super.onAppear();
     stats = $RecordManager.getStatistics();
-    print(stats);
+    // print(stats);
     UIinit();
 }
 
@@ -2125,7 +2146,39 @@ while(1) {
     update();
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='options.json' data-lastupdate='1647353620598' >
+<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1674179592979' >
+{
+    "images": [
+        {
+            "name": "$pat_base",
+            "url": "images/base.png",
+            "pwidth": 32,
+            "pheight": 32
+        },
+        {
+            "name": "$pat_sample",
+            "url": "images/Sample.png",
+            "type": "t1"
+        },
+        {
+            "name": "$pat_neko",
+            "url": "images/neko.png",
+            "pwidth": 32,
+            "pheight": 32,
+            "type": "wh"
+        },
+        {
+            "name": "$pat_mapchip",
+            "url": "images/mapchip.png",
+            "pwidth": 32,
+            "pheight": 32,
+            "type": "wh"
+        }
+    ],
+    "sounds": []
+}</script>
+
+<script language='text/tonyu' type='text/tonyu' data-filename='options.json' data-lastupdate='1674179593055' >
 {
     "compiler": {
         "namespace": "user",
@@ -2158,38 +2211,6 @@ while(1) {
         "title": "dwordle",
         "whenPrjDirExists": "selectPolicy"
     }
-}</script>
-
-<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1648739010523' >
-{
-    "images": [
-        {
-            "name": "$pat_base",
-            "url": "images/base.png",
-            "pwidth": 32,
-            "pheight": 32
-        },
-        {
-            "name": "$pat_sample",
-            "url": "images/Sample.png",
-            "type": "t1"
-        },
-        {
-            "name": "$pat_neko",
-            "url": "images/neko.png",
-            "pwidth": 32,
-            "pheight": 32,
-            "type": "wh"
-        },
-        {
-            "name": "$pat_mapchip",
-            "url": "images/mapchip.png",
-            "pwidth": 32,
-            "pheight": 32,
-            "type": "wh"
-        }
-    ],
-    "sounds": []
 }</script>
 
 </head><body><div id='splash' style='position:relative; height: 100%;'>
