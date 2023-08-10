@@ -20,7 +20,7 @@
 <script src="https://edit.tonyu.jp/images/mapchip.png.js"></script>
 <script src="https://edit.tonyu.jp/js/lib/jquery-1.12.1.js" type="text/javascript"></script>
 <script src="https://edit.tonyu.jp/js/g2/runScript_concat.min.js" type="text/javascript"></script>
-<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1674173567753' >/** 
+<script src="https://edit.tonyu.jp/js/runtime/detectUnsupported.js"></script><script language='text/tonyu' type='text/tonyu' data-filename='Main.tonyu' data-lastupdate='1691644789167' >/** 
  * DWORDle by @kakira9618
  * This program is inspired by wordle (https://www.powerlanguage.co.uk/wordle/)
 */
@@ -32,7 +32,7 @@ native Blob;
 
 function init() {
     
-    $version = "1.5.4";
+    $version = "1.5.5";
     
     $screenP = 2;
     $Screen.setBGColor("#202020");
@@ -68,6 +68,10 @@ function init() {
                 }
             }
             cnt++;
+            if (cnt == 20) {
+                $RecordManager.saveDumpedHistory();
+                while(1) wait(1000);
+            }
             if (cnt == 10) {
                 $RecordManager.dumpHistory();
             }
@@ -288,7 +292,7 @@ function matchWordNo(word) {
 }
 </script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='GameResult.tonyu' data-lastupdate='1651752219776' >native console;
+<script language='text/tonyu' type='text/tonyu' data-filename='GameResult.tonyu' data-lastupdate='1691645603737' >native console;
 native document;
 var t;
 var tmW;
@@ -619,6 +623,7 @@ while (1) {
             fillStyle: color(0, 172, 238),
             onClick: handleShareButton,
             lifeKeeper: this,
+            round: 5 * $screenP,
             mhlZ: 250
         };
         
@@ -634,6 +639,7 @@ while (1) {
             fillStyle: color(106, 170, 100),
             onClick: handleRetryButton,
             lifeKeeper: this,
+            round: 5 * $screenP,
             mhlZ: 250
         };
         
@@ -649,6 +655,7 @@ while (1) {
             fillStyle: color(127, 127, 127),
             onClick: handleScreenShotButton,
             lifeKeeper: this,
+            round: 5 * $screenP,
             mhlZ: 250
         };
         
@@ -664,6 +671,7 @@ while (1) {
             fillStyle: "#FFFFFF",
             onClick: handleMinimizeButton,
             lifeKeeper: this,
+            round: 5 * $screenP,
             mhlZ: 250
         };
         
@@ -821,7 +829,7 @@ function setList(seed) {
 }
 </script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='RoundedButton.tonyu' data-lastupdate='1644331768317' >extends Button;
+<script language='text/tonyu' type='text/tonyu' data-filename='RoundedButton.tonyu' data-lastupdate='1691644668127' >extends Button;
 var mhlZ;
 if (!mhlZ) mhlZ = 100;
 $MHL.register(this, "pointer", mhlZ);
@@ -1837,10 +1845,11 @@ while(1) {
 
 </script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='RecordManager.tonyu' data-lastupdate='1674173313183' >native Set;
+<script language='text/tonyu' type='text/tonyu' data-filename='RecordManager.tonyu' data-lastupdate='1674178163689' >native Set;
 native Object;
 native JSON;
 native navigator;
+native window;
 
 var historyFile;
 var allHistory;
@@ -1899,6 +1908,40 @@ function dumpHistory() {
     } else {
         print("Failed to copy the history file to the clipboard.");
     }
+}
+
+function reDifineUIDiag() {
+    // window.UIDiag.prompt=function (mesg,value) {
+    //     var di=UI("div",{title:"入力"},["div",mesg],
+    //     ["textarea",{on:{enterkey:ok},$var:"val", value:value}],["br"],
+    //     ["button",{on:{click:ok}},"OK"],
+    //     ["button",{on:{click:cancel}},"キャンセル"]).dialog({close:function (){
+    //             di.dialog("close");
+    //             d.resolve();
+    //     }});
+    //     var d=$.Deferred();
+    //     function ok() {
+    //         var r=di.$vars.val.val();
+    //         di.dialog("close");
+    //         return d.resolve(r);
+    //     }
+    //     function cancel() {
+    //         di.dialog("close");
+    //         return d.resolve();
+    //     }
+    //     return d.promise();
+    // };
+}
+
+function saveDumpedHistory() {
+    //reDifineUIDiag();
+    waitInput("hello","aaa","{}");
+    // new HTMLUI(["div", {style:"background:white;"},
+    // ["h1", "Welcome"],
+    // ["button", {onclick: function () { print ("World");  }}, "Hello"]
+    // ],
+    // 0, 0, 1000, 1000);
+    
 }
 
 function deleteHistory() {
@@ -2349,7 +2392,7 @@ while (1) {
     update();
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1674173570477' >
+<script language='text/tonyu' type='text/tonyu' data-filename='res.json' data-lastupdate='1691645614781' >
 {
     "images": [
         {
@@ -2381,7 +2424,7 @@ while (1) {
     "sounds": []
 }</script>
 
-<script language='text/tonyu' type='text/tonyu' data-filename='options.json' data-lastupdate='1674173570654' >
+<script language='text/tonyu' type='text/tonyu' data-filename='options.json' data-lastupdate='1691645614845' >
 {
     "compiler": {
         "namespace": "user",
