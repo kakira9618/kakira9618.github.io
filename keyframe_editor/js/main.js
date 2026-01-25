@@ -958,9 +958,8 @@ async function initWithFile(file) {
     zoomview: {
       container: zoomviewContainer,
       playheadColor: '#ffd166',
-      playheadTextColor: '#0b0f17',
       playheadClickTolerance: 10,
-      showPlayheadTime: true
+      showPlayheadTime: false
     },
     mediaElement: audio,
     webAudio: { audioBuffer },
