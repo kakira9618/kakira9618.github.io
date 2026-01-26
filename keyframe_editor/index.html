@@ -115,18 +115,23 @@
     <div class="split-row">
       <section class="card">
         <div class="list">
-          <div class="row" style="justify-content:space-between; align-items:center;">
-            <div>
-              <strong style="font-size:13px;">キーフレーム一覧</strong>
-            </div>
-            <div class="row" style="gap:8px; align-items:center;">
-              <label class="muted" style="font-size:11px;">フィルタ</label>
-              <select id="labelFilter" class="small" style="padding:6px 8px; font-size:12px; min-width:120px;">
-                <option value="">(すべて)</option>
-              </select>
+          <div class="list-header">
+            <div class="row" style="justify-content:space-between; align-items:center;">
+              <div>
+                <strong style="font-size:13px;">キーフレーム一覧</strong>
+              </div>
+              <div class="row" style="gap:8px; align-items:center;">
+                <label class="muted" style="font-size:11px;">フィルタ</label>
+                <select id="labelFilter" class="small" style="padding:6px 8px; font-size:12px; min-width:120px;">
+                  <option value="">(すべて)</option>
+                </select>
+              </div>
             </div>
           </div>
-          <div id="kfList"></div>
+          <div id="kfListContent" class="list-content">
+            <div id="kfList"></div>
+          </div>
+          <div id="listResizer" class="list-resizer"></div>
         </div>
       </section>
 

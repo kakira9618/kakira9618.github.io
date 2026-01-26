@@ -1985,6 +1985,65 @@ UIControls.setupDragAndDrop(dropZone, async (files) => {
   }
 });
 
+// ==================== キーフレームリストのリサイザー ====================
+
+const STORAGE_KEY_LIST_HEIGHT = 'kfe:list-height';
+const DEFAULT_LIST_HEIGHT = 500;
+const MIN_LIST_HEIGHT = 200;
+const MAX_LIST_HEIGHT = 800;
+
+function setupListResizer() {
+  const listContent = document.getElementById('kfListContent');
+  const resizer = document.getElementById('listResizer');
+
+  if (!listContent || !resizer) return;
+
+  // localStorageから高さを読み込み
+  const savedHeight = localStorage.getItem(STORAGE_KEY_LIST_HEIGHT);
+  const initialHeight = savedHeight ? Number(savedHeight) : DEFAULT_LIST_HEIGHT;
+  listContent.style.height = `${Utils.clamp(initialHeight, MIN_LIST_HEIGHT, MAX_LIST_HEIGHT)}px`;
+
+  let isResizing = false;
+  let startY = 0;
+  let startHeight = 0;
+
+  const onPointerDown = (e) => {
+    isResizing = true;
+    startY = e.clientY;
+    startHeight = listContent.offsetHeight;
+    resizer.classList.add('dragging');
+    resizer.setPointerCapture?.(e.pointerId);
+    e.preventDefault();
+  };
+
+  const onPointerMove = (e) => {
+    if (!isResizing) return;
+
+    const deltaY = e.clientY - startY;
+    const newHeight = Utils.clamp(startHeight + deltaY, MIN_LIST_HEIGHT, MAX_LIST_HEIGHT);
+    listContent.style.height = `${newHeight}px`;
+
+    e.preventDefault();
+  };
+
+  const onPointerUp = (e) => {
+    if (!isResizing) return;
+
+    isResizing = false;
+    resizer.classList.remove('dragging');
+    resizer.releasePointerCapture?.(e.pointerId);
+
+    // localStorageに保存
+    const finalHeight = listContent.offsetHeight;
+    localStorage.setItem(STORAGE_KEY_LIST_HEIGHT, String(finalHeight));
+  };
+
+  resizer.addEventListener('pointerdown', onPointerDown);
+  resizer.addEventListener('pointermove', onPointerMove);
+  resizer.addEventListener('pointerup', onPointerUp);
+  resizer.addEventListener('pointercancel', onPointerUp);
+}
+
 // ==================== 初期化 ====================
 
 zoomSlider.set(1);
@@ -1993,6 +2052,7 @@ setUiEnabled(false);
 updateJson();
 renderKeyframeList();
 bindScrubHandlers();
+setupListResizer();
 
 const view = getSpecView();
 drawSpectrogram(view.viewStart, view.viewDuration);

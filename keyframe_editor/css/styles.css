@@ -292,6 +292,71 @@ button:disabled {
   border-top: 1px solid rgba(255, 255, 255, .08);
   margin-top: 10px;
   padding-top: 10px;
+  padding-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.list-header {
+  flex-shrink: 0;
+}
+
+.list-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 200px;
+  max-height: 800px;
+  /* デフォルトの高さは後でJSで設定 */
+}
+
+.list-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.list-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.list-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.list-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.list-resizer {
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  right: 0;
+  height: 8px;
+  cursor: ns-resize;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.list-resizer::after {
+  content: '';
+  width: 40px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  transition: background 0.15s ease;
+}
+
+.list-resizer:hover::after {
+  background: rgba(255, 209, 102, 0.5);
+}
+
+.list-resizer.dragging::after {
+  background: rgba(255, 209, 102, 0.8);
 }
 
 .kf {
