@@ -13,6 +13,7 @@ import * as Utils from './modules/utils.js';
 // ==================== DOM要素 ====================
 const fileInput = Utils.el('file');
 const dropZone = Utils.el('fileDrop');
+const aboutDropZone = document.querySelector('.about-dropzone');
 const audio = Utils.el('audio');
 const overviewContainer = Utils.el('overview-container');
 const zoomviewContainer = Utils.el('zoomview-container');
@@ -1944,6 +1945,7 @@ window.addEventListener('resize', () => {
   const view = getSpecView();
   drawSpectrogram(view.viewStart, view.viewDuration);
   updateSpecPlayhead();
+  syncHeaderDropzoneHeights();
 });
 
 // beforeunload guard
@@ -2162,6 +2164,14 @@ function setupListResizer() {
 
 // ==================== 初期化 ====================
 
+function syncHeaderDropzoneHeights() {
+  if (!dropZone || !aboutDropZone) return;
+  const targetHeight = Math.round(dropZone.getBoundingClientRect().height);
+  if (targetHeight > 0) {
+    aboutDropZone.style.height = `${targetHeight}px`;
+  }
+}
+
 zoomSlider.set(1);
 rateSlider.set(1);
 setUiEnabled(false);
@@ -2169,6 +2179,7 @@ updateJson();
 renderKeyframeList();
 bindScrubHandlers();
 setupListResizer();
+requestAnimationFrame(syncHeaderDropzoneHeights);
 
 const view = getSpecView();
 drawSpectrogram(view.viewStart, view.viewDuration);
