@@ -207,7 +207,8 @@ function restoreKeyframesFromLocalStorage(hash) {
     if (!raw) return false;
     const data = JSON.parse(raw);
     if (!data || !Array.isArray(data.keyframes)) return false;
-    KeyframeManager.importKeyframes(data);
+    // ファイル読み込み時は履歴をクリア
+    KeyframeManager.importKeyframes(data, true);
     refreshLabelFilterOptions();
     renderKeyframeList();
     rebuildPeaksPoints();
@@ -798,7 +799,8 @@ function createTimeCell(kf) {
     applyValue: (v, isFinal) => {
       const dur = Number.isFinite(audio.duration) ? audio.duration : Infinity;
       const next = Utils.clamp(v, 0, dur);
-      KeyframeManager.updateKeyframe(kf.id, { time: next });
+      // ドラッグ中は履歴を保存せず、終了時のみ保存
+      KeyframeManager.updateKeyframe(kf.id, { time: next }, isFinal);
       if (kf.pointId) {
         PeaksManager.updatePoint(kf.pointId, { time: next });
       }
@@ -890,10 +892,27 @@ function createCommentCell(kf) {
   inp.className = 'comment-input';
   inp.placeholder = 'コメント（例: サビ開始 / カット点）';
   inp.value = kf.comment ?? '';
+  let initialValue = kf.comment ?? '';
+
   inp.addEventListener('click', (e) => e.stopPropagation());
+
+  // フォーカス時に初期値を保存
+  inp.addEventListener('focus', () => {
+    initialValue = inp.value;
+  });
+
+  // 入力中は履歴を保存しない
   inp.addEventListener('input', () => {
-    KeyframeManager.updateKeyframe(kf.id, { comment: inp.value });
+    KeyframeManager.updateKeyframe(kf.id, { comment: inp.value }, false);
     updateJson();
+  });
+
+  // フォーカスが外れた時に履歴を保存（値が変更されていれば）
+  inp.addEventListener('blur', () => {
+    if (inp.value !== initialValue) {
+      KeyframeManager.updateKeyframe(kf.id, { comment: inp.value }, true);
+      updateJson();
+    }
   });
 
   commentWrap.appendChild(inp);
@@ -1729,13 +1748,48 @@ window.addEventListener('beforeunload', (e) => {
 
 // キーボードショートカット
 window.addEventListener('keydown', (e) => {
-  if (btnPlay && btnPlay.disabled) return;
-
   const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
   const type = (e.target && e.target.type) ? e.target.type.toLowerCase() : '';
   const isTextEntry = (tag === 'input' && type !== 'range') || tag === 'textarea';
   const isCommentField = e.target && e.target.classList && e.target.classList.contains('comment-input');
   const isJsonField = e.target && e.target.id === 'json';
+
+  // Ctrl/Cmd+S で出力画面を開く（テキスト入力中でも有効）
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    e.preventDefault();
+    showExportModal();
+    return;
+  }
+
+  // Ctrl/Cmd+Z でUndo（テキスト入力中は無効）
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'z' && !isCommentField && !isJsonField) {
+    e.preventDefault();
+    if (KeyframeManager.canUndo()) {
+      KeyframeManager.performUndo();
+      refreshLabelFilterOptions();
+      renderKeyframeList();
+      rebuildPeaksPoints();
+      updatePointColors();
+      updateJson();
+    }
+    return;
+  }
+
+  // Ctrl/Cmd+Shift+Z でRedo（テキスト入力中は無効）
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'z' && !isCommentField && !isJsonField) {
+    e.preventDefault();
+    if (KeyframeManager.canRedo()) {
+      KeyframeManager.performRedo();
+      refreshLabelFilterOptions();
+      renderKeyframeList();
+      rebuildPeaksPoints();
+      updatePointColors();
+      updateJson();
+    }
+    return;
+  }
+
+  if (btnPlay && btnPlay.disabled) return;
 
   if (isCommentField || isJsonField) return;
 

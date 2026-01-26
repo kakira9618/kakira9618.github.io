@@ -4,11 +4,23 @@
  */
 
 import { sanitizeLabelName, sanitizeComment, validateKeyframesData, getLabelColor } from './utils.js';
+import * as HistoryManager from './history-manager.js';
 
 let keyframes = [];
 let allLabels = [];
 let kfSeq = 1;
 let lastEditedLabel = '';
+
+// 履歴記録を一時的に無効化するフラグ（復元中に履歴を追加しないため）
+let skipHistory = false;
+
+/**
+ * 現在の状態を履歴に保存
+ */
+function saveToHistory() {
+  if (skipHistory) return;
+  HistoryManager.pushState(keyframes);
+}
 
 /**
  * キーフレームを追加
@@ -19,6 +31,9 @@ let lastEditedLabel = '';
  * @returns {Object} 追加されたキーフレーム
  */
 export function addKeyframe(time, label = '', comment = '', pointId = null) {
+  // 履歴に保存
+  saveToHistory();
+
   const id = `kf-${kfSeq++}`;
   const seq = kfSeq - 1;
 
@@ -54,6 +69,9 @@ export function removeKeyframe(id) {
   const index = keyframes.findIndex(k => k.id === id);
   if (index === -1) return null;
 
+  // 履歴に保存
+  saveToHistory();
+
   const removed = keyframes.splice(index, 1)[0];
   updateAllLabels();
   return removed;
@@ -63,10 +81,16 @@ export function removeKeyframe(id) {
  * キーフレームを更新（サニタイゼーション付き）
  * @param {string} id - キーフレームID
  * @param {Object} updates - 更新内容
+ * @param {boolean} saveHistory - 履歴に保存するかどうか（デフォルト: true）
  */
-export function updateKeyframe(id, updates) {
+export function updateKeyframe(id, updates, saveHistory = true) {
   const kf = keyframes.find(k => k.id === id);
   if (!kf) return;
+
+  // 履歴に保存（オプション）
+  if (saveHistory) {
+    saveToHistory();
+  }
 
   if (updates.time !== undefined) {
     kf.time = updates.time;
@@ -109,16 +133,24 @@ export function clearKeyframes() {
   keyframes = [];
   allLabels = [];
   lastEditedLabel = '';
+  // ファイルをクリアする際は履歴もクリア
+  HistoryManager.clearHistory();
 }
 
 /**
  * キーフレームをインポート（検証とサニタイゼーション付き）
  * @param {Object|Array} data - インポートするデータ
+ * @param {boolean} clearHistoryOnImport - インポート時に履歴をクリアするか（デフォルト: false）
  * @throws {Error} 検証エラー
  */
-export function importKeyframes(data) {
+export function importKeyframes(data, clearHistoryOnImport = false) {
   // 入力検証
   validateKeyframesData(data);
+
+  // 履歴に保存（ファイル読み込み時などでなければ）
+  if (!clearHistoryOnImport) {
+    saveToHistory();
+  }
 
   const root = Array.isArray(data) ? { keyframes: data } : data;
   const parsed = [];
@@ -248,4 +280,70 @@ export function sortKeyframes(kfs, sortField, sortDir) {
     }
     return cmp * sortDir;
   });
+}
+
+/**
+ * Undo可能かどうか
+ * @returns {boolean}
+ */
+export function canUndo() {
+  return HistoryManager.canUndo();
+}
+
+/**
+ * Redo可能かどうか
+ * @returns {boolean}
+ */
+export function canRedo() {
+  return HistoryManager.canRedo();
+}
+
+/**
+ * Undo操作を実行
+ * @returns {boolean} 成功したかどうか
+ */
+export function performUndo() {
+  const previousState = HistoryManager.undo(keyframes);
+  if (!previousState) return false;
+
+  // 履歴記録を無効化して復元
+  skipHistory = true;
+  restoreKeyframesFromState(previousState);
+  skipHistory = false;
+
+  return true;
+}
+
+/**
+ * Redo操作を実行
+ * @returns {boolean} 成功したかどうか
+ */
+export function performRedo() {
+  const nextState = HistoryManager.redo(keyframes);
+  if (!nextState) return false;
+
+  // 履歴記録を無効化して復元
+  skipHistory = true;
+  restoreKeyframesFromState(nextState);
+  skipHistory = false;
+
+  return true;
+}
+
+/**
+ * キーフレームの状態を復元（内部用）
+ * @param {Array} state - 復元する状態
+ */
+function restoreKeyframesFromState(state) {
+  keyframes = JSON.parse(JSON.stringify(state));
+
+  // seqの最大値を再計算
+  let maxSeq = 0;
+  for (const kf of keyframes) {
+    if (kf.seq > maxSeq) maxSeq = kf.seq;
+  }
+  kfSeq = maxSeq + 1;
+
+  updateLastEditedLabelFromKeyframes();
+  updateAllLabels();
 }
