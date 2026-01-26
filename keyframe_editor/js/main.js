@@ -948,8 +948,9 @@ async function initWithFile(file) {
   const options = {
     overview: {
       container: overviewContainer,
-      waveformColor: 'rgba(225,232,240,0.92)',
-      playedWaveformColor: 'rgba(245,248,255,0.95)',
+      // 未再生部分を明るく、再生済み部分を落ち着いた色にする
+      waveformColor: 'rgba(245,248,255,0.95)',
+      playedWaveformColor: 'rgba(225,232,240,0.62)',
       playheadColor: '#ffd166',
       highlightColor: 'rgba(255,209,102,0.80)',
       highlightStrokeColor: 'rgba(255,209,102,0.95)',
