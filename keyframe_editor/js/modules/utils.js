@@ -207,6 +207,102 @@ export function floorPow2(n) {
   return p;
 }
 
+// ==================== ハッシュ (MD5) ====================
+
+const MD5_S = [
+  7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
+  5,  9, 14, 20, 5,  9, 14, 20, 5,  9, 14, 20, 5,  9, 14, 20,
+  4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23,
+  6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21
+];
+
+const MD5_K = (() => {
+  const k = new Uint32Array(64);
+  for (let i = 0; i < 64; i++) {
+    k[i] = Math.floor(Math.abs(Math.sin(i + 1)) * 0x100000000) >>> 0;
+  }
+  return k;
+})();
+
+function rotl(x, n) {
+  return ((x << n) | (x >>> (32 - n))) >>> 0;
+}
+
+function toHex(val) {
+  return (val >>> 0).toString(16).padStart(8, '0');
+}
+
+/**
+ * ArrayBuffer から MD5 ハッシュを計算
+ * @param {ArrayBuffer|TypedArray} buffer - 入力データ
+ * @returns {string} 32文字の16進ハッシュ
+ */
+export function md5(buffer) {
+  const src = buffer instanceof ArrayBuffer ? buffer : buffer.buffer;
+  const data = new Uint8Array(src);
+  const len = data.length;
+
+  // パディング: 1bit (0x80) + 0埋め + 長さ64bit
+  const withOne = len + 1;
+  const padLen = (withOne % 64 <= 56) ? (56 - (withOne % 64)) : (56 + 64 - (withOne % 64));
+  const totalLen = withOne + padLen + 8;
+  const bytes = new Uint8Array(totalLen);
+  bytes.set(data);
+  bytes[len] = 0x80;
+
+  const bitLen = len * 8;
+  for (let i = 0; i < 8; i++) {
+    bytes[totalLen - 8 + i] = (bitLen >>> (8 * i)) & 0xff;
+  }
+
+  let a = 0x67452301;
+  let b = 0xefcdab89;
+  let c = 0x98badcfe;
+  let d = 0x10325476;
+
+  const M = new Uint32Array(16);
+
+  for (let offset = 0; offset < totalLen; offset += 64) {
+    for (let i = 0; i < 16; i++) {
+      const base = offset + i * 4;
+      M[i] = bytes[base] | (bytes[base + 1] << 8) | (bytes[base + 2] << 16) | (bytes[base + 3] << 24);
+    }
+
+    let A = a, B = b, C = c, D = d;
+
+    for (let i = 0; i < 64; i++) {
+      let F, g;
+      if (i < 16) {
+        F = (B & C) | (~B & D);
+        g = i;
+      } else if (i < 32) {
+        F = (D & B) | (~D & C);
+        g = (5 * i + 1) % 16;
+      } else if (i < 48) {
+        F = B ^ C ^ D;
+        g = (3 * i + 5) % 16;
+      } else {
+        F = C ^ (B | ~D);
+        g = (7 * i) % 16;
+      }
+
+      const tmp = D;
+      D = C;
+      C = B;
+      const sum = (A + F + MD5_K[i] + M[g]) >>> 0;
+      B = (B + rotl(sum, MD5_S[i])) >>> 0;
+      A = tmp;
+    }
+
+    a = (a + A) >>> 0;
+    b = (b + B) >>> 0;
+    c = (c + C) >>> 0;
+    d = (d + D) >>> 0;
+  }
+
+  return toHex(a) + toHex(b) + toHex(c) + toHex(d);
+}
+
 // ==================== 双対数スライダー ====================
 
 /**

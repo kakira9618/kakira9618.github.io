@@ -77,6 +77,10 @@ const JSON_APPLY_DEBOUNCE_MS = 450;
 
 const FRAME_SEC = 1 / 60;
 
+// ==================== 永続化設定 ====================
+const STORAGE_PREFIX = 'kfe:keyframes:md5:';
+let currentAudioHash = null;
+
 // ズーム・再生速度設定
 const zoomConfig = UIControls.createZoomConfig(2048);
 const rateConfig = UIControls.createRateConfig();
@@ -168,6 +172,46 @@ function refreshLabelFilterOptions() {
 
 // ==================== JSON編集 ====================
 
+function storageKey(hash) {
+  return `${STORAGE_PREFIX}${hash}`;
+}
+
+function persistKeyframesToLocalStorage() {
+  if (!currentAudioHash) return;
+  if (typeof localStorage === 'undefined') return;
+  try {
+    const payload = KeyframeManager.exportKeyframes();
+    const envelope = {
+      keyframes: payload.keyframes,
+      savedAt: Date.now()
+    };
+    localStorage.setItem(storageKey(currentAudioHash), JSON.stringify(envelope));
+  } catch (e) {
+    console.warn('localStorage への保存に失敗しました', e);
+  }
+}
+
+function restoreKeyframesFromLocalStorage(hash) {
+  if (!hash) return false;
+  if (typeof localStorage === 'undefined') return false;
+  try {
+    const raw = localStorage.getItem(storageKey(hash));
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    if (!data || !Array.isArray(data.keyframes)) return false;
+    KeyframeManager.importKeyframes(data);
+    refreshLabelFilterOptions();
+    renderKeyframeList();
+    rebuildPeaksPoints();
+    updatePointColors();
+    updateJson(); // JSONエリアと同期（保存も行われる）
+    return true;
+  } catch (e) {
+    console.warn('localStorage からの復元に失敗しました', e);
+    return false;
+  }
+}
+
 function updateJson() {
   if (!jsonArea) return;
   const payload = KeyframeManager.exportKeyframes();
@@ -175,6 +219,7 @@ function updateJson() {
   jsonArea.value = JSON.stringify(payload, null, 2);
   clearJsonError();
   isUpdatingJsonArea = false;
+  persistKeyframesToLocalStorage();
 }
 
 function clearJsonError() {
@@ -901,6 +946,7 @@ function createActionsCell(kf) {
 async function destroyAll() {
   PeaksManager.destroyPeaks();
   KeyframeManager.clearKeyframes();
+  currentAudioHash = null;
   hiResSpec = null;
   hiResRequestId++;
   teardownSpectrum();
@@ -941,10 +987,14 @@ async function initWithFile(file) {
   renderKeyframeList();
   updateJson();
 
+  // 音源ハッシュ計算（内容に基づく識別子）
+  const arrayBuffer = await file.arrayBuffer();
+  currentAudioHash = Utils.md5(arrayBuffer);
+
   const objectUrl = AudioManager.createObjectURL(file);
   audio.src = objectUrl;
 
-  const audioBuffer = await AudioManager.decodeAudioFile(file);
+  const audioBuffer = await AudioManager.decodeAudioDataFromArrayBuffer(arrayBuffer);
 
   const options = {
     overview: {
@@ -970,6 +1020,9 @@ async function initWithFile(file) {
   };
 
   await PeaksManager.initPeaks(options);
+
+  // 同じハッシュのキーフレームがあれば最初に復元
+  restoreKeyframesFromLocalStorage(currentAudioHash);
 
   buildSpectrogram(audioBuffer);
 

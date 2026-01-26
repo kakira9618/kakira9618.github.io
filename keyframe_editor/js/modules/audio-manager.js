@@ -74,6 +74,15 @@ export function getSampleRate() {
  */
 export async function decodeAudioFile(file) {
   const arrayBuffer = await file.arrayBuffer();
+  return decodeAudioDataFromArrayBuffer(arrayBuffer);
+}
+
+/**
+ * ArrayBuffer をデコード
+ * @param {ArrayBuffer} arrayBuffer - 音声データ
+ * @returns {Promise<AudioBuffer>}
+ */
+export async function decodeAudioDataFromArrayBuffer(arrayBuffer) {
   const ctx = ensureAudioContext();
   const audioBuffer = await ctx.decodeAudioData(arrayBuffer.slice(0));
   audioBufferSrc = audioBuffer;
