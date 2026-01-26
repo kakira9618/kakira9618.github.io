@@ -405,12 +405,14 @@ function shouldUseHiRes(ppsCss) {
   const zoomedIn = currentSamplesPerPixel() < zoomConfig.baseSPP;
   if (!zoomedIn) return false;
   const baseStepSec = spectrogram.hopSize / spectrogram.sampleRate;
-  return baseStepSec > (1 / ppsCss) * 0.8;
+  const targetStepSec = (1 / ppsCss);
+  // ベーススペクトログラムの時間分解能が、表示に必要な分解能の2倍以上粗い場合に高解像度化
+  return baseStepSec > targetStepSec * 2;
 }
 
 function hiResMatches(viewStart, viewDuration, hopSize) {
   if (!hiResSpec) return false;
-  const eps = 1 / 60;
+  const eps = Math.max(viewDuration * 0.05, 0.1); // ビュー範囲の5%または0.1秒
   return Math.abs(hiResSpec.viewStart - viewStart) < eps &&
          Math.abs(hiResSpec.viewDuration - viewDuration) < eps &&
          hiResSpec.hopSize === hopSize;
@@ -431,11 +433,12 @@ async function maybeRequestHiRes(viewStart, viewDuration, ppsCss) {
   if (hiResPending) return;
 
   const now = performance.now ? performance.now() : Date.now();
-  if (now - lastHiResRequestedAt < 120) return;
+  if (now - lastHiResRequestedAt < 300) return;
 
-  const pad = Math.min(viewDuration * 0.25, duration * 0.25);
-  const start = Utils.clamp(viewStart - pad, 0, Math.max(0, duration - viewDuration));
-  const dur = Math.min(viewDuration * 1.5, duration);
+  const pad = Math.min(viewDuration * 0.25, duration * 0.1);
+  const start = Utils.clamp(viewStart - pad, 0, duration);
+  const end = Utils.clamp(viewStart + viewDuration + pad, 0, duration);
+  const dur = end - start;
 
   await buildHiResSpectrogram(start, dur, ppsCss);
 }
