@@ -1161,11 +1161,12 @@ function addKeyframe() {
 
   const time = audio.currentTime;
   const lastLabel = KeyframeManager.getLastEditedLabel();
+  const color = lastLabel ? Utils.getLabelColor(lastLabel) : '#888888';
   const point = PeaksManager.addPoint({
     time,
     labelText: `kf-temp`,
     editable: false,
-    color: '#888888'
+    color: color
   });
 
   const kf = KeyframeManager.addKeyframe(time, lastLabel, '', point?.id);
