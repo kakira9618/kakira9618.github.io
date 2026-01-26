@@ -701,6 +701,8 @@ function renderKeyframeList() {
   for (const kf of sortedKfs) {
     const row = document.createElement('div');
     row.className = 'kf';
+    row.id = `kf-row-${kf.id}`;
+    row.dataset.kfId = kf.id;
 
     // ID列
     const idCell = document.createElement('div');
@@ -1179,6 +1181,63 @@ function addKeyframe() {
   updateJson();
 }
 
+// ==================== キーフレーム検索・フォーカス ====================
+
+/**
+ * 指定時間の近くにあるキーフレームを探す
+ * @param {number} targetTime - 対象時間（秒）
+ * @param {number} threshold - 許容範囲（秒）
+ * @returns {Object|null} 見つかったキーフレーム
+ */
+function findNearestKeyframe(targetTime, threshold = 0.5) {
+  const keyframes = KeyframeManager.getKeyframes();
+  if (!keyframes || keyframes.length === 0) return null;
+
+  let nearest = null;
+  let minDistance = Infinity;
+
+  for (const kf of keyframes) {
+    const distance = Math.abs(kf.time - targetTime);
+    if (distance <= threshold && distance < minDistance) {
+      minDistance = distance;
+      nearest = kf;
+    }
+  }
+
+  return nearest;
+}
+
+/**
+ * キーフレームのテーブル行にフォーカスしてスクロール
+ * @param {string} kfId - キーフレームID
+ */
+function focusAndScrollToKeyframe(kfId) {
+  if (!kfId) return;
+
+  const rowElement = document.getElementById(`kf-row-${kfId}`);
+  if (!rowElement) return;
+
+  // 既存のハイライトを解除
+  const previousHighlight = document.querySelector('.kf.highlighted');
+  if (previousHighlight) {
+    previousHighlight.classList.remove('highlighted');
+  }
+
+  // ハイライトを追加
+  rowElement.classList.add('highlighted');
+
+  // スクロール
+  rowElement.scrollIntoView({
+    behavior: 'smooth',
+    block: 'center'
+  });
+
+  // 一定時間後にハイライトを解除
+  setTimeout(() => {
+    rowElement.classList.remove('highlighted');
+  }, 2000);
+}
+
 // ==================== スクラブ・ホイール操作 ====================
 
 function seekOverviewToClientX(clientX) {
@@ -1251,6 +1310,16 @@ function bindScrubHandlers() {
     isScrubbingOverview = false;
     overviewContainer.releasePointerCapture?.(e.pointerId);
     if (!ovMoved) {
+      const rect = overviewContainer.getBoundingClientRect();
+      const ratio = Utils.clamp((e.clientX - rect.left) / rect.width, 0, 1);
+      const targetTime = ratio * audio.duration;
+
+      // 近くのキーフレームを探す
+      const nearestKf = findNearestKeyframe(targetTime);
+      if (nearestKf) {
+        focusAndScrollToKeyframe(nearestKf.id);
+      }
+
       seekOverviewToClientX(e.clientX);
     }
   };
@@ -1260,9 +1329,14 @@ function bindScrubHandlers() {
   overviewContainer.addEventListener('pointercancel', stopOverview);
 
   // Zoom view: ドラッグでシーク
+  let zvStartX = 0;
+  let zvMoved = false;
+
   zoomviewContainer.addEventListener('pointerdown', (e) => {
     if (!Number.isFinite(audio.duration)) return;
     isScrubbingZoomview = true;
+    zvStartX = e.clientX;
+    zvMoved = false;
     startScrubSpecSync();
     seekInZoomview(e);
     zoomviewContainer.setPointerCapture?.(e.pointerId);
@@ -1273,11 +1347,29 @@ function bindScrubHandlers() {
     if (isScrubbingZoomview) {
       seekInZoomview(e);
       maybeRedrawSpecOnViewChange();
+      if (Math.abs(e.clientX - zvStartX) > 3) zvMoved = true;
       e.preventDefault();
     }
   });
 
   const stopZoom = (e) => {
+    if (!isScrubbingZoomview) return;
+
+    // クリック（ドラッグでない場合）に近くのキーフレームを探す
+    if (!zvMoved && Number.isFinite(audio.duration)) {
+      const rect = zoomviewContainer.getBoundingClientRect();
+      const ratio = Utils.clamp((e.clientX - rect.left) / rect.width, 0, 1);
+      const viewDuration = getZoomWindowDuration();
+      const start = getZoomWindowStart(viewDuration);
+      const targetTime = Utils.clamp(start + ratio * viewDuration, 0, audio.duration);
+
+      // 近くのキーフレームを探す
+      const nearestKf = findNearestKeyframe(targetTime);
+      if (nearestKf) {
+        focusAndScrollToKeyframe(nearestKf.id);
+      }
+    }
+
     isScrubbingZoomview = false;
     zoomviewContainer.releasePointerCapture?.(e.pointerId);
     stopScrubSpecSync();
