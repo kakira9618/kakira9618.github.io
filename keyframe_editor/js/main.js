@@ -1200,39 +1200,49 @@ function bindScrubHandlers() {
   zoomviewContainer.addEventListener('pointerleave', stopZoom);
   zoomviewContainer.addEventListener('pointercancel', stopZoom);
 
-  // Zoom view: ホイールで倍率変更
+  // Zoom view: Ctrl/Cmd+ホイールで倍率変更、無修飾ホイールで水平スクロール
   zoomviewContainer.addEventListener('wheel', (e) => {
     if (!PeaksManager.getPeaksInstance() || !Number.isFinite(audio.duration)) return;
-    e.preventDefault();
 
     const rect = zoomviewContainer.getBoundingClientRect();
-    const ratio = Utils.clamp((e.clientX - rect.left) / rect.width, 0, 1);
 
-    const viewDurationBefore = getZoomWindowDuration();
-    const startBefore = getZoomWindowStart(viewDurationBefore);
-    const targetTime = Utils.clamp(startBefore + ratio * viewDurationBefore, 0, audio.duration);
+    if (e.ctrlKey || e.metaKey) {
+      const ratio = Utils.clamp((e.clientX - rect.left) / rect.width, 0, 1);
 
-    const currentFactor = currentSliderFactor(elZoom, zoomConfig.map);
-    const scale = Math.exp(-e.deltaY * 0.0015);
-    let nextFactor = Utils.clamp(currentFactor * scale, zoomConfig.map.min, zoomConfig.map.max);
-    let snapped = false;
-    const SNAP_RANGE = 0.1;
-    if (Math.abs(nextFactor - 1) <= SNAP_RANGE) {
-      nextFactor = 1;
-      snapped = true;
+      const viewDurationBefore = getZoomWindowDuration();
+      const startBefore = getZoomWindowStart(viewDurationBefore);
+      const targetTime = Utils.clamp(startBefore + ratio * viewDurationBefore, 0, audio.duration);
+
+      const currentFactor = currentSliderFactor(elZoom, zoomConfig.map);
+      const scale = Math.exp(-e.deltaY * 0.0015);
+      let nextFactor = Utils.clamp(currentFactor * scale, zoomConfig.map.min, zoomConfig.map.max);
+      let snapped = false;
+      const SNAP_RANGE = 0.1;
+      if (Math.abs(nextFactor - 1) <= SNAP_RANGE) {
+        nextFactor = 1;
+        snapped = true;
+      }
+
+      const sr = AudioManager.getSampleRate();
+      const sppAfter = Math.round(zoomConfig.factorToSamplesPerPixel(nextFactor));
+      const width = rect.width || 1;
+      const viewDurationAfter = (sppAfter / sr) * width;
+      const maxStart = Math.max(0, audio.duration - viewDurationAfter);
+      const nextStart = Utils.clamp(targetTime - ratio * viewDurationAfter, 0, maxStart);
+
+      const sliderVal = Utils.sliderFromFactor(nextFactor, zoomConfig.map);
+      elZoom.value = String(sliderVal);
+      UIControls.setFactorLabel(elZoomLabel, nextFactor, snapped);
+      applyZoom(nextFactor, nextStart);
+    } else {
+      const viewDuration = getZoomWindowDuration();
+      const pxToSec = viewDuration / Math.max(1, rect.width);
+      const deltaPx = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+      const start = getZoomWindowStart(viewDuration);
+      setZoomWindowStart(start + deltaPx * pxToSec);
     }
 
-    const sr = AudioManager.getSampleRate();
-    const sppAfter = Math.round(zoomConfig.factorToSamplesPerPixel(nextFactor));
-    const width = rect.width || 1;
-    const viewDurationAfter = (sppAfter / sr) * width;
-    const maxStart = Math.max(0, audio.duration - viewDurationAfter);
-    const nextStart = Utils.clamp(targetTime - ratio * viewDurationAfter, 0, maxStart);
-
-    const sliderVal = Utils.sliderFromFactor(nextFactor, zoomConfig.map);
-    elZoom.value = String(sliderVal);
-    UIControls.setFactorLabel(elZoomLabel, nextFactor, snapped);
-    applyZoom(nextFactor, nextStart);
+    e.preventDefault();
   }, { passive: false });
 
   // Overview: ホイールで水平スクロール
@@ -1272,39 +1282,49 @@ function bindScrubHandlers() {
   spectrumContainer.addEventListener('pointerleave', stopSpec);
   spectrumContainer.addEventListener('pointercancel', stopSpec);
 
-  // Spectrum: wheel zoom
+  // Spectrum: Ctrl/Cmd+ホイールで倍率変更、無修飾ホイールで水平スクロール
   spectrumContainer.addEventListener('wheel', (e) => {
     if (!PeaksManager.getPeaksInstance() || !Number.isFinite(audio.duration)) return;
-    e.preventDefault();
 
     const rect = spectrumContainer.getBoundingClientRect();
-    const ratio = Utils.clamp((e.clientX - rect.left) / rect.width, 0, 1);
 
-    const viewDurationBefore = getZoomWindowDuration();
-    const startBefore = getZoomWindowStart(viewDurationBefore);
-    const targetTime = Utils.clamp(startBefore + ratio * viewDurationBefore, 0, audio.duration);
+    if (e.ctrlKey || e.metaKey) {
+      const ratio = Utils.clamp((e.clientX - rect.left) / rect.width, 0, 1);
 
-    const currentFactor = currentSliderFactor(elZoom, zoomConfig.map);
-    const scale = Math.exp(-e.deltaY * 0.0015);
-    let nextFactor = Utils.clamp(currentFactor * scale, zoomConfig.map.min, zoomConfig.map.max);
-    let snapped = false;
-    const SNAP_RANGE = 0.1;
-    if (Math.abs(nextFactor - 1) <= SNAP_RANGE) {
-      nextFactor = 1;
-      snapped = true;
+      const viewDurationBefore = getZoomWindowDuration();
+      const startBefore = getZoomWindowStart(viewDurationBefore);
+      const targetTime = Utils.clamp(startBefore + ratio * viewDurationBefore, 0, audio.duration);
+
+      const currentFactor = currentSliderFactor(elZoom, zoomConfig.map);
+      const scale = Math.exp(-e.deltaY * 0.0015);
+      let nextFactor = Utils.clamp(currentFactor * scale, zoomConfig.map.min, zoomConfig.map.max);
+      let snapped = false;
+      const SNAP_RANGE = 0.1;
+      if (Math.abs(nextFactor - 1) <= SNAP_RANGE) {
+        nextFactor = 1;
+        snapped = true;
+      }
+
+      const sr = AudioManager.getSampleRate();
+      const sppAfter = Math.round(zoomConfig.factorToSamplesPerPixel(nextFactor));
+      const width = rect.width || 1;
+      const viewDurationAfter = (sppAfter / sr) * width;
+      const maxStart = Math.max(0, audio.duration - viewDurationAfter);
+      const nextStart = Utils.clamp(targetTime - ratio * viewDurationAfter, 0, maxStart);
+
+      const sliderVal = Utils.sliderFromFactor(nextFactor, zoomConfig.map);
+      elZoom.value = String(sliderVal);
+      UIControls.setFactorLabel(elZoomLabel, nextFactor, snapped);
+      applyZoom(nextFactor, nextStart);
+    } else {
+      const viewDuration = getZoomWindowDuration();
+      const pxToSec = viewDuration / Math.max(1, rect.width);
+      const deltaPx = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+      const start = getZoomWindowStart(viewDuration);
+      setZoomWindowStart(start + deltaPx * pxToSec);
     }
 
-    const sr = AudioManager.getSampleRate();
-    const sppAfter = Math.round(zoomConfig.factorToSamplesPerPixel(nextFactor));
-    const width = rect.width || 1;
-    const viewDurationAfter = (sppAfter / sr) * width;
-    const maxStart = Math.max(0, audio.duration - viewDurationAfter);
-    const nextStart = Utils.clamp(targetTime - ratio * viewDurationAfter, 0, maxStart);
-
-    const sliderVal = Utils.sliderFromFactor(nextFactor, zoomConfig.map);
-    elZoom.value = String(sliderVal);
-    UIControls.setFactorLabel(elZoomLabel, nextFactor, snapped);
-    applyZoom(nextFactor, nextStart);
+    e.preventDefault();
   }, { passive: false });
 }
 
