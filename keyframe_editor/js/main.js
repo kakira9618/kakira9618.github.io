@@ -1865,8 +1865,9 @@ if (timeBadge) {
   });
 
   UIControls.attachDragNudge(timeBadge, {
-    getValue: () => audio.currentTime || 0,
+    getValue: () => (Number.isFinite(audio.duration) ? (audio.currentTime || 0) : 0),
     applyValue: (v) => {
+      if (!Number.isFinite(audio.duration)) return;
       const dur = Number.isFinite(audio.duration) ? audio.duration : Infinity;
       audio.currentTime = Utils.clamp(v, 0, dur);
       updateTimeBadge();
