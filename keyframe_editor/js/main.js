@@ -831,6 +831,7 @@ function createCommentCell(kf) {
 
   const inp = document.createElement('input');
   inp.type = 'text';
+  inp.className = 'comment-input';
   inp.placeholder = 'コメント（例: サビ開始 / カット点）';
   inp.value = kf.comment ?? '';
   inp.addEventListener('click', (e) => e.stopPropagation());
@@ -1561,6 +1562,10 @@ window.addEventListener('keydown', (e) => {
   const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
   const type = (e.target && e.target.type) ? e.target.type.toLowerCase() : '';
   const isTextEntry = (tag === 'input' && type !== 'range') || tag === 'textarea';
+  const isCommentField = e.target && e.target.classList && e.target.classList.contains('comment-input');
+  const isJsonField = e.target && e.target.id === 'json';
+
+  if (isCommentField || isJsonField) return;
 
   if (isTextEntry && e.code !== 'Space' && !['k', 'h', 'l'].includes(e.key.toLowerCase())) return;
 
