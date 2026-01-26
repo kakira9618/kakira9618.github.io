@@ -133,12 +133,38 @@
       <aside class="card">
         <div class="row" style="justify-content:space-between;">
           <strong style="font-size:13px;">Keyframes JSON</strong>
-          <button id="copy" disabled>コピー</button>
+          <button id="export" disabled>出力</button>
         </div>
         <textarea id="json" spellcheck="false" aria-label="キーフレームJSON"></textarea>
       </aside>
     </div>
   </main>
+
+  <!-- Export Modal -->
+  <div id="exportModal" class="modal" style="display:none;">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <strong style="font-size:14px;">キーフレーム出力</strong>
+        <button id="closeModal" class="close-btn" aria-label="閉じる">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="offsetInput">時間オフセット（秒）</label>
+          <input id="offsetInput" type="number" step="0.001" value="0" placeholder="例: 1.5 / -2.0" />
+          <div class="form-hint">すべてのキーフレームの時間に加減算されます</div>
+        </div>
+        <div class="form-group">
+          <label>プレビュー</label>
+          <textarea id="previewJson" spellcheck="false" readonly aria-label="プレビューJSON"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="copyFromModal" class="primary">クリップボードにコピー</button>
+        <button id="downloadJson">ファイルとしてダウンロード</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Peaks.js standalone UMD -->
   <script src="https://unpkg.com/peaks.js/dist/peaks.js"></script>

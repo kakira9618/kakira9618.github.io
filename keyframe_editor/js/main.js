@@ -38,8 +38,16 @@ const kfList = Utils.el('kfList');
 const labelFilter = Utils.el('labelFilter');
 
 const jsonArea = Utils.el('json');
-const btnCopy = Utils.el('copy');
+const btnExport = Utils.el('export');
 const fileNameLabel = Utils.el('fileNameLabel');
+
+// モーダル要素
+const exportModal = Utils.el('exportModal');
+const closeModalBtn = Utils.el('closeModal');
+const offsetInput = Utils.el('offsetInput');
+const previewJson = Utils.el('previewJson');
+const copyFromModalBtn = Utils.el('copyFromModal');
+const downloadJsonBtn = Utils.el('downloadJson');
 
 // ==================== アプリケーション状態 ====================
 let preferWebGPU = SpectrogramModule.isWebGPUSupported();
@@ -117,7 +125,7 @@ const HEAT_LUT = buildHeatLut();
 // ==================== UI更新関数 ====================
 
 function setUiEnabled(enabled) {
-  for (const node of [btnPlay, btnStepBack, btnStepFwd, selRate, elZoom, btnAddKf, btnCopy]) {
+  for (const node of [btnPlay, btnStepBack, btnStepFwd, selRate, elZoom, btnAddKf, btnExport]) {
     if (node) node.disabled = !enabled;
   }
 }
@@ -1471,16 +1479,123 @@ if (audio) {
   audio.addEventListener('ended', stopSpecSync);
 }
 
-// JSONコピー
-if (btnCopy) {
-  btnCopy.addEventListener('click', async () => {
+// ==================== Export Modal ====================
+
+/**
+ * オフセットを適用したキーフレームを生成
+ * @param {number} offset - 時間オフセット（秒）
+ * @returns {Object} オフセット適用後のキーフレームデータ
+ */
+function applyOffsetToKeyframes(offset) {
+  const payload = KeyframeManager.exportKeyframes();
+  const offsetValue = Number(offset) || 0;
+
+  return {
+    keyframes: payload.keyframes.map(kf => ({
+      ...kf,
+      time: kf.time + offsetValue
+    }))
+  };
+}
+
+/**
+ * モーダルのプレビューを更新
+ */
+function updateModalPreview() {
+  if (!offsetInput || !previewJson) return;
+  const offset = Number(offsetInput.value) || 0;
+  const data = applyOffsetToKeyframes(offset);
+  previewJson.value = JSON.stringify(data, null, 2);
+}
+
+/**
+ * モーダルを表示
+ */
+function showExportModal() {
+  if (!exportModal) return;
+  exportModal.style.display = 'flex';
+  if (offsetInput) offsetInput.value = '0';
+  updateModalPreview();
+}
+
+/**
+ * モーダルを閉じる
+ */
+function closeExportModal() {
+  if (!exportModal) return;
+  exportModal.style.display = 'none';
+}
+
+// 出力ボタン
+if (btnExport) {
+  btnExport.addEventListener('click', () => {
+    showExportModal();
+  });
+}
+
+// モーダル閉じるボタン
+if (closeModalBtn) {
+  closeModalBtn.addEventListener('click', closeExportModal);
+}
+
+// モーダル背景クリックで閉じる
+if (exportModal) {
+  exportModal.addEventListener('click', (e) => {
+    if (e.target === exportModal || e.target.classList.contains('modal-backdrop')) {
+      closeExportModal();
+    }
+  });
+}
+
+// オフセット入力変更時にプレビュー更新
+if (offsetInput) {
+  offsetInput.addEventListener('input', updateModalPreview);
+}
+
+// クリップボードにコピー
+if (copyFromModalBtn) {
+  copyFromModalBtn.addEventListener('click', async () => {
+    if (!previewJson) return;
     try {
-      await navigator.clipboard.writeText(jsonArea.value);
-      btnCopy.textContent = 'コピーしました';
-      setTimeout(() => (btnCopy.textContent = 'コピー'), 900);
+      await navigator.clipboard.writeText(previewJson.value);
+      const originalText = copyFromModalBtn.textContent;
+      copyFromModalBtn.textContent = 'コピーしました!';
+      setTimeout(() => {
+        copyFromModalBtn.textContent = originalText;
+      }, 1500);
     } catch (e) {
       alert('クリップボードへのコピーに失敗しました。HTTPS or localhost が必要な場合があります。');
     }
+  });
+}
+
+// ダウンロード
+if (downloadJsonBtn) {
+  downloadJsonBtn.addEventListener('click', () => {
+    if (!previewJson) return;
+
+    const data = previewJson.value;
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+
+    // ファイル名を生成（タイムスタンプ付き）
+    const now = new Date();
+    const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    a.download = `keyframes_${timestamp}.json`;
+
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    const originalText = downloadJsonBtn.textContent;
+    downloadJsonBtn.textContent = 'ダウンロード完了!';
+    setTimeout(() => {
+      downloadJsonBtn.textContent = originalText;
+    }, 1500);
   });
 }
 
