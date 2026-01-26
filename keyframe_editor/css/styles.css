@@ -520,6 +520,42 @@ input[type="range"].zoom-slider:disabled::-moz-range-thumb {
   color: #ffd166;
 }
 
+.dropzone.about-dropzone {
+  padding: 8px 10px;
+}
+
+.about-label {
+  display: block;
+  margin: 0 0 2px;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.about-list {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 10.5px;
+  line-height: 1.25;
+  color: #b0bdd0;
+  list-style: disc;
+}
+
+.about-list li {
+  margin: 2px 0;
+}
+
+.about-list a {
+  color: #9fb0c3;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(159, 176, 195, 0.3);
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.about-list a:hover {
+  color: #c5d7f0;
+  border-color: rgba(197, 215, 240, 0.5);
+}
+
 .file-btn {
   display: inline-block;
   padding: 10px 14px;
