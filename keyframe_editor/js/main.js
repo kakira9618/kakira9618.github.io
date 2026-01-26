@@ -1208,6 +1208,41 @@ function findNearestKeyframe(targetTime, threshold = 0.5) {
 }
 
 /**
+ * ZoomView内で指定X座標の近くにあるキーフレームを探す（px基準）
+ * @param {number} clientX - クライアントX座標
+ * @param {number} thresholdPx - 許容範囲（px）
+ * @returns {Object|null} 見つかったキーフレーム
+ */
+function findNearestKeyframeInZoomView(clientX, thresholdPx = 10) {
+  const keyframes = KeyframeManager.getKeyframes();
+  if (!keyframes || keyframes.length === 0 || !Number.isFinite(audio.duration)) return null;
+
+  const rect = zoomviewContainer.getBoundingClientRect();
+  const viewDuration = getZoomWindowDuration();
+  const start = getZoomWindowStart(viewDuration);
+
+  let nearest = null;
+  let minDistance = Infinity;
+
+  for (const kf of keyframes) {
+    // キーフレームがビュー範囲内にあるか確認
+    if (kf.time < start || kf.time > start + viewDuration) continue;
+
+    // キーフレームのpx位置を計算
+    const ratio = (kf.time - start) / viewDuration;
+    const kfX = rect.left + ratio * rect.width;
+    const distance = Math.abs(clientX - kfX);
+
+    if (distance <= thresholdPx && distance < minDistance) {
+      minDistance = distance;
+      nearest = kf;
+    }
+  }
+
+  return nearest;
+}
+
+/**
  * キーフレームのテーブル行にフォーカスしてスクロール
  * @param {string} kfId - キーフレームID
  */
@@ -1328,51 +1363,132 @@ function bindScrubHandlers() {
   overviewContainer.addEventListener('pointerleave', stopOverview);
   overviewContainer.addEventListener('pointercancel', stopOverview);
 
-  // Zoom view: ドラッグでシーク
+  // Zoom view: ドラッグでシーク、またはキーフレームをドラッグ
   let zvStartX = 0;
   let zvMoved = false;
+  let isDraggingKeyframe = false;
+  let draggedKeyframe = null;
+  const KEYFRAME_GRAB_THRESHOLD_PX = 10;
 
-  zoomviewContainer.addEventListener('pointerdown', (e) => {
-    if (!Number.isFinite(audio.duration)) return;
-    isScrubbingZoomview = true;
-    zvStartX = e.clientX;
-    zvMoved = false;
-    startScrubSpecSync();
-    seekInZoomview(e);
-    zoomviewContainer.setPointerCapture?.(e.pointerId);
-    e.preventDefault();
-  });
-
+  // カーソル更新用のpointermoveハンドラー（常時動作）
   zoomviewContainer.addEventListener('pointermove', (e) => {
-    if (isScrubbingZoomview) {
-      seekInZoomview(e);
-      maybeRedrawSpecOnViewChange();
-      if (Math.abs(e.clientX - zvStartX) > 3) zvMoved = true;
-      e.preventDefault();
-    }
-  });
+    if (isDraggingKeyframe && draggedKeyframe) {
+      // キーフレームをドラッグ中
+      zoomviewContainer.style.cursor = 'grabbing';
 
-  const stopZoom = (e) => {
-    if (!isScrubbingZoomview) return;
-
-    // クリック（ドラッグでない場合）に近くのキーフレームを探す
-    if (!zvMoved && Number.isFinite(audio.duration)) {
       const rect = zoomviewContainer.getBoundingClientRect();
       const ratio = Utils.clamp((e.clientX - rect.left) / rect.width, 0, 1);
       const viewDuration = getZoomWindowDuration();
       const start = getZoomWindowStart(viewDuration);
-      const targetTime = Utils.clamp(start + ratio * viewDuration, 0, audio.duration);
+      const newTime = Utils.clamp(start + ratio * viewDuration, 0, audio.duration);
 
-      // 近くのキーフレームを探す
-      const nearestKf = findNearestKeyframe(targetTime);
-      if (nearestKf) {
-        focusAndScrollToKeyframe(nearestKf.id);
+      // キーフレームの時間を更新（履歴は保存しない）
+      KeyframeManager.updateKeyframe(draggedKeyframe.id, { time: newTime }, false);
+      if (draggedKeyframe.pointId) {
+        PeaksManager.updatePoint(draggedKeyframe.pointId, { time: newTime });
+      }
+      PeaksManager.refreshViews();
+
+      if (Math.abs(e.clientX - zvStartX) > 3) zvMoved = true;
+      e.preventDefault();
+    } else if (isScrubbingZoomview) {
+      // 通常のシーク
+      zoomviewContainer.style.cursor = 'crosshair';
+      seekInZoomview(e);
+      maybeRedrawSpecOnViewChange();
+      if (Math.abs(e.clientX - zvStartX) > 3) zvMoved = true;
+      e.preventDefault();
+    } else {
+      // アイドル状態：キーフレームの近くにいるかチェック
+      const nearbyKf = findNearestKeyframeInZoomView(e.clientX, KEYFRAME_GRAB_THRESHOLD_PX);
+      if (nearbyKf) {
+        zoomviewContainer.style.cursor = 'grab';
+      } else {
+        zoomviewContainer.style.cursor = 'crosshair';
       }
     }
+  });
 
-    isScrubbingZoomview = false;
+  zoomviewContainer.addEventListener('pointerdown', (e) => {
+    if (!Number.isFinite(audio.duration)) return;
+
+    zvStartX = e.clientX;
+    zvMoved = false;
+    isDraggingKeyframe = false;
+    draggedKeyframe = null;
+
+    // 近くのキーフレームを探す（px基準）
+    const nearbyKf = findNearestKeyframeInZoomView(e.clientX, KEYFRAME_GRAB_THRESHOLD_PX);
+
+    if (nearbyKf) {
+      // キーフレームが見つかった場合は、ドラッグモードに入る準備
+      isDraggingKeyframe = true;
+      draggedKeyframe = nearbyKf;
+      zoomviewContainer.style.cursor = 'grabbing';
+    } else {
+      // キーフレームがない場合は通常のシークモード
+      isScrubbingZoomview = true;
+      zoomviewContainer.style.cursor = 'crosshair';
+      startScrubSpecSync();
+      seekInZoomview(e);
+    }
+
+    zoomviewContainer.setPointerCapture?.(e.pointerId);
+    e.preventDefault();
+  });
+
+  const stopZoom = (e) => {
+    if (isDraggingKeyframe && draggedKeyframe) {
+      // キーフレームのドラッグを終了
+      if (zvMoved) {
+        // ドラッグされた場合は履歴を保存
+        const rect = zoomviewContainer.getBoundingClientRect();
+        const ratio = Utils.clamp((e.clientX - rect.left) / rect.width, 0, 1);
+        const viewDuration = getZoomWindowDuration();
+        const start = getZoomWindowStart(viewDuration);
+        const newTime = Utils.clamp(start + ratio * viewDuration, 0, audio.duration);
+
+        KeyframeManager.updateKeyframe(draggedKeyframe.id, { time: newTime }, true);
+        renderKeyframeList();
+        updateJson();
+      } else {
+        // クリックの場合はキーフレーム一覧にスクロール
+        focusAndScrollToKeyframe(draggedKeyframe.id);
+      }
+
+      isDraggingKeyframe = false;
+      draggedKeyframe = null;
+
+      // カーソルをリセット（再度チェック）
+      const nearbyKf = findNearestKeyframeInZoomView(e.clientX, KEYFRAME_GRAB_THRESHOLD_PX);
+      zoomviewContainer.style.cursor = nearbyKf ? 'grab' : 'crosshair';
+    } else if (isScrubbingZoomview) {
+      // 通常のシーク終了
+
+      // クリック（ドラッグでない場合）に近くのキーフレームを探す
+      if (!zvMoved && Number.isFinite(audio.duration)) {
+        const rect = zoomviewContainer.getBoundingClientRect();
+        const ratio = Utils.clamp((e.clientX - rect.left) / rect.width, 0, 1);
+        const viewDuration = getZoomWindowDuration();
+        const start = getZoomWindowStart(viewDuration);
+        const targetTime = Utils.clamp(start + ratio * viewDuration, 0, audio.duration);
+
+        // 近くのキーフレームを探す
+        const nearestKf = findNearestKeyframe(targetTime);
+        if (nearestKf) {
+          focusAndScrollToKeyframe(nearestKf.id);
+        }
+      }
+
+      isScrubbingZoomview = false;
+      stopScrubSpecSync();
+
+      // カーソルをリセット（再度チェック）
+      const nearbyKf = findNearestKeyframeInZoomView(e.clientX, KEYFRAME_GRAB_THRESHOLD_PX);
+      zoomviewContainer.style.cursor = nearbyKf ? 'grab' : 'crosshair';
+    }
+
     zoomviewContainer.releasePointerCapture?.(e.pointerId);
-    stopScrubSpecSync();
   };
 
   zoomviewContainer.addEventListener('pointerup', stopZoom);
