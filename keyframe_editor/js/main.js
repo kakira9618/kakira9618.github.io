@@ -83,6 +83,7 @@ let sortDir = 1; // 1 = asc, -1 = desc
 const selectedKeyframeIds = new Set();
 const KEYFRAME_SELECTED_POINT_COLOR = '#ffd166';
 const KEYFRAME_SELECT_THRESHOLD_PX = 12;
+const RULER_MARGIN = 0.15; // 上下15%の範囲を目盛りエリアとする
 let filterLabel = '';
 
 let isUpdatingJsonArea = false;
@@ -1398,6 +1399,12 @@ function findNearestKeyframeInZoomView(clientX, thresholdPx = KEYFRAME_SELECT_TH
   return nearest;
 }
 
+function isPointerInRulerArea(rect, clientY) {
+  if (!rect || rect.height <= 0) return false;
+  const relativeY = (clientY - rect.top) / rect.height;
+  return relativeY < RULER_MARGIN || relativeY > (1 - RULER_MARGIN);
+}
+
 /**
  * キーフレームのテーブル行にフォーカスしてスクロール
  * @param {string} kfId - キーフレームID
@@ -1506,9 +1513,7 @@ function bindScrubHandlers() {
       const targetTime = ratio * audio.duration;
 
       // クリック位置のY座標をチェック（上下の目盛り部分でのみキーフレーム選択）
-      const relativeY = (e.clientY - rect.top) / rect.height;
-      const RULER_MARGIN = 0.15; // 上下15%の範囲を目盛りエリアとする
-      const isInRulerArea = relativeY < RULER_MARGIN || relativeY > (1 - RULER_MARGIN);
+      const isInRulerArea = isPointerInRulerArea(rect, e.clientY);
 
       // 目盛りエリアでのみキーフレームを探す
       if (isInRulerArea) {
@@ -1568,9 +1573,10 @@ function bindScrubHandlers() {
       e.preventDefault();
     } else {
       // アイドル状態：キーフレームの近くにいるかチェック
-      const nearbyKf = findNearestKeyframeInZoomView(e.clientX, KEYFRAME_GRAB_THRESHOLD_PX);
-      if (nearbyKf) {
-        zoomviewContainer.style.cursor = 'grab';
+      const rect = zoomviewContainer.getBoundingClientRect();
+      if (isPointerInRulerArea(rect, e.clientY)) {
+        const nearbyKf = findNearestKeyframeInZoomView(e.clientX, KEYFRAME_GRAB_THRESHOLD_PX);
+        zoomviewContainer.style.cursor = nearbyKf ? 'grab' : 'crosshair';
       } else {
         zoomviewContainer.style.cursor = 'crosshair';
       }
@@ -1585,8 +1591,11 @@ function bindScrubHandlers() {
     isDraggingKeyframe = false;
     draggedKeyframe = null;
 
-    // 近くのキーフレームを探す（px基準）
-    const nearbyKf = findNearestKeyframeInZoomView(e.clientX, KEYFRAME_GRAB_THRESHOLD_PX);
+    const rect = zoomviewContainer.getBoundingClientRect();
+    const canSelectKeyframe = isPointerInRulerArea(rect, e.clientY);
+    const nearbyKf = canSelectKeyframe
+      ? findNearestKeyframeInZoomView(e.clientX, KEYFRAME_GRAB_THRESHOLD_PX)
+      : null;
 
     if (nearbyKf) {
       // キーフレームが見つかった場合は、ドラッグモードに入る準備
@@ -1632,7 +1641,11 @@ function bindScrubHandlers() {
       draggedKeyframe = null;
 
       // カーソルをリセット（再度チェック）
-      const nearbyKf = findNearestKeyframeInZoomView(e.clientX, KEYFRAME_GRAB_THRESHOLD_PX);
+      const rect = zoomviewContainer.getBoundingClientRect();
+      const inRulerArea = isPointerInRulerArea(rect, e.clientY);
+      const nearbyKf = inRulerArea
+        ? findNearestKeyframeInZoomView(e.clientX, KEYFRAME_GRAB_THRESHOLD_PX)
+        : null;
       zoomviewContainer.style.cursor = nearbyKf ? 'grab' : 'crosshair';
     } else if (isScrubbingZoomview) {
       // 通常のシーク終了
@@ -1642,9 +1655,7 @@ function bindScrubHandlers() {
         const rect = zoomviewContainer.getBoundingClientRect();
 
         // クリック位置のY座標をチェック（上下の目盛り部分でのみキーフレーム選択）
-        const relativeY = (e.clientY - rect.top) / rect.height;
-        const RULER_MARGIN = 0.15; // 上下15%の範囲を目盛りエリアとする
-        const isInRulerArea = relativeY < RULER_MARGIN || relativeY > (1 - RULER_MARGIN);
+        const isInRulerArea = isPointerInRulerArea(rect, e.clientY);
 
         if (isInRulerArea) {
           const ratio = Utils.clamp((e.clientX - rect.left) / rect.width, 0, 1);
@@ -1669,7 +1680,11 @@ function bindScrubHandlers() {
       stopScrubSpecSync();
 
       // カーソルをリセット（再度チェック）
-      const nearbyKf = findNearestKeyframeInZoomView(e.clientX, KEYFRAME_GRAB_THRESHOLD_PX);
+      const rect = zoomviewContainer.getBoundingClientRect();
+      const inRulerArea = isPointerInRulerArea(rect, e.clientY);
+      const nearbyKf = inRulerArea
+        ? findNearestKeyframeInZoomView(e.clientX, KEYFRAME_GRAB_THRESHOLD_PX)
+        : null;
       zoomviewContainer.style.cursor = nearbyKf ? 'grab' : 'crosshair';
     }
 
