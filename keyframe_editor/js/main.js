@@ -81,7 +81,6 @@ let sortDir = 1; // 1 = asc, -1 = desc
 
 // キーフレーム選択状態（将来的な複数選択に備えてSetで保持）
 const selectedKeyframeIds = new Set();
-const KEYFRAME_SELECTED_POINT_COLOR = '#ffd166';
 const KEYFRAME_SELECT_THRESHOLD_PX = 12;
 const RULER_MARGIN = 0.15; // 上下15%の範囲を目盛りエリアとする
 const SELECTION_DRAG_THRESHOLD_PX = 3;
@@ -1109,6 +1108,56 @@ async function loadFile(file) {
   }
 }
 
+/**
+ * カスタムポイントマーカーを作成
+ * 選択されているキーフレームには枠線を追加
+ */
+function createPointMarker(options) {
+  const { point, view, layer } = options;
+
+  // キーフレームを探す
+  const keyframes = KeyframeManager.getKeyframes();
+  const kf = keyframes.find(k => k.pointId === point.id);
+
+  // 選択状態を確認
+  const isSelected = kf && selectedKeyframeIds.has(kf.id);
+
+  // ベース色を取得
+  const baseColor = kf ? getKeyframePointBaseColor(kf) : point.color || '#888888';
+
+  // マーカーのグループを作成
+  const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+
+  // ポイントのハンドル（縦線）を作成
+  const handle = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  handle.setAttribute('x1', '0.5');
+  handle.setAttribute('y1', '0');
+  handle.setAttribute('x2', '0.5');
+  handle.setAttribute('y2', '20');
+  handle.setAttribute('stroke', baseColor);
+  handle.setAttribute('stroke-width', '1');
+
+  group.appendChild(handle);
+
+  // 選択されている場合、枠線を追加
+  if (isSelected) {
+    const outline = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    outline.setAttribute('x', '-4');
+    outline.setAttribute('y', '-2');
+    outline.setAttribute('width', '9');
+    outline.setAttribute('height', '24');
+    outline.setAttribute('fill', 'none');
+    outline.setAttribute('stroke', '#ffd166');
+    outline.setAttribute('stroke-width', '2');
+    outline.setAttribute('rx', '2');
+
+    // 枠線を最初に追加（背面に配置）
+    group.insertBefore(outline, handle);
+  }
+
+  return group;
+}
+
 async function initWithFile(file) {
   await destroyAll();
   KeyframeManager.clearKeyframes();
@@ -1134,14 +1183,16 @@ async function initWithFile(file) {
       playheadColor: '#ffd166',
       highlightColor: 'rgba(255,209,102,0.80)',
       highlightStrokeColor: 'rgba(255,209,102,0.95)',
-      highlightStrokeWidth: 2
+      highlightStrokeWidth: 2,
+      createPointMarker: createPointMarker
     },
     zoomview: {
       container: zoomviewContainer,
       playheadColor: '#ffd166',
       playheadClickTolerance: 10,
       showPlayheadTime: false,
-      showPointLabels: false
+      showPointLabels: false,
+      createPointMarker: createPointMarker
     },
     mediaElement: audio,
     webAudio: { audioBuffer },
@@ -1300,8 +1351,7 @@ function setKeyframeRowSelected(kfId, isSelected) {
 function setKeyframePointSelected(kfId, isSelected) {
   const kf = KeyframeManager.getKeyframeById(kfId);
   if (!kf || !kf.pointId) return false;
-  const color = isSelected ? KEYFRAME_SELECTED_POINT_COLOR : getKeyframePointBaseColor(kf);
-  PeaksManager.updatePoint(kf.pointId, { color });
+  // 選択状態が変わったので再描画が必要
   return true;
 }
 
