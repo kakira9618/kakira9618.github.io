@@ -84,6 +84,9 @@ const selectedKeyframeIds = new Set();
 const KEYFRAME_SELECTED_POINT_COLOR = '#ffd166';
 const KEYFRAME_SELECT_THRESHOLD_PX = 12;
 const RULER_MARGIN = 0.15; // 上下15%の範囲を目盛りエリアとする
+const SELECTION_DRAG_THRESHOLD_PX = 3;
+let overviewSelectionBox = null;
+let zoomviewSelectionBox = null;
 let filterLabel = '';
 
 let isUpdatingJsonArea = false;
@@ -1145,6 +1148,7 @@ async function initWithFile(file) {
   };
 
   await PeaksManager.initPeaks(options);
+  ensureSelectionOverlays();
 
   // 同じハッシュのキーフレームがあれば最初に復元
   restoreKeyframesFromLocalStorage(currentAudioHash);
@@ -1354,6 +1358,115 @@ function applySelectionToPoints() {
   if (needsRefresh) PeaksManager.refreshViews();
 }
 
+function setKeyframeSelection(nextIds) {
+  const nextSet = new Set(nextIds || []);
+  let needsRefresh = false;
+
+  for (const id of Array.from(selectedKeyframeIds)) {
+    if (nextSet.has(id)) continue;
+    selectedKeyframeIds.delete(id);
+    setKeyframeRowSelected(id, false);
+    if (setKeyframePointSelected(id, false)) needsRefresh = true;
+  }
+
+  for (const id of Array.from(nextSet)) {
+    if (selectedKeyframeIds.has(id)) continue;
+    selectedKeyframeIds.add(id);
+    setKeyframeRowSelected(id, true);
+    if (setKeyframePointSelected(id, true)) needsRefresh = true;
+  }
+
+  if (needsRefresh) PeaksManager.refreshViews();
+}
+
+function selectKeyframesInTimeRange(startTime, endTime) {
+  const keyframes = KeyframeManager.getKeyframes();
+  if (!keyframes || keyframes.length === 0) {
+    setKeyframeSelection([]);
+    return;
+  }
+
+  const minTime = Math.min(startTime, endTime);
+  const maxTime = Math.max(startTime, endTime);
+  const ids = [];
+  for (const kf of keyframes) {
+    if (kf.time >= minTime && kf.time <= maxTime) {
+      ids.push(kf.id);
+    }
+  }
+
+  setKeyframeSelection(ids);
+}
+
+function ensureSelectionOverlay(container, currentBox) {
+  if (!container) return null;
+  if (currentBox && container.contains(currentBox)) return currentBox;
+  const existing = container.querySelector('.kf-selection-rect');
+  if (existing) return existing;
+  const overlay = document.createElement('div');
+  overlay.className = 'kf-selection-rect';
+  container.appendChild(overlay);
+  return overlay;
+}
+
+function ensureSelectionOverlays() {
+  overviewSelectionBox = ensureSelectionOverlay(overviewContainer, overviewSelectionBox);
+  zoomviewSelectionBox = ensureSelectionOverlay(zoomviewContainer, zoomviewSelectionBox);
+}
+
+function setSelectionBoxVisible(box, visible) {
+  if (!box) return;
+  if (!visible) {
+    box.style.display = 'none';
+    box.style.left = '0px';
+    box.style.top = '0px';
+    box.style.width = '0px';
+    box.style.height = '0px';
+    return;
+  }
+  box.style.display = 'block';
+}
+
+function updateSelectionBox(box, rect, startX, startY, currentX, currentY) {
+  if (!box || !rect) return;
+  const startClampedX = Utils.clamp(startX, rect.left, rect.right);
+  const startClampedY = Utils.clamp(startY, rect.top, rect.bottom);
+  const currentClampedX = Utils.clamp(currentX, rect.left, rect.right);
+  const currentClampedY = Utils.clamp(currentY, rect.top, rect.bottom);
+  const left = Math.min(startClampedX, currentClampedX);
+  const right = Math.max(startClampedX, currentClampedX);
+  const top = Math.min(startClampedY, currentClampedY);
+  const bottom = Math.max(startClampedY, currentClampedY);
+
+  box.style.left = `${left - rect.left}px`;
+  box.style.top = `${top - rect.top}px`;
+  box.style.width = `${Math.max(0, right - left)}px`;
+  box.style.height = `${Math.max(0, bottom - top)}px`;
+  setSelectionBoxVisible(box, true);
+}
+
+function updateSelectionInOverview(rect, startX, currentX) {
+  if (!Number.isFinite(audio.duration)) return;
+  const width = Math.max(1, rect.width);
+  const minX = Math.min(Utils.clamp(startX, rect.left, rect.right), Utils.clamp(currentX, rect.left, rect.right));
+  const maxX = Math.max(Utils.clamp(startX, rect.left, rect.right), Utils.clamp(currentX, rect.left, rect.right));
+  const ratioStart = Utils.clamp((minX - rect.left) / width, 0, 1);
+  const ratioEnd = Utils.clamp((maxX - rect.left) / width, 0, 1);
+  selectKeyframesInTimeRange(ratioStart * audio.duration, ratioEnd * audio.duration);
+}
+
+function updateSelectionInZoomview(rect, startX, currentX) {
+  if (!Number.isFinite(audio.duration)) return;
+  const width = Math.max(1, rect.width);
+  const minX = Math.min(Utils.clamp(startX, rect.left, rect.right), Utils.clamp(currentX, rect.left, rect.right));
+  const maxX = Math.max(Utils.clamp(startX, rect.left, rect.right), Utils.clamp(currentX, rect.left, rect.right));
+  const viewDuration = getZoomWindowDuration();
+  const start = getZoomWindowStart(viewDuration);
+  const ratioStart = Utils.clamp((minX - rect.left) / width, 0, 1);
+  const ratioEnd = Utils.clamp((maxX - rect.left) / width, 0, 1);
+  selectKeyframesInTimeRange(start + ratioStart * viewDuration, start + ratioEnd * viewDuration);
+}
+
 /**
  * 指定時間の近くにあるキーフレームを探す
  * @param {number} targetTime - 対象時間（秒）
@@ -1496,9 +1609,26 @@ function bindScrubHandlers() {
   let ovStartX = 0;
   let ovStartWindow = 0;
   let ovMoved = false;
+  let ovSelecting = false;
+  let ovSelectMoved = false;
+  let ovSelectStartX = 0;
+  let ovSelectStartY = 0;
 
   overviewContainer.addEventListener('pointerdown', (e) => {
     if (!Number.isFinite(audio.duration)) return;
+    const rect = overviewContainer.getBoundingClientRect();
+    if (isPointerInRulerArea(rect, e.clientY)) {
+      ovSelecting = true;
+      ovSelectMoved = false;
+      ovSelectStartX = e.clientX;
+      ovSelectStartY = e.clientY;
+      ensureSelectionOverlays();
+      setSelectionBoxVisible(overviewSelectionBox, false);
+      overviewContainer.setPointerCapture?.(e.pointerId);
+      e.preventDefault();
+      return;
+    }
+
     isScrubbingOverview = true;
     ovStartX = e.clientX;
     ovStartWindow = getZoomWindowStart(getZoomWindowDuration());
@@ -1508,6 +1638,21 @@ function bindScrubHandlers() {
   });
 
   overviewContainer.addEventListener('pointermove', (e) => {
+    if (ovSelecting) {
+      const rect = overviewContainer.getBoundingClientRect();
+      const dx = Math.abs(e.clientX - ovSelectStartX);
+      const dy = Math.abs(e.clientY - ovSelectStartY);
+      if (!ovSelectMoved && Math.max(dx, dy) > SELECTION_DRAG_THRESHOLD_PX) {
+        ovSelectMoved = true;
+        clearKeyframeSelection();
+      }
+      if (ovSelectMoved) {
+        updateSelectionBox(overviewSelectionBox, rect, ovSelectStartX, ovSelectStartY, e.clientX, e.clientY);
+        updateSelectionInOverview(rect, ovSelectStartX, e.clientX);
+      }
+      e.preventDefault();
+      return;
+    }
     if (!isScrubbingOverview) return;
     const rect = overviewContainer.getBoundingClientRect();
     const pxToSec = (audio.duration || 0) / rect.width;
@@ -1518,6 +1663,35 @@ function bindScrubHandlers() {
   });
 
   const stopOverview = (e) => {
+    if (ovSelecting) {
+      ovSelecting = false;
+      overviewContainer.releasePointerCapture?.(e.pointerId);
+      if (!ovSelectMoved) {
+        const rect = overviewContainer.getBoundingClientRect();
+        const ratio = Utils.clamp((e.clientX - rect.left) / rect.width, 0, 1);
+        const targetTime = ratio * audio.duration;
+        const isInRulerArea = isPointerInRulerArea(rect, e.clientY);
+
+        if (isInRulerArea) {
+          const thresholdSec = (KEYFRAME_SELECT_THRESHOLD_PX * (audio.duration || 0)) / Math.max(1, rect.width);
+          const nearestKf = findNearestKeyframe(targetTime, thresholdSec);
+          const wasSelected = nearestKf ? isKeyframeSelected(nearestKf.id) : false;
+          clearKeyframeSelection();
+          if (nearestKf) {
+            selectKeyframe(nearestKf.id, { replace: true });
+            if (wasSelected) {
+              focusAndScrollToKeyframe(nearestKf.id);
+            }
+          }
+        } else {
+          clearKeyframeSelection();
+        }
+
+        seekOverviewToClientX(e.clientX);
+      }
+      setSelectionBoxVisible(overviewSelectionBox, false);
+      return;
+    }
     if (!isScrubbingOverview) return;
     isScrubbingOverview = false;
     overviewContainer.releasePointerCapture?.(e.pointerId);
@@ -1555,11 +1729,29 @@ function bindScrubHandlers() {
   let zvMoved = false;
   let isDraggingKeyframe = false;
   let draggedKeyframe = null;
+  let draggedKeyframeWasSelected = false;
+  let zvSelecting = false;
+  let zvSelectMoved = false;
+  let zvSelectStartX = 0;
+  let zvSelectStartY = 0;
   const KEYFRAME_GRAB_THRESHOLD_PX = KEYFRAME_SELECT_THRESHOLD_PX;
 
   // カーソル更新用のpointermoveハンドラー（常時動作）
   zoomviewContainer.addEventListener('pointermove', (e) => {
-    if (isDraggingKeyframe && draggedKeyframe) {
+    if (zvSelecting) {
+      const rect = zoomviewContainer.getBoundingClientRect();
+      const dx = Math.abs(e.clientX - zvSelectStartX);
+      const dy = Math.abs(e.clientY - zvSelectStartY);
+      if (!zvSelectMoved && Math.max(dx, dy) > SELECTION_DRAG_THRESHOLD_PX) {
+        zvSelectMoved = true;
+        clearKeyframeSelection();
+      }
+      if (zvSelectMoved) {
+        updateSelectionBox(zoomviewSelectionBox, rect, zvSelectStartX, zvSelectStartY, e.clientX, e.clientY);
+        updateSelectionInZoomview(rect, zvSelectStartX, e.clientX);
+      }
+      e.preventDefault();
+    } else if (isDraggingKeyframe && draggedKeyframe) {
       // キーフレームをドラッグ中
       zoomviewContainer.style.cursor = 'grabbing';
 
@@ -1604,6 +1796,9 @@ function bindScrubHandlers() {
     zvMoved = false;
     isDraggingKeyframe = false;
     draggedKeyframe = null;
+    draggedKeyframeWasSelected = false;
+    zvSelecting = false;
+    zvSelectMoved = false;
 
     const rect = zoomviewContainer.getBoundingClientRect();
     const canSelectKeyframe = isPointerInRulerArea(rect, e.clientY);
@@ -1613,9 +1808,23 @@ function bindScrubHandlers() {
 
     if (nearbyKf) {
       // キーフレームが見つかった場合は、ドラッグモードに入る準備
+      draggedKeyframeWasSelected = isKeyframeSelected(nearbyKf.id);
+      clearKeyframeSelection();
+      selectKeyframe(nearbyKf.id, { replace: true });
       isDraggingKeyframe = true;
       draggedKeyframe = nearbyKf;
       zoomviewContainer.style.cursor = 'grabbing';
+    } else if (canSelectKeyframe) {
+      // 目盛りエリアからのドラッグは矩形選択
+      zvSelecting = true;
+      zvSelectMoved = false;
+      zvSelectStartX = e.clientX;
+      zvSelectStartY = e.clientY;
+      ensureSelectionOverlays();
+      setSelectionBoxVisible(zoomviewSelectionBox, false);
+      zoomviewContainer.setPointerCapture?.(e.pointerId);
+      e.preventDefault();
+      return;
     } else {
       // キーフレームがない場合は通常のシークモード
       isScrubbingZoomview = true;
@@ -1629,6 +1838,41 @@ function bindScrubHandlers() {
   });
 
   const stopZoom = (e) => {
+    if (zvSelecting) {
+      zvSelecting = false;
+      zoomviewContainer.releasePointerCapture?.(e.pointerId);
+      if (!zvSelectMoved) {
+        const rect = zoomviewContainer.getBoundingClientRect();
+        const isInRulerArea = isPointerInRulerArea(rect, e.clientY);
+        if (isInRulerArea) {
+          const ratio = Utils.clamp((e.clientX - rect.left) / rect.width, 0, 1);
+          const viewDuration = getZoomWindowDuration();
+          const start = getZoomWindowStart(viewDuration);
+          const targetTime = Utils.clamp(start + ratio * viewDuration, 0, audio.duration);
+          const thresholdSec = (KEYFRAME_SELECT_THRESHOLD_PX * viewDuration) / Math.max(1, rect.width);
+          const nearestKf = findNearestKeyframe(targetTime, thresholdSec);
+          const wasSelected = nearestKf ? isKeyframeSelected(nearestKf.id) : false;
+          clearKeyframeSelection();
+          if (nearestKf) {
+            selectKeyframe(nearestKf.id, { replace: true });
+            if (wasSelected) {
+              focusAndScrollToKeyframe(nearestKf.id);
+            }
+          }
+        } else {
+          clearKeyframeSelection();
+        }
+        seekInZoomview(e);
+      }
+      setSelectionBoxVisible(zoomviewSelectionBox, false);
+      const rect = zoomviewContainer.getBoundingClientRect();
+      const inRulerArea = isPointerInRulerArea(rect, e.clientY);
+      const nearbyKf = inRulerArea
+        ? findNearestKeyframeInZoomView(e.clientX, KEYFRAME_GRAB_THRESHOLD_PX)
+        : null;
+      zoomviewContainer.style.cursor = nearbyKf ? 'grab' : 'crosshair';
+      return;
+    }
     if (isDraggingKeyframe && draggedKeyframe) {
       // キーフレームのドラッグを終了
       if (zvMoved) {
@@ -1647,10 +1891,8 @@ function bindScrubHandlers() {
         const rect = zoomviewContainer.getBoundingClientRect();
         const isInRulerArea = isPointerInRulerArea(rect, e.clientY);
         if (isInRulerArea) {
-          if (isKeyframeSelected(draggedKeyframe.id)) {
+          if (draggedKeyframeWasSelected) {
             focusAndScrollToKeyframe(draggedKeyframe.id);
-          } else {
-            selectKeyframe(draggedKeyframe.id, { replace: true });
           }
         }
       }

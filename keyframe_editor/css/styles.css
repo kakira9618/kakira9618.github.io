@@ -201,11 +201,13 @@ button:disabled {
 
 #overview-container {
   height: 70px;
+  position: relative;
 }
 
 #zoomview-container {
   height: 140px;
   touch-action: none;
+  position: relative;
 }
 
 #spectrum-container {
@@ -235,6 +237,17 @@ button:disabled {
   pointer-events: none;
   opacity: 0.95;
   display: none;
+}
+
+.kf-selection-rect {
+  position: absolute;
+  pointer-events: none;
+  display: none;
+  border: 1px solid rgba(255, 209, 102, 0.75);
+  background: rgba(255, 209, 102, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(255, 209, 102, 0.2);
+  border-radius: 4px;
+  z-index: 6;
 }
 
 .spec-status {
