@@ -292,6 +292,7 @@ function applyJsonToState() {
 function rebuildPeaksPoints() {
   const keyframes = KeyframeManager.getKeyframes();
   PeaksManager.rebuildPoints(keyframes);
+  applySelectionToPoints();
 }
 
 function updatePointColors() {
@@ -1144,15 +1145,19 @@ async function loadFile(file) {
 function createPointMarker(options) {
   const { point, view, layer } = options;
 
-  // キーフレームを探す
-  const keyframes = KeyframeManager.getKeyframes();
-  const kf = keyframes.find(k => k.pointId === point.id);
+  // 選択状態を確認（カスタムデータから取得、フォールバックとして従来の方法も使用）
+  let isSelected = false;
+  if (point.data && typeof point.data.isSelected === 'boolean') {
+    isSelected = point.data.isSelected;
+  } else {
+    // フォールバック：キーフレームを探して選択状態を確認
+    const keyframes = KeyframeManager.getKeyframes();
+    const kf = keyframes.find(k => k.pointId === point.id);
+    isSelected = kf && selectedKeyframeIds.has(kf.id);
+  }
 
-  // 選択状態を確認
-  const isSelected = kf && selectedKeyframeIds.has(kf.id);
-
-  // ベース色を取得
-  const baseColor = kf ? getKeyframePointBaseColor(kf) : point.color || '#888888';
+  // 色を決定：選択中は白、それ以外はポイントの色
+  const color = isSelected ? '#ffffff' : (point.color || '#888888');
 
   // マーカーのグループを作成
   const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
@@ -1163,38 +1168,10 @@ function createPointMarker(options) {
   handle.setAttribute('y1', '0');
   handle.setAttribute('x2', '0.5');
   handle.setAttribute('y2', '20');
-  handle.setAttribute('stroke', baseColor);
+  handle.setAttribute('stroke', color);
   handle.setAttribute('stroke-width', '1');
 
   group.appendChild(handle);
-
-  // 選択されている場合、左右に枠線を追加 [|]
-  if (isSelected) {
-    const selectionColor = '#ffd166';
-    const offset = 2; // キーフレーム中心から±2px
-
-    // 左側の縦線
-    const leftBracket = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    leftBracket.setAttribute('x1', String(-offset + 0.5));
-    leftBracket.setAttribute('y1', '-1');
-    leftBracket.setAttribute('x2', String(-offset + 0.5));
-    leftBracket.setAttribute('y2', '21');
-    leftBracket.setAttribute('stroke', selectionColor);
-    leftBracket.setAttribute('stroke-width', '1.5');
-
-    // 右側の縦線
-    const rightBracket = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    rightBracket.setAttribute('x1', String(offset + 0.5));
-    rightBracket.setAttribute('y1', '-1');
-    rightBracket.setAttribute('x2', String(offset + 0.5));
-    rightBracket.setAttribute('y2', '21');
-    rightBracket.setAttribute('stroke', selectionColor);
-    rightBracket.setAttribute('stroke-width', '1.5');
-
-    // 枠線を最初に追加（背面に配置）
-    group.insertBefore(leftBracket, handle);
-    group.insertBefore(rightBracket, handle);
-  }
 
   return group;
 }
@@ -1394,8 +1371,9 @@ function setKeyframePointSelected(kfId, isSelected) {
   if (!kf || !kf.pointId) return false;
 
   // ポイントを再作成して選択状態を反映
-  const color = getKeyframePointBaseColor(kf);
-  const newPointId = PeaksManager.recreatePoint(kf.pointId, kf.time, color);
+  // 選択中は白、それ以外はベース色
+  const color = isSelected ? '#ffffff' : getKeyframePointBaseColor(kf);
+  const newPointId = PeaksManager.recreatePoint(kf.pointId, kf.time, color, isSelected);
 
   if (newPointId) {
     kf.pointId = newPointId;
@@ -1460,15 +1438,18 @@ function applySelectionToPoints() {
   if (needsRefresh) PeaksManager.refreshViews();
 }
 
-function setKeyframeSelection(nextIds) {
+function setKeyframeSelection(nextIds, { additive = false } = {}) {
   const nextSet = new Set(nextIds || []);
   let needsRefresh = false;
 
-  for (const id of Array.from(selectedKeyframeIds)) {
-    if (nextSet.has(id)) continue;
-    selectedKeyframeIds.delete(id);
-    setKeyframeRowSelected(id, false);
-    if (setKeyframePointSelected(id, false)) needsRefresh = true;
+  // additive=trueの場合は既存の選択を解除しない
+  if (!additive) {
+    for (const id of Array.from(selectedKeyframeIds)) {
+      if (nextSet.has(id)) continue;
+      selectedKeyframeIds.delete(id);
+      setKeyframeRowSelected(id, false);
+      if (setKeyframePointSelected(id, false)) needsRefresh = true;
+    }
   }
 
   for (const id of Array.from(nextSet)) {
@@ -1481,10 +1462,12 @@ function setKeyframeSelection(nextIds) {
   if (needsRefresh) PeaksManager.refreshViews();
 }
 
-function selectKeyframesInTimeRange(startTime, endTime) {
+function selectKeyframesInTimeRange(startTime, endTime, { additive = false } = {}) {
   const keyframes = KeyframeManager.getKeyframes();
   if (!keyframes || keyframes.length === 0) {
-    setKeyframeSelection([]);
+    if (!additive) {
+      setKeyframeSelection([]);
+    }
     return;
   }
 
@@ -1497,7 +1480,7 @@ function selectKeyframesInTimeRange(startTime, endTime) {
     }
   }
 
-  setKeyframeSelection(ids);
+  setKeyframeSelection(ids, { additive });
 }
 
 function ensureSelectionOverlay(container, currentBox) {
@@ -1547,17 +1530,17 @@ function updateSelectionBox(box, rect, startX, startY, currentX, currentY) {
   setSelectionBoxVisible(box, true);
 }
 
-function updateSelectionInOverview(rect, startX, currentX) {
+function updateSelectionInOverview(rect, startX, currentX, additive = false) {
   if (!Number.isFinite(audio.duration)) return;
   const width = Math.max(1, rect.width);
   const minX = Math.min(Utils.clamp(startX, rect.left, rect.right), Utils.clamp(currentX, rect.left, rect.right));
   const maxX = Math.max(Utils.clamp(startX, rect.left, rect.right), Utils.clamp(currentX, rect.left, rect.right));
   const ratioStart = Utils.clamp((minX - rect.left) / width, 0, 1);
   const ratioEnd = Utils.clamp((maxX - rect.left) / width, 0, 1);
-  selectKeyframesInTimeRange(ratioStart * audio.duration, ratioEnd * audio.duration);
+  selectKeyframesInTimeRange(ratioStart * audio.duration, ratioEnd * audio.duration, { additive });
 }
 
-function updateSelectionInZoomview(rect, startX, currentX) {
+function updateSelectionInZoomview(rect, startX, currentX, additive = false) {
   if (!Number.isFinite(audio.duration)) return;
   const width = Math.max(1, rect.width);
   const minX = Math.min(Utils.clamp(startX, rect.left, rect.right), Utils.clamp(currentX, rect.left, rect.right));
@@ -1566,7 +1549,7 @@ function updateSelectionInZoomview(rect, startX, currentX) {
   const start = getZoomWindowStart(viewDuration);
   const ratioStart = Utils.clamp((minX - rect.left) / width, 0, 1);
   const ratioEnd = Utils.clamp((maxX - rect.left) / width, 0, 1);
-  selectKeyframesInTimeRange(start + ratioStart * viewDuration, start + ratioEnd * viewDuration);
+  selectKeyframesInTimeRange(start + ratioStart * viewDuration, start + ratioEnd * viewDuration, { additive });
 }
 
 function getSelectedKeyframesSorted() {
@@ -1785,6 +1768,7 @@ function bindScrubHandlers() {
   let ovSelectMoved = false;
   let ovSelectStartX = 0;
   let ovSelectStartY = 0;
+  let ovSelectAdditive = false;
   let ovGroupDragging = false;
   let ovGroupDragMoved = false;
   let ovGroupDragStartX = 0;
@@ -1825,6 +1809,7 @@ function bindScrubHandlers() {
       ovSelectMoved = false;
       ovSelectStartX = e.clientX;
       ovSelectStartY = e.clientY;
+      ovSelectAdditive = e.ctrlKey || e.metaKey;
       ensureSelectionOverlays();
       setSelectionBoxVisible(overviewSelectionBox, false);
       overviewContainer.setPointerCapture?.(e.pointerId);
@@ -1876,11 +1861,14 @@ function bindScrubHandlers() {
       const dy = Math.abs(e.clientY - ovSelectStartY);
       if (!ovSelectMoved && Math.max(dx, dy) > SELECTION_DRAG_THRESHOLD_PX) {
         ovSelectMoved = true;
-        clearKeyframeSelection();
+        // Ctrl/Cmdキーが押されていない場合のみ既存の選択をクリア
+        if (!ovSelectAdditive) {
+          clearKeyframeSelection();
+        }
       }
       if (ovSelectMoved) {
         updateSelectionBox(overviewSelectionBox, rect, ovSelectStartX, ovSelectStartY, e.clientX, e.clientY);
-        updateSelectionInOverview(rect, ovSelectStartX, e.clientX);
+        updateSelectionInOverview(rect, ovSelectStartX, e.clientX, ovSelectAdditive);
       }
       e.preventDefault();
       return;
@@ -1909,6 +1897,7 @@ function bindScrubHandlers() {
     }
     if (ovSelecting) {
       ovSelecting = false;
+      ovSelectAdditive = false;
       overviewContainer.releasePointerCapture?.(e.pointerId);
       if (!ovSelectMoved) {
         const rect = overviewContainer.getBoundingClientRect();
@@ -1920,15 +1909,20 @@ function bindScrubHandlers() {
           const thresholdSec = (KEYFRAME_SELECT_THRESHOLD_PX * (audio.duration || 0)) / Math.max(1, rect.width);
           const nearestKf = findNearestKeyframe(targetTime, thresholdSec);
           const wasSelected = nearestKf ? isKeyframeSelected(nearestKf.id) : false;
-          clearKeyframeSelection();
+          const isAdditive = ovSelectAdditive;
+          if (!isAdditive) {
+            clearKeyframeSelection();
+          }
           if (nearestKf) {
-            selectKeyframe(nearestKf.id, { replace: true });
-            if (wasSelected) {
+            selectKeyframe(nearestKf.id, { replace: !isAdditive });
+            if (wasSelected && !isAdditive) {
               focusAndScrollToKeyframe(nearestKf.id);
             }
           }
         } else {
-          clearKeyframeSelection();
+          if (!ovSelectAdditive) {
+            clearKeyframeSelection();
+          }
         }
 
         seekOverviewToClientX(e.clientX);
@@ -1952,10 +1946,13 @@ function bindScrubHandlers() {
         const thresholdSec = (KEYFRAME_SELECT_THRESHOLD_PX * (audio.duration || 0)) / Math.max(1, rect.width);
         const nearestKf = findNearestKeyframe(targetTime, thresholdSec);
         if (nearestKf) {
+          const isAdditive = e.ctrlKey || e.metaKey;
           if (isKeyframeSelected(nearestKf.id)) {
-            focusAndScrollToKeyframe(nearestKf.id);
+            if (!isAdditive) {
+              focusAndScrollToKeyframe(nearestKf.id);
+            }
           } else {
-            selectKeyframe(nearestKf.id, { replace: true });
+            selectKeyframe(nearestKf.id, { replace: !isAdditive });
           }
         }
       }
@@ -1978,6 +1975,7 @@ function bindScrubHandlers() {
   let zvSelectMoved = false;
   let zvSelectStartX = 0;
   let zvSelectStartY = 0;
+  let zvSelectAdditive = false;
   let zvGroupDragging = false;
   let zvGroupDragMoved = false;
   let zvGroupDragStartX = 0;
@@ -1995,11 +1993,14 @@ function bindScrubHandlers() {
       const dy = Math.abs(e.clientY - zvSelectStartY);
       if (!zvSelectMoved && Math.max(dx, dy) > SELECTION_DRAG_THRESHOLD_PX) {
         zvSelectMoved = true;
-        clearKeyframeSelection();
+        // Ctrl/Cmdキーが押されていない場合のみ既存の選択をクリア
+        if (!zvSelectAdditive) {
+          clearKeyframeSelection();
+        }
       }
       if (zvSelectMoved) {
         updateSelectionBox(zoomviewSelectionBox, rect, zvSelectStartX, zvSelectStartY, e.clientX, e.clientY);
-        updateSelectionInZoomview(rect, zvSelectStartX, e.clientX);
+        updateSelectionInZoomview(rect, zvSelectStartX, e.clientX, zvSelectAdditive);
       }
       e.preventDefault();
     } else if (zvGroupDragging) {
@@ -2079,6 +2080,7 @@ function bindScrubHandlers() {
     draggedKeyframeWasSelected = false;
     zvSelecting = false;
     zvSelectMoved = false;
+    zvSelectAdditive = false;
     zvGroupDragging = false;
     zvGroupDragMoved = false;
     zvGroupDragItems = [];
@@ -2114,8 +2116,11 @@ function bindScrubHandlers() {
     if (nearbyKf) {
       // キーフレームが見つかった場合は、ドラッグモードに入る準備
       draggedKeyframeWasSelected = isKeyframeSelected(nearbyKf.id);
-      clearKeyframeSelection();
-      selectKeyframe(nearbyKf.id, { replace: true });
+      const isAdditive = e.ctrlKey || e.metaKey;
+      if (!isAdditive) {
+        clearKeyframeSelection();
+      }
+      selectKeyframe(nearbyKf.id, { replace: !isAdditive });
       isDraggingKeyframe = true;
       draggedKeyframe = nearbyKf;
       zoomviewContainer.style.cursor = 'grabbing';
@@ -2125,6 +2130,7 @@ function bindScrubHandlers() {
       zvSelectMoved = false;
       zvSelectStartX = e.clientX;
       zvSelectStartY = e.clientY;
+      zvSelectAdditive = e.ctrlKey || e.metaKey;
       ensureSelectionOverlays();
       setSelectionBoxVisible(zoomviewSelectionBox, false);
       zoomviewContainer.setPointerCapture?.(e.pointerId);
@@ -2145,6 +2151,7 @@ function bindScrubHandlers() {
   const stopZoom = (e) => {
     if (zvSelecting) {
       zvSelecting = false;
+      zvSelectAdditive = false;
       zoomviewContainer.releasePointerCapture?.(e.pointerId);
       if (!zvSelectMoved) {
         const rect = zoomviewContainer.getBoundingClientRect();
@@ -2157,15 +2164,20 @@ function bindScrubHandlers() {
           const thresholdSec = (KEYFRAME_SELECT_THRESHOLD_PX * viewDuration) / Math.max(1, rect.width);
           const nearestKf = findNearestKeyframe(targetTime, thresholdSec);
           const wasSelected = nearestKf ? isKeyframeSelected(nearestKf.id) : false;
-          clearKeyframeSelection();
+          const isAdditive = zvSelectAdditive;
+          if (!isAdditive) {
+            clearKeyframeSelection();
+          }
           if (nearestKf) {
-            selectKeyframe(nearestKf.id, { replace: true });
-            if (wasSelected) {
+            selectKeyframe(nearestKf.id, { replace: !isAdditive });
+            if (wasSelected && !isAdditive) {
               focusAndScrollToKeyframe(nearestKf.id);
             }
           }
         } else {
-          clearKeyframeSelection();
+          if (!zvSelectAdditive) {
+            clearKeyframeSelection();
+          }
         }
         seekInZoomview(e);
       }
@@ -2250,10 +2262,13 @@ function bindScrubHandlers() {
           const thresholdSec = (KEYFRAME_SELECT_THRESHOLD_PX * viewDuration) / Math.max(1, rect.width);
           const nearestKf = findNearestKeyframe(targetTime, thresholdSec);
           if (nearestKf) {
+            const isAdditive = e.ctrlKey || e.metaKey;
             if (isKeyframeSelected(nearestKf.id)) {
-              focusAndScrollToKeyframe(nearestKf.id);
+              if (!isAdditive) {
+                focusAndScrollToKeyframe(nearestKf.id);
+              }
             } else {
-              selectKeyframe(nearestKf.id, { replace: true });
+              selectKeyframe(nearestKf.id, { replace: !isAdditive });
             }
           }
         }

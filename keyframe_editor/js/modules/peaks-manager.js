@@ -184,21 +184,23 @@ export function updatePointColors(keyframes) {
  * @param {string} pointId - ポイントID
  * @param {number} time - 時間
  * @param {string} color - 色
+ * @param {boolean} isSelected - 選択状態
  * @returns {string|null} 新しいポイントID
  */
-export function recreatePoint(pointId, time, color) {
+export function recreatePoint(pointId, time, color, isSelected = false) {
   if (!peaksInstance || !peaksInstance.points || !pointId) return null;
 
   try {
     // 既存のポイントを削除
     peaksInstance.points.removeById(pointId);
 
-    // 新しいポイントを追加
+    // 新しいポイントを追加（選択状態をカスタムデータとして渡す）
     const point = peaksInstance.points.add({
       time: time,
       labelText: '',
       editable: false,
-      color: color
+      color: color,
+      data: { isSelected: isSelected }
     });
 
     return point && point.id ? point.id : null;
