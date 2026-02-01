@@ -93,6 +93,7 @@ let zoomviewSelectionBox = null;
 let filterLabel = '';
 let keyframeClipboard = null;
 let keyframeClipboardBounds = null;
+const keyframesToDelete = new Set(); // カット操作で削除マークを付けたキーフレームID
 
 let isUpdatingJsonArea = false;
 let jsonApplyTimer = null;
@@ -1529,6 +1530,29 @@ function copySelectedKeyframes() {
   return true;
 }
 
+function cutSelectedKeyframes() {
+  const keyframes = getSelectedKeyframesSorted();
+  if (keyframes.length === 0) return false;
+
+  // コピー処理（copySelectedKeyframes と同じ）
+  keyframeClipboard = keyframes.map(kf => ({
+    time: kf.time,
+    label: kf.label,
+    comment: kf.comment
+  }));
+  const minTime = keyframes[0].time;
+  const maxTime = keyframes[keyframes.length - 1].time;
+  keyframeClipboardBounds = { minTime, maxTime };
+
+  // 削除マークを付ける
+  keyframesToDelete.clear();
+  for (const kf of keyframes) {
+    keyframesToDelete.add(kf.id);
+  }
+
+  return true;
+}
+
 function pasteKeyframesAtCurrentTime() {
   if (!keyframeClipboard || keyframeClipboard.length === 0) return false;
   if (!Number.isFinite(audio.duration)) return false;
@@ -1550,6 +1574,14 @@ function pasteKeyframesAtCurrentTime() {
   }));
 
   KeyframeManager.pushHistorySnapshot();
+
+  // 削除マークが付いているキーフレームを削除
+  if (keyframesToDelete.size > 0) {
+    const idsToDelete = Array.from(keyframesToDelete);
+    KeyframeManager.removeKeyframesBulk(idsToDelete, { saveHistory: false });
+    keyframesToDelete.clear();
+  }
+
   const added = KeyframeManager.addKeyframesBulk(items, { saveHistory: false });
   if (added.length === 0) return false;
 
@@ -1574,6 +1606,15 @@ function deleteSelectedKeyframes() {
   rebuildPeaksPoints();
   updatePointColors();
   updateJson();
+  return true;
+}
+
+function selectAllKeyframes() {
+  const keyframes = KeyframeManager.getKeyframes();
+  if (!keyframes || keyframes.length === 0) return false;
+
+  const allIds = keyframes.map(kf => kf.id);
+  setKeyframeSelection(allIds);
   return true;
 }
 
@@ -2685,9 +2726,27 @@ window.addEventListener('keydown', (e) => {
     }
   }
 
+  // Ctrl/Cmd+X で選択中キーフレームをカット（テキスト入力中は無効）
+  if ((e.ctrlKey || e.metaKey) && keyLower === 'x' && !isTextEntry && !isCommentField && !isJsonField) {
+    const handled = cutSelectedKeyframes();
+    if (handled) {
+      e.preventDefault();
+      return;
+    }
+  }
+
   // Ctrl/Cmd+V でペースト（テキスト入力中は無効）
   if ((e.ctrlKey || e.metaKey) && keyLower === 'v' && !isTextEntry && !isCommentField && !isJsonField) {
     const handled = pasteKeyframesAtCurrentTime();
+    if (handled) {
+      e.preventDefault();
+      return;
+    }
+  }
+
+  // Ctrl/Cmd+A で全選択（テキスト入力中は無効）
+  if ((e.ctrlKey || e.metaKey) && keyLower === 'a' && !isTextEntry && !isCommentField && !isJsonField) {
+    const handled = selectAllKeyframes();
     if (handled) {
       e.preventDefault();
       return;
