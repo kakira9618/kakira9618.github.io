@@ -1524,6 +1524,21 @@ function pasteKeyframesAtCurrentTime() {
   return true;
 }
 
+function deleteSelectedKeyframes() {
+  const selected = getSelectedKeyframesSorted();
+  if (selected.length === 0) return false;
+
+  KeyframeManager.pushHistorySnapshot();
+  KeyframeManager.removeKeyframesBulk(selected.map(kf => kf.id), { saveHistory: false });
+  clearKeyframeSelection();
+  refreshLabelFilterOptions();
+  renderKeyframeList();
+  rebuildPeaksPoints();
+  updatePointColors();
+  updateJson();
+  return true;
+}
+
 /**
  * 指定時間の近くにあるキーフレームを探す
  * @param {number} targetTime - 対象時間（秒）
@@ -2605,6 +2620,15 @@ window.addEventListener('keydown', (e) => {
   // Ctrl/Cmd+V でペースト（テキスト入力中は無効）
   if ((e.ctrlKey || e.metaKey) && keyLower === 'v' && !isTextEntry && !isCommentField && !isJsonField) {
     const handled = pasteKeyframesAtCurrentTime();
+    if (handled) {
+      e.preventDefault();
+      return;
+    }
+  }
+
+  // Backspace/Delete で選択中キーフレームを削除（テキスト入力中は無効）
+  if ((e.key === 'Backspace' || e.key === 'Delete') && !isTextEntry && !isCommentField && !isJsonField) {
+    const handled = deleteSelectedKeyframes();
     if (handled) {
       e.preventDefault();
       return;

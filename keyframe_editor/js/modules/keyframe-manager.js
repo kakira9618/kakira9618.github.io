@@ -127,6 +127,35 @@ export function removeKeyframe(id) {
 }
 
 /**
+ * 複数キーフレームをまとめて削除
+ * @param {Array<string>} ids - 削除するキーフレームID配列
+ * @param {Object} options
+ * @param {boolean} options.saveHistory - 履歴に保存するかどうか
+ * @returns {Array} 削除されたキーフレーム配列
+ */
+export function removeKeyframesBulk(ids, { saveHistory = true } = {}) {
+  if (!Array.isArray(ids) || ids.length === 0) return [];
+  if (saveHistory) {
+    saveToHistory();
+  }
+
+  const idSet = new Set(ids);
+  const removed = [];
+  keyframes = keyframes.filter((kf) => {
+    if (idSet.has(kf.id)) {
+      removed.push(kf);
+      return false;
+    }
+    return true;
+  });
+
+  if (removed.length > 0) {
+    updateAllLabels();
+  }
+  return removed;
+}
+
+/**
  * キーフレームを更新（サニタイゼーション付き）
  * @param {string} id - キーフレームID
  * @param {Object} updates - 更新内容
