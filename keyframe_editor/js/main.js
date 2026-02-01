@@ -1153,7 +1153,9 @@ async function initWithFile(file) {
 
 function exitTimeEdit(applyValue) {
   if (!isTimeEditing) return;
+  isTimeEditing = false;
   const input = timeEditInput;
+  timeEditInput = null;
   if (input && applyValue) {
     const target = Utils.parseTimeInput(input.value, audio.currentTime, audio.duration);
     if (Number.isFinite(target)) {
@@ -1166,8 +1168,6 @@ function exitTimeEdit(applyValue) {
     }
   }
   if (input && input.parentNode) input.parentNode.removeChild(input);
-  timeEditInput = null;
-  isTimeEditing = false;
   if (timeBadge) timeBadge.style.visibility = 'visible';
   updateTimeBadge();
 }
