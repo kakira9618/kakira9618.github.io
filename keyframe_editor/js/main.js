@@ -409,6 +409,20 @@ function applyZoomAtRect(rect, clientX, scale) {
   applyZoom(nextFactor, nextStart);
 }
 
+function isZoomWheelGesture(e) {
+  if (e.ctrlKey || e.metaKey) return true;
+  if (e.deltaMode !== 0) return false;
+
+  const absX = Math.abs(e.deltaX);
+  const absY = Math.abs(e.deltaY);
+
+  if (!Number.isFinite(absY) || absY === 0) return false;
+  if (absX > 6) return false;
+
+  // Heuristic: small pixel deltas with little horizontal movement are likely pinch zoom.
+  return absY < 40;
+}
+
 function bindPinchZoom(container) {
   let lastScale = null;
 
@@ -1630,10 +1644,14 @@ function bindScrubHandlers() {
         updateJson();
       } else {
         // クリックの場合は選択のみ、再クリックでスクロール
-        if (isKeyframeSelected(draggedKeyframe.id)) {
-          focusAndScrollToKeyframe(draggedKeyframe.id);
-        } else {
-          selectKeyframe(draggedKeyframe.id, { replace: true });
+        const rect = zoomviewContainer.getBoundingClientRect();
+        const isInRulerArea = isPointerInRulerArea(rect, e.clientY);
+        if (isInRulerArea) {
+          if (isKeyframeSelected(draggedKeyframe.id)) {
+            focusAndScrollToKeyframe(draggedKeyframe.id);
+          } else {
+            selectKeyframe(draggedKeyframe.id, { replace: true });
+          }
         }
       }
 
@@ -1701,7 +1719,7 @@ function bindScrubHandlers() {
 
     const rect = zoomviewContainer.getBoundingClientRect();
 
-    if (e.ctrlKey || e.metaKey) {
+    if (isZoomWheelGesture(e)) {
       const scale = Math.exp(-e.deltaY * 0.0015);
       applyZoomAtRect(rect, e.clientX, scale);
     } else {
@@ -1759,7 +1777,7 @@ function bindScrubHandlers() {
 
     const rect = spectrumContainer.getBoundingClientRect();
 
-    if (e.ctrlKey || e.metaKey) {
+    if (isZoomWheelGesture(e)) {
       const scale = Math.exp(-e.deltaY * 0.0015);
       applyZoomAtRect(rect, e.clientX, scale);
     } else {
