@@ -73,6 +73,10 @@ let specScrubRaf = null;
 let stepPreviewTimer = null;
 let isStepPreview = false;
 
+// ズーム処理のスムーズ化
+let zoomRaf = null;
+let pendingZoomParams = null;
+
 let timeEditInput = null;
 let isTimeEditing = false;
 
@@ -382,6 +386,24 @@ function zoomRatioFromClientX(clientX, rect) {
   return Utils.clamp((x - rect.left) / width, 0, 1);
 }
 
+function scheduleZoomUpdate() {
+  if (zoomRaf !== null) return;
+
+  zoomRaf = requestAnimationFrame(() => {
+    zoomRaf = null;
+
+    if (!pendingZoomParams) return;
+
+    const { nextFactor, nextStart, snapped } = pendingZoomParams;
+    pendingZoomParams = null;
+
+    const sliderVal = Utils.sliderFromFactor(nextFactor, zoomConfig.map);
+    elZoom.value = String(sliderVal);
+    UIControls.setFactorLabel(elZoomLabel, nextFactor, snapped);
+    applyZoom(nextFactor, nextStart);
+  });
+}
+
 function applyZoomAtRect(rect, clientX, scale) {
   if (!PeaksManager.getPeaksInstance() || !Number.isFinite(audio.duration)) return;
   if (!Number.isFinite(scale) || scale <= 0) return;
@@ -407,10 +429,9 @@ function applyZoomAtRect(rect, clientX, scale) {
   const maxStart = Math.max(0, audio.duration - viewDurationAfter);
   const nextStart = Utils.clamp(targetTime - ratio * viewDurationAfter, 0, maxStart);
 
-  const sliderVal = Utils.sliderFromFactor(nextFactor, zoomConfig.map);
-  elZoom.value = String(sliderVal);
-  UIControls.setFactorLabel(elZoomLabel, nextFactor, snapped);
-  applyZoom(nextFactor, nextStart);
+  // 最新のズームパラメータを保存し、次のフレームで適用
+  pendingZoomParams = { nextFactor, nextStart, snapped };
+  scheduleZoomUpdate();
 }
 
 function isZoomWheelGesture(e) {
@@ -1078,6 +1099,14 @@ async function destroyAll() {
   hiResSpec = null;
   hiResRequestId++;
   teardownSpectrum();
+
+  // ズーム処理のクリーンアップ
+  if (zoomRaf !== null) {
+    cancelAnimationFrame(zoomRaf);
+    zoomRaf = null;
+  }
+  pendingZoomParams = null;
+
   await AudioManager.cleanup(); // メモリリーク対策: AudioContextも破棄
 }
 
@@ -1139,20 +1168,32 @@ function createPointMarker(options) {
 
   group.appendChild(handle);
 
-  // 選択されている場合、枠線を追加
+  // 選択されている場合、左右に枠線を追加 [|]
   if (isSelected) {
-    const outline = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    outline.setAttribute('x', '-4');
-    outline.setAttribute('y', '-2');
-    outline.setAttribute('width', '9');
-    outline.setAttribute('height', '24');
-    outline.setAttribute('fill', 'none');
-    outline.setAttribute('stroke', '#ffd166');
-    outline.setAttribute('stroke-width', '2');
-    outline.setAttribute('rx', '2');
+    const selectionColor = '#ffd166';
+    const offset = 2; // キーフレーム中心から±2px
+
+    // 左側の縦線
+    const leftBracket = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    leftBracket.setAttribute('x1', String(-offset + 0.5));
+    leftBracket.setAttribute('y1', '-1');
+    leftBracket.setAttribute('x2', String(-offset + 0.5));
+    leftBracket.setAttribute('y2', '21');
+    leftBracket.setAttribute('stroke', selectionColor);
+    leftBracket.setAttribute('stroke-width', '1.5');
+
+    // 右側の縦線
+    const rightBracket = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    rightBracket.setAttribute('x1', String(offset + 0.5));
+    rightBracket.setAttribute('y1', '-1');
+    rightBracket.setAttribute('x2', String(offset + 0.5));
+    rightBracket.setAttribute('y2', '21');
+    rightBracket.setAttribute('stroke', selectionColor);
+    rightBracket.setAttribute('stroke-width', '1.5');
 
     // 枠線を最初に追加（背面に配置）
-    group.insertBefore(outline, handle);
+    group.insertBefore(leftBracket, handle);
+    group.insertBefore(rightBracket, handle);
   }
 
   return group;
