@@ -78,6 +78,10 @@ let isTimeEditing = false;
 
 let sortField = 'id'; // 'time' | 'label' | 'id'
 let sortDir = 1; // 1 = asc, -1 = desc
+
+// キーフレーム選択状態（将来的な複数選択に備えてSetで保持）
+const selectedKeyframeIds = new Set();
+const KEYFRAME_SELECTED_POINT_COLOR = '#ffd166';
 let filterLabel = '';
 
 let isUpdatingJsonArea = false;
@@ -264,6 +268,7 @@ function applyJsonToState() {
     return;
   }
 
+  clearKeyframeSelection();
   refreshLabelFilterOptions();
   renderKeyframeList();
   rebuildPeaksPoints();
@@ -282,6 +287,7 @@ function rebuildPeaksPoints() {
 function updatePointColors() {
   const keyframes = KeyframeManager.getKeyframes();
   PeaksManager.updatePointColors(keyframes);
+  applySelectionToPoints();
 }
 
 // ==================== ズーム・再生速度 ====================
@@ -704,6 +710,9 @@ function renderKeyframeList() {
     row.className = 'kf';
     row.id = `kf-row-${kf.id}`;
     row.dataset.kfId = kf.id;
+    if (selectedKeyframeIds.has(kf.id)) {
+      row.classList.add('selected');
+    }
 
     // ID列
     const idCell = document.createElement('div');
@@ -958,6 +967,7 @@ function createActionsCell(kf) {
   btnDel.textContent = '削除';
   btnDel.addEventListener('click', (e) => {
     e.stopPropagation();
+    deselectKeyframe(kf.id);
     if (kf.pointId) {
       PeaksManager.removePoint(kf.pointId);
     }
@@ -979,6 +989,7 @@ function createActionsCell(kf) {
 async function destroyAll() {
   PeaksManager.destroyPeaks();
   KeyframeManager.clearKeyframes();
+  clearKeyframeSelection();
   currentAudioHash = null;
   hiResSpec = null;
   hiResRequestId++;
@@ -1184,6 +1195,85 @@ function addKeyframe() {
 
 // ==================== キーフレーム検索・フォーカス ====================
 
+// ==================== キーフレーム選択 ====================
+
+function isKeyframeSelected(kfId) {
+  return selectedKeyframeIds.has(kfId);
+}
+
+function getKeyframePointBaseColor(kf) {
+  return kf && kf.label ? Utils.getLabelColor(kf.label) : '#888888';
+}
+
+function setKeyframeRowSelected(kfId, isSelected) {
+  const rowElement = document.getElementById(`kf-row-${kfId}`);
+  if (!rowElement) return;
+  rowElement.classList.toggle('selected', isSelected);
+}
+
+function setKeyframePointSelected(kfId, isSelected) {
+  const kf = KeyframeManager.getKeyframeById(kfId);
+  if (!kf || !kf.pointId) return false;
+  const color = isSelected ? KEYFRAME_SELECTED_POINT_COLOR : getKeyframePointBaseColor(kf);
+  PeaksManager.updatePoint(kf.pointId, { color });
+  return true;
+}
+
+function clearKeyframeSelection() {
+  if (selectedKeyframeIds.size === 0) return;
+  let needsRefresh = false;
+  for (const id of Array.from(selectedKeyframeIds)) {
+    setKeyframeRowSelected(id, false);
+    if (setKeyframePointSelected(id, false)) needsRefresh = true;
+  }
+  selectedKeyframeIds.clear();
+  if (needsRefresh) PeaksManager.refreshViews();
+}
+
+function deselectKeyframe(kfId) {
+  if (!selectedKeyframeIds.has(kfId)) return;
+  selectedKeyframeIds.delete(kfId);
+  setKeyframeRowSelected(kfId, false);
+  const needsRefresh = setKeyframePointSelected(kfId, false);
+  if (needsRefresh) PeaksManager.refreshViews();
+}
+
+function selectKeyframe(kfId, { replace = true } = {}) {
+  if (!kfId) return;
+  let needsRefresh = false;
+
+  if (replace) {
+    for (const id of Array.from(selectedKeyframeIds)) {
+      if (id === kfId) continue;
+      selectedKeyframeIds.delete(id);
+      setKeyframeRowSelected(id, false);
+      if (setKeyframePointSelected(id, false)) needsRefresh = true;
+    }
+  }
+
+  if (!selectedKeyframeIds.has(kfId)) {
+    selectedKeyframeIds.add(kfId);
+    setKeyframeRowSelected(kfId, true);
+    if (setKeyframePointSelected(kfId, true)) needsRefresh = true;
+  }
+
+  if (needsRefresh) PeaksManager.refreshViews();
+}
+
+function applySelectionToPoints() {
+  if (selectedKeyframeIds.size === 0) return;
+  let needsRefresh = false;
+  for (const id of Array.from(selectedKeyframeIds)) {
+    const kf = KeyframeManager.getKeyframeById(id);
+    if (!kf) {
+      selectedKeyframeIds.delete(id);
+      continue;
+    }
+    if (setKeyframePointSelected(id, true)) needsRefresh = true;
+  }
+  if (needsRefresh) PeaksManager.refreshViews();
+}
+
 /**
  * 指定時間の近くにあるキーフレームを探す
  * @param {number} targetTime - 対象時間（秒）
@@ -1353,7 +1443,11 @@ function bindScrubHandlers() {
       // 近くのキーフレームを探す
       const nearestKf = findNearestKeyframe(targetTime);
       if (nearestKf) {
-        focusAndScrollToKeyframe(nearestKf.id);
+        if (isKeyframeSelected(nearestKf.id)) {
+          focusAndScrollToKeyframe(nearestKf.id);
+        } else {
+          selectKeyframe(nearestKf.id, { replace: true });
+        }
       }
 
       seekOverviewToClientX(e.clientX);
@@ -1453,8 +1547,12 @@ function bindScrubHandlers() {
         renderKeyframeList();
         updateJson();
       } else {
-        // クリックの場合はキーフレーム一覧にスクロール
-        focusAndScrollToKeyframe(draggedKeyframe.id);
+        // クリックの場合は選択のみ、再クリックでスクロール
+        if (isKeyframeSelected(draggedKeyframe.id)) {
+          focusAndScrollToKeyframe(draggedKeyframe.id);
+        } else {
+          selectKeyframe(draggedKeyframe.id, { replace: true });
+        }
       }
 
       isDraggingKeyframe = false;
@@ -1477,7 +1575,11 @@ function bindScrubHandlers() {
         // 近くのキーフレームを探す
         const nearestKf = findNearestKeyframe(targetTime);
         if (nearestKf) {
-          focusAndScrollToKeyframe(nearestKf.id);
+          if (isKeyframeSelected(nearestKf.id)) {
+            focusAndScrollToKeyframe(nearestKf.id);
+          } else {
+            selectKeyframe(nearestKf.id, { replace: true });
+          }
         }
       }
 
