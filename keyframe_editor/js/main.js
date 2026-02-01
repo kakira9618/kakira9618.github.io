@@ -82,6 +82,7 @@ let sortDir = 1; // 1 = asc, -1 = desc
 // キーフレーム選択状態（将来的な複数選択に備えてSetで保持）
 const selectedKeyframeIds = new Set();
 const KEYFRAME_SELECTED_POINT_COLOR = '#ffd166';
+const KEYFRAME_SELECT_THRESHOLD_PX = 12;
 let filterLabel = '';
 
 let isUpdatingJsonArea = false;
@@ -1304,7 +1305,7 @@ function findNearestKeyframe(targetTime, threshold = 0.5) {
  * @param {number} thresholdPx - 許容範囲（px）
  * @returns {Object|null} 見つかったキーフレーム
  */
-function findNearestKeyframeInZoomView(clientX, thresholdPx = 10) {
+function findNearestKeyframeInZoomView(clientX, thresholdPx = KEYFRAME_SELECT_THRESHOLD_PX) {
   const keyframes = KeyframeManager.getKeyframes();
   if (!keyframes || keyframes.length === 0 || !Number.isFinite(audio.duration)) return null;
 
@@ -1447,7 +1448,8 @@ function bindScrubHandlers() {
 
       // 目盛りエリアでのみキーフレームを探す
       if (isInRulerArea) {
-        const nearestKf = findNearestKeyframe(targetTime);
+        const thresholdSec = (KEYFRAME_SELECT_THRESHOLD_PX * (audio.duration || 0)) / Math.max(1, rect.width);
+        const nearestKf = findNearestKeyframe(targetTime, thresholdSec);
         if (nearestKf) {
           if (isKeyframeSelected(nearestKf.id)) {
             focusAndScrollToKeyframe(nearestKf.id);
@@ -1470,7 +1472,7 @@ function bindScrubHandlers() {
   let zvMoved = false;
   let isDraggingKeyframe = false;
   let draggedKeyframe = null;
-  const KEYFRAME_GRAB_THRESHOLD_PX = 10;
+  const KEYFRAME_GRAB_THRESHOLD_PX = KEYFRAME_SELECT_THRESHOLD_PX;
 
   // カーソル更新用のpointermoveハンドラー（常時動作）
   zoomviewContainer.addEventListener('pointermove', (e) => {
@@ -1587,7 +1589,8 @@ function bindScrubHandlers() {
           const targetTime = Utils.clamp(start + ratio * viewDuration, 0, audio.duration);
 
           // 近くのキーフレームを探す
-          const nearestKf = findNearestKeyframe(targetTime);
+          const thresholdSec = (KEYFRAME_SELECT_THRESHOLD_PX * viewDuration) / Math.max(1, rect.width);
+          const nearestKf = findNearestKeyframe(targetTime, thresholdSec);
           if (nearestKf) {
             if (isKeyframeSelected(nearestKf.id)) {
               focusAndScrollToKeyframe(nearestKf.id);
