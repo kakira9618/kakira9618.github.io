@@ -180,6 +180,35 @@ export function updatePointColors(keyframes) {
 }
 
 /**
+ * ポイントを再作成（選択状態の変更などでマーカーを更新するため）
+ * @param {string} pointId - ポイントID
+ * @param {number} time - 時間
+ * @param {string} color - 色
+ * @returns {string|null} 新しいポイントID
+ */
+export function recreatePoint(pointId, time, color) {
+  if (!peaksInstance || !peaksInstance.points || !pointId) return null;
+
+  try {
+    // 既存のポイントを削除
+    peaksInstance.points.removeById(pointId);
+
+    // 新しいポイントを追加
+    const point = peaksInstance.points.add({
+      time: time,
+      labelText: '',
+      editable: false,
+      color: color
+    });
+
+    return point && point.id ? point.id : null;
+  } catch (e) {
+    console.warn('Failed to recreate point:', e);
+    return null;
+  }
+}
+
+/**
  * ビューを再描画
  */
 export function refreshViews() {

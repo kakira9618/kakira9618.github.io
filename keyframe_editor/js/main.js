@@ -1392,8 +1392,17 @@ function setKeyframeRowSelected(kfId, isSelected) {
 function setKeyframePointSelected(kfId, isSelected) {
   const kf = KeyframeManager.getKeyframeById(kfId);
   if (!kf || !kf.pointId) return false;
-  // 選択状態が変わったので再描画が必要
-  return true;
+
+  // ポイントを再作成して選択状態を反映
+  const color = getKeyframePointBaseColor(kf);
+  const newPointId = PeaksManager.recreatePoint(kf.pointId, kf.time, color);
+
+  if (newPointId) {
+    kf.pointId = newPointId;
+    return true;
+  }
+
+  return false;
 }
 
 function clearKeyframeSelection() {
