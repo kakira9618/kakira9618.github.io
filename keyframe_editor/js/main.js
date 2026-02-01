@@ -1363,7 +1363,7 @@ function addKeyframe() {
 
   const kf = KeyframeManager.addKeyframe(time, lastLabel, '', point?.id);
   if (point) {
-    PeaksManager.updatePoint(point.id, { labelText: kf.id });
+    PeaksManager.updatePoint(point.id, { labelText: '' });
   }
 
   refreshLabelFilterOptions();

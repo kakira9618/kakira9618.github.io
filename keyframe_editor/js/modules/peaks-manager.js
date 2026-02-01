@@ -146,7 +146,7 @@ export function rebuildPoints(keyframes) {
     try {
       const point = peaksInstance.points.add({
         time: kf.time,
-        labelText: kf.id,
+        labelText: '',
         editable: false,
         color: kf.label ? getLabelColor(kf.label) : '#888888'
       });
