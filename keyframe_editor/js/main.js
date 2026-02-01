@@ -88,6 +88,8 @@ const SELECTION_DRAG_THRESHOLD_PX = 3;
 let overviewSelectionBox = null;
 let zoomviewSelectionBox = null;
 let filterLabel = '';
+let keyframeClipboard = null;
+let keyframeClipboardBounds = null;
 
 let isUpdatingJsonArea = false;
 let jsonApplyTimer = null;
@@ -1467,6 +1469,61 @@ function updateSelectionInZoomview(rect, startX, currentX) {
   selectKeyframesInTimeRange(start + ratioStart * viewDuration, start + ratioEnd * viewDuration);
 }
 
+function getSelectedKeyframesSorted() {
+  const ids = new Set(selectedKeyframeIds);
+  if (ids.size === 0) return [];
+  const keyframes = KeyframeManager.getKeyframes().filter(kf => ids.has(kf.id));
+  keyframes.sort((a, b) => a.time - b.time);
+  return keyframes;
+}
+
+function copySelectedKeyframes() {
+  const keyframes = getSelectedKeyframesSorted();
+  if (keyframes.length === 0) return false;
+  keyframeClipboard = keyframes.map(kf => ({
+    time: kf.time,
+    label: kf.label,
+    comment: kf.comment
+  }));
+  const minTime = keyframes[0].time;
+  const maxTime = keyframes[keyframes.length - 1].time;
+  keyframeClipboardBounds = { minTime, maxTime };
+  return true;
+}
+
+function pasteKeyframesAtCurrentTime() {
+  if (!keyframeClipboard || keyframeClipboard.length === 0) return false;
+  if (!Number.isFinite(audio.duration)) return false;
+
+  const bounds = keyframeClipboardBounds || {
+    minTime: Math.min(...keyframeClipboard.map(kf => kf.time)),
+    maxTime: Math.max(...keyframeClipboard.map(kf => kf.time))
+  };
+
+  let delta = audio.currentTime - bounds.minTime;
+  const minDelta = -bounds.minTime;
+  const maxDelta = (audio.duration || 0) - bounds.maxTime;
+  delta = Utils.clamp(delta, minDelta, maxDelta);
+
+  const items = keyframeClipboard.map(kf => ({
+    time: Utils.clamp(kf.time + delta, 0, audio.duration || 0),
+    label: kf.label,
+    comment: kf.comment
+  }));
+
+  KeyframeManager.pushHistorySnapshot();
+  const added = KeyframeManager.addKeyframesBulk(items, { saveHistory: false });
+  if (added.length === 0) return false;
+
+  refreshLabelFilterOptions();
+  renderKeyframeList();
+  rebuildPeaksPoints();
+  setKeyframeSelection(added.map(kf => kf.id));
+  updatePointColors();
+  updateJson();
+  return true;
+}
+
 /**
  * 指定時間の近くにあるキーフレームを探す
  * @param {number} targetTime - 対象時間（秒）
@@ -1613,11 +1670,42 @@ function bindScrubHandlers() {
   let ovSelectMoved = false;
   let ovSelectStartX = 0;
   let ovSelectStartY = 0;
+  let ovGroupDragging = false;
+  let ovGroupDragMoved = false;
+  let ovGroupDragStartX = 0;
+  let ovGroupDragItems = [];
+  let ovGroupDragMinTime = 0;
+  let ovGroupDragMaxTime = 0;
+  let ovGroupDragAnchorId = null;
 
   overviewContainer.addEventListener('pointerdown', (e) => {
     if (!Number.isFinite(audio.duration)) return;
     const rect = overviewContainer.getBoundingClientRect();
     if (isPointerInRulerArea(rect, e.clientY)) {
+      const ratio = Utils.clamp((e.clientX - rect.left) / rect.width, 0, 1);
+      const targetTime = ratio * audio.duration;
+      const thresholdSec = (KEYFRAME_SELECT_THRESHOLD_PX * (audio.duration || 0)) / Math.max(1, rect.width);
+      const nearestKf = findNearestKeyframe(targetTime, thresholdSec);
+      if (nearestKf && isKeyframeSelected(nearestKf.id) && selectedKeyframeIds.size > 0) {
+        const selectedKfs = getSelectedKeyframesSorted();
+        if (selectedKfs.length > 0) {
+          ovGroupDragging = true;
+          ovGroupDragMoved = false;
+          ovGroupDragStartX = e.clientX;
+          ovGroupDragAnchorId = nearestKf.id;
+          ovGroupDragItems = selectedKfs.map(kf => ({
+            id: kf.id,
+            startTime: kf.time,
+            pointId: kf.pointId
+          }));
+          ovGroupDragMinTime = selectedKfs[0].time;
+          ovGroupDragMaxTime = selectedKfs[selectedKfs.length - 1].time;
+          overviewContainer.setPointerCapture?.(e.pointerId);
+          e.preventDefault();
+          return;
+        }
+      }
+
       ovSelecting = true;
       ovSelectMoved = false;
       ovSelectStartX = e.clientX;
@@ -1638,6 +1726,35 @@ function bindScrubHandlers() {
   });
 
   overviewContainer.addEventListener('pointermove', (e) => {
+    if (ovGroupDragging) {
+      const rect = overviewContainer.getBoundingClientRect();
+      const dx = e.clientX - ovGroupDragStartX;
+      if (!ovGroupDragMoved && Math.abs(dx) <= SELECTION_DRAG_THRESHOLD_PX) {
+        e.preventDefault();
+        return;
+      }
+      if (!ovGroupDragMoved) {
+        ovGroupDragMoved = true;
+        KeyframeManager.pushHistorySnapshot();
+      }
+      const duration = audio.duration || 0;
+      const deltaSec = (dx / Math.max(1, rect.width)) * duration;
+      const minDelta = -ovGroupDragMinTime;
+      const maxDelta = duration - ovGroupDragMaxTime;
+      const clampedDelta = Utils.clamp(deltaSec, minDelta, maxDelta);
+      let needsRefresh = false;
+      for (const item of ovGroupDragItems) {
+        const newTime = item.startTime + clampedDelta;
+        KeyframeManager.updateKeyframe(item.id, { time: newTime }, false);
+        if (item.pointId) {
+          PeaksManager.updatePoint(item.pointId, { time: newTime });
+          needsRefresh = true;
+        }
+      }
+      if (needsRefresh) PeaksManager.refreshViews();
+      e.preventDefault();
+      return;
+    }
     if (ovSelecting) {
       const rect = overviewContainer.getBoundingClientRect();
       const dx = Math.abs(e.clientX - ovSelectStartX);
@@ -1663,6 +1780,18 @@ function bindScrubHandlers() {
   });
 
   const stopOverview = (e) => {
+    if (ovGroupDragging) {
+      ovGroupDragging = false;
+      overviewContainer.releasePointerCapture?.(e.pointerId);
+      if (ovGroupDragMoved) {
+        renderKeyframeList();
+        updateJson();
+      } else if (ovGroupDragAnchorId) {
+        focusAndScrollToKeyframe(ovGroupDragAnchorId);
+      }
+      ovGroupDragItems = [];
+      return;
+    }
     if (ovSelecting) {
       ovSelecting = false;
       overviewContainer.releasePointerCapture?.(e.pointerId);
@@ -1734,6 +1863,13 @@ function bindScrubHandlers() {
   let zvSelectMoved = false;
   let zvSelectStartX = 0;
   let zvSelectStartY = 0;
+  let zvGroupDragging = false;
+  let zvGroupDragMoved = false;
+  let zvGroupDragStartX = 0;
+  let zvGroupDragItems = [];
+  let zvGroupDragMinTime = 0;
+  let zvGroupDragMaxTime = 0;
+  let zvGroupDragAnchorId = null;
   const KEYFRAME_GRAB_THRESHOLD_PX = KEYFRAME_SELECT_THRESHOLD_PX;
 
   // カーソル更新用のpointermoveハンドラー（常時動作）
@@ -1750,6 +1886,35 @@ function bindScrubHandlers() {
         updateSelectionBox(zoomviewSelectionBox, rect, zvSelectStartX, zvSelectStartY, e.clientX, e.clientY);
         updateSelectionInZoomview(rect, zvSelectStartX, e.clientX);
       }
+      e.preventDefault();
+    } else if (zvGroupDragging) {
+      const rect = zoomviewContainer.getBoundingClientRect();
+      const dx = e.clientX - zvGroupDragStartX;
+      if (!zvGroupDragMoved && Math.abs(dx) <= SELECTION_DRAG_THRESHOLD_PX) {
+        e.preventDefault();
+        return;
+      }
+      if (!zvGroupDragMoved) {
+        zvGroupDragMoved = true;
+        KeyframeManager.pushHistorySnapshot();
+      }
+      zoomviewContainer.style.cursor = 'grabbing';
+      const viewDuration = getZoomWindowDuration();
+      const deltaSec = (dx / Math.max(1, rect.width)) * viewDuration;
+      const duration = audio.duration || 0;
+      const minDelta = -zvGroupDragMinTime;
+      const maxDelta = duration - zvGroupDragMaxTime;
+      const clampedDelta = Utils.clamp(deltaSec, minDelta, maxDelta);
+      let needsRefresh = false;
+      for (const item of zvGroupDragItems) {
+        const newTime = item.startTime + clampedDelta;
+        KeyframeManager.updateKeyframe(item.id, { time: newTime }, false);
+        if (item.pointId) {
+          PeaksManager.updatePoint(item.pointId, { time: newTime });
+          needsRefresh = true;
+        }
+      }
+      if (needsRefresh) PeaksManager.refreshViews();
       e.preventDefault();
     } else if (isDraggingKeyframe && draggedKeyframe) {
       // キーフレームをドラッグ中
@@ -1799,12 +1964,37 @@ function bindScrubHandlers() {
     draggedKeyframeWasSelected = false;
     zvSelecting = false;
     zvSelectMoved = false;
+    zvGroupDragging = false;
+    zvGroupDragMoved = false;
+    zvGroupDragItems = [];
+    zvGroupDragAnchorId = null;
 
     const rect = zoomviewContainer.getBoundingClientRect();
     const canSelectKeyframe = isPointerInRulerArea(rect, e.clientY);
     const nearbyKf = canSelectKeyframe
       ? findNearestKeyframeInZoomView(e.clientX, KEYFRAME_GRAB_THRESHOLD_PX)
       : null;
+
+    if (nearbyKf && isKeyframeSelected(nearbyKf.id) && selectedKeyframeIds.size > 0) {
+      const selectedKfs = getSelectedKeyframesSorted();
+      if (selectedKfs.length > 0) {
+        zvGroupDragging = true;
+        zvGroupDragMoved = false;
+        zvGroupDragStartX = e.clientX;
+        zvGroupDragAnchorId = nearbyKf.id;
+        zvGroupDragItems = selectedKfs.map(kf => ({
+          id: kf.id,
+          startTime: kf.time,
+          pointId: kf.pointId
+        }));
+        zvGroupDragMinTime = selectedKfs[0].time;
+        zvGroupDragMaxTime = selectedKfs[selectedKfs.length - 1].time;
+        zoomviewContainer.style.cursor = 'grabbing';
+        zoomviewContainer.setPointerCapture?.(e.pointerId);
+        e.preventDefault();
+        return;
+      }
+    }
 
     if (nearbyKf) {
       // キーフレームが見つかった場合は、ドラッグモードに入る準備
@@ -1865,6 +2055,24 @@ function bindScrubHandlers() {
         seekInZoomview(e);
       }
       setSelectionBoxVisible(zoomviewSelectionBox, false);
+      const rect = zoomviewContainer.getBoundingClientRect();
+      const inRulerArea = isPointerInRulerArea(rect, e.clientY);
+      const nearbyKf = inRulerArea
+        ? findNearestKeyframeInZoomView(e.clientX, KEYFRAME_GRAB_THRESHOLD_PX)
+        : null;
+      zoomviewContainer.style.cursor = nearbyKf ? 'grab' : 'crosshair';
+      return;
+    }
+    if (zvGroupDragging) {
+      zvGroupDragging = false;
+      zoomviewContainer.releasePointerCapture?.(e.pointerId);
+      if (zvGroupDragMoved) {
+        renderKeyframeList();
+        updateJson();
+      } else if (zvGroupDragAnchorId) {
+        focusAndScrollToKeyframe(zvGroupDragAnchorId);
+      }
+      zvGroupDragItems = [];
       const rect = zoomviewContainer.getBoundingClientRect();
       const inRulerArea = isPointerInRulerArea(rect, e.clientY);
       const nearbyKf = inRulerArea
@@ -2376,12 +2584,31 @@ window.addEventListener('keydown', (e) => {
   const isTextEntry = (tag === 'input' && type !== 'range') || tag === 'textarea';
   const isCommentField = e.target && e.target.classList && e.target.classList.contains('comment-input');
   const isJsonField = e.target && e.target.id === 'json';
+  const keyLower = e.key.toLowerCase();
 
   // Ctrl/Cmd+S で出力画面を開く（テキスト入力中でも有効）
   if ((e.ctrlKey || e.metaKey) && e.key === 's') {
     e.preventDefault();
     showExportModal();
     return;
+  }
+
+  // Ctrl/Cmd+C で選択中キーフレームをコピー（テキスト入力中は無効）
+  if ((e.ctrlKey || e.metaKey) && keyLower === 'c' && !isTextEntry && !isCommentField && !isJsonField) {
+    const handled = copySelectedKeyframes();
+    if (handled) {
+      e.preventDefault();
+      return;
+    }
+  }
+
+  // Ctrl/Cmd+V でペースト（テキスト入力中は無効）
+  if ((e.ctrlKey || e.metaKey) && keyLower === 'v' && !isTextEntry && !isCommentField && !isJsonField) {
+    const handled = pasteKeyframesAtCurrentTime();
+    if (handled) {
+      e.preventDefault();
+      return;
+    }
   }
 
   // Ctrl/Cmd+Z でUndo（テキスト入力中は無効）
@@ -2429,7 +2656,7 @@ window.addEventListener('keydown', (e) => {
   }
 
   const mul = e.shiftKey ? 10 : 1;
-  const key = e.key.toLowerCase();
+  const key = keyLower;
 
   if (key === 'h') {
     e.preventDefault();

@@ -23,6 +23,13 @@ function saveToHistory() {
 }
 
 /**
+ * 外部から履歴スナップショットを追加
+ */
+export function pushHistorySnapshot() {
+  saveToHistory();
+}
+
+/**
  * キーフレームを追加
  * @param {number} time - 時間（秒）
  * @param {string} label - ラベル（サニタイズ済み）
@@ -58,6 +65,48 @@ export function addKeyframe(time, label = '', comment = '', pointId = null) {
 
   updateAllLabels();
   return kf;
+}
+
+/**
+ * 複数キーフレームをまとめて追加
+ * @param {Array} items - 追加するキーフレーム配列
+ * @param {Object} options
+ * @param {boolean} options.saveHistory - 履歴に保存するかどうか
+ * @returns {Array} 追加されたキーフレーム配列
+ */
+export function addKeyframesBulk(items, { saveHistory = true } = {}) {
+  if (!Array.isArray(items) || items.length === 0) return [];
+  if (saveHistory) {
+    saveToHistory();
+  }
+
+  const added = [];
+  for (const item of items) {
+    const time = Number(item?.time);
+    if (!Number.isFinite(time)) continue;
+    const id = `kf-${kfSeq++}`;
+    const seq = kfSeq - 1;
+    const sanitizedLabel = sanitizeLabelName(item?.label || '');
+    const sanitizedComment = sanitizeComment(item?.comment || '');
+    const kf = {
+      id,
+      seq,
+      time,
+      label: sanitizedLabel,
+      comment: sanitizedComment,
+      pointId: item?.pointId ?? null
+    };
+    keyframes.push(kf);
+    if (sanitizedLabel) {
+      lastEditedLabel = sanitizedLabel;
+    }
+    added.push(kf);
+  }
+
+  if (added.length > 0) {
+    updateAllLabels();
+  }
+  return added;
 }
 
 /**
