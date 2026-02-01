@@ -414,14 +414,10 @@ function applyZoomAtRect(rect, clientX, scale) {
   const startBefore = getZoomWindowStart(viewDurationBefore);
   const targetTime = Utils.clamp(startBefore + ratio * viewDurationBefore, 0, audio.duration);
 
-  const currentFactor = currentSliderFactor(elZoom, zoomConfig.map);
-  let nextFactor = Utils.clamp(currentFactor * scale, zoomConfig.map.min, zoomConfig.map.max);
-  let snapped = false;
-  const SNAP_RANGE = 0.1;
-  if (Math.abs(nextFactor - 1) <= SNAP_RANGE) {
-    nextFactor = 1;
-    snapped = true;
-  }
+  // ホイールズーム時はスナップなしの生のfactor値を使用
+  const raw = Number(elZoom.value) || 0;
+  const currentFactor = Utils.factorFromSlider(raw, zoomConfig.map);
+  const nextFactor = Utils.clamp(currentFactor * scale, zoomConfig.map.min, zoomConfig.map.max);
 
   const sr = AudioManager.getSampleRate();
   const sppAfter = Math.round(zoomConfig.factorToSamplesPerPixel(nextFactor));
@@ -431,49 +427,8 @@ function applyZoomAtRect(rect, clientX, scale) {
   const nextStart = Utils.clamp(targetTime - ratio * viewDurationAfter, 0, maxStart);
 
   // 最新のズームパラメータを保存し、次のフレームで適用
-  pendingZoomParams = { nextFactor, nextStart, snapped };
+  pendingZoomParams = { nextFactor, nextStart, snapped: false };
   scheduleZoomUpdate();
-}
-
-function isZoomWheelGesture(e) {
-  if (e.ctrlKey || e.metaKey) return true;
-  if (e.deltaMode !== 0) return false;
-
-  const absX = Math.abs(e.deltaX);
-  const absY = Math.abs(e.deltaY);
-
-  if (!Number.isFinite(absY) || absY === 0) return false;
-  if (absX > 6) return false;
-
-  // Heuristic: small pixel deltas with little horizontal movement are likely pinch zoom.
-  return absY < 40;
-}
-
-function bindPinchZoom(container) {
-  let lastScale = null;
-
-  const onGestureStart = (e) => {
-    lastScale = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
-    e.preventDefault();
-  };
-
-  const onGestureChange = (e) => {
-    const rect = container.getBoundingClientRect();
-    const currentScale = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
-    const deltaScale = lastScale ? currentScale / lastScale : currentScale;
-    lastScale = currentScale;
-    applyZoomAtRect(rect, e.clientX, deltaScale);
-    e.preventDefault();
-  };
-
-  const onGestureEnd = (e) => {
-    lastScale = null;
-    e.preventDefault();
-  };
-
-  container.addEventListener('gesturestart', onGestureStart, { passive: false });
-  container.addEventListener('gesturechange', onGestureChange, { passive: false });
-  container.addEventListener('gestureend', onGestureEnd, { passive: false });
 }
 
 // ==================== スペクトログラム ====================
@@ -2293,13 +2248,13 @@ function bindScrubHandlers() {
   zoomviewContainer.addEventListener('pointerleave', stopZoom);
   zoomviewContainer.addEventListener('pointercancel', stopZoom);
 
-  // Zoom view: Ctrl/Cmd+ホイール or ピンチで倍率変更、無修飾ホイールで水平スクロール
+  // Zoom view: Ctrl/Cmd+ホイールで倍率変更、無修飾ホイールで水平スクロール
   zoomviewContainer.addEventListener('wheel', (e) => {
     if (!PeaksManager.getPeaksInstance() || !Number.isFinite(audio.duration)) return;
 
     const rect = zoomviewContainer.getBoundingClientRect();
 
-    if (isZoomWheelGesture(e)) {
+    if (e.ctrlKey || e.metaKey) {
       const scale = Math.exp(-e.deltaY * 0.0015);
       applyZoomAtRect(rect, e.clientX, scale);
     } else {
@@ -2312,7 +2267,6 @@ function bindScrubHandlers() {
 
     e.preventDefault();
   }, { passive: false });
-  bindPinchZoom(zoomviewContainer);
 
   // Overview: ホイールで水平スクロール
   overviewContainer.addEventListener('wheel', (e) => {
@@ -2351,13 +2305,13 @@ function bindScrubHandlers() {
   spectrumContainer.addEventListener('pointerleave', stopSpec);
   spectrumContainer.addEventListener('pointercancel', stopSpec);
 
-  // Spectrum: Ctrl/Cmd+ホイール or ピンチで倍率変更、無修飾ホイールで水平スクロール
+  // Spectrum: Ctrl/Cmd+ホイールで倍率変更、無修飾ホイールで水平スクロール
   spectrumContainer.addEventListener('wheel', (e) => {
     if (!PeaksManager.getPeaksInstance() || !Number.isFinite(audio.duration)) return;
 
     const rect = spectrumContainer.getBoundingClientRect();
 
-    if (isZoomWheelGesture(e)) {
+    if (e.ctrlKey || e.metaKey) {
       const scale = Math.exp(-e.deltaY * 0.0015);
       applyZoomAtRect(rect, e.clientX, scale);
     } else {
@@ -2370,7 +2324,6 @@ function bindScrubHandlers() {
 
     e.preventDefault();
   }, { passive: false });
-  bindPinchZoom(spectrumContainer);
 }
 
 // ==================== スペクトログラム同期 ====================
