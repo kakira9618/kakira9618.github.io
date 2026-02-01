@@ -1440,13 +1440,20 @@ function bindScrubHandlers() {
       const ratio = Utils.clamp((e.clientX - rect.left) / rect.width, 0, 1);
       const targetTime = ratio * audio.duration;
 
-      // 近くのキーフレームを探す
-      const nearestKf = findNearestKeyframe(targetTime);
-      if (nearestKf) {
-        if (isKeyframeSelected(nearestKf.id)) {
-          focusAndScrollToKeyframe(nearestKf.id);
-        } else {
-          selectKeyframe(nearestKf.id, { replace: true });
+      // クリック位置のY座標をチェック（上下の目盛り部分でのみキーフレーム選択）
+      const relativeY = (e.clientY - rect.top) / rect.height;
+      const RULER_MARGIN = 0.15; // 上下15%の範囲を目盛りエリアとする
+      const isInRulerArea = relativeY < RULER_MARGIN || relativeY > (1 - RULER_MARGIN);
+
+      // 目盛りエリアでのみキーフレームを探す
+      if (isInRulerArea) {
+        const nearestKf = findNearestKeyframe(targetTime);
+        if (nearestKf) {
+          if (isKeyframeSelected(nearestKf.id)) {
+            focusAndScrollToKeyframe(nearestKf.id);
+          } else {
+            selectKeyframe(nearestKf.id, { replace: true });
+          }
         }
       }
 
@@ -1567,18 +1574,26 @@ function bindScrubHandlers() {
       // クリック（ドラッグでない場合）に近くのキーフレームを探す
       if (!zvMoved && Number.isFinite(audio.duration)) {
         const rect = zoomviewContainer.getBoundingClientRect();
-        const ratio = Utils.clamp((e.clientX - rect.left) / rect.width, 0, 1);
-        const viewDuration = getZoomWindowDuration();
-        const start = getZoomWindowStart(viewDuration);
-        const targetTime = Utils.clamp(start + ratio * viewDuration, 0, audio.duration);
 
-        // 近くのキーフレームを探す
-        const nearestKf = findNearestKeyframe(targetTime);
-        if (nearestKf) {
-          if (isKeyframeSelected(nearestKf.id)) {
-            focusAndScrollToKeyframe(nearestKf.id);
-          } else {
-            selectKeyframe(nearestKf.id, { replace: true });
+        // クリック位置のY座標をチェック（上下の目盛り部分でのみキーフレーム選択）
+        const relativeY = (e.clientY - rect.top) / rect.height;
+        const RULER_MARGIN = 0.15; // 上下15%の範囲を目盛りエリアとする
+        const isInRulerArea = relativeY < RULER_MARGIN || relativeY > (1 - RULER_MARGIN);
+
+        if (isInRulerArea) {
+          const ratio = Utils.clamp((e.clientX - rect.left) / rect.width, 0, 1);
+          const viewDuration = getZoomWindowDuration();
+          const start = getZoomWindowStart(viewDuration);
+          const targetTime = Utils.clamp(start + ratio * viewDuration, 0, audio.duration);
+
+          // 近くのキーフレームを探す
+          const nearestKf = findNearestKeyframe(targetTime);
+          if (nearestKf) {
+            if (isKeyframeSelected(nearestKf.id)) {
+              focusAndScrollToKeyframe(nearestKf.id);
+            } else {
+              selectKeyframe(nearestKf.id, { replace: true });
+            }
           }
         }
       }
