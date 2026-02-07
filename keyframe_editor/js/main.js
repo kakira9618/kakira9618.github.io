@@ -1418,7 +1418,7 @@ function setKeyframeSelection(nextIds, { additive = false } = {}) {
   if (needsRefresh) PeaksManager.refreshViews();
 }
 
-function selectKeyframesInTimeRange(startTime, endTime, { additive = false } = {}) {
+function selectKeyframesInTimeRange(startTime, endTime, { additive = false, initialSelection = null } = {}) {
   const keyframes = KeyframeManager.getKeyframes();
   if (!keyframes || keyframes.length === 0) {
     if (!additive) {
@@ -1430,13 +1430,24 @@ function selectKeyframesInTimeRange(startTime, endTime, { additive = false } = {
   const minTime = Math.min(startTime, endTime);
   const maxTime = Math.max(startTime, endTime);
   const ids = [];
+
+  // 範囲内のキーフレームを追加
   for (const kf of keyframes) {
     if (kf.time >= minTime && kf.time <= maxTime) {
       ids.push(kf.id);
     }
   }
 
-  setKeyframeSelection(ids, { additive });
+  // initialSelection が指定されている場合は、初期選択も含める
+  if (initialSelection) {
+    const finalIds = new Set(ids);
+    for (const id of initialSelection) {
+      finalIds.add(id);
+    }
+    setKeyframeSelection(Array.from(finalIds), { additive: false });
+  } else {
+    setKeyframeSelection(ids, { additive });
+  }
 }
 
 function ensureSelectionOverlay(container, currentBox) {
@@ -1486,17 +1497,17 @@ function updateSelectionBox(box, rect, startX, startY, currentX, currentY) {
   setSelectionBoxVisible(box, true);
 }
 
-function updateSelectionInOverview(rect, startX, currentX, additive = false) {
+function updateSelectionInOverview(rect, startX, currentX, additive = false, initialSelection = null) {
   if (!Number.isFinite(audio.duration)) return;
   const width = Math.max(1, rect.width);
   const minX = Math.min(Utils.clamp(startX, rect.left, rect.right), Utils.clamp(currentX, rect.left, rect.right));
   const maxX = Math.max(Utils.clamp(startX, rect.left, rect.right), Utils.clamp(currentX, rect.left, rect.right));
   const ratioStart = Utils.clamp((minX - rect.left) / width, 0, 1);
   const ratioEnd = Utils.clamp((maxX - rect.left) / width, 0, 1);
-  selectKeyframesInTimeRange(ratioStart * audio.duration, ratioEnd * audio.duration, { additive });
+  selectKeyframesInTimeRange(ratioStart * audio.duration, ratioEnd * audio.duration, { additive, initialSelection });
 }
 
-function updateSelectionInZoomview(rect, startX, currentX, additive = false) {
+function updateSelectionInZoomview(rect, startX, currentX, additive = false, initialSelection = null) {
   if (!Number.isFinite(audio.duration)) return;
   const width = Math.max(1, rect.width);
   const minX = Math.min(Utils.clamp(startX, rect.left, rect.right), Utils.clamp(currentX, rect.left, rect.right));
@@ -1505,7 +1516,7 @@ function updateSelectionInZoomview(rect, startX, currentX, additive = false) {
   const start = getZoomWindowStart(viewDuration);
   const ratioStart = Utils.clamp((minX - rect.left) / width, 0, 1);
   const ratioEnd = Utils.clamp((maxX - rect.left) / width, 0, 1);
-  selectKeyframesInTimeRange(start + ratioStart * viewDuration, start + ratioEnd * viewDuration, { additive });
+  selectKeyframesInTimeRange(start + ratioStart * viewDuration, start + ratioEnd * viewDuration, { additive, initialSelection });
 }
 
 function getSelectedKeyframesSorted() {
@@ -1765,6 +1776,7 @@ function bindScrubHandlers() {
   let ovSelectStartX = 0;
   let ovSelectStartY = 0;
   let ovSelectAdditive = false;
+  let ovSelectInitialSelection = null; // ドラッグ選択開始時の選択状態
   let ovGroupDragging = false;
   let ovGroupDragMoved = false;
   let ovGroupDragStartX = 0;
@@ -1806,6 +1818,8 @@ function bindScrubHandlers() {
       ovSelectStartX = e.clientX;
       ovSelectStartY = e.clientY;
       ovSelectAdditive = e.ctrlKey || e.metaKey;
+      // Ctrl/Cmd押しながらの範囲選択時は初期選択を保存
+      ovSelectInitialSelection = ovSelectAdditive ? new Set(selectedKeyframeIds) : null;
       ensureSelectionOverlays();
       setSelectionBoxVisible(overviewSelectionBox, false);
       overviewContainer.setPointerCapture?.(e.pointerId);
@@ -1864,7 +1878,7 @@ function bindScrubHandlers() {
       }
       if (ovSelectMoved) {
         updateSelectionBox(overviewSelectionBox, rect, ovSelectStartX, ovSelectStartY, e.clientX, e.clientY);
-        updateSelectionInOverview(rect, ovSelectStartX, e.clientX, ovSelectAdditive);
+        updateSelectionInOverview(rect, ovSelectStartX, e.clientX, ovSelectAdditive, ovSelectInitialSelection);
       }
       e.preventDefault();
       return;
@@ -1894,6 +1908,7 @@ function bindScrubHandlers() {
     if (ovSelecting) {
       ovSelecting = false;
       ovSelectAdditive = false;
+      ovSelectInitialSelection = null;
       overviewContainer.releasePointerCapture?.(e.pointerId);
       if (!ovSelectMoved) {
         const rect = overviewContainer.getBoundingClientRect();
@@ -1972,6 +1987,7 @@ function bindScrubHandlers() {
   let zvSelectStartX = 0;
   let zvSelectStartY = 0;
   let zvSelectAdditive = false;
+  let zvSelectInitialSelection = null; // ドラッグ選択開始時の選択状態
   let zvGroupDragging = false;
   let zvGroupDragMoved = false;
   let zvGroupDragStartX = 0;
@@ -1996,7 +2012,7 @@ function bindScrubHandlers() {
       }
       if (zvSelectMoved) {
         updateSelectionBox(zoomviewSelectionBox, rect, zvSelectStartX, zvSelectStartY, e.clientX, e.clientY);
-        updateSelectionInZoomview(rect, zvSelectStartX, e.clientX, zvSelectAdditive);
+        updateSelectionInZoomview(rect, zvSelectStartX, e.clientX, zvSelectAdditive, zvSelectInitialSelection);
       }
       e.preventDefault();
     } else if (zvGroupDragging) {
@@ -2077,6 +2093,7 @@ function bindScrubHandlers() {
     zvSelecting = false;
     zvSelectMoved = false;
     zvSelectAdditive = false;
+    zvSelectInitialSelection = null;
     zvGroupDragging = false;
     zvGroupDragMoved = false;
     zvGroupDragItems = [];
@@ -2127,6 +2144,8 @@ function bindScrubHandlers() {
       zvSelectStartX = e.clientX;
       zvSelectStartY = e.clientY;
       zvSelectAdditive = e.ctrlKey || e.metaKey;
+      // Ctrl/Cmd押しながらの範囲選択時は初期選択を保存
+      zvSelectInitialSelection = zvSelectAdditive ? new Set(selectedKeyframeIds) : null;
       ensureSelectionOverlays();
       setSelectionBoxVisible(zoomviewSelectionBox, false);
       zoomviewContainer.setPointerCapture?.(e.pointerId);
@@ -2148,6 +2167,7 @@ function bindScrubHandlers() {
     if (zvSelecting) {
       zvSelecting = false;
       zvSelectAdditive = false;
+      zvSelectInitialSelection = null;
       zoomviewContainer.releasePointerCapture?.(e.pointerId);
       if (!zvSelectMoved) {
         const rect = zoomviewContainer.getBoundingClientRect();
@@ -2823,6 +2843,8 @@ window.addEventListener('keydown', (e) => {
 
   if (key === 'k') {
     e.preventDefault();
+    // 長押しによる連続入力を無視
+    if (e.repeat) return;
     addKeyframe();
     return;
   }
