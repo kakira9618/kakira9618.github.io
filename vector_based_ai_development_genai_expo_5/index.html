@@ -529,7 +529,7 @@ table tr:nth-child(even) td {
     <tr><th>メディア</th><th>ラスタ形式</th><th>ベクタ形式</th></tr>
     <tr><td>画像</td><td>JPG、PNG<span class="note">（ピクセルの集合）</span></td><td>SVG、PostScript<span class="note">（ベジェ曲線・ポリゴンの定義）</span></td></tr>
     <tr><td>音楽</td><td>WAV、MP3<span class="note">（波形データ）</span></td><td>MIDI、楽譜画像<span class="note">（スコアデータ）</span></td></tr>
-    <tr><td>動画</td><td>GIF、AVI、MP4<span class="note">（フレームの連続）</span></td><td>Flash<span class="note">（リソース＋スクリプト）</span></td></tr>
+    <tr><td>動画</td><td>GIF、AVI、MP4<span class="note">（フレームの連続）</span></td><td>Flash, Canvas+JS<span class="note">（リソース＋スクリプト）</span></td></tr>
     <tr><td>スライド</td><td>PPTX<span class="note">（テキスト・画像・レイアウトをリッチに統合）</span></td><td>Markdown<span class="note">（構造化されたテキスト）</span></td></tr>
     <tr><td>グラフ</td><td>PNG<span class="note">（画像）</span></td><td>CSV<span class="note">（表データ）</span></td></tr>
     <tr><td>ソースコード</td><td>.js、.html<span class="note">（テキスト）</span></td><td>Markdown<span class="note">（自然言語での仕様）</span></td></tr>
@@ -651,6 +651,19 @@ function prev() {
   }
 }
 
+let numberBuffer = '';
+let numberTimer = null;
+
+function commitNumberJump() {
+  const num = parseInt(numberBuffer, 10);
+  numberBuffer = '';
+  numberTimer = null;
+  if (!isNaN(num) && num >= 1 && num <= total) {
+    current = num - 1;
+    showSlide(current);
+  }
+}
+
 const lightbox = document.getElementById('lightbox');
 const lightboxBody = document.getElementById('lightbox-body');
 const lightboxClose = document.getElementById('lightbox-close');
@@ -720,6 +733,15 @@ document.addEventListener('keydown', (e) => {
   } else if (e.key === 'ArrowLeft' || e.key === 'Backspace') {
     e.preventDefault();
     prev();
+  } else if (/^[0-9]$/.test(e.key)) {
+    e.preventDefault();
+    numberBuffer += e.key;
+    if (numberTimer) clearTimeout(numberTimer);
+    if (numberBuffer.length >= 2) {
+      commitNumberJump();
+    } else {
+      numberTimer = setTimeout(commitNumberJump, 500);
+    }
   }
 });
 
