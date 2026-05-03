@@ -413,17 +413,17 @@ table tr:nth-child(even) td {
   color: #fff;
 }
 
-#slide-13 {
+#slide-14 {
   background: var(--orange);
   color: #fff;
 }
 
 #slide-1 h1,
 #slide-1 .subtitle,
-#slide-13 h2,
-#slide-13 .subtitle,
-#slide-13 .link,
-#slide-13 .link a {
+#slide-14 h2,
+#slide-14 .subtitle,
+#slide-14 .link,
+#slide-14 .link a {
   color: #fff;
   -webkit-text-fill-color: currentColor;
 }
@@ -440,7 +440,8 @@ table tr:nth-child(even) td {
   -webkit-text-fill-color: var(--orange);
 }
 
-#slide-3 {
+#slide-3,
+#slide-12 {
   background: var(--charcoal);
   color: #fff;
   align-items: center;
@@ -448,7 +449,8 @@ table tr:nth-child(even) td {
   text-align: center;
 }
 
-#slide-3 h2 {
+#slide-3 h2,
+#slide-12 h2 {
   color: #fff;
   font-size: 180px;
   max-width: none;
@@ -456,15 +458,16 @@ table tr:nth-child(even) td {
   line-height: 1.15;
 }
 
-#slide-3 .accent {
+#slide-3 .accent,
+#slide-12 .accent {
   color: var(--orange);
 }
 
-#slide-13 .media-container img {
+#slide-14 .media-container img {
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
 }
 
-#slide-13 .link a {
+#slide-14 .link a {
   border-bottom-color: rgba(255, 255, 255, 0.55);
 }
 </style>
@@ -578,9 +581,14 @@ table tr:nth-child(even) td {
   </div>
 </div>
 
-<!-- Slide 12: Slide from Vector -->
+<!-- Slide 12: Question -->
 <div class="slide" id="slide-12">
-  <h2>もちろんこのスライドも<br><span class="accent">"ベクタ"</span> からの生成</h2>
+  <h2>実は…！</h2>
+</div>
+
+<!-- Slide 13: Slide from Vector -->
+<div class="slide" id="slide-13">
+  <h2>このスライドも<br><span class="accent">"ベクタ"</span> からの生成</h2>
   <div class="media-container two-images">
     <img src="resources/slide_from_vector.png" alt="Slide From Vector Result">
     <img src="resources/slide_from_vector_prompt.png" alt="Slide From Vector Prompt">
@@ -588,10 +596,9 @@ table tr:nth-child(even) td {
   <div class="link"><a href="https://github.com/kakira9618/vector_based_ai_development" target="_blank">https://github.com/kakira9618/vector_based_ai_development</a></div>
 </div>
 
-<!-- Slide 13: Ad -->
-<div class="slide" id="slide-13">
-  <h2>宣伝</h2>
-  <p class="subtitle">個人開発AIプロダクトのアイデア原石<br>X: kakira9618</p>
+<!-- Slide 14: Ad -->
+<div class="slide" id="slide-14">
+  <h2 style="font-size: 76px;">宣伝：個人開発AIプロダクトの<br>アイデア原石 （X: kakira9618）</h2>
   <div class="media-container two-images">
     <img src="resources/title-final.png" alt="Book Cover">
     <img src="resources/qrcode.png" alt="QR Code" style="background: #fff; padding: 20px;">
