@@ -740,7 +740,13 @@ document.addEventListener('keydown', (e) => {
     if (numberBuffer.length >= 2) {
       commitNumberJump();
     } else {
-      numberTimer = setTimeout(commitNumberJump, 500);
+      const d = parseInt(numberBuffer, 10);
+      const couldExtend = d >= 1 && d * 10 <= total;
+      if (couldExtend) {
+        numberTimer = setTimeout(commitNumberJump, 500);
+      } else {
+        commitNumberJump();
+      }
     }
   }
 });
