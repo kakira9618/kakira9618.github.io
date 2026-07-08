@@ -1,0 +1,920 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>「使い捨てコード生成」のススメ</title>
+  <style>
+    :root {
+      --stage-width: 1920;
+      --stage-height: 1080;
+      --bg: #0a0a0a;
+      --fg: #f6fbff;
+      --muted: #b4c6d6;
+      --cyan: #66ccff;
+      --pink: #ff88bb;
+      --green: #93f5c8;
+      --line: rgba(255, 255, 255, 0.16);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 18% 16%, rgba(102, 204, 255, 0.24), transparent 26%),
+        radial-gradient(circle at 84% 78%, rgba(255, 136, 187, 0.22), transparent 30%),
+        linear-gradient(135deg, #050505 0%, var(--bg) 52%, #101014 100%);
+      color: var(--fg);
+      font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", system-ui, sans-serif;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    a {
+      color: var(--cyan);
+      text-decoration-color: rgba(102, 204, 255, 0.4);
+      text-underline-offset: 0.14em;
+    }
+
+    .viewport {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+    }
+
+    .stage {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      margin-left: -960px;
+      margin-top: -540px;
+      width: calc(var(--stage-width) * 1px);
+      height: calc(var(--stage-height) * 1px);
+      overflow: hidden;
+      transform-origin: center center;
+      background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+        linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(135deg, rgba(8, 14, 18, 0.96), rgba(10, 10, 10, 0.98) 48%, rgba(18, 8, 14, 0.96));
+      background-size: 96px 96px, 96px 96px, 100% 100%;
+      box-shadow: 0 32px 90px rgba(0, 0, 0, 0.48);
+    }
+
+    .stage::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(120deg, transparent 0 56%, rgba(102, 204, 255, 0.06) 56% 57%, transparent 57%),
+        linear-gradient(300deg, transparent 0 64%, rgba(255, 136, 187, 0.06) 64% 65%, transparent 65%);
+      opacity: 0.9;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      gap: 46px;
+      padding: 92px 124px 118px;
+      opacity: 0;
+      transform: translateY(28px);
+    }
+
+    .slide.active {
+      display: flex;
+      animation: enter 0.42s ease forwards;
+    }
+
+    @keyframes enter {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .slide::after {
+      content: "";
+      position: absolute;
+      inset: auto 96px 86px 96px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(102, 204, 255, 0.55), rgba(255, 136, 187, 0.48), transparent);
+      pointer-events: none;
+    }
+
+    .center {
+      align-items: center;
+      text-align: center;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+      align-items: center;
+      column-gap: 78px;
+    }
+
+    .image-left {
+      display: grid;
+      grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
+      align-items: center;
+      column-gap: 72px;
+    }
+
+    .slide:not(.active) {
+      display: none;
+    }
+
+    .slide.active.split,
+    .slide.active.image-left {
+      display: grid;
+    }
+
+    .stack {
+      display: grid;
+      gap: 34px;
+      justify-items: center;
+      width: 100%;
+    }
+
+    .kicker {
+      align-self: flex-start;
+      display: inline-flex;
+      align-items: center;
+      gap: 18px;
+      font-size: 34px;
+      font-weight: 800;
+      letter-spacing: 0;
+      color: var(--cyan);
+    }
+
+    .kicker::before {
+      content: "";
+      width: 56px;
+      height: 10px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--cyan), var(--pink));
+    }
+
+    h1,
+    h2,
+    p,
+    ul,
+    ol {
+      margin: 0;
+    }
+
+    h1 {
+      max-width: 1620px;
+      font-size: 142px;
+      line-height: 1.06;
+      font-weight: 900;
+      letter-spacing: 0;
+      text-wrap: balance;
+    }
+
+    h2 {
+      font-size: 116px;
+      line-height: 1.08;
+      font-weight: 900;
+      letter-spacing: 0;
+      text-wrap: balance;
+    }
+
+    .headline {
+      font-size: 150px;
+      line-height: 1.04;
+    }
+
+    .mega {
+      font-size: 188px;
+      line-height: 0.98;
+    }
+
+    .subtitle {
+      font-size: 46px;
+      line-height: 1.35;
+      font-weight: 700;
+      color: var(--muted);
+      text-wrap: balance;
+    }
+
+    .body-copy {
+      font-size: 58px;
+      line-height: 1.32;
+      font-weight: 750;
+      color: #e7f2fb;
+      text-wrap: balance;
+    }
+
+    .emphasis {
+      color: transparent;
+      background: linear-gradient(95deg, var(--cyan), #ffffff 42%, var(--pink));
+      -webkit-background-clip: text;
+      background-clip: text;
+    }
+
+    .quote {
+      font-size: 72px;
+      line-height: 1.23;
+      font-weight: 900;
+      color: #fff;
+      border-left: 16px solid var(--pink);
+      padding-left: 34px;
+      text-wrap: balance;
+    }
+
+    ul,
+    ol {
+      display: grid;
+      gap: 26px;
+      padding: 0;
+      list-style: none;
+      font-size: 68px;
+      line-height: 1.22;
+      font-weight: 800;
+    }
+
+    li {
+      position: relative;
+      padding-left: 56px;
+      text-wrap: balance;
+    }
+
+    li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0.45em;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--cyan), var(--pink));
+      box-shadow: 0 0 22px rgba(102, 204, 255, 0.34);
+    }
+
+    .compact-list {
+      gap: 18px;
+      font-size: 45px;
+      line-height: 1.25;
+      font-weight: 750;
+    }
+
+    .compact-list li {
+      padding-left: 42px;
+    }
+
+    .compact-list li::before {
+      width: 17px;
+      height: 17px;
+    }
+
+    .meta {
+      display: flex;
+      gap: 34px;
+      justify-content: center;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 42px;
+      font-weight: 700;
+    }
+
+    .tagline {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 86px;
+      padding: 0 34px;
+      border: 2px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.06);
+      color: #ecf8ff;
+      font-size: 42px;
+      font-weight: 800;
+    }
+
+    .image-frame {
+      display: grid;
+      place-items: center;
+      width: 100%;
+      max-height: 720px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.055);
+      box-shadow: 0 26px 80px rgba(0, 0, 0, 0.36);
+      overflow: hidden;
+    }
+
+    .image-frame.clean {
+      border: none;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .image-frame img,
+    .image-frame video {
+      display: block;
+      max-width: 100%;
+      max-height: 720px;
+      object-fit: contain;
+      cursor: zoom-in;
+    }
+
+    .avatar {
+      width: 360px;
+      height: 360px;
+      border-radius: 50%;
+      border: 10px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 0 60px rgba(102, 204, 255, 0.28);
+      object-fit: cover;
+    }
+
+    .two-up {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 38px;
+      width: 100%;
+      align-items: center;
+    }
+
+    .two-up .image-frame img {
+      max-height: 560px;
+    }
+
+    .media-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+      gap: 34px;
+      align-items: center;
+      width: 100%;
+    }
+
+    .media-grid .image-frame img {
+      max-height: 590px;
+    }
+
+    .url {
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      font-size: 28px;
+      line-height: 1.32;
+      font-weight: 700;
+      color: var(--cyan);
+    }
+
+    .small-url {
+      font-size: 24px;
+    }
+
+    .url-stack {
+      display: grid;
+      gap: 10px;
+      justify-items: center;
+      width: 100%;
+    }
+
+    .qr-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      gap: 48px;
+      align-items: end;
+      width: 100%;
+    }
+
+    .qr {
+      width: 320px;
+      height: 320px;
+      padding: 18px;
+      background: #fff;
+      object-fit: contain;
+      cursor: zoom-in;
+    }
+
+    .progress {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 30;
+      height: 12px;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .progress-bar {
+      width: 0;
+      height: 100%;
+      background: linear-gradient(90deg, var(--cyan), var(--pink));
+      transition: width 0.24s ease;
+    }
+
+    .slide-number {
+      position: absolute;
+      right: 46px;
+      bottom: 34px;
+      z-index: 30;
+      color: rgba(246, 251, 255, 0.72);
+      font-size: 30px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: none;
+      place-items: center;
+      padding: 46px;
+      background: rgba(0, 0, 0, 0.88);
+    }
+
+    .lightbox.open {
+      display: grid;
+    }
+
+    .lightbox img {
+      max-width: 94vw;
+      max-height: 90vh;
+      object-fit: contain;
+      box-shadow: 0 24px 90px rgba(0, 0, 0, 0.6);
+    }
+
+    .lightbox button {
+      position: fixed;
+      right: 34px;
+      top: 26px;
+      width: 58px;
+      height: 58px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      font-size: 42px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .app-wrap {
+      position: relative;
+      width: 100%;
+      height: 720px;
+      perspective: 1350px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+        radial-gradient(circle at 36% 24%, rgba(102, 204, 255, 0.18), transparent 32%),
+        radial-gradient(circle at 72% 78%, rgba(255, 136, 187, 0.18), transparent 30%),
+        #090b0e;
+      background-size: 72px 72px, 72px 72px, 100% 100%, 100% 100%, 100% 100%;
+    }
+
+    .app-caption {
+      position: absolute;
+      left: 42px;
+      bottom: 34px;
+      color: rgba(246, 251, 255, 0.74);
+      font-size: 25px;
+      font-weight: 800;
+      z-index: 3;
+    }
+
+    .phone-scene {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      transform-style: preserve-3d;
+    }
+
+    .phone {
+      position: relative;
+      width: 312px;
+      height: 620px;
+      transform-style: preserve-3d;
+      transform: translate3d(360px, -420px, 0) rotateX(10deg) rotateY(-58deg) rotateZ(2deg);
+      animation: phoneDrop 1.65s cubic-bezier(0.14, 0.9, 0.22, 1) 0.25s both, phoneFloat 4.2s ease-in-out 2s infinite;
+      cursor: grab;
+      touch-action: none;
+    }
+
+    .phone.dragging {
+      animation: none;
+      cursor: grabbing;
+    }
+
+    @keyframes phoneDrop {
+      to {
+        transform: translate3d(0, 0, 0) rotateX(10deg) rotateY(-22deg) rotateZ(-2deg);
+      }
+    }
+
+    @keyframes phoneFloat {
+      0%,
+      100% {
+        transform: translate3d(0, 0, 0) rotateX(10deg) rotateY(-22deg) rotateZ(-2deg);
+      }
+      50% {
+        transform: translate3d(0, -22px, 0) rotateX(8deg) rotateY(-13deg) rotateZ(1deg);
+      }
+    }
+
+    .phone-body {
+      position: absolute;
+      inset: 0;
+      border-radius: 44px;
+      background: linear-gradient(135deg, #2c343d, #090b0f 48%, #353038);
+      box-shadow:
+        0 48px 100px rgba(0, 0, 0, 0.55),
+        inset 0 0 0 4px rgba(255, 255, 255, 0.1),
+        inset 0 0 34px rgba(102, 204, 255, 0.08);
+      transform: translateZ(28px);
+    }
+
+    .phone-body::before {
+      content: "";
+      position: absolute;
+      inset: 16px;
+      border-radius: 34px;
+      border: 2px solid rgba(255, 255, 255, 0.18);
+      pointer-events: none;
+    }
+
+    .phone-body::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 28px;
+      width: 88px;
+      height: 22px;
+      transform: translateX(-50%);
+      border-radius: 999px;
+      background: #050607;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+    }
+
+    .phone-screen {
+      position: absolute;
+      inset: 54px 22px 28px;
+      border-radius: 26px;
+      overflow: hidden;
+      background: #111;
+      transform: translateZ(34px);
+      box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.08);
+    }
+
+    .phone-screen img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(1.08) contrast(1.04);
+    }
+
+    .phone-glow {
+      position: absolute;
+      inset: 16px;
+      border-radius: 42px;
+      background: linear-gradient(115deg, rgba(255, 255, 255, 0.25), transparent 28%, transparent 64%, rgba(102, 204, 255, 0.18));
+      transform: translateZ(40px);
+      pointer-events: none;
+      mix-blend-mode: screen;
+    }
+
+    .codeblock {
+      max-width: 1360px;
+      padding: 34px 40px;
+      border-left: 10px solid var(--cyan);
+      background: rgba(0, 0, 0, 0.3);
+      color: #dff5ff;
+      font-size: 34px;
+      line-height: 1.46;
+      font-weight: 700;
+      text-align: left;
+    }
+
+    .wide-image {
+      max-height: 650px;
+    }
+
+    @media print {
+      html,
+      body {
+        overflow: visible;
+        background: #000;
+      }
+
+      .viewport {
+        position: static;
+        display: block;
+      }
+
+      .stage {
+        transform: none !important;
+        box-shadow: none;
+      }
+
+      .slide {
+        position: relative;
+        display: flex !important;
+        opacity: 1 !important;
+        transform: none !important;
+        page-break-after: always;
+      }
+
+      .progress,
+      .slide-number,
+      .lightbox {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="viewport">
+    <main class="stage" aria-live="polite">
+      <section class="slide active center">
+        <div class="stack">
+          <div class="tagline">LT / App in App / OneShot</div>
+          <h1>「使い捨てコード生成」のススメ</h1>
+          <p class="subtitle">コードを残すためではなく、動く結果を得るために生成する</p>
+          <div class="meta">
+            <span>2026/7/9</span>
+            <span>@kakira9618</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide image-left">
+        <div class="stack">
+          <img class="avatar js-lightbox" src="resources/kakira9618.png" alt="@kakira9618">
+          <p class="subtitle">@kakira9618</p>
+        </div>
+        <div class="stack" style="justify-items: start;">
+          <div class="kicker">自己紹介</div>
+          <ul class="compact-list">
+            <li>Blog: PacketProxyで探るGemini CLIのコンテキストエンジニアリング</li>
+            <li>AIエージェントを信頼できる相棒に</li>
+            <li>書籍:「個人開発AIプロダクトのアイデア原石」</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="slide center">
+        <div class="stack">
+          <div class="kicker">「使い捨て」とは</div>
+          <h2 class="mega emphasis">バージョン管理<br>しないコード</h2>
+        </div>
+      </section>
+
+      <section class="slide center">
+        <div class="stack">
+          <div class="kicker">前提</div>
+          <p class="subtitle">AI利用のユースケースにおいて</p>
+          <h2 class="headline">コード自体に<br>興味がない</h2>
+          <ul>
+            <li>動作結果を手軽に得たい</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="slide center">
+        <div class="stack">
+          <div class="kicker">背景：AI時代の変化</div>
+          <h2 class="headline">実装コストは小さく<br>レビューコストは大きく</h2>
+        </div>
+      </section>
+
+      <section class="slide">
+        <div class="stack" style="justify-items: start;">
+          <div class="kicker">「使い捨て」のメリット</div>
+          <p class="quote">コードレビューしなくて良いなら、オイシイ</p>
+          <ul>
+            <li>費用対効果大</li>
+            <li>動的アプリ埋め込みによる表現力</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="slide center">
+        <div class="stack">
+          <div class="kicker">実装時のコツ</div>
+          <h2 class="headline">OneShot で<br>済むときはそれで。</h2>
+          <p class="subtitle">Token節約 / コスト・遅延低</p>
+        </div>
+      </section>
+
+      <section class="slide split">
+        <div class="stack" style="justify-items: start;">
+          <div class="kicker">PlayPage</div>
+          <h2>Webページを<br>アプリ化する拡張</h2>
+          <a class="url" href="https://chromewebstore.google.com/detail/playpage/akinlngodbmalcinkmpkogfgfgkgdebm?pli=1">chromewebstore.google.com/detail/playpage/...</a>
+        </div>
+        <div class="image-frame">
+          <img class="wide-image js-lightbox" src="resources/playpage.png" alt="PlayPage screenshot">
+        </div>
+      </section>
+
+      <section class="slide">
+        <div class="stack">
+          <div class="kicker">Made in AI</div>
+          <h2>リアルタイム<br>ミニゲーム生成</h2>
+          <p class="subtitle">テンポが大事 → OneShot</p>
+          <div class="two-up">
+            <div class="image-frame"><img class="js-lightbox" src="resources/made-in-ai-title.png" alt="Made in AI title screen"></div>
+            <div class="image-frame"><img class="js-lightbox" src="resources/made-in-ai-game.png" alt="Made in AI game screen"></div>
+          </div>
+          <a class="url" href="https://made-in-ai.kakira.dev">https://made-in-ai.kakira.dev</a>
+        </div>
+      </section>
+
+      <section class="slide">
+        <div class="stack">
+          <div class="kicker">スライド生成</div>
+          <h2>このスライドも<br>実は使い捨てコード</h2>
+          <div class="media-grid">
+            <div class="image-frame"><img class="js-lightbox" src="resources/slide-md.png" alt="main.md screenshot"></div>
+            <div class="image-frame"><img class="js-lightbox" src="resources/lt-slide-skill.png" alt="LT slide skill screenshot"></div>
+          </div>
+          <div class="url-stack">
+            <a class="url small-url" href="https://github.com/kakira9618/lt-slide-skills">https://github.com/kakira9618/lt-slide-skills</a>
+            <a class="url small-url" href="https://github.com/kakira9618/instant-code-generation">https://github.com/kakira9618/instant-code-generation</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide">
+        <div class="stack">
+          <div class="kicker">スライドにアプリ埋め込み</div>
+          <h2>App in App</h2>
+          <div class="app-wrap" id="appDemo">
+            <div class="phone-scene">
+              <div class="phone" id="phone">
+                <div class="phone-body"></div>
+                <div class="phone-screen">
+                  <img src="resources/made-in-ai-title.png" alt="Made in AI displayed on a 3D phone">
+                </div>
+                <div class="phone-glow"></div>
+              </div>
+            </div>
+            <div class="app-caption">drag: 3D rotate</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide">
+        <div class="stack">
+          <div class="kicker">おわりに</div>
+          <h2>個人開発AIプロダクトの<br>アイデア原石</h2>
+          <div class="qr-row">
+            <div class="image-frame">
+              <img class="js-lightbox" src="resources/title-final.png" alt="個人開発AIプロダクトのアイデア原石 表紙">
+            </div>
+            <img class="qr js-lightbox" src="resources/qrcode.png" alt="技術書典 QRコード">
+          </div>
+          <a class="url small-url" href="https://techbookfest.org/product/gm3siYnQ8wFwSDuY3WdrnY?productVariantID=aa09VYxqsyBF4QRKXCk9X6&utm_campaign=share">技術書典でオンライン頒布中</a>
+        </div>
+      </section>
+
+      <div class="progress" aria-hidden="true"><div class="progress-bar" id="progressBar"></div></div>
+      <div class="slide-number" id="slideNumber">1 / 12</div>
+    </main>
+  </div>
+
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="画像拡大表示">
+    <button type="button" id="closeLightbox" aria-label="閉じる">×</button>
+    <img id="lightboxImage" alt="">
+  </div>
+
+  <script>
+    (() => {
+      const stage = document.querySelector(".stage");
+      const slides = [...document.querySelectorAll(".slide")];
+      const progressBar = document.getElementById("progressBar");
+      const slideNumber = document.getElementById("slideNumber");
+      const lightbox = document.getElementById("lightbox");
+      const lightboxImage = document.getElementById("lightboxImage");
+      const closeLightbox = document.getElementById("closeLightbox");
+      const phone = document.getElementById("phone");
+      let current = 0;
+
+      function fitStage() {
+        const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+        stage.style.transform = `scale(${scale})`;
+      }
+
+      function showSlide(index) {
+        current = Math.max(0, Math.min(slides.length - 1, index));
+        slides.forEach((slide, slideIndex) => {
+          slide.classList.toggle("active", slideIndex === current);
+        });
+        progressBar.style.width = `${((current + 1) / slides.length) * 100}%`;
+        slideNumber.textContent = `${current + 1} / ${slides.length}`;
+      }
+
+      function next() {
+        showSlide(current + 1);
+      }
+
+      function prev() {
+        showSlide(current - 1);
+      }
+
+      function openLightbox(img) {
+        lightboxImage.src = img.currentSrc || img.src;
+        lightboxImage.alt = img.alt || "";
+        lightbox.classList.add("open");
+      }
+
+      function closeLightboxDialog() {
+        lightbox.classList.remove("open");
+        lightboxImage.removeAttribute("src");
+      }
+
+      window.addEventListener("resize", fitStage);
+      document.addEventListener("keydown", (event) => {
+        if (lightbox.classList.contains("open")) {
+          if (event.key === "Escape" || event.key === "Enter" || event.key === " ") {
+            closeLightboxDialog();
+            event.preventDefault();
+          }
+          return;
+        }
+
+        if (event.key === "ArrowRight" || event.key === "Enter" || event.key === " ") {
+          next();
+          event.preventDefault();
+        }
+
+        if (event.key === "ArrowLeft" || event.key === "Backspace") {
+          prev();
+          event.preventDefault();
+        }
+      });
+
+      stage.addEventListener("click", (event) => {
+        if (event.target.closest("a") || event.target.closest(".js-lightbox") || event.target.closest("#appDemo")) {
+          return;
+        }
+        const rect = stage.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        if (x < rect.width * 0.3) {
+          prev();
+        } else {
+          next();
+        }
+      });
+
+      document.querySelectorAll(".js-lightbox").forEach((img) => {
+        img.addEventListener("click", (event) => {
+          event.stopPropagation();
+          openLightbox(img);
+        });
+      });
+
+      lightbox.addEventListener("click", closeLightboxDialog);
+      closeLightbox.addEventListener("click", closeLightboxDialog);
+      lightboxImage.addEventListener("click", (event) => event.stopPropagation());
+
+      let drag = null;
+      phone.addEventListener("pointerdown", (event) => {
+        drag = {
+          x: event.clientX,
+          y: event.clientY,
+          rotateX: 10,
+          rotateY: -22
+        };
+        phone.classList.add("dragging");
+        phone.setPointerCapture(event.pointerId);
+      });
+
+      phone.addEventListener("pointermove", (event) => {
+        if (!drag) return;
+        const rotateY = drag.rotateY + (event.clientX - drag.x) * 0.28;
+        const rotateX = drag.rotateX - (event.clientY - drag.y) * 0.22;
+        phone.style.transform = `translate3d(0, 0, 0) rotateX(${rotateX}deg) rotateY(${rotateY}deg) rotateZ(-2deg)`;
+      });
+
+      function endDrag(event) {
+        if (!drag) return;
+        drag = null;
+        phone.releasePointerCapture(event.pointerId);
+      }
+
+      phone.addEventListener("pointerup", endDrag);
+      phone.addEventListener("pointercancel", endDrag);
+
+      fitStage();
+      showSlide(0);
+    })();
+  </script>
+</body>
+</html>
