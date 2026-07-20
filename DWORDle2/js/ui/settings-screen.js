@@ -282,9 +282,14 @@ function render() {
         tr("BGMだけの音量を調整します", "Adjust BGM independently"),
         volumeSlider("bgmVolume", tr("BGMの音量", "BGM volume"))
       ),
+      settingRow(
+        el("span", { id: "bgm-picker-label" }, tr("BGM選択", "BGM selection")),
+        tr("プレイ中に再生する曲を選びます", "Choose the track played during games"),
+        null
+      ),
       el(
         "div",
-        { class: "bgm-picker", role: "radiogroup", "aria-label": tr("BGMを選択", "Choose BGM") },
+        { class: "bgm-picker", role: "radiogroup", "aria-labelledby": "bgm-picker-label" },
         BGM_TRACKS.map((track) => {
           const isLocked = track.unlockAchievement && !unlocked[track.unlockAchievement];
           const isActive = s.bgmTrack === track.id;
