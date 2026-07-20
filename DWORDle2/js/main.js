@@ -7,7 +7,7 @@ import { bgmTracksUnlockedBy, unlockAudio } from "./audio/sound.js";
 import { getSettings, onSettingsChange } from "./core/settings.js";
 import { syncDocumentLanguage } from "./core/i18n.js";
 import { reconcileAchievementsOnce } from "./core/achievements.js";
-import { handlePhysicalKey } from "./ui/game-screen.js";
+import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "./ui/game-screen.js";
 import { achievementToast, bgmUnlockCelebration } from "./ui/toast.js";
 
 // 画面モジュール（import するだけで registerScreen される）
@@ -35,12 +35,16 @@ initBursts();
 
 // 物理キーボード
 addEventListener("keydown", handlePhysicalKey);
+addEventListener("keyup", handlePhysicalKeyUp);
+addEventListener("blur", releaseKeyboardPresses);
 
 // 最初のユーザー操作で AudioContext を解錠（ブラウザの自動再生制限対策）
-const unlock = async () => {
-  if (!(await unlockAudio())) return;
-  removeEventListener("pointerdown", unlock);
-  removeEventListener("keydown", unlock);
+const unlock = () => {
+  unlockAudio().then((isReady) => {
+    if (!isReady) return;
+    removeEventListener("pointerdown", unlock);
+    removeEventListener("keydown", unlock);
+  });
 };
 addEventListener("pointerdown", unlock);
 addEventListener("keydown", unlock);

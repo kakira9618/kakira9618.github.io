@@ -63,6 +63,16 @@ function volumeSlider(key, label) {
   return el("div", { class: "volume-control" }, input, valueEl);
 }
 
+function updateBgmSelection(selectedTrack) {
+  for (const choice of root.querySelectorAll(".bgm-choice")) {
+    if (choice.classList.contains("locked")) continue;
+    const isActive = choice.dataset.track === selectedTrack;
+    choice.classList.toggle("active", isActive);
+    choice.setAttribute("aria-checked", String(isActive));
+    choice.querySelector(".bgm-mark")?.replaceChildren(isActive ? icon("music", 18) : "○");
+  }
+}
+
 function showImportModal() {
   const ta = el("textarea", {
     placeholder: tr(
@@ -271,6 +281,7 @@ function render() {
             "button",
             {
               class: `bgm-choice ${isActive ? "active" : ""} ${isLocked ? "locked" : ""}`,
+              dataset: { track: track.id },
               role: "radio",
               "aria-checked": String(isActive),
               "aria-disabled": String(Boolean(isLocked)),
@@ -282,7 +293,7 @@ function render() {
                 }
                 playSfx("ui");
                 setSetting("bgmTrack", track.id);
-                render();
+                updateBgmSelection(track.id);
               },
             },
             el("span", { class: "bgm-mark" }, isLocked ? icon("lock", 17) : isActive ? icon("music", 18) : "○"),
@@ -344,9 +355,16 @@ function render() {
     el(
       "p",
       { class: "version-note", style: { textAlign: "center" } },
-      tr(
-        `DWORDle 2 v${APP_VERSION} ・ original by @kakira9618`,
-        `DWORDle 2 v${APP_VERSION} — original by @kakira9618`
+      tr(`DWORDle 2 v${APP_VERSION} ・ by `, `DWORDle 2 v${APP_VERSION} — by `),
+      el(
+        "a",
+        {
+          href: "https://x.com/kakira9618",
+          target: "_blank",
+          rel: "noopener noreferrer",
+          "aria-label": "@kakira9618 on X",
+        },
+        "@kakira9618"
       )
     )
   );

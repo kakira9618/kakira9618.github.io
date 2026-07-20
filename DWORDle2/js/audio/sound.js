@@ -134,31 +134,35 @@ function bgmBuses() {
   return { normal: busNormal, uso: busUso, gentle: busGentle, classic: busClassic };
 }
 
-// 最初のユーザー操作で呼ぶ（main.js が登録する）。
-// resume 完了前に BGM を開始済み扱いにすると、リロード後に無音のままになるブラウザがある。
-export async function unlockAudio() {
-  if (!ensureContext()) return false;
-  if (ctx.state !== "running") {
-    if (ctx.state === "closed") return false;
-    if (!resumePromise) {
-      let resumeResult;
-      try {
-        // ユーザー操作のイベント処理中に同期的に呼び出し、自動再生制限を確実に解除する。
-        resumeResult = ctx.resume();
-      } catch {
-        return false;
-      }
-      resumePromise = Promise.resolve(resumeResult)
-        .then(() => ctx.state === "running")
-        .catch(() => false)
-        .finally(() => {
-          resumePromise = null;
-        });
+function resumeAudioContext() {
+  if (!ensureContext() || ctx.state === "closed") return Promise.resolve(false);
+  if (ctx.state === "running") return Promise.resolve(true);
+  if (!resumePromise) {
+    let resumeResult;
+    try {
+      // 自動再生制限を解除できるよう、ユーザー操作のイベント処理中に直接呼び出す。
+      resumeResult = ctx.resume();
+    } catch {
+      return Promise.resolve(false);
     }
-    if (!(await resumePromise)) return false;
+    resumePromise = Promise.resolve(resumeResult)
+      .then(() => ctx.state === "running")
+      .catch(() => false)
+      .finally(() => {
+        resumePromise = null;
+      });
   }
-  if (getSettings().bgm) startBgm();
-  return true;
+  return resumePromise;
+}
+
+// 最初のユーザー操作で呼ぶ（main.js が登録する）。
+// resume 完了後に BGM を開始し、リロード直後や初回操作でも確実に音を出す。
+export function unlockAudio() {
+  const ready = resumeAudioContext();
+  ready.then((isReady) => {
+    if (isReady && getSettings().bgm) startBgm();
+  });
+  return ready;
 }
 
 // 表 / 裏の切替。予約済みの旧バスを破棄してから新しいモードを再生する。
@@ -296,8 +300,15 @@ const SFX = {
 
 export function playSfx(name) {
   if (!getSettings().sfx) return;
-  if (!ensureContext() || ctx.state === "suspended") return;
-  SFX[name]?.();
+  if (!ensureContext()) return;
+  if (ctx.state === "running") {
+    SFX[name]?.();
+    return;
+  }
+  // 初回操作の SE は捨てず、AudioContext の再開直後に再生する。
+  unlockAudio().then((isReady) => {
+    if (isReady && getSettings().sfx) SFX[name]?.();
+  });
 }
 
 // ---- BGM（生成音楽）----

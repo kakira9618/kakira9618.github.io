@@ -323,13 +323,29 @@ function currentRow() {
   return rows[rows.length - 1];
 }
 
+function physicalGameKey(e) {
+  const key = e.key.toLowerCase();
+  if (key === "enter" || key === "backspace" || /^[a-z]$/.test(key)) return key;
+  return null;
+}
+
 export function handlePhysicalKey(e) {
-  if (currentScreenName() !== "game") return;
+  if (currentScreenName() !== "game" || state !== "guess") return;
   if (e.metaKey || e.ctrlKey || e.altKey) return;
-  const k = e.key.toLowerCase();
-  if (k === "enter") handleKey("enter");
-  else if (k === "backspace") handleKey("backspace");
-  else if (/^[a-z]$/.test(k)) handleKey(k);
+  const key = physicalGameKey(e);
+  if (!key) return;
+  e.preventDefault();
+  keyEls[key]?.classList.add("is-pressed");
+  handleKey(key);
+}
+
+export function handlePhysicalKeyUp(e) {
+  const key = physicalGameKey(e);
+  if (key) keyEls[key]?.classList.remove("is-pressed");
+}
+
+export function releaseKeyboardPresses() {
+  for (const key of Object.values(keyEls)) key.classList.remove("is-pressed");
 }
 
 function submitGuess() {

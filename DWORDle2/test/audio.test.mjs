@@ -48,7 +48,7 @@ class FakeOscillator extends FakeNode {
     this.detune = new FakeParam();
   }
 
-  start() {}
+  start() { this.context.startedOscillators++; }
   stop() {}
 }
 
@@ -63,6 +63,7 @@ class FakeAudioContext {
     this.state = "suspended";
     this.destination = new FakeNode(this);
     this.gains = [];
+    this.startedOscillators = 0;
     FakeAudioContext.instance = this;
   }
 
@@ -88,20 +89,28 @@ class FakeAudioContext {
   createBuffer(_channels, length) {
     return { getChannelData: () => new Float32Array(length) };
   }
-  async resume() {
-    this.state = "running";
+  resume() {
+    return Promise.resolve().then(() => {
+      this.state = "running";
+    });
   }
 }
 
 globalThis.window = { AudioContext: FakeAudioContext };
 
 const { setSetting } = await import("../js/core/settings.js");
-const { unlockAudio, setUsoMood, stopBgm } = await import("../js/audio/sound.js");
+const { playSfx, unlockAudio, setUsoMood, stopBgm } = await import("../js/audio/sound.js");
 
+setSetting("bgm", false);
+playSfx("ui");
+const context = FakeAudioContext.instance;
+assert.equal(context.startedOscillators, 0, "SFX should wait until the audio context resumes");
 assert.equal(await unlockAudio(), true);
+assert.equal(context.startedOscillators, 1, "the first SFX should play after the audio context resumes");
+setSetting("bgm", true);
+await unlockAudio();
 for (let i = 0; i < 12; i++) setUsoMood(i % 2 === 0);
 
-const context = FakeAudioContext.instance;
 const masterGain = context.gains.find((gain) => gain.connections.includes(context.destination));
 const outputGains = context.gains.filter((gain) => gain.connections.includes(masterGain));
 const bgmGain = outputGains.find((gain) => Math.abs(gain.gain.value - 0.16) < 1e-9);
