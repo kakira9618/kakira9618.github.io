@@ -247,7 +247,8 @@ function gatherRow(row) {
     const flight = flyInTiles(
       row.tiles,
       game.gameMode === "uso",
-      row.tiles.map((tile) => tile.textContent)
+      row.tiles.map((tile) => tile.textContent),
+      boardScrollEl
     );
     row.gatherFlight = flight;
     if (flight.skipped) {

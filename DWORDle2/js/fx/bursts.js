@@ -160,7 +160,7 @@ function makeTileFace(w, h, edgeColor, fillColor, initialText = "") {
  * 各タイルが着地した瞬間に onArrive(i) を呼ぶ。全着地で resolve。
  * cyber テーマ以外・パーティクルオフ時は何もせず即 resolve する。
  */
-export function flyInTiles(targetElements, isUso, initialTexts = []) {
+export function flyInTiles(targetElements, isUso, initialTexts = [], scrollContainer = null) {
   const s = getSettings();
   if (s.theme !== "cyber" || s.reduceFx || targetElements.length === 0) {
     return { skipped: true, promise: Promise.resolve(), onArrive: null };
@@ -176,6 +176,16 @@ export function flyInTiles(targetElements, isUso, initialTexts = []) {
   const flightGroup = [];
   const now = performance.now();
   const diag = Math.max(innerWidth, innerHeight);
+  const scrollRect = scrollContainer?.getBoundingClientRect();
+  const scrollTracking = scrollContainer
+    ? {
+        element: scrollContainer,
+        left: scrollContainer.scrollLeft,
+        top: scrollContainer.scrollTop,
+        viewportLeft: scrollRect.left,
+        viewportTop: scrollRect.top,
+      }
+    : null;
 
   rects.forEach((rect, i) => {
     const face = makeTileFace(w, h, edge, g.faceFill, initialTexts[i] ?? "");
@@ -216,6 +226,8 @@ export function flyInTiles(targetElements, isUso, initialTexts = []) {
       arrived: false,
       face,
       targetElement: targetElements[i],
+      targetCssX: rect.left + rect.width / 2,
+      targetCssY: rect.top + rect.height / 2,
     });
   });
 
@@ -226,6 +238,7 @@ export function flyInTiles(targetElements, isUso, initialTexts = []) {
     geo,
     onArrive: (i) => arriveCb?.(i),
     resolveAll,
+    scrollTracking,
   });
   ensureLoop();
   return {
@@ -273,11 +286,26 @@ function loop(now) {
   // タイル飛来更新
   flights = flights.filter((flight) => {
     let allDone = true;
+    let trackedScrollX = 0;
+    let trackedScrollY = 0;
+    if (flight.scrollTracking) {
+      const tracking = flight.scrollTracking;
+      const currentRect = tracking.element.getBoundingClientRect();
+      trackedScrollX =
+        tracking.left - tracking.element.scrollLeft + currentRect.left - tracking.viewportLeft;
+      trackedScrollY =
+        tracking.top - tracking.element.scrollTop + currentRect.top - tracking.viewportTop;
+    }
     for (const f of flight.group) {
       if (f.arrived) continue;
-      const targetRect = f.targetElement.getBoundingClientRect();
-      const nextX = targetRect.left + targetRect.width / 2;
-      const nextY = toWorldY(targetRect.top + targetRect.height / 2);
+      const targetRect = flight.scrollTracking ? null : f.targetElement.getBoundingClientRect();
+      const nextX = flight.scrollTracking
+        ? f.targetCssX + trackedScrollX
+        : targetRect.left + targetRect.width / 2;
+      const nextCssY = flight.scrollTracking
+        ? f.targetCssY + trackedScrollY
+        : targetRect.top + targetRect.height / 2;
+      const nextY = toWorldY(nextCssY);
       const dx = nextX - f.to.x;
       const dy = nextY - f.to.y;
       // 集合先だけでなく飛行経路全体を移動し、スクロール操作へ即時追従させる。
