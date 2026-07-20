@@ -17,6 +17,7 @@ import { showHelpModal } from "./help.js";
 import { icon } from "./icons.js";
 import { tr } from "../core/i18n.js";
 import { getSettings } from "../core/settings.js";
+import { feedbackName, tileAriaLabel } from "./a11y.js";
 
 const KEY_ROWS = [
   [..."qwertyuiop".split(""), "backspace"],
@@ -52,16 +53,28 @@ function build() {
 
   headerTitleEl = el("div", { class: "title" }, "DWORDle");
   counterEl = el("span", { class: "sub" }, "0 / 10");
-  seedEl = el("button", { class: "sub", style: { fontWeight: "700" }, onclick: toggleSeed }, "No.");
+  seedEl = el(
+    "button",
+    { class: "sub", style: { fontWeight: "700" }, "aria-label": tr("問題番号を隠す", "Hide puzzle number"), onclick: toggleSeed },
+    "No."
+  );
   const header = el(
     "div",
     { class: "header" },
-    el("button", { class: "icon-btn", onclick: () => { playSfx("ui"); navigate("/"); } }, icon("arrowLeft")),
+    el(
+      "button",
+      { class: "icon-btn", "aria-label": tr("タイトルへ戻る", "Back to title"), onclick: () => { playSfx("ui"); navigate("/"); } },
+      icon("arrowLeft")
+    ),
     headerTitleEl,
     el("span", { class: "spacer" }),
     counterEl,
     seedEl,
-    el("button", { class: "icon-btn", onclick: () => showHelpModal(game?.gameMode ?? getAppMode()) }, "?")
+    el(
+      "button",
+      { class: "icon-btn", "aria-label": tr("遊び方", "How to play"), onclick: () => showHelpModal(game?.gameMode ?? getAppMode()) },
+      "?"
+    )
   );
 
   boardEl = el("div", { id: "board" });
@@ -98,7 +111,7 @@ function buildKeyboard() {
         {
           class: `key ${k.length > 1 ? "wide" : ""}`,
           dataset: { key: k },
-          "aria-label": k === "backspace" ? "Backspace" : k,
+          "aria-label": k === "backspace" ? "Backspace" : k === "enter" ? "Enter" : k.toUpperCase(),
           onclick: () => handleKey(k),
         },
         label
@@ -157,6 +170,7 @@ function updateHeader() {
   headerTitleEl.textContent = mode.title;
   counterEl.textContent = `${game.guessWord.length + (state === "finish" ? 0 : 1)} / ${mode.maxGuess}`;
   seedEl.textContent = seedHidden ? "No.????" : pidLabel(game.problemID);
+  seedEl.setAttribute("aria-label", seedHidden ? tr("問題番号を表示", "Show puzzle number") : tr("問題番号を隠す", "Hide puzzle number"));
 }
 
 // ---- ゲーム開始 / 再開 ----
@@ -223,8 +237,14 @@ function render() {
 
 function addRow(animate) {
   const tiles = [];
-  for (let i = 0; i < 5; i++) tiles.push(el("div", { class: "tile" }));
-  const rowEl = el("div", { class: "row" }, tiles);
+  for (let i = 0; i < 5; i++) {
+    tiles.push(el("div", { class: "tile", role: "img", "aria-label": tileAriaLabel("") }));
+  }
+  const rowEl = el(
+    "div",
+    { class: "row", role: "group", "aria-label": tr(`入力 ${rows.length + 1}`, `Guess ${rows.length + 1}`) },
+    tiles
+  );
   boardEl.append(rowEl);
   const row = { rowEl, tiles, gatherFlight: null };
   rows.push(row);
@@ -285,6 +305,7 @@ function gatherRow(row) {
 
 function setTile(tile, char, stateName) {
   tile.textContent = char.toUpperCase();
+  tile.setAttribute("aria-label", tileAriaLabel(char, stateName));
   if (stateName && stateName !== CELL.GUESSING) {
     tile.classList.remove("filled");
     tile.classList.add(`state-${stateName}`);
@@ -311,6 +332,7 @@ function handleKey(k) {
       const tile = currentRow().tiles[inputBuffer.length];
       tile.textContent = "";
       tile.classList.remove("filled");
+      tile.setAttribute("aria-label", tileAriaLabel(""));
       currentRow().gatherFlight?.setText?.(inputBuffer.length, "");
     }
     return;
@@ -400,6 +422,7 @@ function revealRow(row, word, result, done) {
       tile.classList.add("reveal");
       setTimeout(() => {
         tile.classList.add(`state-${stateName}`);
+        tile.setAttribute("aria-label", tileAriaLabel(word[i], stateName));
         playSfx(stateName === CELL.CORRECT ? "revealCorrect" : stateName === CELL.USED ? "revealUsed" : "revealUnused");
         burstAtElement(tile, colorForState(stateName), FX.burst.countPerTile[stateName] ?? 7);
         if (game.gameMode === "normal") applyKeyStyle(word[i]);
@@ -431,6 +454,9 @@ function applyKeyStyle(c) {
   btn.classList.remove("state-unused", "state-used", "state-correct");
   if (game?.gameMode === "normal" && getSettings().keyboardHints && buttonStates[c] !== CELL.GUESSING) {
     btn.classList.add(`state-${buttonStates[c]}`);
+    btn.setAttribute("aria-label", tr(`${c.toUpperCase()}、${feedbackName(buttonStates[c])}`, `${c.toUpperCase()}, ${feedbackName(buttonStates[c])}`));
+  } else {
+    btn.setAttribute("aria-label", c.toUpperCase());
   }
 }
 

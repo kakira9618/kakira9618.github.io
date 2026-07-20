@@ -1,0 +1,19 @@
+{
+  "name": "DWORDle 2",
+  "short_name": "DWORDle 2",
+  "description": "答えが2つある Wordle。DWORDlieも収録。",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#05070f",
+  "theme_color": "#05070f",
+  "icons": [
+    {
+      "src": "favicon.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

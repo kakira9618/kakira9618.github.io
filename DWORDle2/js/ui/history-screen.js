@@ -10,6 +10,7 @@ import { playSfx } from "../audio/sound.js";
 import { showModal } from "./modal.js";
 import { icon } from "./icons.js";
 import { currentLanguage, tr } from "../core/i18n.js";
+import { rowAriaLabel } from "./a11y.js";
 
 let root = null;
 let filter = "all"; // "all" | "normal" | "uso"
@@ -36,12 +37,14 @@ function miniGrid(record) {
       ? record.usoResults
       : record.guessWord.map((w) => logic.queryWord(w));
   const cells = [];
-  for (const row of results.slice(-6)) { // 直近 6 行まで表示
+  const recentResults = results.slice(-6);
+  for (const row of recentResults) { // 直近 6 行まで表示
     for (const s of row) {
-      cells.push(el("i", { class: s === CELL.CORRECT ? "correct" : s === CELL.USED ? "used" : "" }));
+      cells.push(el("i", { class: s === CELL.CORRECT ? "correct" : s === CELL.USED ? "used" : "", "aria-hidden": "true" }));
     }
   }
-  return el("div", { class: "mini-grid" }, cells);
+  const labels = recentResults.map((states, index) => rowAriaLabel(record.guessWord.slice(-6)[index], states));
+  return el("div", { class: "mini-grid", role: "img", "aria-label": labels.join("。") }, cells);
 }
 
 function showStats() {
@@ -267,15 +270,35 @@ function pagination(totalPages, total) {
   return el(
     "nav",
     { class: "history-pagination", "aria-label": tr("履歴ページ", "History pages") },
-    el("button", { class: "btn", disabled: page === 1, onclick: () => go(1), title: tr("最初のページ", "First page") }, "«"),
-    el("button", { class: "btn", disabled: page === 1, onclick: () => go(page - 1) }, "‹"),
+    el(
+      "button",
+      {
+        class: "btn",
+        disabled: page === 1,
+        "aria-label": tr("最初のページ", "First page"),
+        onclick: () => go(1),
+        title: tr("最初のページ", "First page"),
+      },
+      "«"
+    ),
+    el("button", { class: "btn", disabled: page === 1, "aria-label": tr("前のページ", "Previous page"), onclick: () => go(page - 1) }, "‹"),
     el(
       "span",
       { class: "history-page-status" },
       `${first.toLocaleString(currentLanguage())}${currentLanguage() === "en" ? "–" : "〜"}${last.toLocaleString(currentLanguage())} / ${total.toLocaleString(currentLanguage())} (${page} / ${totalPages})`
     ),
-    el("button", { class: "btn", disabled: page === totalPages, onclick: () => go(page + 1) }, "›"),
-    el("button", { class: "btn", disabled: page === totalPages, onclick: () => go(totalPages), title: tr("最後のページ", "Last page") }, "»")
+    el("button", { class: "btn", disabled: page === totalPages, "aria-label": tr("次のページ", "Next page"), onclick: () => go(page + 1) }, "›"),
+    el(
+      "button",
+      {
+        class: "btn",
+        disabled: page === totalPages,
+        "aria-label": tr("最後のページ", "Last page"),
+        onclick: () => go(totalPages),
+        title: tr("最後のページ", "Last page"),
+      },
+      "»"
+    )
   );
 }
 
@@ -286,10 +309,18 @@ function render() {
   const header = el(
     "div",
     { class: "header" },
-    el("button", { class: "icon-btn", onclick: () => { playSfx("ui"); navigate("/"); } }, icon("arrowLeft")),
+    el(
+      "button",
+      { class: "icon-btn", "aria-label": tr("タイトルへ戻る", "Back to title"), onclick: () => { playSfx("ui"); navigate("/"); } },
+      icon("arrowLeft")
+    ),
     el("div", { class: "title" }, tr("プレイ履歴", "Play History")),
     el("span", { class: "spacer" }),
-    el("button", { class: "icon-btn", title: tr("統計", "Statistics"), onclick: showStats }, icon("chart"))
+    el(
+      "button",
+      { class: "icon-btn", title: tr("統計", "Statistics"), "aria-label": tr("統計", "Statistics"), onclick: showStats },
+      icon("chart")
+    )
   );
 
   const seg = el(
@@ -335,9 +366,13 @@ function render() {
     const maxGuess = MODES[g.gameMode].maxGuess;
     body.append(
       el(
-        "div",
+        "button",
         {
           class: "card tappable history-item",
+          "aria-label": tr(
+            `${pidLabel(g.problemID)}、${MODES[g.gameMode].title}、${g.clear ? "成功" : "失敗"}、${g.guessWord.length} 手`,
+            `${pidLabel(g.problemID)}, ${MODES[g.gameMode].title}, ${g.clear ? "win" : "loss"}, ${g.guessWord.length} Guesses`
+          ),
           onclick: () => {
             playSfx("ui");
             navigate(`/result/${g.gameMode}/${g.startTime}`);

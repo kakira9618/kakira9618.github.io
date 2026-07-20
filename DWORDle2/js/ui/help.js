@@ -78,12 +78,14 @@ function traceExample() {
 }
 
 function buildWordRow(label, word) {
-  const tiles = word.split("").map((char) => el("div", { class: "rcell htile big answer-tile" }, char));
+  const tiles = word
+    .split("")
+    .map((char) => el("div", { class: "rcell htile big answer-tile", "aria-hidden": "true" }, char));
   return {
     tiles,
     element: el(
       "div",
-      { class: "help-ans-line" },
+      { class: "help-ans-line", role: "img", "aria-label": `${label}: ${word.toUpperCase()}` },
       el("span", { class: "hint" }, label),
       el("div", { class: "help-anim-row" }, tiles)
     ),
@@ -99,7 +101,7 @@ function buildExample(mode, language) {
     buildWordRow("Word 2", EX.ans2),
   ];
   const guessTiles = EX.guess.split("").map(() => el("div", { class: "rcell htile big" }, ""));
-  const guessRow = el("div", { class: "help-anim-row" }, guessTiles);
+  const guessRow = el("div", { class: "help-anim-row", "aria-hidden": "true" }, guessTiles);
   const exampleTitle = el(
     "div",
     { class: "hint", style: { textAlign: "center" } },
@@ -455,5 +457,62 @@ export function showHelpModal(mode) {
     body: [content],
     actions: [{ label: language === "en" ? "Close" : "閉じる", primary: true, onClick: () => {} }],
     onClose: stopAnimation,
+  });
+}
+
+export function showFirstTutorial(mode) {
+  const point = (number, title, text) =>
+    el(
+      "li",
+      { class: "tutorial-point" },
+      el("span", { class: "tutorial-number", "aria-hidden": "true" }, number),
+      el("div", {}, el("b", {}, title), el("span", {}, text))
+    );
+
+  showModal({
+    title: currentLanguage() === "en" ? "Two quick rules" : "最初に 2 つの大事なルール",
+    body: [
+      el(
+        "p",
+        { class: "tutorial-intro" },
+        currentLanguage() === "en"
+          ? "DWORDle looks familiar, but these two differences change how you solve it."
+          : "Wordle と似ていますが、次の 2 点が推理の鍵です。"
+      ),
+      el(
+        "ol",
+        { class: "tutorial-points" },
+        point(
+          "1",
+          currentLanguage() === "en" ? "Feedback can cross both words" : "判定は 2 つの答えをまたぐ",
+          currentLanguage() === "en"
+            ? "Each green or yellow tile may refer to Word 1 or Word 2."
+            : "緑・黄は、Word 1 / Word 2 のどちらかについての情報です。"
+        ),
+        point(
+          "2",
+          currentLanguage() === "en" ? "All green may not be solved" : "全部緑でも未正解の場合がある",
+          currentLanguage() === "en"
+            ? "You win only when your whole Guess is exactly one of the two answers."
+            : "入力した単語全体が、2 つの答えのどちらかと一致すればクリアです。"
+        )
+      ),
+      mode === "uso"
+        ? el(
+            "p",
+            { class: "tutorial-intro", style: { color: "#ff7a9a" } },
+            currentLanguage() === "en"
+              ? "In DWORDlie, every displayed feedback color is a lie."
+              : "DWORDlieでは、表示される判定色がすべて嘘になります。"
+          )
+        : null,
+    ],
+    actions: [
+      {
+        label: currentLanguage() === "en" ? "Full Guide" : "詳しい遊び方",
+        onClick: () => setTimeout(() => showHelpModal(mode), 0),
+      },
+      { label: currentLanguage() === "en" ? "Got it" : "わかった", primary: true, onClick: () => {} },
+    ],
   });
 }

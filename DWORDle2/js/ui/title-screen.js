@@ -12,7 +12,7 @@ import { playSfx } from "../audio/sound.js";
 import { toast } from "./toast.js";
 import { showModal } from "./modal.js";
 import { finishHistoryImport } from "./history-import.js";
-import { showHelpModal } from "./help.js";
+import { showFirstTutorial, showHelpModal } from "./help.js";
 import { confirmAndStart } from "./game-screen.js";
 import { icon } from "./icons.js";
 import { APP_VERSION } from "../config.js";
@@ -95,8 +95,8 @@ function randomPrompt(mode) {
   });
 }
 
-function maybeOfferLegacyImport() {
-  if (legacyImportCheckDone) return;
+function maybeOfferLegacyImport(afterClose = null) {
+  if (legacyImportCheckDone) return false;
   legacyImportCheckDone = true;
   if (
     getHistory().length > 0 ||
@@ -104,12 +104,12 @@ function maybeOfferLegacyImport() {
     getCurrentGame("uso") ||
     loadJSON("legacyImportPrompted", false)
   ) {
-    return;
+    return false;
   }
 
   const found = scanLegacyHistory();
   saveJSON("legacyImportPrompted", true);
-  if (found.length === 0) return;
+  if (found.length === 0) return false;
 
   showModal({
     title: tr("旧作のプレイ履歴が見つかりました", "Original game history found"),
@@ -139,7 +139,15 @@ function maybeOfferLegacyImport() {
         onClick: () => finishHistoryImport(importFromLocalStorage()),
       },
     ],
+    onClose: afterClose,
   });
+  return true;
+}
+
+function maybeShowFirstTutorial(mode) {
+  if (loadJSON("tutorialSeen", false)) return;
+  saveJSON("tutorialSeen", true);
+  showFirstTutorial(mode);
 }
 
 function render() {
@@ -155,12 +163,22 @@ function render() {
 
   root.append(
     el("div", { style: { position: "absolute", top: "14px", right: "14px", display: "flex", gap: "8px" } },
-      el("button", { class: "icon-btn", title: tr("遊び方", "How to play"), onclick: () => showHelpModal(mode) }, "?"),
+      el(
+        "button",
+        {
+          class: "icon-btn",
+          title: tr("遊び方", "How to play"),
+          "aria-label": tr("遊び方", "How to play"),
+          onclick: () => showHelpModal(mode),
+        },
+        "?"
+      ),
       el(
         "button",
         {
           class: "icon-btn",
           title: isUso ? tr("表モードへ", "Switch to DWORDle") : tr("裏モードへ", "Switch to DWORDlie"),
+          "aria-label": isUso ? tr("表モードへ", "Switch to DWORDle") : tr("裏モードへ", "Switch to DWORDlie"),
           style: isUso ? { boxShadow: "0 0 12px rgba(255,43,94,0.8)", color: "#ff5f8f" } : {},
           onclick: () => {
             playSfx("swoosh");
@@ -208,7 +226,13 @@ function render() {
     ),
     el("div", { class: "app-version", title: "DWORDle 2 version" }, `v${APP_VERSION}`)
   );
-  maybeOfferLegacyImport();
+  const firstVisit =
+    !loadJSON("tutorialSeen", false) &&
+    getHistory().length === 0 &&
+    !getCurrentGame("normal") &&
+    !getCurrentGame("uso");
+  const importShown = maybeOfferLegacyImport(firstVisit ? () => maybeShowFirstTutorial(mode) : null);
+  if (firstVisit && !importShown) maybeShowFirstTutorial(mode);
 }
 
 registerScreen("title", {

@@ -48,7 +48,11 @@ function render() {
   const header = el(
     "div",
     { class: "header" },
-    el("button", { class: "icon-btn", onclick: () => { playSfx("ui"); navigate("/"); } }, icon("arrowLeft")),
+    el(
+      "button",
+      { class: "icon-btn", "aria-label": tr("タイトルへ戻る", "Back to title"), onclick: () => { playSfx("ui"); navigate("/"); } },
+      icon("arrowLeft")
+    ),
     el("div", { class: "title" }, tr("実績", "Achievements")),
     el("span", { class: "spacer" }),
     el("span", { class: "sub" }, `${count} / ${ACHIEVEMENTS.length}`)

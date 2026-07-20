@@ -26,14 +26,18 @@ function settingRow(l1, l2, control) {
   return el("div", { class: "setting-row" }, el("div", { class: "label" }, el("div", { class: "l1" }, l1), el("div", { class: "l2" }, l2)), control);
 }
 
-function toggle(key) {
+function toggle(key, label) {
   const sw = el("button", {
     class: `switch ${getSettings()[key] ? "on" : ""}`,
+    role: "switch",
+    "aria-label": label,
+    "aria-checked": String(Boolean(getSettings()[key])),
     onclick: () => {
       playSfx("ui");
       const now = !getSettings()[key];
       setSetting(key, now);
       sw.classList.toggle("on", now);
+      sw.setAttribute("aria-checked", String(now));
     },
   });
   return sw;
@@ -185,7 +189,11 @@ function render() {
   const header = el(
     "div",
     { class: "header" },
-    el("button", { class: "icon-btn", onclick: () => { playSfx("ui"); navigate("/"); } }, icon("arrowLeft")),
+    el(
+      "button",
+      { class: "icon-btn", "aria-label": tr("タイトルへ戻る", "Back to title"), onclick: () => { playSfx("ui"); navigate("/"); } },
+      icon("arrowLeft")
+    ),
     el("div", { class: "title" }, tr("設定", "Settings"))
   );
 
@@ -217,7 +225,7 @@ function render() {
   );
   const themeSeg = el(
     "div",
-    { class: "seg", style: { width: "190px" } },
+    { class: "seg", style: { width: "190px" }, role: "radiogroup", "aria-label": tr("テーマ", "Theme") },
     [
       ["cyber", tr("サイバー", "Cyber")],
       ["classic", tr("クラシック", "Classic")],
@@ -226,6 +234,8 @@ function render() {
         "button",
         {
           class: s.theme === key ? "active" : "",
+          role: "radio",
+          "aria-checked": String(s.theme === key),
           onclick: () => {
             playSfx("ui");
             setSetting("theme", key);
@@ -251,19 +261,23 @@ function render() {
       settingRow(
         tr("キーボードヒント", "Keyboard hints"),
         tr("DWORDleで、使用した文字を判定色で表示します", "Color used letters by their feedback in DWORDle"),
-        toggle("keyboardHints")
+        toggle("keyboardHints", tr("キーボードヒント", "Keyboard hints"))
       ),
       settingRow(
         tr("演出を軽くする", "Reduce effects"),
         tr("パーティクルを完全にオフにします（低スペック端末向け）", "Disable particles completely for lower-powered devices"),
-        toggle("reduceFx")
+        toggle("reduceFx", tr("演出を軽くする", "Reduce effects"))
       )
     ),
     el(
       "div",
       { class: "card" },
       el("div", { style: { fontWeight: "800", marginBottom: "4px" } }, tr("サウンド", "Sound")),
-      settingRow(tr("効果音", "Sound effects"), tr("キー入力・判定・勝利ファンファーレなど", "Keys, feedback, win fanfare, and more"), toggle("sfx")),
+      settingRow(
+        tr("効果音", "Sound effects"),
+        tr("キー入力・判定・勝利ファンファーレなど", "Keys, feedback, win fanfare, and more"),
+        toggle("sfx", tr("効果音", "Sound effects"))
+      ),
       settingRow(
         tr("効果音の音量", "Sound effects volume"),
         tr("効果音だけの音量を調整します", "Adjust sound effects independently"),
@@ -275,7 +289,7 @@ function render() {
           "プレイ中のBGM再生のON / OFFを切り替えます",
           "Turn BGM playback during games on or off"
         ),
-        toggle("bgm")
+        toggle("bgm", "BGM")
       ),
       settingRow(
         tr("BGMの音量", "BGM volume"),
@@ -367,6 +381,7 @@ function render() {
               "mode",
               "lastPlayedMode",
               "legacyImportPrompted",
+              "tutorialSeen",
             ]) {
               removeKey(key);
             }

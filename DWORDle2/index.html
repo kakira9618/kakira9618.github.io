@@ -2,10 +2,27 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#05070f">
 <title>DWORDle 2 | 答えが2つある Wordle</title>
 <meta name="description" content="DWORDle 2 | 答えが2つある Wordle 強化版。10手以内に「どちらか」を当てればあなたの勝利！">
+<link rel="canonical" href="https://kakira9618.github.io/DWORDle2/">
+<link rel="icon" type="image/png" sizes="256x256" href="favicon.png">
+<link rel="apple-touch-icon" href="favicon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="DWORDle 2">
+<meta property="og:title" content="DWORDle 2 | 答えが2つある Wordle">
+<meta property="og:description" content="答えは2つ。10手以内にどちらかを当てる、二解答Wordle。">
+<meta property="og:url" content="https://kakira9618.github.io/DWORDle2/">
+<meta property="og:image" content="https://kakira9618.github.io/DWORDle2/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="DWORDle 2 — 答えが2つある Wordle">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="DWORDle 2 | 答えが2つある Wordle">
+<meta name="twitter:description" content="答えは2つ。10手以内にどちらかを当てる、二解答Wordle。">
+<meta name="twitter:image" content="https://kakira9618.github.io/DWORDle2/og.png">
 <link rel="stylesheet" href="css/style.css">
 <script type="importmap">
 { "imports": { "three": "./vendor/three.module.min.js" } }
@@ -13,21 +30,21 @@
 </head>
 <body class="theme-cyber mode-normal">
 
-<canvas id="bg3d"></canvas>
+<canvas id="bg3d" aria-hidden="true"></canvas>
 
-<div id="app">
-  <section id="screen-title" class="screen"></section>
-  <section id="screen-game" class="screen"></section>
-  <section id="screen-result" class="screen"></section>
-  <section id="screen-history" class="screen"></section>
-  <section id="screen-problems" class="screen"></section>
-  <section id="screen-achievements" class="screen"></section>
-  <section id="screen-analysis" class="screen"></section>
-  <section id="screen-settings" class="screen"></section>
-</div>
+<main id="app">
+  <section id="screen-title" class="screen" aria-label="DWORDle 2"></section>
+  <section id="screen-game" class="screen" aria-label="Game"></section>
+  <section id="screen-result" class="screen" aria-label="Result"></section>
+  <section id="screen-history" class="screen" aria-label="Play History"></section>
+  <section id="screen-problems" class="screen" aria-label="Puzzles"></section>
+  <section id="screen-achievements" class="screen" aria-label="Achievements"></section>
+  <section id="screen-analysis" class="screen" aria-label="Analysis"></section>
+  <section id="screen-settings" class="screen" aria-label="Settings"></section>
+</main>
 
-<canvas id="fx3d"></canvas>
-<div id="toast-layer"></div>
+<canvas id="fx3d" aria-hidden="true"></canvas>
+<div id="toast-layer" role="status" aria-live="polite" aria-atomic="false"></div>
 <div id="modal-layer"></div>
 
 <script type="module" src="js/main.js"></script>

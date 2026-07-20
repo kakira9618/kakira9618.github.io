@@ -81,6 +81,7 @@ function render() {
     { class: "header" },
     el("button", {
       class: "icon-btn",
+      "aria-label": blockStart !== null ? tr("ブロック一覧へ戻る", "Back to puzzle blocks") : tr("タイトルへ戻る", "Back to title"),
       onclick: () => {
         playSfx("ui");
         if (blockStart !== null) {
@@ -94,7 +95,16 @@ function render() {
     el("div", { class: "title" }, tr("問題一覧", "Puzzles")),
     el("span", { class: "spacer" }),
     el("span", { class: `mode-chip ${mode === "uso" ? "uso" : ""}` }, MODES[mode].title),
-    el("button", { class: "icon-btn", title: tr("番号へジャンプ", "Jump to number"), onclick: jumpPrompt }, icon("search"))
+    el(
+      "button",
+      {
+        class: "icon-btn",
+        title: tr("番号へジャンプ", "Jump to number"),
+        "aria-label": tr("番号へジャンプ", "Jump to number"),
+        onclick: jumpPrompt,
+      },
+      icon("search")
+    )
   );
 
   // レベル帯タブ
@@ -159,9 +169,10 @@ function render() {
       const ratio = c / (e - s + 1);
       blocks.push(
         el(
-          "div",
+          "button",
           {
             class: "block-cell",
+            "aria-label": tr(`問題 ${s} から ${e}、クリア ${c}、プレイ ${p}`, `Puzzles ${s} to ${e}, ${c} cleared, ${p} played`),
             style: ratio > 0 ? { background: `color-mix(in srgb, var(--tile-correct) ${Math.round(8 + ratio * 42)}%, var(--bg-panel))` } : {},
             onclick: () => {
               playSfx("ui");
@@ -209,8 +220,15 @@ function render() {
       if (statusFilter !== "all" && st !== statusFilter) continue;
       cells.push(
         el(
-          "div",
-          { class: `num-cell ${st === "unplayed" ? "" : st}`, onclick: () => openProblemMenu(pid, statusMap) },
+          "button",
+          {
+            class: `num-cell ${st === "unplayed" ? "" : st}`,
+            "aria-label": tr(
+              `問題 ${pid}、${st === "cleared" ? "クリア済み" : st === "failed" ? "未クリア" : "未プレイ"}`,
+              `Puzzle ${pid}, ${st === "cleared" ? "cleared" : st === "failed" ? "failed" : "unplayed"}`
+            ),
+            onclick: () => openProblemMenu(pid, statusMap),
+          },
           String(pid)
         )
       );

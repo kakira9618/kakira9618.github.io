@@ -14,6 +14,7 @@ import { achievementToast } from "./toast.js";
 import { playSfx } from "../audio/sound.js";
 import { icon } from "./icons.js";
 import { currentLanguage, isEnglish, tr } from "../core/i18n.js";
+import { rowAriaLabel } from "./a11y.js";
 
 let root = null;
 let worker = null;
@@ -35,8 +36,10 @@ function tilesRow(word, patternId, small = true) {
   const states = patternIdToStates(patternId);
   return el(
     "div",
-    { class: "rrow", style: { display: "flex", gap: "4px" } },
-    word.split("").map((c, i) => el("div", { class: `rcell ${states[i]}`, style: small ? {} : {} }, c))
+    { class: "rrow", style: { display: "flex", gap: "4px" }, role: "img", "aria-label": rowAriaLabel(word, states) },
+    word.split("").map((c, i) =>
+      el("div", { class: `rcell ${states[i]}`, style: small ? {} : {}, "aria-hidden": "true" }, c)
+    )
   );
 }
 
@@ -50,7 +53,15 @@ function render(args) {
   const header = el(
     "div",
     { class: "header" },
-    el("button", { class: "icon-btn", onclick: () => { playSfx("ui"); history.length > 1 ? history.back() : navigate("/history"); } }, icon("arrowLeft")),
+    el(
+      "button",
+      {
+        class: "icon-btn",
+        "aria-label": tr("前の画面へ戻る", "Back"),
+        onclick: () => { playSfx("ui"); history.length > 1 ? history.back() : navigate("/history"); },
+      },
+      icon("arrowLeft")
+    ),
     el("div", { class: "title" }, tr("分析モード", "Analysis")),
     el("span", { class: "spacer" }),
     record ? el("span", { class: "sub" }, pidLabel(record.problemID)) : null
@@ -76,6 +87,22 @@ function render(args) {
   // 実績: アナリスト
   const newly = checkOnEvent("analysis");
   if (newly.length) achievementToast(newly);
+
+  body.append(
+    el(
+      "aside",
+      { class: "card analysis-purpose" },
+      el("b", {}, tr("この分析について", "About this analysis")),
+      el(
+        "p",
+        {},
+        tr(
+          "勝率や正解そのものの採点ではなく、各手が候補ペアをどれだけ減らせたかを測る「情報効率」の分析です。正解した手には順位評価や候補提案を表示しません。",
+          "This measures information efficiency—how much each Guess reduced the candidate pairs—not win probability or whether the Guess was correct. Winning Guesses are not ranked and receive no alternative suggestions."
+        )
+      )
+    )
+  );
 
   // 進捗表示
   const progressLabel = el("div", { class: "hint" }, tr("分析を準備中…", "Preparing analysis…"));
@@ -165,6 +192,7 @@ function renderResult(body, record, logic, res) {
     const eliminated = turn.before - turn.after;
     const elimPct = turn.before > 0 ? (100 * eliminated) / turn.before : 0;
     const sug = turn.suggestions;
+    const winningTurn = logic.isGameClear(turn.word);
 
     const card = el(
       "div",
@@ -174,6 +202,7 @@ function renderResult(body, record, logic, res) {
         { class: "turn-head" },
         el("span", { class: "tn" }, `TURN ${t + 1}`),
         el("span", { class: "tw" }, turn.word),
+        winningTurn ? el("span", { class: "analysis-correct" }, tr("正解！", "SOLVED!")) : null,
         el("span", { class: "spacer", style: { flex: 1 } }),
         tilesRow(turn.word, turn.shownPattern)
       ),
@@ -225,8 +254,18 @@ function renderResult(body, record, logic, res) {
       )
     );
 
+    if (winningTurn) {
+      card.append(
+        el(
+          "div",
+          { class: "analysis-correct-note" },
+          tr("正解した手のため、順位評価と候補提案はありません。", "Winning Guess—ranking and alternative suggestions are omitted.")
+        )
+      );
+    }
+
     // 提案
-    if (sug && sug.list.length > 0) {
+    if (!winningTurn && sug && sug.list.length > 0) {
       const rankNote =
         sug.playedRank !== null
           ? tr(

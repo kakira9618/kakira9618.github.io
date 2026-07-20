@@ -49,14 +49,9 @@ const unlock = () => {
 addEventListener("pointerdown", unlock);
 addEventListener("keydown", unlock);
 
-// iOS Safari のピンチズームを抑止する。ダブルタップは CSS の touch-action で抑止する。
-for (const eventName of ["gesturestart", "gesturechange", "gestureend"]) {
-  document.addEventListener(eventName, (event) => event.preventDefault(), { passive: false });
-}
+// ダブルタップによる意図しない拡大だけを抑止する。
+// ピンチズームは弱視ユーザーが利用できるようブラウザ標準のまま許可する。
 document.addEventListener("dblclick", (event) => event.preventDefault(), { passive: false });
-document.addEventListener("touchmove", (event) => {
-  if (event.touches.length > 1) event.preventDefault();
-}, { passive: false });
 
 // バックグラウンド復帰時は、状態に応じて即時再生または次の操作で再接続する。
 document.addEventListener("visibilitychange", () => {

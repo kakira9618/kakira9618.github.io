@@ -13,6 +13,7 @@ import { icon } from "./icons.js";
 import { downloadResultPNG } from "./snapshot.js";
 import { SHARE_URL } from "../config.js";
 import { tr } from "../core/i18n.js";
+import { rowAriaLabel } from "./a11y.js";
 
 let root = null;
 
@@ -29,7 +30,7 @@ function displayResults(record, logic) {
 }
 
 // 原作互換のシェア文字列 + 公開 URL
-function buildShareText(record, logic, cleared) {
+function buildShareText(record, logic, cleared, includeUrl = true) {
   const results = displayResults(record, logic);
   const seedLabel = isDailyPID(record.problemID) ? "Daily" : `No.${record.problemID}`;
   const maxGuess = MODES[record.gameMode].maxGuess;
@@ -46,7 +47,7 @@ function buildShareText(record, logic, cleared) {
   if (cleared) {
     text += `You guessed Word ${logic.matchWordNo(record.guessWord[record.guessWord.length - 1])}!\n`;
   }
-  text += SHARE_URL;
+  if (includeUrl) text += SHARE_URL;
   return text;
 }
 
@@ -76,7 +77,15 @@ function render(args) {
   const header = el(
     "div",
     { class: "header" },
-    el("button", { class: "icon-btn", onclick: () => { playSfx("ui"); history.length > 1 ? history.back() : navigate("/"); } }, icon("arrowLeft")),
+    el(
+      "button",
+      {
+        class: "icon-btn",
+        "aria-label": tr("前の画面へ戻る", "Back"),
+        onclick: () => { playSfx("ui"); history.length > 1 ? history.back() : navigate("/"); },
+      },
+      icon("arrowLeft")
+    ),
     el("div", { class: "title" }, "RESULT"),
     el("span", { class: "spacer" }),
     el("span", { class: "sub" }, pidLabel(record.problemID)),
@@ -88,9 +97,9 @@ function render(args) {
   const answerRow = (no, word) =>
     el(
       "div",
-      { class: "answer-row" },
+      { class: "answer-row", role: "img", "aria-label": `Word ${no}: ${word.toUpperCase()}` },
       el("span", { class: "alabel" }, `Word ${no}`),
-      word.split("").map((c) => el("span", { class: "rcell htile" }, c)),
+      word.split("").map((c) => el("span", { class: "rcell htile", "aria-hidden": "true" }, c)),
       el("span", { class: "amark" }, lastWord === word ? tr("◀ あなたの答え!", "◀ Your answer!") : "")
     );
 
@@ -100,8 +109,8 @@ function render(args) {
     record.guessWord.map((w, t) =>
       el(
         "div",
-        { class: "rrow" },
-        w.split("").map((c, i) => el("div", { class: `rcell ${results[t][i]}` }, c))
+        { class: "rrow", role: "img", "aria-label": rowAriaLabel(w, results[t]) },
+        w.split("").map((c, i) => el("div", { class: `rcell ${results[t][i]}`, "aria-hidden": "true" }, c))
       )
     )
   );
@@ -126,9 +135,17 @@ function render(args) {
     el(
       "div",
       { class: "result-actions" },
-      actionBtn("share", tr("シェア", "Share"), () => {
-        const text = buildShareText(record, logic, cleared);
-        open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank");
+      actionBtn("share", tr("シェア", "Share"), async () => {
+        const text = buildShareText(record, logic, cleared, false);
+        if (navigator.share) {
+          try {
+            await navigator.share({ title: "DWORDle 2", text, url: SHARE_URL });
+            return;
+          } catch (error) {
+            if (error?.name === "AbortError") return;
+          }
+        }
+        open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(buildShareText(record, logic, cleared))}`, "_blank");
       }, true),
       actionBtn("copy", tr("コピー", "Copy"), async () => {
         try {
