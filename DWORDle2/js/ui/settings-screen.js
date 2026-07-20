@@ -38,6 +38,30 @@ function toggle(key) {
   return sw;
 }
 
+function volumeSlider(key, label) {
+  const value = getSettings()[key];
+  const valueEl = el("span", { class: "volume-value", "aria-hidden": "true" }, `${value}%`);
+  const input = el("input", {
+    type: "range",
+    min: "0",
+    max: "100",
+    step: "1",
+    value,
+    "aria-label": label,
+    "aria-valuetext": `${value}%`,
+    oninput: (event) => {
+      const next = Number(event.target.value);
+      setSetting(key, next);
+      event.target.setAttribute("aria-valuetext", `${next}%`);
+      valueEl.textContent = `${next}%`;
+    },
+    onchange: () => {
+      if (key === "sfxVolume") playSfx("ui");
+    },
+  });
+  return el("div", { class: "volume-control" }, input, valueEl);
+}
+
 function afterImport(added) {
   _reload();
   const newly = [...reconcileAchievementsFromHistory(), ...checkOnEvent("migrate")];
@@ -194,8 +218,13 @@ function render() {
       "div",
       { class: "card" },
       el("div", { style: { fontWeight: "800", marginBottom: "4px" } }, tr("表示", "Display")),
-      settingRow(tr("言語", "Language"), tr("UIと「遊び方」の初期言語", "Language used by the UI and Guide"), languageSeg),
+      settingRow(tr("言語", "Language"), tr("UIと「遊び方」の言語", "Language used by the UI and Guide"), languageSeg),
       settingRow(tr("テーマ", "Theme"), tr("サイバー: ネオン + 3D エフェクト / クラシック: 原作風", "Cyber: neon + 3D effects / Classic: original-style"), themeSeg),
+      settingRow(
+        tr("キーボードヒント", "Keyboard hints"),
+        tr("DWORDleで、使用した文字を判定色で表示します", "Color used letters by their feedback in DWORDle"),
+        toggle("keyboardHints")
+      ),
       settingRow(
         tr("演出を軽くする", "Reduce effects"),
         tr("パーティクルを完全にオフにします（低スペック端末向け）", "Disable particles completely for lower-powered devices"),
@@ -208,12 +237,22 @@ function render() {
       el("div", { style: { fontWeight: "800", marginBottom: "4px" } }, tr("サウンド", "Sound")),
       settingRow(tr("効果音", "Sound effects"), tr("キー入力・判定・勝利ファンファーレなど", "Keys, feedback, win fanfare, and more"), toggle("sfx")),
       settingRow(
+        tr("効果音の音量", "Sound effects volume"),
+        tr("効果音だけの音量を調整します", "Adjust sound effects independently"),
+        volumeSlider("sfxVolume", tr("効果音の音量", "Sound effects volume"))
+      ),
+      settingRow(
         tr("BGM", "BGM"),
         tr(
           "DWORDle / DWORDlie で再生する BGM を指定します",
           "Choose the BGM played in DWORDle / DWORDlie"
         ),
         toggle("bgm")
+      ),
+      settingRow(
+        tr("BGMの音量", "BGM volume"),
+        tr("BGMだけの音量を調整します", "Adjust BGM independently"),
+        volumeSlider("bgmVolume", tr("BGMの音量", "BGM volume"))
       ),
       el(
         "div",

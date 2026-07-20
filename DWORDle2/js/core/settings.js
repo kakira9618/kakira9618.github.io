@@ -5,14 +5,25 @@ import { loadJSON, saveJSON } from "./store.js";
 export const DEFAULT_SETTINGS = {
   theme: "cyber", // "cyber"（ネオン3D演出）| "classic"（原作風フラット表示）
   sfx: true, // 効果音
+  sfxVolume: 100, // 効果音の音量（0〜100）
   bgm: true, // BGM（最初のユーザー操作後に再生開始）
+  bgmVolume: 100, // BGM の音量（0〜100）
   bgmTrack: "auto", // "auto" | "normal" | "uso" | "gentle" | "classic"
   language: "ja", // "ja" | "en"
+  keyboardHints: true, // DWORDle のキーボードを判定色で塗り分ける
   reduceFx: false, // 演出を軽くする（パーティクルを完全にオフ）
   randomLevel: 1, // ランダムプレイで前回選んだレベル
 };
 
+export function normalizeVolume(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 100;
+  return Math.round(Math.min(100, Math.max(0, numeric)));
+}
+
 let settings = { ...DEFAULT_SETTINGS, ...loadJSON("settings", {}) };
+settings.sfxVolume = normalizeVolume(settings.sfxVolume);
+settings.bgmVolume = normalizeVolume(settings.bgmVolume);
 const listeners = new Set();
 
 export function getSettings() {
@@ -20,6 +31,7 @@ export function getSettings() {
 }
 
 export function setSetting(key, value) {
+  if (key === "sfxVolume" || key === "bgmVolume") value = normalizeVolume(value);
   if (settings[key] === value) return;
   settings = { ...settings, [key]: value };
   saveJSON("settings", settings);

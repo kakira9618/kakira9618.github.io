@@ -78,6 +78,39 @@ function selectedTrack() {
   return wanted;
 }
 
+function volumeGain(base, value) {
+  return base * (Math.min(100, Math.max(0, Number(value) || 0)) / 100);
+}
+
+function sfxTargetGain(settings = getSettings()) {
+  return volumeGain(AUDIO.sfxGain, settings.sfxVolume);
+}
+
+function bgmTargetGain(settings = getSettings()) {
+  return volumeGain(AUDIO.bgmGain, settings.bgmVolume);
+}
+
+function createBgmBuses() {
+  busNormal = ctx.createGain();
+  busUso = ctx.createGain();
+  busGentle = ctx.createGain();
+  busClassic = ctx.createGain();
+  for (const [id, bus] of Object.entries(bgmBuses())) {
+    bus.gain.value = id === selectedTrack() ? 1 : 0;
+    bus.connect(bgmGain);
+  }
+}
+
+// 予約済みの音源は接続先の旧バスごと切り離し、次の小節だけを新しいバスへ予約する。
+// 高速なモード切替や BGM の再開で、過去と現在の小節が重なり続けるのを防ぐ。
+function resetBgmBuses() {
+  for (const bus of Object.values(bgmBuses())) {
+    if (!bus) continue;
+    bus.disconnect();
+  }
+  createBgmBuses();
+}
+
 function ensureContext() {
   if (ctx) return ctx;
   const AC = window.AudioContext || window.webkitAudioContext;
@@ -87,21 +120,12 @@ function ensureContext() {
   masterGain.gain.value = AUDIO.masterGain;
   masterGain.connect(ctx.destination);
   sfxGain = ctx.createGain();
-  sfxGain.gain.value = AUDIO.sfxGain;
+  sfxGain.gain.value = sfxTargetGain();
   sfxGain.connect(masterGain);
   bgmGain = ctx.createGain();
-  bgmGain.gain.value = AUDIO.bgmGain;
+  bgmGain.gain.value = 0;
   bgmGain.connect(masterGain);
-  busNormal = ctx.createGain();
-  busUso = ctx.createGain();
-  busGentle = ctx.createGain();
-  busClassic = ctx.createGain();
-  busNormal.connect(bgmGain);
-  busUso.connect(bgmGain);
-  busGentle.connect(bgmGain);
-  busClassic.connect(bgmGain);
-  const active = selectedTrack();
-  for (const [id, bus] of Object.entries(bgmBuses())) bus.gain.value = id === active ? 1 : 0;
+  createBgmBuses();
   return ctx;
 }
 
@@ -128,6 +152,14 @@ export function setUsoMood(v) {
 
 function refreshBgmMix(restartSchedule = false) {
   if (!ctx) return;
+  if (restartSchedule && bgmRunning) {
+    if (bgmTimer) clearTimeout(bgmTimer);
+    resetBgmBuses();
+    nextBarTime = ctx.currentTime + 0.08;
+    barIndex = 0;
+    bgmLoop();
+    return;
+  }
   const t = ctx.currentTime;
   const FADE = AUDIO.bgmCrossfadeSec;
   const active = selectedTrack();
@@ -136,12 +168,6 @@ function refreshBgmMix(restartSchedule = false) {
     bus.gain.cancelScheduledValues(t);
     bus.gain.setValueAtTime(bus.gain.value, t);
     bus.gain.linearRampToValueAtTime(on ? 1 : 0, t + FADE);
-  }
-  if (restartSchedule && bgmRunning) {
-    if (bgmTimer) clearTimeout(bgmTimer);
-    nextBarTime = t + 0.08;
-    barIndex = 0;
-    bgmLoop();
   }
 }
 
@@ -164,7 +190,7 @@ function transitionSweep(toUso) {
   g.gain.setValueAtTime(0.0001, t0);
   g.gain.exponentialRampToValueAtTime(0.14, t0 + dur * 0.4);
   g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-  src.connect(f).connect(g).connect(masterGain);
+  src.connect(f).connect(g).connect(sfxGain);
   src.start(t0);
 }
 
@@ -540,12 +566,12 @@ function bgmLoop() {
 
 export function startBgm() {
   if (!ensureContext() || bgmRunning) return;
+  resetBgmBuses();
   bgmRunning = true;
   const t = ctx.currentTime;
   bgmGain.gain.cancelScheduledValues(t);
   bgmGain.gain.setValueAtTime(bgmGain.gain.value, t);
-  bgmGain.gain.linearRampToValueAtTime(AUDIO.bgmGain, t + 0.25);
-  refreshBgmMix(false);
+  bgmGain.gain.linearRampToValueAtTime(bgmTargetGain(), t + 0.25);
   nextBarTime = ctx.currentTime + 0.1;
   bgmLoop();
 }
@@ -566,6 +592,12 @@ onSettingsChange((s, key) => {
   if (key === "bgm") {
     if (s.bgm) unlockAudio();
     else stopBgm();
+  }
+  if (key === "sfxVolume" && ctx && sfxGain) {
+    sfxGain.gain.setTargetAtTime(sfxTargetGain(s), ctx.currentTime, 0.015);
+  }
+  if (key === "bgmVolume" && ctx && bgmGain && s.bgm) {
+    bgmGain.gain.setTargetAtTime(bgmTargetGain(s), ctx.currentTime, 0.02);
   }
   if (key === "bgmTrack") refreshBgmMix(true);
 });

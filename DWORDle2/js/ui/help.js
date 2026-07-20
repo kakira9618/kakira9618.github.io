@@ -3,7 +3,7 @@
 // 参照した判定なのかを線とハイライトで順番に示す。
 // DWORDle では解説後、同じパネルを使って「全部緑でも不正解」の例を再生する。
 
-import { el, clear } from "./dom.js";
+import { el } from "./dom.js";
 import { showModal } from "./modal.js";
 import { queryWordPair, usoConvert } from "../core/logic.js";
 import { currentLanguage } from "../core/i18n.js";
@@ -478,37 +478,13 @@ function localizedBody(mode, language) {
 
 export function showHelpModal(mode) {
   stopAnimation();
-  let language = currentLanguage();
+  const language = currentLanguage();
   const content = el("div", { class: "help-localized" });
-  const languageButtons = [
-    ["ja", "日本語"],
-    ["en", "English"],
-  ].map(([key, label]) =>
-    el(
-      "button",
-      {
-        onclick: () => {
-          if (language === key) return;
-          stopAnimation();
-          language = key;
-          languageButtons.forEach((button) => button.classList.toggle("active", button.dataset.language === key));
-          clear(content);
-          content.append(...localizedBody(mode, language));
-        },
-        dataset: { language: key },
-      },
-      label
-    )
-  );
-  languageButtons.find((button) => button.dataset.language === language)?.classList.add("active");
   content.append(...localizedBody(mode, language));
 
   showModal({
     title: mode === "uso" ? (language === "en" ? "DWORDlie Guide" : "DWORDlie 遊び方") : (language === "en" ? "DWORDle Guide" : "DWORDle 遊び方"),
-    body: [
-      el("div", { class: "seg help-language", "aria-label": language === "en" ? "Guide language" : "説明言語" }, languageButtons),
-      content,
-    ],
+    body: [content],
     actions: [{ label: language === "en" ? "Close" : "閉じる", primary: true, onClick: () => {} }],
     onClose: stopAnimation,
   });

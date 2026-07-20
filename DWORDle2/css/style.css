@@ -28,6 +28,10 @@
   --danger: #d84343;
   --key-bg: #d3d6da;
   --key-fg: #111;
+  --key-border: rgba(255, 255, 255, 0.12);
+  --key-unused-bg: #505457;
+  --key-unused-fg: #f3f4f5;
+  --key-unused-border: #505457;
   --border: #444;
   --glow: none;
   --font-display: "Avenir Next", "Helvetica Neue", "Segoe UI", sans-serif;
@@ -44,8 +48,12 @@ body.theme-cyber {
   --fg-dim: #7d92b5;
   --accent: #00d5ff;
   --accent-2: #ff00e5;
-  --key-bg: rgba(38, 50, 82, 0.85);
-  --key-fg: #dff2ff;
+  --key-bg: #2d4775;
+  --key-fg: #f0f8ff;
+  --key-border: rgba(0, 213, 255, 0.3);
+  --key-unused-bg: #20242d;
+  --key-unused-fg: #788294;
+  --key-unused-border: rgba(125, 146, 181, 0.16);
   --border: rgba(0, 213, 255, 0.28);
   --glow: 0 0 8px rgba(0, 213, 255, 0.55);
 }
@@ -390,6 +398,8 @@ body.theme-cyber .tile.state-unused {
 
 /* ---- キーボード ---- */
 #keyboard {
+  --kbd-key-w: calc(8.6957% - 4.35px);
+  --kbd-half-key-w: calc(4.34785% - 2.175px);
   flex: none;
   height: var(--kbd-h);
   display: flex;
@@ -402,19 +412,23 @@ body.theme-cyber .tile.state-unused {
 }
 .kbd-row {
   flex: 1;
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
+  display: flex;
   gap: 5px;
 }
-/* 原作どおり、中段は上段より半キー分だけ右へずらす。
-   DOM 上は 1 キー分ずらしたグリッドなので、中段全体を半キー左へ戻す。 */
-.kbd-row.row-2 {
-  transform: translateX(calc(-4.1667% - 0.21px));
+.kbd-row.row-1 .key[data-key="backspace"] {
+  margin-left: var(--kbd-half-key-w);
+}
+.kbd-row.row-2 .key:first-child {
+  margin-left: var(--kbd-half-key-w);
+}
+.kbd-row.row-3 .key:first-child {
+  margin-left: var(--kbd-key-w);
 }
 .key {
-  width: 100%;
+  flex: 0 0 var(--kbd-key-w);
   min-width: 0;
   border-radius: 6px;
+  border: 1px solid var(--key-border);
   background: var(--key-bg);
   color: var(--key-fg);
   font-size: 15px;
@@ -431,9 +445,20 @@ body.theme-cyber .tile.state-unused {
 .key.wide {
   font-size: 12px;
 }
-.key.state-unused { background: var(--tile-unused); color: #fff; }
+.kbd-row.row-3 .key[data-key="enter"] {
+  flex-basis: calc(var(--kbd-key-w) + var(--kbd-key-w) + 5px);
+  margin-left: auto;
+}
+.key.state-unused {
+  background: var(--key-unused-bg);
+  border-color: var(--key-unused-border);
+  color: var(--key-unused-fg);
+}
 .key.state-used { background: var(--tile-used); color: #fff; }
 .key.state-correct { background: var(--tile-correct); color: #fff; }
+body.theme-cyber .key:not(.state-unused):not(.state-used):not(.state-correct) {
+  box-shadow: inset 0 0 0 1px rgba(0, 213, 255, 0.08);
+}
 body.theme-cyber .key.state-correct { color: #04120b; box-shadow: 0 0 10px color-mix(in srgb, var(--tile-correct) 45%, transparent); }
 body.theme-cyber .key.state-used { color: #1a1200; }
 
@@ -1171,6 +1196,27 @@ body.theme-cyber .rcell.correct { color: #04120b; }
   color: var(--fg-dim);
   margin-top: 2px;
 }
+.volume-control {
+  width: min(190px, 44vw);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.volume-control input[type="range"] {
+  min-width: 0;
+  width: 100%;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.volume-value {
+  width: 38px;
+  flex: none;
+  color: var(--fg-dim);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
 .bgm-picker {
   display: flex;
   flex-direction: column;
@@ -1367,10 +1413,6 @@ body.theme-cyber .rcell.correct { color: #04120b; }
   display: flex;
   flex-direction: column;
   gap: 10px;
-}
-.help-language {
-  width: 178px;
-  margin-left: auto;
 }
 .help-lie-callout {
   color: #ff5577;

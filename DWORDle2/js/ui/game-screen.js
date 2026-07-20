@@ -16,6 +16,7 @@ import { burstAtElement, winBurst, colorForState, flyInTiles } from "../fx/burst
 import { showHelpModal } from "./help.js";
 import { icon } from "./icons.js";
 import { tr } from "../core/i18n.js";
+import { getSettings } from "../core/settings.js";
 
 const KEY_ROWS = [
   [..."qwertyuiop".split(""), "backspace"],
@@ -90,19 +91,13 @@ function buildKeyboard() {
   keyEls = {};
   KEY_ROWS.forEach((rowKeys, rowIndex) => {
     const row = el("div", { class: `kbd-row row-${rowIndex + 1}` });
-    rowKeys.forEach((k, keyIndex) => {
+    rowKeys.forEach((k) => {
       const label = k === "enter" ? "Enter" : k === "backspace" ? icon("backspace", 20) : k;
-      const gridColumn = rowIndex === 0
-        ? (k === "backspace" ? "12" : String(keyIndex + 1))
-        : rowIndex === 1
-          ? String(keyIndex + 2)
-          : (k === "enter" ? "11 / span 2" : String(keyIndex + 2));
       const btn = el(
         "button",
         {
           class: `key ${k.length > 1 ? "wide" : ""}`,
           dataset: { key: k },
-          style: { gridColumn },
           "aria-label": k === "backspace" ? "Backspace" : k,
           onclick: () => handleKey(k),
         },
@@ -409,7 +404,9 @@ function applyKeyStyle(c) {
   const btn = keyEls[c];
   if (!btn) return;
   btn.classList.remove("state-unused", "state-used", "state-correct");
-  if (buttonStates[c] !== CELL.GUESSING) btn.classList.add(`state-${buttonStates[c]}`);
+  if (game?.gameMode === "normal" && getSettings().keyboardHints && buttonStates[c] !== CELL.GUESSING) {
+    btn.classList.add(`state-${buttonStates[c]}`);
+  }
 }
 
 function applyAllKeyStyles() {
