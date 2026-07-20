@@ -3,7 +3,7 @@
 import { startRouter, initAppMode } from "./ui/app.js";
 import { initBackground } from "./fx/background.js";
 import { initBursts } from "./fx/bursts.js";
-import { audioNeedsRecovery, bgmTracksUnlockedBy, disposeAudio, restartBgmIfReady, stopBgm, unlockAudio } from "./audio/sound.js";
+import { audioNeedsRecovery, bgmTracksUnlockedBy, restartBgmIfReady, stopBgm, unlockAudio } from "./audio/sound.js";
 import { getSettings, onSettingsChange } from "./core/settings.js";
 import { syncDocumentLanguage } from "./core/i18n.js";
 import { reconcileAchievementsOnce } from "./core/achievements.js";
@@ -49,11 +49,7 @@ const unlock = () => {
 addEventListener("pointerdown", unlock);
 addEventListener("keydown", unlock);
 
-// Safari は再読み込みやページキャッシュで AudioContext を保持することがある。
-// 離脱時に明示解放し、復帰時は状態に応じて即時再生または次の操作で再接続する。
-addEventListener("pagehide", () => {
-  disposeAudio();
-});
+// バックグラウンド復帰時は、状態に応じて即時再生または次の操作で再接続する。
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
     stopBgm();

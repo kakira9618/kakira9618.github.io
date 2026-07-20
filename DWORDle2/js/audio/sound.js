@@ -18,7 +18,6 @@ let busClassic = null; // 8-bit 風 Extra BGM
 let bgmRunning = false;
 let bgmTimer = null;
 let usoMood = false;
-let resumePromise = null;
 
 // 設定画面と解放演出でも使う BGM カタログ。
 // unlockAchievement がある曲は、その実績を獲得するまで選択できない。
@@ -112,12 +111,10 @@ function resetBgmBuses() {
   createBgmBuses();
 }
 
-function resetAudioContext(closeContext = false) {
-  const oldContext = ctx;
+function clearAudioContextReferences() {
   if (bgmTimer) clearTimeout(bgmTimer);
   bgmTimer = null;
   bgmRunning = false;
-  resumePromise = null;
   for (const node of [...Object.values(bgmBuses()), bgmGain, sfxGain, masterGain]) {
     try {
       node?.disconnect();
@@ -135,17 +132,10 @@ function resetAudioContext(closeContext = false) {
   busClassic = null;
   nextBarTime = 0;
   barIndex = 0;
-  if (closeContext && oldContext?.state !== "closed") {
-    try {
-      Promise.resolve(oldContext.close()).catch(() => {});
-    } catch {
-      // ページ破棄中は close 自体が例外になる Safari がある。
-    }
-  }
 }
 
 function ensureContext() {
-  if (ctx?.state === "closed") resetAudioContext();
+  if (ctx?.state === "closed") clearAudioContextReferences();
   if (ctx) return ctx;
   const AC = window.AudioContext || window.webkitAudioContext;
   if (!AC) return null;
@@ -163,7 +153,7 @@ function ensureContext() {
     createBgmBuses();
   } catch {
     // iOS Safari の同時 AudioContext 上限などで生成に失敗した場合は次の操作で再試行する。
-    resetAudioContext(true);
+    clearAudioContextReferences();
     return null;
   }
   return ctx;
@@ -176,33 +166,20 @@ function bgmBuses() {
 function resumeAudioContext() {
   if (!ensureContext() || ctx.state === "closed") return Promise.resolve(false);
   if (ctx.state === "running") return Promise.resolve(true);
-  if (!resumePromise) {
-    const resumingContext = ctx;
-    let resumeResult;
-    try {
-      // 自動再生制限を解除できるよう、ユーザー操作のイベント処理中に直接呼び出す。
-      resumeResult = resumingContext.resume();
-    } catch {
-      if (ctx === resumingContext) resetAudioContext(true);
-      return Promise.resolve(false);
-    }
-    let pendingResume;
-    pendingResume = Promise.resolve(resumeResult)
-      .then(() => {
-        const isRunning = ctx === resumingContext && resumingContext.state === "running";
-        if (!isRunning && ctx === resumingContext) resetAudioContext(true);
-        return isRunning;
-      })
-      .catch(() => {
-        if (ctx === resumingContext) resetAudioContext(true);
-        return false;
-      })
-      .finally(() => {
-        if (resumePromise === pendingResume) resumePromise = null;
-      });
-    resumePromise = pendingResume;
+  const resumingContext = ctx;
+  let resumeResult;
+  try {
+    // 自動再生制限を解除できるよう、ユーザー操作のイベント処理中に直接呼び出す。
+    // Safari では Promise が未完了のまま残ることがあるため、操作間では共有しない。
+    resumeResult = resumingContext.resume();
+  } catch {
+    return Promise.resolve(false);
   }
-  return resumePromise;
+  return Promise.resolve(resumeResult)
+    // Safari は一時的に interrupted のまま resolve することがある。
+    // ここでは閉じず、次のユーザー操作で同じ Context の resume を再試行する。
+    .then(() => ctx === resumingContext && resumingContext.state === "running")
+    .catch(() => false);
 }
 
 // 最初のユーザー操作で呼ぶ（main.js が登録する）。
@@ -215,11 +192,6 @@ export function unlockAudio({ restartBgm = false } = {}) {
     startBgm();
   });
   return ready;
-}
-
-// Safari のページキャッシュや再読み込みで古い AudioContext を残さない。
-export function disposeAudio() {
-  resetAudioContext(true);
 }
 
 // 常設の入力ハンドラから、Safari の音声状態だけを軽量に確認する。
