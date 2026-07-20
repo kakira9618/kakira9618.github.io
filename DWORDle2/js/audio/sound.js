@@ -183,13 +183,30 @@ function resumeAudioContext() {
 }
 
 // 最初のユーザー操作で呼ぶ（main.js が登録する）。
-// resume 完了後に BGM を開始し、リロード直後や初回操作でも確実に音を出す。
+// Safari 向けに、ユーザー操作中に音源を予約してから AudioContext を resume する。
 export function unlockAudio({ restartBgm = false } = {}) {
+  const audioContext = ensureContext();
+  if (!audioContext) return Promise.resolve(false);
+  const wasRunning = audioContext.state === "running";
+  // 原作同様、まずユーザー操作中に resume() を呼び、その直後に音源を予約する。
   const ready = resumeAudioContext();
-  ready.then((isReady) => {
-    if (!isReady || !getSettings().bgm) return;
+
+  // iOS Safari では resume() の Promise 完了後に初めて音源を作ると無音になることがある。
+  // Promise は待たず、ユーザー操作の呼び出しスタック内でBGMを予約する。
+  if (getSettings().bgm) {
     if (restartBgm) stopBgm();
     startBgm();
+  }
+
+  ready.then((isReady) => {
+    if (!isReady || !getSettings().bgm) return;
+    if (!wasRunning) {
+      // interrupted 中に予約時刻が過ぎた場合に備え、復帰時刻を基準に予約し直す。
+      stopBgm();
+      startBgm();
+    } else if (!bgmRunning) {
+      startBgm();
+    }
   });
   return ready;
 }
@@ -349,10 +366,10 @@ export function playSfx(name) {
     SFX[name]?.();
     return;
   }
-  // 初回操作の SE は捨てず、AudioContext の再開直後に再生する。
-  unlockAudio().then((isReady) => {
-    if (isReady && getSettings().sfx) SFX[name]?.();
-  });
+  // Safari のユーザー操作中に resume() を呼び、そのまま SE を予約する。
+  // 完了後まで待つと、Safari が音声開始を自動再生として拒否することがある。
+  unlockAudio();
+  if (getSettings().sfx) SFX[name]?.();
 }
 
 // ---- BGM（生成音楽）----

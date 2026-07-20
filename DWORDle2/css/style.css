@@ -80,13 +80,13 @@ html,
 body {
   height: 100%;
   overscroll-behavior: none;
+  touch-action: pan-x pan-y;
 }
 
 body {
   background: var(--bg);
   color: var(--fg);
   font-family: var(--font-display);
-  touch-action: manipulation;
   overflow: hidden;
 }
 
@@ -96,6 +96,7 @@ button {
   background: none;
   border: none;
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 /* ---- 3D 背景キャンバス ---- */

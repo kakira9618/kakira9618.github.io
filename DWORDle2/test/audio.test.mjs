@@ -119,9 +119,8 @@ const { audioNeedsRecovery, playSfx, unlockAudio, setUsoMood, stopBgm } = await 
 setSetting("bgm", false);
 playSfx("ui");
 const context = FakeAudioContext.instance;
-assert.equal(context.startedOscillators, 0, "SFX should wait until the audio context resumes");
+assert.equal(context.startedOscillators, 1, "SFX should be scheduled inside the first user operation");
 assert.equal(await unlockAudio(), true);
-assert.equal(context.startedOscillators, 1, "the first SFX should play after the audio context resumes");
 setSetting("bgm", true);
 await unlockAudio();
 assert.equal(audioNeedsRecovery(), false, "running BGM should not be restarted on every input");
@@ -164,7 +163,12 @@ assert.equal(await unlockAudio(), true, "the next user operation should retry th
 
 rebuiltContext.state = "interrupted";
 FakeAudioContext.holdNextResume = true;
-void unlockAudio();
+const oscillatorsBeforeStalledResume = rebuiltContext.startedOscillators;
+void unlockAudio({ restartBgm: true });
+assert(
+  rebuiltContext.startedOscillators > oscillatorsBeforeStalledResume,
+  "Safari recovery should schedule BGM synchronously inside the user operation"
+);
 const resumeCallsAfterStall = rebuiltContext.resumeCalls;
 assert.equal(await unlockAudio(), true, "a new user operation should bypass a stalled Safari resume promise");
 assert.equal(rebuiltContext.resumeCalls, resumeCallsAfterStall + 1);
