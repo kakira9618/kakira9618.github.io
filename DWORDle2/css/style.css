@@ -1375,15 +1375,25 @@ body.theme-cyber .rcell.correct { color: #04120b; }
 }
 .help-ans-line {
   position: relative;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
+  width: 100%;
 }
 .help-ans-line .hint {
-  position: absolute;
-  right: calc(100% + 10px);
-  width: max-content;
+  position: static;
+  width: auto;
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: end;
+  margin-right: clamp(2px, 1vw, 6px);
   text-align: right;
   white-space: nowrap;
+  font-size: clamp(10.5px, 3.2vw, 12.5px);
+}
+.help-ans-line .help-anim-row {
+  grid-column: 2;
+  grid-row: 1;
 }
 .rcell.htile.small {
   width: 24px;
@@ -1391,9 +1401,9 @@ body.theme-cyber .rcell.correct { color: #04120b; }
   font-size: 11px;
 }
 .rcell.htile.big {
-  width: 40px;
-  height: 40px;
-  font-size: 18px;
+  width: clamp(30px, 9.6vw, 40px);
+  height: clamp(30px, 9.6vw, 40px);
+  font-size: clamp(15px, 4.4vw, 18px);
 }
 /* 状態が付くまでは枠だけの空タイル */
 .htile:not(.unused):not(.used):not(.correct) {
@@ -1479,8 +1489,11 @@ body.theme-cyber .rcell.correct { color: #04120b; }
 }
 .help-ans-line.checking-absent::after {
   content: "×";
-  position: absolute;
-  left: calc(100% + 8px);
+  position: static;
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: start;
+  margin-left: 8px;
   color: var(--fg-dim);
   font-size: 22px;
   font-weight: 900;
