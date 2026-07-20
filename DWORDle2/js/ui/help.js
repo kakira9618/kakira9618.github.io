@@ -469,12 +469,24 @@ export function showFirstTutorial(mode) {
       el("div", {}, el("b", {}, title), el("span", {}, text))
     );
 
-  showModal({
-    title: currentLanguage() === "en" ? "Basic Rules" : "基本ルール",
-    body: [
-      el(
-        "ol",
-        { class: "tutorial-points" },
+  const points = mode === "uso"
+    ? [
+        point(
+          "1",
+          currentLanguage() === "en" ? "Same basic rules as DWORDle" : "基本ルールは DWORDle と同じ",
+          currentLanguage() === "en"
+            ? "There are two answers. Guess either one to win."
+            : "答えは 2 つ。どちらかを当てればクリアです。"
+        ),
+        point(
+          "2",
+          currentLanguage() === "en" ? "Feedback always lies" : "判定は必ず嘘をつく",
+          currentLanguage() === "en"
+            ? "Every displayed color differs from the true feedback."
+            : "表示色は、正しい判定とは必ず異なります。"
+        ),
+      ]
+    : [
         point(
           "1",
           currentLanguage() === "en" ? "Wordle with two answers" : "答えが 2 つある Wordle",
@@ -495,17 +507,17 @@ export function showFirstTutorial(mode) {
           currentLanguage() === "en"
             ? "Match Word 1 or 2 exactly to win."
             : "入力全体が Word 1 / 2 と一致すればクリアです。"
-        )
+        ),
+      ];
+
+  showModal({
+    title: currentLanguage() === "en" ? "Basic Rules" : "基本ルール",
+    body: [
+      el(
+        "ol",
+        { class: "tutorial-points" },
+        points
       ),
-      mode === "uso"
-        ? el(
-            "p",
-            { class: "tutorial-intro", style: { color: "#ff7a9a" } },
-            currentLanguage() === "en"
-              ? "In DWORDlie, every color lies."
-              : "DWORDlieは、判定色がすべて嘘です。"
-          )
-        : null,
     ],
     actions: [
       {

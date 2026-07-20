@@ -94,7 +94,9 @@ try {
   await page.getByRole("button", { name: "裏モードへ" }).click();
   const usoTutorial = page.getByRole("dialog", { name: "基本ルール" });
   await usoTutorial.waitFor();
-  await usoTutorial.getByText("DWORDlieは、判定色がすべて嘘です。").waitFor();
+  await usoTutorial.getByText("基本ルールは DWORDle と同じ").waitFor();
+  await usoTutorial.getByText("判定は必ず嘘をつく").waitFor();
+  assert.equal(await usoTutorial.locator(".tutorial-point").count(), 2, "DWORDlie tutorial should show two rules");
   await usoTutorial.getByRole("button", { name: "わかった" }).click();
   const usoLogoBox = await page.locator(".logo").boundingBox();
   assert.ok(
