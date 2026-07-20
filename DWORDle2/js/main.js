@@ -37,8 +37,8 @@ initBursts();
 addEventListener("keydown", handlePhysicalKey);
 
 // 最初のユーザー操作で AudioContext を解錠（ブラウザの自動再生制限対策）
-const unlock = () => {
-  unlockAudio();
+const unlock = async () => {
+  if (!(await unlockAudio())) return;
   removeEventListener("pointerdown", unlock);
   removeEventListener("keydown", unlock);
 };

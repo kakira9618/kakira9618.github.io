@@ -18,6 +18,7 @@ let busClassic = null; // 8-bit 風 Extra BGM
 let bgmRunning = false;
 let bgmTimer = null;
 let usoMood = false;
+let resumePromise = null;
 
 // 設定画面と解放演出でも使う BGM カタログ。
 // unlockAchievement がある曲は、その実績を獲得するまで選択できない。
@@ -26,8 +27,8 @@ export const BGM_TRACKS = [
     id: "auto",
     name: "モード連動",
     nameEn: "Follow mode",
-    desc: "DWORDle / DWORDlie に合わせて自動で切り替え",
-    descEn: "Switch automatically between DWORDle and DWORDlie",
+    desc: "プレイ中のモードに合う曲を自動で選択",
+    descEn: "Automatically choose the track for the current mode",
   },
   {
     id: "normal",
@@ -133,14 +134,34 @@ function bgmBuses() {
   return { normal: busNormal, uso: busUso, gentle: busGentle, classic: busClassic };
 }
 
-// 最初のユーザー操作で呼ぶ（main.js が登録する）
-export function unlockAudio() {
-  if (!ensureContext()) return;
-  if (ctx.state === "suspended") ctx.resume();
+// 最初のユーザー操作で呼ぶ（main.js が登録する）。
+// resume 完了前に BGM を開始済み扱いにすると、リロード後に無音のままになるブラウザがある。
+export async function unlockAudio() {
+  if (!ensureContext()) return false;
+  if (ctx.state !== "running") {
+    if (ctx.state === "closed") return false;
+    if (!resumePromise) {
+      let resumeResult;
+      try {
+        // ユーザー操作のイベント処理中に同期的に呼び出し、自動再生制限を確実に解除する。
+        resumeResult = ctx.resume();
+      } catch {
+        return false;
+      }
+      resumePromise = Promise.resolve(resumeResult)
+        .then(() => ctx.state === "running")
+        .catch(() => false)
+        .finally(() => {
+          resumePromise = null;
+        });
+    }
+    if (!(await resumePromise)) return false;
+  }
   if (getSettings().bgm) startBgm();
+  return true;
 }
 
-// 表 / 裏の切替。BGM はバスをクロスフェードしてシームレスに移行する。
+// 表 / 裏の切替。予約済みの旧バスを破棄してから新しいモードを再生する。
 export function setUsoMood(v) {
   if (usoMood === v) return;
   usoMood = v;

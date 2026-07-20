@@ -3,12 +3,15 @@
 
 import { el, clear } from "./dom.js";
 import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js";
-import { getCurrentGame, isAlreadyPlayed } from "../core/records.js";
+import { getCurrentGame, getHistory, isAlreadyPlayed } from "../core/records.js";
 import { LEVELS, todayPID, isValidPID, pidLabel, PID } from "../core/problems.js";
 import { getSettings, setSetting } from "../core/settings.js";
+import { loadJSON, saveJSON } from "../core/store.js";
+import { importFromLocalStorage, scanLegacyHistory } from "../core/migrate.js";
 import { playSfx } from "../audio/sound.js";
 import { toast } from "./toast.js";
 import { showModal } from "./modal.js";
+import { finishHistoryImport } from "./history-import.js";
 import { showHelpModal } from "./help.js";
 import { confirmAndStart } from "./game-screen.js";
 import { icon } from "./icons.js";
@@ -16,6 +19,7 @@ import { APP_VERSION } from "../config.js";
 import { localizedLevel, tr } from "../core/i18n.js";
 
 let root = null;
+let legacyImportCheckDone = false;
 
 function build() {
   root = document.getElementById("screen-title");
@@ -91,6 +95,53 @@ function randomPrompt(mode) {
   });
 }
 
+function maybeOfferLegacyImport() {
+  if (legacyImportCheckDone) return;
+  legacyImportCheckDone = true;
+  if (
+    getHistory().length > 0 ||
+    getCurrentGame("normal") ||
+    getCurrentGame("uso") ||
+    loadJSON("legacyImportPrompted", false)
+  ) {
+    return;
+  }
+
+  const found = scanLegacyHistory();
+  saveJSON("legacyImportPrompted", true);
+  if (found.length === 0) return;
+
+  showModal({
+    title: tr("旧作のプレイ履歴が見つかりました", "Original game history found"),
+    body: [
+      el(
+        "p",
+        { class: "hint", style: { fontSize: "14px" } },
+        tr(
+          "このブラウザに旧 DWORDle / DWORDlie のプレイ履歴があります。DWORDle 2 にインポートしますか？",
+          "This browser contains play history from the original DWORDle / DWORDlie. Import it into DWORDle 2?"
+        )
+      ),
+      el(
+        "p",
+        { class: "hint" },
+        tr(
+          "履歴はマージされ、既存データは上書きされません。対応する実績も自動で解放されます。",
+          "History is merged without overwriting existing data, and supported achievements are unlocked automatically."
+        )
+      ),
+    ],
+    actions: [
+      { label: tr("スキップ", "Skip"), onClick: () => {} },
+      {
+        label: tr("インポート", "Import"),
+        primary: true,
+        onClick: () => finishHistoryImport(importFromLocalStorage()),
+      },
+    ],
+  });
+}
+
 function render() {
   if (!root) build();
   clear(root);
@@ -157,6 +208,7 @@ function render() {
     ),
     el("div", { class: "app-version", title: "DWORDle 2 version" }, `v${APP_VERSION}`)
   );
+  maybeOfferLegacyImport();
 }
 
 registerScreen("title", {

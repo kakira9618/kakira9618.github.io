@@ -60,7 +60,7 @@ class FakeAudioContext {
   constructor() {
     this.currentTime = 1;
     this.sampleRate = 48000;
-    this.state = "running";
+    this.state = "suspended";
     this.destination = new FakeNode(this);
     this.gains = [];
     FakeAudioContext.instance = this;
@@ -88,7 +88,9 @@ class FakeAudioContext {
   createBuffer(_channels, length) {
     return { getChannelData: () => new Float32Array(length) };
   }
-  resume() {}
+  async resume() {
+    this.state = "running";
+  }
 }
 
 globalThis.window = { AudioContext: FakeAudioContext };
@@ -96,7 +98,7 @@ globalThis.window = { AudioContext: FakeAudioContext };
 const { setSetting } = await import("../js/core/settings.js");
 const { unlockAudio, setUsoMood, stopBgm } = await import("../js/audio/sound.js");
 
-unlockAudio();
+assert.equal(await unlockAudio(), true);
 for (let i = 0; i < 12; i++) setUsoMood(i % 2 === 0);
 
 const context = FakeAudioContext.instance;

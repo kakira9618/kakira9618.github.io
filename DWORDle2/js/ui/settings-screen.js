@@ -5,13 +5,14 @@ import { el, clear } from "./dom.js";
 import { registerScreen, navigate } from "./app.js";
 import { getSettings, setSetting } from "../core/settings.js";
 import { importFromLocalStorage, importFromText, scanLegacyHistory } from "../core/migrate.js";
-import { exportJSON, _reload } from "../core/records.js";
+import { exportJSON } from "../core/records.js";
 import { removeKey } from "../core/store.js";
-import { checkOnEvent, getUnlocked, reconcileAchievementsFromHistory } from "../core/achievements.js";
-import { BGM_TRACKS, bgmTracksUnlockedBy, playSfx } from "../audio/sound.js";
-import { toast, achievementToast, bgmUnlockCelebration } from "./toast.js";
+import { getUnlocked } from "../core/achievements.js";
+import { BGM_TRACKS, playSfx } from "../audio/sound.js";
+import { toast } from "./toast.js";
 import { showModal, confirmModal } from "./modal.js";
 import { icon } from "./icons.js";
+import { finishHistoryImport } from "./history-import.js";
 import { APP_VERSION } from "../config.js";
 import { currentLanguage, isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js";
 
@@ -62,29 +63,6 @@ function volumeSlider(key, label) {
   return el("div", { class: "volume-control" }, input, valueEl);
 }
 
-function afterImport(added) {
-  _reload();
-  const newly = [...reconcileAchievementsFromHistory(), ...checkOnEvent("migrate")];
-  if (added > 0) {
-    toast(tr(`${added} 件のプレイ履歴を移行しました`, `Imported ${added} play ${added === 1 ? "record" : "records"}`));
-  } else if (newly.length > 0) {
-    toast(
-      tr(
-        `既存の履歴から ${newly.length} 件の実績を復元しました`,
-        `Restored ${newly.length} ${newly.length === 1 ? "achievement" : "achievements"} from existing history`
-      )
-    );
-  } else {
-    toast(tr("新しく移行できる履歴は見つかりませんでした", "No new play records were found"));
-  }
-  if (newly.length) {
-    achievementToast(newly);
-    const bgmUnlocks = bgmTracksUnlockedBy(newly);
-    if (bgmUnlocks.length) bgmUnlockCelebration(bgmUnlocks, newly.length * 700 + 3400);
-  }
-  render();
-}
-
 function showImportModal() {
   const ta = el("textarea", {
     placeholder: tr(
@@ -92,21 +70,54 @@ function showImportModal() {
       'Paste history JSON from the original games ({"version": ..., "16xxx": {...}})'
     ),
   });
-  const fileInput = el("input", { type: "file", accept: ".json,application/json" });
-  fileInput.addEventListener("change", () => {
-    const f = fileInput.files?.[0];
-    if (!f) return;
-    f.text().then((text) => {
-      ta.value = text;
-    });
-  });
-  showModal({
+  let closeModal = () => {};
+  const complete = (added) => {
+    closeModal();
+    finishHistoryImport(added);
+    render();
+  };
+  const manualImport = () => {
+    playSfx("ui");
+    if (!ta.value.trim()) {
+      toast(tr("JSON を貼り付けてください", "Paste the JSON first"));
+      return;
+    }
+    try {
+      const { added } = importFromText(ta.value);
+      complete(added);
+    } catch (e) {
+      const englishMessage = e.message === "JSON として読み取れませんでした"
+        ? "Could not parse this as JSON"
+        : e.message === "DWORDle / DWORDlie の履歴形式ではないようです"
+          ? "This does not appear to be DWORDle / DWORDlie history data"
+          : "Could not import this history data";
+      toast(tr(e.message, englishMessage));
+    }
+  };
+  closeModal = showModal({
     title: tr("旧作から履歴を移行", "Import history from original games"),
     body: [
-      el("p", { class: "hint" },
-        tr("旧 DWORDle / DWORDlie の履歴を取り込みます。", "Import your history from the original DWORDle / DWORDlie."), el("br"),
-        tr("① 同じブラウザでプレイしていた場合 →「自動検出」", "1. Played in this browser → use Auto-detect"), el("br"),
-        tr("② 履歴 JSON がある場合 → 貼り付けかファイル選択", "2. Have a history JSON file → paste it or choose the file")),
+      el(
+        "p",
+        { class: "hint" },
+        tr(
+          "旧 DWORDle / DWORDlie のプレイ履歴を、現在の DWORDle 2 の履歴にマージします。既存の履歴は上書きされません。",
+          "Merge play history from the original DWORDle / DWORDlie into your current DWORDle 2 history. Existing records are never overwritten."
+        ),
+        el("br"),
+        tr(
+          "履歴の条件を満たす実績も自動で解放されます。",
+          "Achievements supported by the imported history are unlocked automatically."
+        )
+      ),
+      el(
+        "p",
+        { class: "hint" },
+        tr(
+          "自動検出は、このブラウザに保存された旧 DWORDle と DWORDlie の両方に対応しています。",
+          "Auto-detect supports both the original DWORDle and DWORDlie histories saved in this browser."
+        )
+      ),
       el("button", {
         class: "btn btn-primary",
         style: { width: "100%" },
@@ -116,37 +127,30 @@ function showImportModal() {
             toast(tr("このブラウザに旧作の履歴が見つかりませんでした", "No history from the original games was found in this browser"));
             return;
           }
-          afterImport(importFromLocalStorage());
+          complete(importFromLocalStorage());
         },
-      }, icon("search"), tr("自動検出（このブラウザから）", "Auto-detect in this browser")),
-      ta,
-      fileInput,
+      }, icon("search"), tr("DWORDle / DWORDlie を自動検出", "Auto-detect DWORDle / DWORDlie")),
+      el(
+        "details",
+        { class: "import-json-details" },
+        el("summary", {}, tr("JSONから手動で取り込む", "Import manually from JSON")),
+        el(
+          "div",
+          { class: "import-json-body" },
+          el(
+            "p",
+            { class: "hint" },
+            tr(
+              "自動検出を使えない場合は、旧作または DWORDle 2 の履歴 JSON を貼り付けてください。",
+              "If auto-detect is unavailable, paste history JSON from an original game or DWORDle 2."
+            )
+          ),
+          ta,
+          el("button", { class: "btn", style: { width: "100%" }, onclick: manualImport }, tr("JSONを取り込む", "Import JSON"))
+        )
+      ),
     ],
-    actions: [
-      { label: tr("閉じる", "Close"), onClick: () => {} },
-      {
-        label: tr("取り込む", "Import"),
-        primary: true,
-        onClick: () => {
-          if (!ta.value.trim()) {
-            toast(tr("JSON を貼り付けてください", "Paste the JSON first"));
-            return false;
-          }
-          try {
-            const { added } = importFromText(ta.value);
-            afterImport(added);
-          } catch (e) {
-            const englishMessage = e.message === "JSON として読み取れませんでした"
-              ? "Could not parse this as JSON"
-              : e.message === "DWORDle / DWORDlie の履歴形式ではないようです"
-                ? "This does not appear to be DWORDle / DWORDlie history data"
-                : "Could not import this history data";
-            toast(tr(e.message, englishMessage));
-            return false;
-          }
-        },
-      },
-    ],
+    actions: [{ label: tr("閉じる", "Close"), primary: true, onClick: () => {} }],
   });
 }
 
@@ -244,8 +248,8 @@ function render() {
       settingRow(
         tr("BGM", "BGM"),
         tr(
-          "DWORDle / DWORDlie で再生する BGM を指定します",
-          "Choose the BGM played in DWORDle / DWORDlie"
+          "プレイ中のBGM再生のON / OFFを切り替えます",
+          "Turn BGM playback during games on or off"
         ),
         toggle("bgm")
       ),
@@ -328,6 +332,7 @@ function render() {
               "current.uso",
               "mode",
               "lastPlayedMode",
+              "legacyImportPrompted",
             ]) {
               removeKey(key);
             }

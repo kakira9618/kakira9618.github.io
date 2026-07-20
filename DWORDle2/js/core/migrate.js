@@ -7,7 +7,7 @@
 // 移行手段は 2 系統:
 //   1. 自動検出: 同一オリジン (kakira9618.github.io) に旧作がある場合、
 //      localStorage を走査して履歴らしき JSON を見つけて取り込む
-//   2. 手動: 旧作の履歴 JSON（クリップボードダンプ or ファイル）を貼り付け / 選択
+//   2. 手動: 旧作の履歴 JSON（クリップボードダンプ）を貼り付け
 
 import { addImportedGames } from "./records.js";
 
