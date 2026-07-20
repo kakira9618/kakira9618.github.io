@@ -102,9 +102,12 @@ function buildExample(mode, language) {
   const exampleTitle = el(
     "div",
     { class: "hint", style: { textAlign: "center" } },
-    isEnglish ? "Example: the two answers are" : "例: 答えがこの 2 語のとき"
+    isEnglish ? "Example answers" : "例：2 つの答え"
   );
   const caption = el("div", { class: "help-caption", "aria-live": "polite" }, "\u00a0");
+  const lieCaption = isEnglish
+    ? "Each letter gets its own lie."
+    : "文字ごとに嘘の判定をします。";
   const reactionLine = el("div", { class: "help-reaction-line", "aria-hidden": "true" });
   const box = el(
     "div",
@@ -172,11 +175,11 @@ function buildExample(mode, language) {
     const char = example.guess[guessIndex].toUpperCase();
     const stateLabel = link.state === "correct" ? (isEnglish ? "Green" : "緑") : isEnglish ? "Yellow" : "黄";
     const reason = link.state === "correct"
-      ? (isEnglish ? "same position" : "同じ位置")
-      : (isEnglish ? "different position" : "場所違い");
+      ? (isEnglish ? "same spot" : "同位置")
+      : (isEnglish ? "elsewhere" : "別位置");
     caption.textContent = isEnglish
-      ? `${stateLabel} ${char} → Word ${link.answer + 1}, letter ${link.target + 1} (${reason})`
-      : `${stateLabel}「${char}」→ Word ${link.answer + 1} の ${link.target + 1} 文字目（${reason}）`;
+      ? `${stateLabel} ${char} → Word ${link.answer + 1} #${link.target + 1} (${reason})`
+      : `${stateLabel} ${char} → Word ${link.answer + 1}・${link.target + 1} 文字目（${reason}）`;
   };
 
   const showNoMatch = (guessIndex) => {
@@ -185,15 +188,8 @@ function buildExample(mode, language) {
     answerRows.forEach((row) => row.element.classList.add("checking-absent"));
     const char = EX.guess[guessIndex].toUpperCase();
     caption.textContent = isEnglish
-      ? `Gray ${char} → not found in either Word 1 or Word 2`
-      : `灰「${char}」→ Word 1 / Word 2 のどちらにも含まれない`;
-  };
-
-  const stateLabel = (state) => {
-    const labels = isEnglish
-      ? { unused: "Gray", used: "Yellow", correct: "Green" }
-      : { unused: "灰", used: "黄", correct: "緑" };
-    return labels[state];
+      ? `Gray ${char} → neither word`
+      : `灰 ${char} → どちらの Word にもなし`;
   };
 
   // 本体と同じく、文字ごとに「本当の色以外の 2 色」からランダムに選ぶ。
@@ -201,12 +197,8 @@ function buildExample(mode, language) {
   const showLieChoice = (index, trueState, shownState) => {
     const tile = guessTiles[index];
     const choices = FEEDBACK_STATES.filter((state) => state !== trueState);
-    const char = EX.guess[index].toUpperCase();
     tile.classList.remove(...FEEDBACK_STATES, "flip", "lied");
     tile.classList.add("choosing-lie", choices[0]);
-    caption.textContent = isEnglish
-      ? `${char}: truly ${stateLabel(trueState)}. This letter independently picks ${stateLabel(choices[0])} or ${stateLabel(choices[1])}…`
-      : `${char}：本当は${stateLabel(trueState)}。この文字だけで ${stateLabel(choices[0])} / ${stateLabel(choices[1])} からランダム選択中…`;
 
     later(() => {
       tile.classList.remove(choices[0]);
@@ -220,9 +212,6 @@ function buildExample(mode, language) {
       tile.classList.remove(...choices, "choosing-lie");
       void tile.offsetWidth;
       tile.classList.add("flip", shownState, "lied");
-      caption.textContent = isEnglish
-        ? `${char}: this time, its random lie is ${stateLabel(shownState)}`
-        : `${char}：今回はランダムに「${stateLabel(shownState)}」の嘘を選択`;
     }, 470);
   };
 
@@ -243,7 +232,7 @@ function buildExample(mode, language) {
   function resetPrimaryExample() {
     clearReaction();
     box.classList.remove("showing-all-green");
-    exampleTitle.textContent = isEnglish ? "Example: the two answers are" : "例: 答えがこの 2 語のとき";
+    exampleTitle.textContent = isEnglish ? "Example answers" : "例：2 つの答え";
     setAnswerWords(EX);
     guessTiles.forEach((tile) => {
       tile.textContent = "";
@@ -291,9 +280,7 @@ function buildExample(mode, language) {
       const lieResult = drawIllustrativeLies();
       later(() => {
         clearReaction();
-        caption.textContent = isEnglish
-          ? "Now each letter independently draws one of its two false colors…"
-          : "ここから文字ごとに、本当の色以外の 2 色から独立に抽選…";
+        caption.textContent = lieCaption;
       }, reactionDone + 180);
       const lieStart = reactionDone + 620;
       lieResult.forEach((shownState, index) => {
@@ -305,9 +292,6 @@ function buildExample(mode, language) {
       const lieDone = lieStart + TIMING.lieChoiceMs * lieResult.length;
       later(() => {
         guessTiles.forEach((tile) => tile.classList.remove("choosing-lie"));
-        caption.textContent = isEnglish
-          ? "Both O tiles were truly green, but their independent random lies are different."
-          : "2 つの O はどちらも本当は緑。でも文字ごとの独立抽選で、別の嘘になりました。";
       }, lieDone);
       later(playPrimaryExample, lieDone + TIMING.holdMs);
     } else {
@@ -319,8 +303,8 @@ function buildExample(mode, language) {
     clearReaction();
     box.classList.add("showing-all-green");
     exampleTitle.textContent = isEnglish
-      ? "Another example: five green tiles, but not solved"
-      : "別の例：全部緑でも正解にならない場合";
+      ? "Example: all green, not solved"
+      : "例：全部緑でも未正解";
     setAnswerWords(ALL_GREEN_EX);
     guessTiles.forEach((tile) => {
       tile.textContent = "";
@@ -364,8 +348,8 @@ function buildExample(mode, language) {
     later(() => {
       clearReaction();
       caption.textContent = isEnglish
-        ? "Each position matches Word 1 or Word 2, so every tile is green."
-        : "各位置が Word 1 / 2 のどちらかと一致するため、判定は全部緑。";
+        ? "Each tile matches one word → all green"
+        : "各文字がどちらかと一致 → 全部緑";
     }, reactionDone);
     later(() => {
       box.animate(
@@ -378,8 +362,8 @@ function buildExample(mode, language) {
         { duration: 280, easing: "ease-out" }
       );
       caption.textContent = isEnglish
-        ? "But BLOCK is neither ABOUT nor BLACK, so the game continues."
-        : "ただし BLOCK は ABOUT / BLACK のどちらでもないため、ゲーム続行。";
+        ? "Not either answer → keep playing"
+        : "どちらの答えでもない → 続行";
     }, reactionDone + 1250);
     later(
       () => switchExample(playPrimaryExample),
@@ -444,8 +428,8 @@ function localizedBody(mode, language) {
         "p",
         { class: "help-lie-callout" },
         isEnglish
-          ? "Each letter independently picks a random false color"
-          : "文字ごとに、本当の色以外から独立してランダムに嘘を選びます"
+          ? "Each letter gets its own lie"
+          : "文字ごとに嘘の判定をします"
       ),
       buildExample("uso", language),
       el(

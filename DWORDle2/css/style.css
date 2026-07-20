@@ -1432,8 +1432,10 @@ body.theme-cyber .rcell.correct { color: #04120b; }
 }
 .help-caption {
   min-height: 20px;
+  width: 100%;
   text-align: center;
-  font-size: 13px;
+  white-space: nowrap;
+  font-size: clamp(10.5px, 3.2vw, 13px);
   font-weight: 700;
   color: var(--fg-dim);
 }
@@ -1468,8 +1470,9 @@ body.theme-cyber .rcell.correct { color: #04120b; }
 .help-lie-callout {
   color: #ff5577;
   font-weight: 800;
-  font-size: 16px;
+  font-size: clamp(14px, 4vw, 16px);
   text-align: center;
+  white-space: nowrap;
 }
 .answer-tile {
   position: relative;
