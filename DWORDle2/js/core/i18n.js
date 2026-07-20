@@ -70,7 +70,7 @@ const ACHIEVEMENT_EN = {
   "h-mirror": ["Mirror Word", "Guess a palindrome"],
   "h-phantom": ["Phantom Answer", "Get five green tiles with a word that is not an answer"],
   "h-anagram": ["Anagram Magic", "Guess an anagram of your previous Guess"],
-  "h-alphabet": ["Alphabet Marathon", "Use at least 20 different letters in one game"],
+  "h-alphabet": ["Alphabet Marathon", "Clear in 5 or more Guesses with every word chained from the previous word's last letter"],
   "h-noreuse": ["No Repeats", "Clear in 3 or more Guesses without reusing any letter"],
   "h-zorome": ["Repeating Digits", "Clear a puzzle with a repeating-digit No., such as 111 or 7777"],
   "h-uso-green": ["All-Green Lie", "Get five displayed green tiles in DWORDlie"],

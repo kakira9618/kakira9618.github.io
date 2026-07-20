@@ -38,6 +38,27 @@ function clearRecord({
 }
 
 {
+  const chainedClear = clearRecord({ pid: 1, guesses: 5 });
+  chainedClear.guessWord = ["about", "tears", "spare", "equip", "point"];
+  const ids = achievementIdsFromHistory([chainedClear]);
+  assert(ids.has("h-alphabet"), "a clear with 5 chained Guess words should restore Alphabet Marathon");
+}
+
+{
+  const tooShort = clearRecord({ pid: 1, guesses: 4 });
+  tooShort.guessWord = ["tears", "spare", "equip", "point"];
+  const brokenChain = clearRecord({ pid: 1, guesses: 5 });
+  brokenChain.guessWord = ["about", "tears", "crane", "equip", "point"];
+  const uncleared = clearRecord({ pid: 1, guesses: 5 });
+  uncleared.guessWord = ["about", "tears", "spare", "equip", "point"];
+  uncleared.clear = false;
+
+  assert(!achievementIdsFromHistory([tooShort]).has("h-alphabet"), "fewer than 5 chained Guesses must not restore Alphabet Marathon");
+  assert(!achievementIdsFromHistory([brokenChain]).has("h-alphabet"), "a broken Guess chain must not restore Alphabet Marathon");
+  assert(!achievementIdsFromHistory([uncleared]).has("h-alphabet"), "a chained loss must not restore Alphabet Marathon");
+}
+
+{
   const games = Array.from({ length: 5 }, (_, index) =>
     clearRecord({ mode: "uso", startTime: 1_700_000_000 + index * 100 })
   );

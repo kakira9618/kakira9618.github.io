@@ -22,7 +22,7 @@ import { isDailyPID, PID } from "./problems.js";
 import { totalWins, totalPlays, currentWinStreak, dailyClearStreak, getHistory } from "./records.js";
 import { CELL, Logic } from "./logic.js";
 
-const RECONCILE_VERSION = 1;
+const RECONCILE_VERSION = 2;
 
 export const ACHIEVEMENTS = [
   // --- 入門 ---
@@ -67,7 +67,7 @@ export const ACHIEVEMENTS = [
   { id: "h-mirror", hidden: true, icon: "mirror", color: "#c0e8ff", name: "鏡の言葉", desc: "回文になっている単語を Guess する" },
   { id: "h-phantom", hidden: true, icon: "ghost", color: "#baffc9", name: "幻の正解", desc: "正解ではない単語を Guess して、全部緑を出す" },
   { id: "h-anagram", hidden: true, icon: "shuffle", color: "#ffd8a0", name: "並べ替えの妙", desc: "直前の Guess のアナグラム（同じ文字構成の別単語）を Guess する" },
-  { id: "h-alphabet", hidden: true, icon: "type", color: "#a0c8ff", name: "アルファベットマラソン", desc: "1 ゲームで 20 種類以上の文字を使う" },
+  { id: "h-alphabet", hidden: true, icon: "type", color: "#a0c8ff", name: "アルファベットマラソン", desc: "すべての Guess をしりとりでつなぎ、5 手以上でクリアする" },
   { id: "h-noreuse", hidden: true, icon: "ban", color: "#e8c0ff", name: "潔癖症", desc: "3 手以上のクリアで、全 Guess を通して同じ文字を 2 度使わない" },
   { id: "h-zorome", hidden: true, icon: "dice", color: "#ffe8a0", name: "ゾロ目コレクター", desc: "ゾロ目の No.（111, 7777, 22222 など）をクリアする" },
   { id: "h-uso-green", hidden: true, icon: "sparkle", color: "#8fffd0", name: "全緑の嘘", desc: "DWORDlie で表示が 5 つとも緑になる Guess を出す" },
@@ -105,6 +105,18 @@ function isPalindrome(w) {
 
 function isAnagram(a, b) {
   return a !== b && [...a].sort().join("") === [...b].sort().join("");
+}
+
+function isGuessWordChain(words) {
+  if (!Array.isArray(words) || words.length < 5) return false;
+  return words.every((word, index) => {
+    if (typeof word !== "string" || word.length === 0) return false;
+    if (index === 0) return true;
+    const previous = words[index - 1];
+    return typeof previous === "string"
+      && previous.length > 0
+      && previous[previous.length - 1].toLowerCase() === word[0].toLowerCase();
+  });
 }
 
 function isZorome(pid) {
@@ -194,7 +206,6 @@ export function achievementIdsFromHistory(records) {
       if (word && isPalindrome(word)) ids.add("h-mirror");
       if (turn > 0 && isAnagram(record.guessWord[turn - 1], word)) ids.add("h-anagram");
     }
-    if (lettersUsed.size >= 20) ids.add("h-alphabet");
     if (
       mode === "uso" &&
       Array.isArray(record.usoResults) &&
@@ -254,6 +265,7 @@ export function achievementIdsFromHistory(records) {
     }
 
     if (isZorome(pid)) ids.add("h-zorome");
+    if (isGuessWordChain(record.guessWord)) ids.add("h-alphabet");
     if (guesses >= 3 && lettersUsed.size === guesses * 5) ids.add("h-noreuse");
 
     winStreak[mode]++;
@@ -319,7 +331,6 @@ export function checkOnGameFinish(ctx) {
     if (t > 0 && isAnagram(record.guessWord[t - 1], w)) unlock("h-anagram", newly);
   }
   const lettersUsed = new Set(record.guessWord.join(""));
-  if (lettersUsed.size >= 20) unlock("h-alphabet", newly);
   if (isUso && Array.isArray(record.usoResults)) {
     if (record.usoResults.some((row) => row.every((s) => s === CELL.CORRECT))) {
       unlock("h-uso-green", newly);
@@ -370,6 +381,7 @@ export function checkOnGameFinish(ctx) {
 
     // 隠し（クリア時のみ）
     if (isZorome(pid)) unlock("h-zorome", newly);
+    if (isGuessWordChain(record.guessWord)) unlock("h-alphabet", newly);
     if (!isUso && pid >= PID.HARD_MIN && pid <= PID.HARD_MAX && guesses <= 4) unlock("h-abyss", newly);
     if (guesses >= 3 && durationSec <= 20) unlock("h-lightning", newly);
     if (guesses >= 3 && lettersUsed.size === guesses * 5) unlock("h-noreuse", newly);
