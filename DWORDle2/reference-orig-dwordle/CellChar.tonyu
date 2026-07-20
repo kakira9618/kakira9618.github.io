@@ -1,0 +1,17 @@
+extends StyledText;
+
+var defaultSize;
+var parent;
+
+\onAppear() {
+    defaultSize = size;
+}
+
+while(1) {
+    x = parent.x;
+    y = parent.y + $screenP;
+    if (defaultSize * parent.scaleX > 0) {
+        size = floor(defaultSize * parent.scaleX);
+    }
+    update();
+}

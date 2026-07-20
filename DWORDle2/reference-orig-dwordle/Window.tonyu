@@ -1,0 +1,55 @@
+var tmW, tmH;
+var mW, mH;
+var modal;
+var t;
+var prevState;
+
+\onAppear() {
+    tmW = $screenWidth - 40 * $screenP;
+    tmH = $Game.gameArea.height - 50 * $screenP;
+    mW = 0;
+    mH = 0;
+    t = 0;
+    popUpWindow();
+}
+
+\closeCondition() {
+    return t > 30 && $touches[0].touched;
+}
+
+function popUpWindow() {
+    modal = new Actor({
+        x: 20 * $screenP,
+        y: 80 * $screenP,
+        width: 0,
+        height: 0,
+        fillStyle: color(0, 0, 0),
+        layer: $frontLayer,
+        alpha: 200,
+        align: "left top",
+        lifeKeeper: this,
+    });
+    
+    var modalMHLhandle = $MHL.register(modal, "pointer", 200);
+    on("die") \() {
+        $MHL.unregister(modalMHLhandle);
+    };
+}
+
+function move() {
+    mW = 0.85 * mW + 0.15 * tmW;
+    mH = 0.85 * mH + 0.15 * tmH;
+    modal.width = mW;
+    modal.height = mH;
+    
+    if (closeCondition()) {
+        $gameState = prevState;
+        die();
+    }
+    t++;
+}
+
+while(1) {
+    move();
+    update();
+}

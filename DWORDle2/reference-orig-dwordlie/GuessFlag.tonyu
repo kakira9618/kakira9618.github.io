@@ -1,0 +1,30 @@
+var t;
+var r;
+
+\onAppear() {
+    t = 0;
+    r = 20 * $screenP;
+    p = -1;
+}
+
+\draw(ctx) {
+    drawLineWithThickness(ctx, 2 * $screenP, x, y - r, x, y + r * 0.66, "white");
+    drawLineWithThickness(ctx, 2 * $screenP, x - r / 4, y + r * 0.66, x + r / 4, y + r * 0.66, "white");
+    drawLineWithThickness(ctx, 2 * $screenP, x, y - r, x + r * cos(t), y - r / 2 + r * sin(t) * 0.5, "white");
+    drawLineWithThickness(ctx, 2 * $screenP, x, y, x + r * cos(t), y - r / 2 + r * sin(t) * 0.5, "white");
+}
+
+function drawLineWithThickness(ctx, thickness, sx, sy, dx, dy, fillStyle) {
+    ctx.lineWidth = thickness;
+    ctx.strokeStyle = fillStyle;
+    
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    ctx.lineTo(dx, dy);
+    ctx.stroke();
+}
+
+while (1) {
+    t++;
+    update();
+}

@@ -1,0 +1,83 @@
+var titleText;
+var cregitText;
+var versionText;
+var noticeText;
+
+\onAppear() {
+    // title text
+    titleText = new StyledLabel{
+        x: $screenWidth / 2,
+        y: 120 * $screenP,
+        size: 70 * $screenP,
+        text: "DWORDlie",        
+        fontName: "Helvetica Neue",
+        style: "bold",
+        align: "center middle",
+        lifeKeeper: this,
+        zOrder: 1
+    };
+    
+    new StyledLabel{
+        x: $screenWidth / 2,
+        y: 140 * $screenP,
+        size: 200 * $screenP,
+        text: "嘘",        
+        fontName: "Helvetica Neue",
+        fillStyle: "rgb(200, 0, 0)",
+        style: "bold",
+        align: "center middle",
+        lifeKeeper: this,
+        zOrder: 10
+    };
+    
+    new StyledLabel{
+        x: $screenWidth / 2,
+        y: 25 * $screenP,
+        size: 20 * $screenP,
+        text: "う　そ　ぴ　ょ　ん",        
+        fontName: "Helvetica Neue",
+        fillStyle: "rgb(200, 0, 0)",
+        style: "bold",
+        align: "center middle",
+        lifeKeeper: this,
+        zOrder: 10
+    };
+    
+    // cregit
+    cregitText = new StyledLabel{
+        x: $screenWidth / 2,
+        y: 170 * $screenP,
+        size: 20 * $screenP,
+        style: "bold",
+        text: "by @kakira9618",
+        align: "center middle",
+        lifeKeeper: this,
+        zOrder: 1
+    };
+    
+    // version text
+    versionText = new Label {
+        x: $screenWidth,
+        y: $screenHeight,
+        size: 20 * $screenP,
+        template: "version $version",
+        align: "right bottom",
+        lifeKeeper: this,
+        zOrder: 1
+    };
+    
+    // notice text
+    noticeText = new Label {
+        x: $screenWidth / 2,
+        y: $screenHeight / 2,
+        size: 20 * $screenP,
+        template: "if you see this, \nplease reload page",
+        align: "middle center",
+        lifeKeeper: this,
+        zOrder: 1
+    };
+}
+
+while (true) {
+    update();
+}

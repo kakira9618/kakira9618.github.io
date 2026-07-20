@@ -1,0 +1,38 @@
+var r;
+var p;
+
+\onAppear() {
+    p = -1;
+    r = 10 * $screenP;
+    $MHL.register(this);
+}
+
+\getCrashRect() {
+    return {x, y, width: 30 * $screenP, height: 30 * $screenP};
+}
+
+\draw(ctx) {
+    drawRectEx(ctx, x - r, y - r / 2, 2 * r / 3, 3 * r / 2, "white", 2 * $screenP);
+    drawRectEx(ctx, x - r + 2 * r / 3, y - r, 2 * r / 3, 2 * r, "white", 2 * $screenP);
+    drawRectEx(ctx, x - r + 4 * r / 3, y - r / 6, 2 * r / 3, 7 * r / 6, "white", 2 * $screenP);
+}
+
+function drawRectEx(ctx, x, y, w, h, col, lineWidth, fill) {
+    ctx.beginPath();
+    ctx.lineWidth = lineWidth;
+    ctx.fillStyle = col;
+    ctx.rect(x, y, w, h);
+    if (fill) ctx.fill(); else ctx.stroke();
+}
+
+while (1) {
+    var t = findTouch();
+    if ($gameState == "guess" && t) {
+        $gameState = "stat";
+        
+        var statWindow = new StatWindow{};
+        $MHL.register(statWindow, "pointer", 200);
+    }
+    
+    update();
+}

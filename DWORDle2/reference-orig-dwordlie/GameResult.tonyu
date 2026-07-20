@@ -1,0 +1,238 @@
+
+var t;
+var tmW;
+var tmH;
+var mW;
+var mH;
+var guessResultHistory;
+var usoGuessResultHistory;
+var guessWord;
+var modal;
+var title;
+var ansText1, ansText2;
+var l1tx, l2tx;
+var l1tW, l2tW;
+var tty;
+var lineEffect1, lineEffect2;
+
+\onAppear() {
+    t = 0;
+    tmW = $screenWidth - 40 * $screenP;
+    tmH = $screenHeight - 80 * $screenP - 230 * $screenP;
+    mW = 0;
+    mH = 0;
+    UIinit();
+}
+
+function UIinit() {
+    modal = new Actor({
+        x: 20 * $screenP,
+        y: 80 * $screenP,
+        width: $screenWidth - 40 * $screenP,
+        height: $screenHeight - 80 * $screenP - 200 * $screenP,
+        fillStyle: color(0, 0, 0),
+        layer: $frontLayer,
+        alpha: 200,
+        align: "left top",
+        lifeKeeper: this,
+    });
+    
+    var modalMHLhandler = $MHL.register(modal, "auto", 200);
+    modal.on("die") \() {
+        $MHL.unregister(modalMHLhandler);
+    };
+    
+    tty = modal.y + 60 * $screenP;
+    title = new StyledText({
+        x: $screenWidth / 2,
+        y: modal.y + modal.height / 2,
+        fontName: "Helvetica Neue",
+        style: "bold",
+        text: $gameResult == "gameClear" ? "GAME CLEAR" : "GAME OVER",
+        size: 40 * $screenP,
+        layer: $frontLayer,
+        lifeKeeper: this,
+    });
+    
+    ansText1 = new Actor({
+        x: 90 * $screenP,
+        y: modal.y + 150 * $screenP,
+        text: "",
+        size: 20 * $screenP,
+        layer: $frontLayer,
+        align: "left middle",
+        lifeKeeper: this,
+    });
+    
+    ansText2 = new Actor({
+        x: 90 * $screenP,
+        y: modal.y + 220 * $screenP,
+        text: "",
+        size: 20 * $screenP,
+        layer: $frontLayer,
+        align: "left middle",
+        lifeKeeper: this,
+    });
+    
+    l1tx = 0;
+    l1tW = 0;
+    lineEffect1 = new Actor({
+        x: $screenWidth,
+        y: title.y - 40 * $screenP,
+        width: $screenWidth,
+        height: 2 * $screenP,
+        fillStyle: color(255, 255, 255),
+        layer: $frontLayer,
+        align: "left top",
+        lifeKeeper: this,
+    });
+    
+    l2tx = $screenWidth;
+    l2tW = $screenWidth;
+    lineEffect2 = new Actor({
+        x: 0,
+        y: title.y + 40 * $screenP,
+        width: 0,
+        height: 2 * $screenP,
+        fillStyle: color(255, 255, 255),
+        layer: $frontLayer,
+        align: "left top",
+        lifeKeeper: this,
+    });
+}
+
+function handleShareButton() {
+    var shareText = "";
+    var tweetSeed = $Util.isDailyPID($logic.seed) ? "Daily" : "No." + $logic.seed;
+    if ($gameResult == "gameClear") {
+        shareText = "[嘘] DWORDlie " + tweetSeed + " " + usoGuessResultHistory.length + "/" + $guessCountMax + "\n\n";
+    } else {
+        shareText = "[嘘] DWORDlie " + tweetSeed + " X/" + $guessCountMax + "\n\n";
+    }
+    for (var i = 0; i < usoGuessResultHistory.length; i++) {
+        var usoGuess = usoGuessResultHistory[i];
+        var guess = guessResultHistory[i];
+        for (var j = 0; j < 5; j++) {
+            if (usoGuess[j] == "unused") {
+                shareText += "⬜";
+            } else if (usoGuess[j] == "used") {
+                shareText += "🟨";
+            } else if (usoGuess[j] == "correct") {
+                shareText += "🟩";
+            }
+        }
+        shareText += "\n";
+    }
+    shareText += "\n";
+    if ($gameResult == "gameClear") {
+        shareText += "You guessed Word " + $logic.matchWordNo(guessWord) + "!\n";
+    }
+    $WebPage.openShareTweet(shareText);
+}
+
+function handleRetryButton() {
+    loadPage(Main);
+}
+
+while (1) {
+    mW = 0.85 * mW + 0.15 * tmW;
+    mH = 0.85 * mH + 0.15 * tmH;
+    modal.width = mW;
+    modal.height = mH;
+    
+    lineEffect1.x = 0.85 * lineEffect1.x + 0.15 * l1tx;
+    lineEffect2.width = 0.85 * lineEffect2.width + 0.15 * l2tW;
+    
+    if (t > 90) {
+        lineEffect1.width = 0.85 * lineEffect1.width + 0.15 * l1tW;
+        lineEffect2.x = 0.85 * lineEffect2.x + 0.15 * l2tx;
+        
+        title.y = 0.95 * title.y + 0.05 * tty;
+    }
+    if (t == 110) {
+        ansText1.text = "Word 1: ";
+        for (var i = 0; i < 5; i++) {
+            new StyledText{
+                x: 210 * $screenP + 45 * i * $screenP,
+                y: ansText1.y,
+                size: 30 * $screenP,
+                fontName: "Helvetica Neue",
+                style: "bold",
+                text: $logic.ans1.toUpperCase()[i],
+                layer: $frontLayer,
+                align: "center middle",
+                lifeKeeper: this,
+            };
+        }
+        
+        if (guessWord == $logic.ans1) {
+            new GuessFlag{
+                x: ansText1.x - 35 * $screenP,
+                y: ansText1.y,
+                layer: $frontLayer,
+            };
+        }
+    }
+    if (t == 130) {
+        ansText2.text = "Word 2: ";
+        for (var i = 0; i < 5; i++) {
+            new StyledText{
+                x: 210 * $screenP + 45 * i * $screenP,
+                y: ansText2.y,
+                size: 30 * $screenP,
+                fontName: "Helvetica Neue",
+                style: "bold",
+                text: $logic.ans2.toUpperCase()[i],
+                layer: $frontLayer,
+                align: "center middle",
+                lifeKeeper: this,
+            };
+            
+        }
+        
+        if (guessWord == $logic.ans2) {
+            new GuessFlag{
+                x: ansText2.x - 35 * $screenP,
+                y: ansText2.y,
+                layer: $frontLayer,
+                lifeKeeper: this,
+            };
+        }
+    }
+    
+    if (t == 150) {
+        new RoundedButton {
+            left: 100 * $screenP, 
+            top: modal.y + 290 * $screenP, 
+            width: $screenWidth - 200 * $screenP, 
+            height: 30 * $screenP, 
+            text: "Share on Twitter",
+            fontName: "Helvetica Neue",
+            style: "bold", 
+            padding: 5 * $screenP,
+            fillStyle: color(0, 172, 238),
+            onClick: handleShareButton,
+            lifeKeeper: this,
+            round: 5 * $screenP,
+            mhlZ: 250
+        };
+        
+        new RoundedButton {
+            left: 100 * $screenP, 
+            top: modal.y + 330 * $screenP, 
+            width: $screenWidth - 200 * $screenP, 
+            height: 30 * $screenP, 
+            text: "Retry", 
+            fontName: "Helvetica Neue",
+            style: "bold", 
+            padding: 5 * $screenP,
+            fillStyle: color(106, 170, 100),
+            onClick: handleRetryButton,
+            lifeKeeper: this,
+            round: 5 * $screenP,
+            mhlZ: 250
+        };
+    }
+    t++;
+    update();
+}

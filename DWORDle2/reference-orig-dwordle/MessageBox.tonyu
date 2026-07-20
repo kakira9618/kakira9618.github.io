@@ -1,0 +1,44 @@
+var innerText;
+var t;
+
+\onAppear() {
+    innerText = new StyledText{
+        x: x,
+        y: y,
+        size: 20 * $screenP,
+        fontName: "Helvetica Neue",
+        style: "bold",
+        text: text,
+        layer: $frontLayer,
+        align: "center middle",
+        lifeKeeper: this,
+    };
+    t = 0;
+    alpha = 1;
+}
+
+\draw(ctx) {
+    ctx.fillStyle = "#787c7e" + Number(floor(alpha)).toString(16);
+    if (ctx.fillStyle[0] == "#") return;
+    if (ctx.fillStyle[5] == "2") return;
+    $Util.roundedRect(ctx, x - width / 2, y - height / 2, width, height, 5 * $screenP, true);
+}
+
+function changeText(text) {
+    innerText.text = text;
+    t = 0;
+}
+
+while (1) {
+    if (t <= 10) {
+        alpha += 200.0 / 10;
+        if (alpha > 200) alpha = 200;
+    } else if (t >= 180) {
+        alpha -= 200.0 / 20;
+        if (alpha < 0) alpha = 0;
+    }
+    innerText.alpha = alpha;
+    if (t > 200) die();
+    t++;
+    update();
+}

@@ -1,0 +1,90 @@
+native parseInt;
+
+var messageBox;
+
+function roundedRect(ctx, x, y, width, height, radius, fill) {
+    ctx.beginPath();
+    
+    ctx.moveTo(x, y + radius);
+    ctx.lineTo(x, y + height - radius);
+    ctx.arcTo(x, y + height, x + radius, y + height, radius);
+    ctx.lineTo(x + width - radius, y + height);
+    ctx.arcTo(x + width, y + height, x + width, y + height - radius, radius);
+    ctx.lineTo(x + width, y + radius);
+    ctx.arcTo(x + width, y, x + width - radius, y, radius);
+    ctx.lineTo(x + radius, y);
+    ctx.arcTo(x, y, x, y + radius, radius);
+    if (fill) ctx.fill(); else {
+        ctx.lineWidth = $screenP;
+        ctx.stroke();
+    }
+}
+
+function pointOn(t, x, y) {
+    var r = t.getCrashRect();
+    var sx = r.x - r.width / 2;
+    var tx = r.x + r.width / 2;
+    var sy = r.y - r.height / 2;
+    var ty = r.y + r.height / 2;
+    return x >= sx && x <= tx && y >= sy && y <= ty;
+}
+
+function getFontString(fontSize, fontName, style) {
+    if (!style) style = ""; else style += " ";
+    return style + fontSize + "px " + fontName;
+}
+
+function getTime() {
+    return floor(new Date().getTime() / 1000);
+}
+
+function getToday() {
+    return floor(getTime() / (24 * 60 * 60)) * (24 * 60 * 60);
+}
+
+function getTodayInteger() {
+    var d = new Date();
+    
+    var year = d.getFullYear();
+    var month = d.getMonth() + 1;
+    var day = d.getDate();
+    var month_f = ("00" + month).slice(-2);
+    var day_f = ("00" + day).slice(-2);
+    
+    return parseInt(year + month_f + day_f);
+}
+
+function getDateString(unixTime) {
+    var d = new Date(unixTime * 1000);
+    return d.toLocaleDateString();
+}
+
+function calcDays(dateString1, dateString2) {
+    var d1 = new Date(dateString1);
+    var d2 = new Date(dateString2);
+    return (d2 - d1) / 86400000;
+}
+
+function isDailyPID(pID) {
+    return pID > 1000000;
+}
+
+function isValidPID(pID) {
+    return !(pID == null || pID < 0 || pID > 19999);
+}
+
+
+function popUpMessageBox(text) {
+    if (!messageBox || messageBox.isDead()) {
+        messageBox = new MessageBox{
+            x: $screenWidth / 2,
+            y: $screenHeight / 2 + 125 * $screenP,
+            width: $screenWidth / 2,
+            height: 30 * $screenP,
+            text: text,
+            layer: $frontLayer
+        };
+    } else {
+        messageBox.changeText(text);
+    }
+}

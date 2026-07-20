@@ -1,0 +1,37 @@
+native Math;
+
+var r;
+
+\onAppear() {
+    r = 10 * $screenP;
+    $MHL.register(this);
+}
+
+\getCrashRect() {
+    return {x, y, width: 30 * $screenP, height: 30 * $screenP};
+}
+
+\draw(ctx) {
+    super.draw(ctx);
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, 2 * Math.PI, true);
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 2 * $screenP;
+    ctx.stroke();
+}
+
+function canOpenWindow() {
+    var t = findTouch();
+    return ($gameState == "guess" || 
+    ($gameState == "finish" && $Game.gameResultWindow && $Game.gameResultWindow.state == "closing")) && t;
+}
+
+while (1) {
+    if (canOpenWindow()) {
+        var helpWindow = new HelpWindow{prevState: $gameState};
+        $MHL.register(helpWindow, "pointer", 200);
+        $gameState = "help";
+    }
+    
+    update();
+}

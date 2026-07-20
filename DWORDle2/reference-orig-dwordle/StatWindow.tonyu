@@ -1,0 +1,142 @@
+
+extends Window;
+var stats;
+var rects, freqTexts;
+var maxFreq;
+
+\onAppear() {
+    super.onAppear();
+    stats = $RecordManager.getStatistics();
+    UIinit();
+}
+
+function UIinit() {
+    new Actor({
+        x: $screenWidth / 2,
+        y: 130 * $screenP,
+        text: "Statistics",
+        align: "center middle",
+        size: 40 * $screenP,
+        layer: $frontLayer,
+        lifeKeeper: this,
+    });
+    
+    var labelTexts = ["Played", "Win %", "Current\nStreak", "Max\nStreak"];
+    
+    for (var i = 0; i < 4; i++) {
+        var text = labelTexts[i];
+        new Actor({
+            x: $screenWidth / 2 - 145 * $screenP + 100 * $screenP * i,
+            y: 240 * $screenP,
+            text: text,
+            align: "center middle",
+            size: 15 * $screenP,
+            layer: $frontLayer,
+            lifeKeeper: this,
+        });
+    }
+    
+    var valueTexts = [
+    stats.count, 
+    stats.count != 0 ? floor(100.0 * stats.win / stats.count + 0.5) : 0,
+    stats.currentStreak,
+    stats.maxStreak,
+    ];
+    
+    for (var i = 0; i < 4; i++) {
+        var text = valueTexts[i];
+        new Actor({
+            x: $screenWidth / 2 - 145 * $screenP + 100 * $screenP * i,
+            y: 200 * $screenP,
+            text: text,
+            align: "center middle",
+            size: 40 * $screenP,
+            layer: $frontLayer,
+            lifeKeeper: this,
+        });
+    }
+    
+    new Actor({
+        x: $screenWidth / 2,
+        y: 300 * $screenP,
+        text: "Guess Distribution",
+        align: "center middle",
+        size: 20 * $screenP,
+        layer: $frontLayer,
+        lifeKeeper: this,
+    });
+    
+    maxFreq = 0;
+    for (var i = 1; i <= $guessCountMax; i++) {
+        maxFreq = max(maxFreq, stats.hist[i]);
+    }
+    
+    if (maxFreq == 0) {
+        new StyledText{
+            x: $screenWidth / 2,
+            y: 390 * $screenP,
+            text: "- No data available -",
+            size: 15 * $screenP,
+            fontName: "Helvetica Neue",
+            align: "center bottom",
+            layer: $frontLayer,
+            lifeKeeper: this,
+        };
+        return;
+    }
+    
+    rects = [];
+    freqTexts = [];
+    for (var i = 1; i <= $guessCountMax; i++) {
+        rects.push(new Actor({
+            x: $screenWidth / 2 - 140 * $screenP + 30 * $screenP * (i - 1),
+            y: 440 * $screenP,
+            width: 25 * $screenP,
+            height: 0,
+            heightT: 5 * $screenP + 100 * $screenP * (1.0 * stats.hist[i] / maxFreq),
+            fillStyle: $styles.box["correct"]["background"],
+            align: "center bottom",
+            layer: $frontLayer,
+            lifeKeeper: this,
+        }));
+        freqTexts.push(new StyledText({
+            x: rects[i - 1].x,
+            y: rects[i - 1].y,
+            text: stats.hist[i],
+            size: 15 * $screenP,
+            fontName: "Helvetica Neue",
+            align: "center bottom",
+            layer: $frontLayer,
+            lifeKeeper: this,
+        }));
+        
+        new StyledText({
+            x: rects[i - 1].x,
+            y: rects[i - 1].y + 10 * $screenP,
+            text: i,
+            size: 15 * $screenP,
+            fontName: "Helvetica Neue",
+            style: "bold",
+            align: "center middle",
+            layer: $frontLayer,
+            lifeKeeper: this,
+        });
+    }
+}
+
+function move() {
+    super.move();
+    if (maxFreq != 0) {
+        for (var rect of rects) {
+            rect.height = 0.95 * rect.height + 0.05 * rect.heightT;
+        }
+        for (var i = 0; i < $guessCountMax; i++) {
+            freqTexts[i].y = rects[i].y - rects[i].height - 5 * $screenP;
+        }
+    }
+}
+
+while(1) {
+    move();
+    update();
+}

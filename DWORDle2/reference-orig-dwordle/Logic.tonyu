@@ -1,0 +1,113 @@
+var allWordsListHash;
+var wordList;
+var ans1, ans2;
+var ans1ind, ans2ind;
+var prevx;
+var seed;
+
+\onAppear() {
+    allWordsListHash = {};
+    wordList = new WordList{seed: seed};
+    for (var word in wordList.allWordsList) {
+        allWordsListHash[word] = 1;
+    }
+    pickAns(seed);
+}
+
+function debugWordsInsert(char1, char2) {
+    var N = 5;
+    for (var i = 0; i < 1 << N; i++) {
+        var word = "";
+        for(var j = 0; j < N; j++) {
+            if (i >> j & 1) {
+                word += char1;
+            } else {
+                word += char2;
+            }
+        }
+        wordList.allWordsList.push(word);
+    }
+}
+
+function resetSeed(newseed) {
+    var N = wordList.candWordsList.length;
+    var temp = wordList.candWordsList[N - 1]; 
+    wordList.candWordsList[N - 1] = ans1; 
+    wordList.candWordsList[ans1ind] = temp;
+    
+    wordList.setList(newseed);
+    prevx = newseed;
+    pickAns(newseed);
+}
+
+function getNextInt(N) {
+    var ret = prevx * 48271 % N;
+    prevx = ret;
+    return ret;
+}
+
+// pick distinct words at random
+function pickAns(seed) {
+    prevx = seed;
+    
+    var N = wordList.candWordsList.length;
+    ans1ind = getNextInt(N);
+    ans1 = wordList.candWordsList[ans1ind];
+    
+    // swap
+    var temp = wordList.candWordsList[N - 1]; 
+    wordList.candWordsList[N - 1] = ans1; 
+    wordList.candWordsList[ans1ind] = temp;
+    
+    ans2ind = getNextInt(N - 1);
+    ans2 = wordList.candWordsList[ans2ind];
+    
+    // print("ans1: ", ans1); // for debug
+    // print("ans2: ", ans2); // for debug
+}
+
+function isValidWord(word) {
+    if (!allWordsListHash[word]) return false;
+    return true;
+}
+
+function queryWord(word) {
+    var result = ["unused", "unused", "unused", "unused", "unused"];
+    var flags = [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0]];
+    
+    for (var i = 0; i < 5; i++) {
+        if (word[i] == ans1[i] || word[i] == ans2[i]) {
+            result[i] = "correct";
+            if (word[i] == ans1[i]) flags[0][i] = 1;
+            else if (word[i] == ans2[i]) flags[1][i] = 1;
+        }
+    }
+    
+    for (var i = 0; i < 5; i++) {
+        if (result[i] == "correct") continue;
+        for (var j = 0; j < 5; j++) {
+            if (i == j) continue;
+            
+            if (flags[0][j] == 0 && word[i] == ans1[j]) {
+                result[i] = "used";
+                flags[0][j] = 1;
+                break;
+            } else if (flags[1][j] == 0 && word[i] == ans2[j]) {
+                result[i] = "used";
+                flags[1][j] = 1;
+                break;
+            }
+        }
+    }
+    return result;
+}
+
+function isGameClear(word) {
+    return word == ans1 || word == ans2;
+}
+
+function matchWordNo(word) {
+    if (word == ans1) return 1;
+    if (word == ans2) return 2;
+    return 0;
+}

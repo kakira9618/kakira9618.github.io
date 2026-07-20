@@ -1,0 +1,66 @@
+var trot;
+var tscaleX;
+var t;
+var state;
+var vx;
+var tx, ty;
+var styles;
+
+var dispChar;
+
+\onAppear() {
+    p = -1;
+    trot = 0;
+    tscaleX = 1.0;
+    t = 1;
+    state = "guessing"; // "unused", "used", "correct"
+    vx = 0;
+    styles = $styles.box;
+    dispChar = new CellChar{
+        x: x, 
+        y: y, 
+        text: " ", 
+        size: 30 * $screenP, 
+        fontName: "Helvetica Neue",
+        style: "bold",
+        fillStyle: color(0, 0, 0), 
+        layer: $backLayer,
+        parent: this
+    };
+}
+
+function changeChar(c) {
+    if (!dispChar) return -1;
+    dispChar.text = c.toUpperCase();
+    scaleX = 1.2;
+    rot = 10;
+    return 0;
+}
+
+function changeState(newState) {
+    state = newState;
+    rot = -720;
+    t = -15;
+    scaleX = -1.0;
+}
+
+while (1) {
+    var rot = 0.95 * rot + 0.05 * trot;
+    rotation = rot;
+    
+    scaleX = 0.05 * tscaleX + 0.95 * scaleX;
+    if ($gameState != "miss") {
+        x = 0.90 * x + 0.10 * tx;
+        y = 0.90 * y + 0.10 * ty;
+    } else {
+        vx += (x - tx) * -0.4;
+        vx *= 0.90;
+        x += vx;
+    }
+    if (t == 0) {
+        fillStyle = styles[state]["background"];
+        dispChar.fillStyle = styles[state]["text"];
+    }
+    t++;
+    update();
+}

@@ -1,0 +1,472 @@
+native window;
+
+var gameInfo;
+
+var activeCells;
+var alphabets;
+var buttonObjects;
+var titleBar;
+var helpIcon;
+var statIcon;
+var scrollManager;
+var keyboardArea;
+var seedText;
+var gameArea;
+var guessResultHistory;
+var usoGuessResultHistory;
+
+var inputIndex;
+var nextOpenIndex;
+var buttonStates;
+var scrollMaxY;
+
+var result;
+var usoResult;
+var t;
+
+\onAppear() {
+    result = [];
+    usoResult = [];
+    t = 0;
+    
+    inputIndex = 0;
+    nextOpenIndex = 0;
+    
+    activeCells = [];
+    guessResultHistory = [];
+    usoGuessResultHistory = [];
+    buttonObjects = {};
+    
+    buttonStates = {};
+    alphabets = "abcdefghijklmnopqrstuvwxyz";
+    for (var c of alphabets) {
+        buttonStates[c] = "guessing";
+    }
+    
+    $gameState = "guess"; // "miss", "checking", "finish", "help", "stat"
+    $gameResult = "game"; // "gameClear", "gameOver"
+    
+    // global variables for label
+    $guessCount = 0;
+    $guessCountMax = 15;
+    $problemID = 0;
+    
+    //$Main = this;
+    $Game = this;
+    $styles = new Styles{};
+    $MHL = new MouseHoverListener{};
+    
+    // wheel event
+    window.onmousewheel = \(event){
+        handleWheel(event);
+    };
+    
+    UIinit();
+    genNewCells();
+    applyButtonStyles(buttonStates);
+}
+
+function handleWheel(event) {
+    if ($gameState == "guess") {
+        scrollManager.setScrollMode("auto");
+        scrollManager.setScrollP(0.80);
+        scrollManager.scroll(-event.wheelDelta * 0.2);
+    }
+}
+
+function UIinit() {
+    var buttonData = [
+    {text: "q", left: 20 * $screenP, top: $screenHeight - 180 * $screenP},
+    {text: "w", left: 60 * $screenP, top: $screenHeight - 180 * $screenP},
+    {text: "e", left: 100 * $screenP, top: $screenHeight - 180 * $screenP}, 
+    {text: "r", left: 140 * $screenP, top: $screenHeight - 180 * $screenP},
+    {text: "t", left: 180 * $screenP, top: $screenHeight - 180 * $screenP},
+    {text: "y", left: 220 * $screenP, top: $screenHeight - 180 * $screenP}, 
+    {text: "u", left: 260 * $screenP, top: $screenHeight - 180 * $screenP},
+    {text: "i", left: 300 * $screenP, top: $screenHeight - 180 * $screenP},
+    {text: "o", left: 340 * $screenP, top: $screenHeight - 180 * $screenP}, 
+    {text: "p", left: 380 * $screenP, top: $screenHeight - 180 * $screenP}, 
+            
+    {text: "a", left: 40 * $screenP, top: $screenHeight - 120 * $screenP},
+    {text: "s", left: 80 * $screenP, top: $screenHeight - 120 * $screenP},
+    {text: "d", left: 120 * $screenP, top: $screenHeight - 120 * $screenP}, 
+    {text: "f", left: 160 * $screenP, top: $screenHeight - 120 * $screenP},
+    {text: "g", left: 200 * $screenP, top: $screenHeight - 120 * $screenP},
+    {text: "h", left: 240 * $screenP, top: $screenHeight - 120 * $screenP}, 
+    {text: "j", left: 280 * $screenP, top: $screenHeight - 120 * $screenP},
+    {text: "k", left: 320 * $screenP, top: $screenHeight - 120 * $screenP},
+    {text: "l", left: 360 * $screenP, top: $screenHeight - 120 * $screenP}, 
+            
+    {text: "z", left: 60 * $screenP, top: $screenHeight - 60 * $screenP},
+    {text: "x", left: 100 * $screenP, top: $screenHeight - 60 * $screenP},
+    {text: "c", left: 140 * $screenP, top: $screenHeight - 60 * $screenP}, 
+    {text: "v", left: 180 * $screenP, top: $screenHeight - 60 * $screenP},
+    {text: "b", left: 220 * $screenP, top: $screenHeight - 60 * $screenP},
+    {text: "n", left: 260 * $screenP, top: $screenHeight - 60 * $screenP}, 
+    {text: "m", left: 300 * $screenP, top: $screenHeight - 60 * $screenP},
+    ];
+    
+    // char button
+    for (var button in buttonData) {
+        buttonObjects[button.text] = new RoundedButton{
+            top: button.top - 5 * $screenP, 
+            left: button.left - 12 * $screenP, 
+            width: 30 * $screenP + 5 * $screenP, 
+            height: 50 * $screenP + 5 * $screenP, 
+            text: button.text.toUpperCase(), 
+            fontName: "Helvetica Neue",
+            style: "bold",
+            padding: 15 * $screenP,
+            fillStyle: $styles.box[buttonStates[button.text]]["background"],
+            strokeStyle: $styles.box[buttonStates[button.text]]["text"],
+            clickedStyle: $styles.box[buttonStates[button.text]]["clicked"],
+            onClick: handleCharKey,
+            key: button.text,
+            round: 5 * $screenP
+        };
+    }
+    
+    // Backspace Button
+    new RoundedButton{
+        top: $screenHeight - 180 * $screenP - 5 * $screenP, 
+        left: 420 * $screenP - 2 * $screenP, 
+        width: 40 * $screenP, 
+        height: 50 * $screenP + 5 * $screenP, 
+        text: "←", 
+        padding: 11 * $screenP,
+        fillStyle: "white",
+        clickedStyle: "gray",
+        onClick: handleDelete,
+        key: "bs",
+        round: 5 * $screenP
+    };
+    
+    // Enter Button
+    new RoundedButton{
+        top: $screenHeight - 60 * $screenP - 5 * $screenP, 
+        left: 400 * $screenP, 
+        width: 60 * $screenP, 
+        height: 50 * $screenP + 5 * $screenP, 
+        text: "Enter", 
+        fontName: "Helvetica Neue",
+        style: "bold",
+        padding: 20 * $screenP,
+        fillStyle: "white",
+        clickedStyle: "gray",
+        onClick: handleEnter,
+        key: "enter",
+        round: 5 * $screenP
+    };
+    
+    // title bar
+    titleBar = new Actor{
+        x: 0,
+        y: 0,
+        width: $screenWidth,
+        height: 50 * $screenP,
+        fillStyle: "black",
+        alpha: 200,
+        zOrder: 10,
+        layer: $frontLayer,
+        align: "left top"
+    };
+    
+    // title text
+    new StyledText{
+        x: $screenWidth / 2,
+        y: 18 * $screenP,
+        text: "DWORDlie",
+        fontName: "Helvetica Neue",
+        style: "bold",
+        size: 25 * $screenP,
+        color: color(255, 255, 255),
+        layer: $frontLayer,
+    };
+    
+    // guess counter
+    new Label{
+        x: $screenWidth / 2,
+        y: 40 * $screenP,
+        template: "$guessCount  / $guessCountMax",
+        size: 15 * $screenP,
+        color: color(255, 255, 255),
+        layer: $frontLayer,
+    };
+    
+    // help Icon
+    helpIcon = new HelpIcon{
+        x: 25 * $screenP,
+        y: 25 * $screenP,
+        text: "?",
+        size: 15 * $screenP,
+        color: color(255, 255, 255),
+        layer: $frontLayer,
+        align: "center middle"
+    };
+    
+    // stat Icon
+    statIcon = new StatIcon{
+        x: 75 * $screenP,
+        y: 25 * $screenP,
+        layer: $frontLayer,
+        align: "center middle"
+    };
+    
+    // keyboard area
+    keyboardArea = new Actor{
+        x: 0,
+        y: $screenHeight - 200 * $screenP,
+        width: $screenWidth,
+        height: 200 * $screenP,
+        fillStyle: "black",
+        alpha: 200,
+        zOrder: 10,
+        layer: $frontLayer,
+        align: "left top"
+    };
+    
+    gameArea = new Actor{
+        x: 0,
+        y: titleBar.height,
+        width: $screenWidth,
+        height: $screenHeight - titleBar.height - keyboardArea.height,
+        fillStyle: "white",
+        alpha: 0,
+        align: "left top",
+        layer: $frontLayer,
+    };
+    var gameAreaMHLhandler = $MHL.register(gameArea, "grab");
+    gameArea.on("touch") \(touchEvent) {
+        $MHL.change(gameAreaMHLhandler, "grabbing");
+        var f = touchEvent.finger;
+        f.on("end") \(endEvent) {
+            $MHL.change(gameAreaMHLhandler, "grab");
+        };
+    };
+    
+    // seed text
+    var seedTextTemplate = "No. $logic.seed";
+    if ($Util.isDailyPID($logic.seed)) {
+        seedTextTemplate = "Daily";
+    }
+    seedText = new Label{
+        x: $screenWidth - 10 * $screenP,
+        y: 15 * $screenP,
+        template: seedTextTemplate,
+        size: 20 * $screenP,
+        align: "right top",
+        layer: $frontLayer
+    };
+    
+    
+    $MHL.register(seedText);
+    seedText.on("touch") \() {
+        if (seedText.template == seedTextTemplate) {
+            seedText.template = "No. ????";
+        } else {
+            seedText.template = seedTextTemplate;
+        }
+    };
+    
+    scrollManager = new ScrollManager{
+        x:0,
+        y:titleBar.height,
+        width: $screenWidth,
+        height: $screenHeight - titleBar.height - keyboardArea.height,
+        fillStyle: "white",
+        alpha: 0,
+        layer: $frontLayer,
+        align: "left top"
+    };
+    
+    $gameState = "help";
+    var helpWindow = new HelpWindow{};
+    $MHL.register(helpWindow, "pointer", 200);
+}
+
+
+function genNewCells() {
+    activeCells = [];
+    for (var i = 0; i < 5; i++) {
+        var scrollY = scrollManager.getScrollY();
+        t = rnd(360); var r = ($screenHeight + scrollY) * 2;
+        var sx = $screenWidth / 2 + r * cos(t);
+        var sy = ($screenHeight + scrollY) / 2 + r * sin(t);
+        var rot = rnd(1000) - 500;
+        activeCells.push(new Cell{
+            x:sx, 
+            y:sy, 
+            tx:$screenWidth / 2 + (i - 2) * 60 * $screenP, 
+            ty:130 * $screenP + $guessCount * 70 * $screenP,
+            rot: rot,
+            width: 50 * $screenP, 
+            height:50 * $screenP, 
+            fillStyle: "white",
+            zOrder: 15,
+        });
+    }
+    $guessCount++;
+    scrollMaxY = max(0, activeCells[0].ty - 420 * $screenP);
+    scrollManager.setScrollRange(scrollMaxY);
+    scrollManager.smoothScrollTo(scrollMaxY, 0.95);
+    t = -60;
+}
+
+function getGuessWord() {
+    word = "";
+    for(var cell in activeCells) {
+        word += cell.dispChar.text;
+    }
+    return word.toLowerCase();
+}
+
+function handleCharKey(button) {
+    if ($gameState != "guess") return;
+    scrollManager.smoothScrollTo(scrollMaxY, 0.95);
+    
+    if (inputIndex <= 4) {
+        var ret = activeCells[inputIndex].changeChar(button.text);
+        if (ret == 0) inputIndex++;
+    }
+}
+
+function handleEnter() {
+    if ($gameState != "guess") return;
+    if (t <= 0) return;
+    scrollManager.smoothScrollTo(scrollMaxY, 0.95);
+    
+    if (inputIndex != 5) {
+        missInit("not_enough_letters");
+        return;
+    }
+    
+    word = getGuessWord();
+    if (!$logic.isValidWord(word)) {
+        missInit("not_in_word_list");
+        return;
+    }
+
+    result = $logic.queryWord(word);
+    usoResult = result.map(\(x) {return usoConvert(x);});
+    gameInfo.guessWord.push(word);
+    gameInfo.usoResults.push(usoResult);
+    $RecordManager.saveHistory(gameInfo);
+    guessResultHistory.push(result);
+    usoGuessResultHistory.push(usoResult);
+    
+    $gameState = "checking";
+
+    t = 0; nextOpenIndex = 0;
+}
+
+function getResultPriority(resultState) {
+    var priority = {
+        "guessing": 0,
+        "unused": 1,
+        "used": 2,
+        "correct": 3,
+    };
+    return priority[resultState];
+}
+
+function usoConvert(state) {
+    if (state == "guessing") return "guessing";
+    var f = {
+        "unused": 1,
+        "used": 2,
+        "correct": 3,
+    };
+    var v = f[state], r = 0;
+    do {
+        r = rnd(3) + 1; // 1, 2, 3
+    } while(v == r);
+    return ["", "unused", "used", "correct"][r];
+}
+
+function applyButtonStyle(char, state) {
+    buttonObjects[char].fillStyle = $styles.box[state]["background"];
+    buttonObjects[char].strokeStyle = $styles.box[state]["text"];
+    buttonObjects[char].clickedStyle = $styles.box[state]["clicked"];
+}
+
+function applyButtonStyles(buttonStates) {
+    for (var c of alphabets) {
+        applyButtonStyle(c, buttonStates[c]);
+    }
+}
+
+function missInit(reason) {
+    for (var i = 0; i < 5; i++) {
+        activeCells[i].x -= 10;
+    }
+    t = -40;
+    if (reason == "not_enough_letters") {
+        $Util.popUpMessageBox("Not enough letters");
+    } else if (reason == "not_in_word_list") {
+        $Util.popUpMessageBox("Not in word list");
+    }
+    $gameState = "miss";
+}
+
+function handleDelete() {
+    if ($gameState != "guess") return;
+    scrollManager.smoothScrollTo(scrollMaxY, 0.95);
+    if (inputIndex >= 1) {
+        inputIndex--;
+        activeCells[inputIndex].changeChar(" ");
+    }
+}
+
+while(1) {
+    if ($gameState == "miss") {
+        if (t == 0) {
+            scrollManager.setScrollMode("auto");
+            $gameState = "guess";
+        }
+    } else if ($gameState == "checking") {
+        if (t % 10 == 0) {
+            if (nextOpenIndex < 5) {
+                activeCells[nextOpenIndex].changeState(usoResult[nextOpenIndex]);
+                var word = getGuessWord();
+                var c = word[nextOpenIndex];
+                
+                applyButtonStyle(c, buttonStates[c]);
+                
+                nextOpenIndex++;
+            } else if (t >= 70) {
+                if ($logic.isGameClear(getGuessWord())) {
+                    $gameState = "finish";
+                    $gameResult = "gameClear";
+                    gameInfo.complete = true;
+                    gameInfo.endTime = $Util.getTime();
+                    $RecordManager.saveHistory(gameInfo);
+                    t = -10;
+                } else if ($guessCount == $guessCountMax) {
+                    $gameState = "finish";
+                    $gameResult = "gameOver";
+                    gameInfo.complete = true;
+                    gameInfo.endTime = $Util.getTime();
+                    $RecordManager.saveHistory(gameInfo);
+                    t = -10;
+                } else {
+                    $gameState = "guess";
+                    inputIndex = 0;
+                    genNewCells();
+                }
+            }
+        }
+    } else if ($gameState == "finish") {
+        if (t == 0) {
+            new GameResult{
+                layer: $frontLayer, 
+                guessWord: getGuessWord(),
+                guessResultHistory: guessResultHistory,
+                usoGuessResultHistory: usoGuessResultHistory,
+            };
+            // if ($gameResult == "gameClear") print("GAME CLEAR!"); // for debug
+            // if ($gameResult == "gameOver") print("GAME OVER!"); // for debug
+        }
+    }
+    t++;
+    update();
+}

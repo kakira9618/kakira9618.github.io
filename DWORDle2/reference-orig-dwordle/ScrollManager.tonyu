@@ -1,0 +1,120 @@
+native Math;
+
+var prevMaxY;
+var prevScrollY;
+
+var scrollTY;
+var scrollBar;
+var scrollY;
+var scrollVY;
+var scrollp;
+var scrollMaxY;
+var scrollMode;
+
+\onAppear() {
+    prevMaxY = 0;
+    prevScrollY = 0;
+    scrollTY = 0;
+    scrollY = 0;
+    scrollVY = 0;
+    scrollp = 0.95;
+    scrollMaxY = 0;
+    scrollMode = "auto"; // "manual"
+    
+    // scroll Bar
+    scrollBar = new ScrollBar{
+        sx: $screenWidth - 10 * $screenP,
+        sy: y + 5 * $screenP,
+        dx: $screenWidth - 5 * $screenP,
+        dy: y + height - 5 * $screenP,
+        contentH: height,
+        layer: $frontLayer,
+        scrollManager: this,
+    };
+}
+
+function getScrollY() {
+    return scrollY;
+}
+
+function scroll(delta) {
+    scrollTY += delta;
+    if (scrollTY < 0) scrollTY = 0;
+    if (scrollTY > scrollMaxY) scrollTY = scrollMaxY;
+}
+
+function setScrollMode(mode) {
+    scrollMode = mode;
+}
+
+function setScrollRange(maxY) {
+    scrollMaxY = maxY;
+}
+
+function smoothScrollTo(ty, p) {
+    scrollTY = ty;
+    scrollp = p;
+    scrollMode = "auto";
+}
+
+function setScrollP(p) {
+    scrollp = p;
+}
+
+function isScrollable(px, py) {
+    return $Util.pointOn(this, px, py);
+}
+
+function isResponsible() {
+    return $gameState == "guess" || 
+    ($gameState == "finish" && $Game.gameResultWindow && $Game.gameResultWindow.state == "closing");
+}
+
+while(1) {
+    if (floor(prevMaxY + 0.5) != floor(scrollMaxY + 0.5) || floor(prevScrollY + 0.5) != floor(scrollY + 0.5)) {
+        scrollBar.popUp();
+    }
+    prevMaxY = scrollMaxY;
+    prevScrollY = scrollY;
+    
+    if (scrollMode == "auto") {
+        scrollY = scrollp * scrollY + (1 - scrollp) * scrollTY;
+    } else {
+        var maxSY = scrollMaxY;
+        if (isResponsible() && $touches[0].touched > 0) {
+            scrollBar.popUp();
+            var nextSY = scrollY + scrollVY;
+            if (nextSY < 0) {
+                var c = Math.exp((-0.01 * $screenP * (1 + abs(nextSY - 0))));
+                scrollVY = -$touches[0].vy * c;
+            } else if (nextSY > maxSY) {
+                var c = Math.exp((-0.01 * $screenP * (1 + abs(nextSY - maxSY))));
+                scrollVY = -$touches[0].vy * c;
+            } else {
+                scrollVY = -$touches[0].vy;
+            }
+        } else {
+            scrollVY *= 0.95;
+        }
+        scrollY += scrollVY;
+        scrollTY = scrollY;
+        if (isResponsible() && $touches[0].touched == 0) {
+            if (scrollY < 0 || scrollY > maxSY) {
+                if (scrollY < 0) scrollTY = 0;
+                else if (scrollY > maxSY) scrollTY = maxSY;
+                scrollMode = "auto";
+                scrollp = 0.88;
+            }
+        }
+    }
+    
+    if (isResponsible()) {
+        if (scrollMode == "auto" && $touches[0].vy != 0 && isScrollable($touches[0].x, $touches[0].y)) {
+            scrollMode = "manual";
+            scrollBar.popUp();
+        }
+    }
+    $Screen.scrollTo(0, scrollY);
+    update();
+}
+

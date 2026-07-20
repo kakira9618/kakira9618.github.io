@@ -1,0 +1,54 @@
+var t;
+var sx, sy, dx, dy;
+var contentH;
+var scrollManager;
+
+\onAppear() {
+    t = 1000;
+    alpha = 0;
+    x = sx;
+    y = sy;
+    width = dx - sx;
+    height = dy - sy;
+}
+
+\draw(ctx) {
+    ctx.fillStyle = "#ffffff" + Number(floor(alpha)).toString(16);
+    if (ctx.fillStyle[0] == "#") return;
+    $Util.roundedRect(ctx, x, y, width, height, 3 * $screenP, true);
+}
+
+function calc() {
+    if (($gameState == "finish" && $Game.gameResultWindow && $Game.gameResultWindow.state == "showing")) {
+        alpha -= 20;
+        if (alpha < 0) alpha = 0;
+    } else {
+        if (t < 90) alpha = 254;
+        else alpha -= 5;
+        if (alpha < 0) alpha = 0;
+    }
+    
+    var scrollableH = scrollManager.scrollMaxY;
+    if (scrollManager.scrollY >= 0 && scrollManager.scrollY <= scrollableH) {
+        height = (dy - sy) * contentH / (contentH + scrollableH);
+        y = sy + ((dy - sy) - height) * (scrollManager.scrollY / scrollableH);
+    } else {
+        if (scrollManager.scrollY < 0) {
+            y = sy;
+        } else {
+            y = dy - height;
+        }
+    }
+}
+
+function popUp() {
+    if (scrollManager.scrollMaxY > 0) {
+        t = 0;
+    }
+}
+
+while (1) {
+    calc();
+    t++;
+    update();
+}

@@ -1,0 +1,157 @@
+native Set;
+native JSON;
+native navigator;
+var historyFile;
+var allHistory;
+var logic;
+var playedHash;
+
+
+function loadHistory() {
+    historyFile = file("history.json");
+    if (historyFile.exists()) {
+        allHistory = historyFile.obj();
+    } else {
+        allHistory = {version: $version};
+    }
+    playedHash = {};
+    for (var time, game in allHistory) {
+        if (time == "version") continue;
+        playedHash[game.problemID] = 1;
+    }
+}
+
+function dumpHistory() {
+    if (navigator.clipboard) {
+        return navigator.clipboard.writeText(JSON.stringify(allHistory, null, 2)).then(\(){
+            print("Successed to copy the history file to the clipboard.");
+        });
+    } else {
+        print("Failed to copy the history file to the clipboard.");
+    }
+}
+
+function deleteHistory() {
+    historyFile.obj({});
+}
+
+function saveHistory(game) {
+    allHistory[game.startTime] = game;
+    playedHash[game.problemID] = 1;
+    historyFile.obj(allHistory);
+}
+
+function findOnGoingGame() {
+    return {
+        version: $version,
+        startTime: $Util.getTime(), 
+        gameMode: "uso",
+        problemID: -1,
+        complete: false,
+        guessWord: [],
+        usoResults: [],
+    };
+}
+
+function printGame(game) {
+    print("startTime", game.startTime);
+    print("gameMode", game.gameMode);
+    print("problemID", game.problemID);
+    print("complete", game.complete);
+    print("guessWord", game.guessWord);
+}
+
+function printAllGame() {
+    for (var k, v of allHistory) {
+        print(k);
+        printGame(v);
+    }
+}
+
+function getGameWithDetail(game) {
+    var retGame = game;
+    
+    logic.resetSeed(game.problemID);
+    
+    var N = game.guessWord.length;
+    var clear = logic.isGameClear(game.guessWord[N - 1]);
+    var guessResultHistory = game.guessWord.map(\(word){
+        return logic.queryWord(word);
+    });
+    retGame.detail = {
+        clear,
+        guessResultHistory,
+    };
+    return retGame;
+}
+
+function isAlreadyPlayed(pID) {
+    return playedHash[pID] == 1 ? true : false;
+}
+
+function isWin(game) {
+    if (game.detail) {
+        return game.detail.clear;
+    }
+    game = getGameWithDetail(game);
+    saveHistory(game);
+    return game.detail.clear;
+}
+
+function getStatistics() {
+    var count = 0, win = 0;
+    
+    logic = new Logic{seed: 0};
+    var times = [];
+    var hist = {};
+    
+    for (var i = 1; i <= $guessCountMax; i++) {
+        hist[i] = 0;
+    }
+    for (var time, game in allHistory) {
+        if (time == "version") continue;
+        if (game.complete) {
+            count++;
+            times.push(game.startTime);
+        }
+        if (game.complete && getGameWithDetail(game).detail.clear) {
+            win++;
+            hist[game.guessWord.length]++;
+        }
+    }
+    if (count == 0) {
+        return {
+            count: 0,
+            win: 0,
+            currentStreak: 0,
+            maxStreak: 0,
+            hist: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        };
+    }
+    times = Array.from(new Set(times.sort().map(\(t) {return $Util.getDateString(t);})));
+
+    var currentStreak = 1, maxStreak = 1;
+    var prevt = times[0];
+    for (var i = 1; i < times.length; i++) {
+        var t = times[i];
+        if ($Util.calcDays(prevt, t) < 2) {
+            currentStreak++;
+        } else {
+            currentStreak = 1;
+        }
+        maxStreak = max(maxStreak, currentStreak);
+        prevt = t;
+    }
+    var ret = {
+        count,
+        win,
+        currentStreak,
+        maxStreak,
+        hist
+    };
+    return ret;
+}
+
+\onAppear() {
+    loadHistory();
+}

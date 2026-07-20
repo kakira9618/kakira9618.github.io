@@ -1,0 +1,83 @@
+extends Window;
+native window;
+
+var lang;
+
+\onAppear() {
+    super.onAppear();
+    lang = window.navigator.language;
+    UIinit();
+}
+
+\UIinit() {
+    
+    new Actor({
+        x: $screenWidth / 2,
+        y: 130 * $screenP,
+        text: "Rules",
+        align: "center middle",
+        size: 40 * $screenP,
+        layer: $frontLayer,
+        lifeKeeper: this,
+    });
+    var sentenceSize = lang == "ja" ? 18 : 15;
+    
+    var desc1_ja = "基本的には「wordle」とルールは同じですが、\n正解単語が「2つ」あります";
+    var desc1_en = "The rules are the same as the original \"wordle\",\n\n But there are *two* correct words in this game.";
+    var desc1_dy = lang == "ja" ? 0 : 0;
+    
+    new Actor({
+        x: $screenWidth / 2,
+        y: 200 * $screenP + desc1_dy * $screenP,
+        text: lang == "ja" ? desc1_ja : desc1_en,
+        align: "center middle",
+        size: sentenceSize * $screenP,
+        layer: $frontLayer,
+        lifeKeeper: this,
+    });
+    
+    var desc2_ja = "10回以内の試行で、\n2つの正解単語の「どちらか」を当ててください";
+    var desc2_en = "You must guess *either* of them within 10 tries.";
+    var desc2_dy = lang == "ja" ? 0 : 10;
+    new Actor({
+        x: $screenWidth / 2,
+        y: 270 * $screenP + desc2_dy * $screenP,
+        text: lang == "ja" ? desc2_ja : desc2_en,
+        align: "center middle",
+        size: sentenceSize * $screenP,
+        layer: $frontLayer,
+        lifeKeeper: this,
+    });
+    
+    var desc3_ja = "緑・黄判定は片方の正解単語についての情報です\n灰判定の場合は、文字が両方共に存在しません";
+    var desc3_en = "Green and Yellow show info about *either* of them. \n\nGray means the char is not present in *both* words.";
+    var desc3_dy = lang == "ja" ? 0 : -10;
+    new Actor({
+        x: $screenWidth / 2,
+        y: 340 * $screenP + desc3_dy * $screenP,
+        text: lang == "ja" ? desc3_ja : desc3_en,
+        align: "center middle",
+        size: sentenceSize * $screenP,
+        layer: $frontLayer,
+        lifeKeeper: this,
+    });
+    
+    var desc4_ja = "全部緑であっても正解単語とは限りません\n(その場合ゲーム続行となります)";
+    var desc4_en = "All green doesn't always mean correct guess. \n\n(In this case, the game will continue.) ";
+    var desc4_dy = lang == "ja" ? 0 : -10;
+    
+    new Actor({
+        x: $screenWidth / 2,
+        y: 410 * $screenP + desc4_dy * $screenP,
+        text: lang == "ja" ? desc4_ja : desc4_en,
+        align: "center middle",
+        size: sentenceSize * $screenP,
+        layer: $frontLayer,
+        lifeKeeper: this,
+    });
+}
+
+while(1) {
+    move();
+    update();
+}

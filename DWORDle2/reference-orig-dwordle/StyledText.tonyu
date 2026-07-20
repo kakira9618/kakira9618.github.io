@@ -1,0 +1,13 @@
+var fontName;
+var style;
+
+\draw(ctx) {
+    var fontTemp = ctx.font;
+    ctx.font = $Util.getFontString(size, fontName, style);
+    super.draw(ctx);
+    ctx.font = fontTemp;
+}
+
+while(1) {
+    update();
+}

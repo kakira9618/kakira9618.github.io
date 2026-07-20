@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#05070f">
+<title>DWORDle 2 | 答えが2つある Wordle</title>
+<meta name="description" content="DWORDle 2 | 答えが2つある Wordle 強化版。10手以内に「どちらか」を当てればあなたの勝利！">
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.min.js" } }
+</script>
+</head>
+<body class="theme-cyber mode-normal">
+
+<canvas id="bg3d"></canvas>
+
+<div id="app">
+  <section id="screen-title" class="screen"></section>
+  <section id="screen-game" class="screen"></section>
+  <section id="screen-result" class="screen"></section>
+  <section id="screen-history" class="screen"></section>
+  <section id="screen-problems" class="screen"></section>
+  <section id="screen-achievements" class="screen"></section>
+  <section id="screen-analysis" class="screen"></section>
+  <section id="screen-settings" class="screen"></section>
+</div>
+
+<canvas id="fx3d"></canvas>
+<div id="toast-layer"></div>
+<div id="modal-layer"></div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

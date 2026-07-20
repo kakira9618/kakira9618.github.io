@@ -1,0 +1,69 @@
+/** 
+ * DWORDle by @kakira9618
+ * This program is inspired by wordle (https://www.powerlanguage.co.uk/wordle/)
+*/
+native navigator;
+native JSON;
+native document;
+native window;
+native Blob;
+
+function init() {
+    
+    $version = "1.5.5";
+    
+    $screenP = 2;
+    $Screen.setBGColor("#202020");
+    $Screen.resize(465 * $screenP, 700 * $screenP); // default: 465, 465
+    
+    $Util = new Util{};
+    
+    $RecordManager = new RecordManager{};
+    var gameInfo = $RecordManager.findOnGoingGame();
+
+    var pID = gameInfo.problemID;
+    var nextpID = 0;
+    if (pID == -1) {
+        var title = new Title();
+        var cnt = 0;
+        while (!$Util.isValidPID(pID)) {
+            pID = promptNumber({
+                title: "Start Game",
+                body: "Enter Problem No.:\nNo.00000: Daily problem\nNo.00001-09999: Easy problem\nNo.10000-19999: Hard problem"
+            }, nextpID);
+            nextpID = rnd(9999) + 1;
+            if (!(pID == 0) && !pID) {
+                pID = -1;
+            } else {
+                var searchPID = pID == 0 ? $Util.getTodayInteger() : pID;
+                if ($RecordManager.isAlreadyPlayed(searchPID)) {
+                    var msgPID = pID == 0 ? "Today's problem" : "No. " + pID;
+                    var conf = confirm({
+                        body: msgPID + " is already played. \nDo you wanna play again?",
+                        title: "Confirm",
+                    });
+                    if (!conf) pID = -1; 
+                }
+            }
+            cnt++;
+            if (cnt == 20) {
+                $RecordManager.saveDumpedHistory();
+                while(1) wait(1000);
+            }
+            if (cnt == 10) {
+                $RecordManager.dumpHistory();
+            }
+        }
+        if (pID == 0) {
+            pID = $Util.getTodayInteger();
+        }
+        gameInfo.problemID = pID;
+        $RecordManager.saveHistory(gameInfo);
+        title.die();
+    }
+    $Screen.selectLayer($backLayer);
+    $logic = new Logic{seed: gameInfo.problemID};
+    $Game = new Game{gameInfo: gameInfo};
+}
+
+init();

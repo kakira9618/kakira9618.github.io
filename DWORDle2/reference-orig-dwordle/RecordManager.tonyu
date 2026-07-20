@@ -1,0 +1,234 @@
+native Set;
+native Object;
+native JSON;
+native navigator;
+native window;
+
+var historyFile;
+var allHistory;
+var logic;
+var playedHash;
+var nextHistoryFile;
+var recentHistory;
+
+function loadHistory() {
+    playedHash = {};
+    
+    historyFile = file("history.json");
+    if (!historyFile.exists()) {
+        allHistory = {version: $version};
+    } else {
+        allHistory = {version: historyFile.obj().version};
+    }
+    
+    var cnt = 2;
+    while (1) {
+        if (historyFile.exists()) {
+            var allHistoryTemp = historyFile.obj();
+            for (var time, game in allHistoryTemp) {
+                if (time == "version") continue;
+                playedHash[game.problemID] = 1;
+                allHistory[time] = game;
+            }
+        }
+        nextHistoryFile = file("history_" + cnt + ".json");
+        if (!nextHistoryFile.exists()) break;
+        historyFile = nextHistoryFile;
+        cnt++;
+    }
+    if (historyFile.exists()) {
+        var allHistoryTemp = historyFile.obj();
+        if (Object.keys(allHistoryTemp).length >= 101) {
+            historyFile = nextHistoryFile;
+        }
+    }
+    if (historyFile.exists()) {
+        recentHistory = historyFile.obj();
+    } else {
+        recentHistory = {version: $version};
+    }
+    
+    // print(historyFile);
+    // print(Object.keys(allHistory).length);
+    // print(Object.keys(recentHistory).length);
+}
+
+function dumpHistory() {
+    if (navigator.clipboard) {
+        return navigator.clipboard.writeText(JSON.stringify(allHistory, null, 2)).then(\(){
+            print("Successed to copy the history file to the clipboard.");
+        });
+    } else {
+        print("Failed to copy the history file to the clipboard.");
+    }
+}
+
+function reDifineUIDiag() {
+    // window.UIDiag.prompt=function (mesg,value) {
+    //     var di=UI("div",{title:"入力"},["div",mesg],
+    //     ["textarea",{on:{enterkey:ok},$var:"val", value:value}],["br"],
+    //     ["button",{on:{click:ok}},"OK"],
+    //     ["button",{on:{click:cancel}},"キャンセル"]).dialog({close:function (){
+    //             di.dialog("close");
+    //             d.resolve();
+    //     }});
+    //     var d=$.Deferred();
+    //     function ok() {
+    //         var r=di.$vars.val.val();
+    //         di.dialog("close");
+    //         return d.resolve(r);
+    //     }
+    //     function cancel() {
+    //         di.dialog("close");
+    //         return d.resolve();
+    //     }
+    //     return d.promise();
+    // };
+}
+
+function saveDumpedHistory() {
+    //reDifineUIDiag();
+    waitInput("hello","aaa","{}");
+    // new HTMLUI(["div", {style:"background:white;"},
+    // ["h1", "Welcome"],
+    // ["button", {onclick: function () { print ("World");  }}, "Hello"]
+    // ],
+    // 0, 0, 1000, 1000);
+    
+}
+
+function deleteHistory() {
+    historyFile.rm();
+}
+
+function saveHistory(game) {
+    recentHistory[game.startTime] = game;
+    allHistory[game.startTime] = game;
+    playedHash[game.problemID] = 1;
+    historyFile.obj(recentHistory);
+}
+
+function findOnGoingGame() {
+    for (var time, game in allHistory) {
+        if (time == "version") continue;
+        if (game.complete == false) {
+            return game;
+        }
+        if (game.onGoing) {
+            return game;
+        }
+    }
+    return {
+        version: $version,
+        startTime: $Util.getTime(), 
+        gameMode: "normal",
+        problemID: -1,
+        complete: false,
+        onGoing: true,
+        guessWord: [],
+    };
+}
+
+function printGame(game) {
+    print("startTime", game.startTime);
+    print("gameMode", game.gameMode);
+    print("problemID", game.problemID);
+    print("complete", game.complete);
+    print("onGoing", game.onGoing);
+    print("guessWord", game.guessWord);
+}
+
+function printAllGame() {
+    for (var k, v of allHistory) {
+        print(k);
+        printGame(v);
+    }
+}
+
+function getGameWithDetail(game) {
+    var retGame = game;
+    
+    logic.resetSeed(game.problemID);
+    
+    var N = game.guessWord.length;
+    var clear = logic.isGameClear(game.guessWord[N - 1]);
+    var guessResultHistory = game.guessWord.map(\(word){
+        return logic.queryWord(word);
+    });
+    retGame.detail = {
+        clear,
+        guessResultHistory,
+    };
+    return retGame;
+}
+
+function isAlreadyPlayed(pID) {
+    return playedHash[pID] == 1 ? true : false;
+}
+
+function isWin(game) {
+    if (game.detail) {
+        return game.detail.clear;
+    }
+    game = getGameWithDetail(game);
+    saveHistory(game);
+    return game.detail.clear;
+}
+
+function getStatistics() {
+    var count = 0, win = 0;
+    
+    logic = new Logic{seed: 0};
+    var times = [];
+    var hist = {};
+    
+    for (var i = 1; i <= 10; i++) {
+        hist[i] = 0;
+    }
+    for (var time, game in allHistory) {
+        if (time == "version") continue;
+        if (game.complete) {
+            count++;
+            times.push(game.startTime);
+        }
+        if (game.complete && getGameWithDetail(game).detail.clear) {
+            win++;
+            hist[game.guessWord.length]++;
+        }
+    }
+    if (count == 0) {
+        return {
+            count: 0,
+            win: 0,
+            currentStreak: 0,
+            maxStreak: 0,
+            hist: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        };
+    }
+    times = Array.from(new Set(times.sort().map(\(t) {return $Util.getDateString(t);})));
+
+    var currentStreak = 1, maxStreak = 1;
+    var prevt = times[0];
+    for (var i = 1; i < times.length; i++) {
+        var t = times[i];
+        if ($Util.calcDays(prevt, t) < 2) {
+            currentStreak++;
+        } else {
+            currentStreak = 1;
+        }
+        maxStreak = max(maxStreak, currentStreak);
+        prevt = t;
+    }
+    var ret = {
+        count,
+        win,
+        currentStreak,
+        maxStreak,
+        hist
+    };
+    return ret;
+}
+
+\onAppear() {
+    loadHistory();
+}

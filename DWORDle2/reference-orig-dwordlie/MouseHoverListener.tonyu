@@ -1,0 +1,53 @@
+native document;
+
+var targets;
+var nextHandler;
+
+\onAppear() {
+    targets = {};
+    nextHandler = 1;
+}
+
+function mouseHover(t) {
+    return $Util.pointOn(t, $mouseX, $mouseY);
+}
+
+function mouseOnAnyObjects() {
+    return Object.values(targets)
+    .filter(\(t) {return mouseHover(t.obj);})
+    .reduce(\(ta, tb) {return ta ? (ta.z > tb.z ? ta : tb) : tb;}, undefined);
+}
+
+function register(obj, style, z) {
+    if (!style) style = "pointer";
+    if (!z) z = 100;
+    var handler = nextHandler++;
+    targets[handler] = {
+        "obj": obj,
+        "style": style,
+        "z": z,
+    };
+    return handler;
+}
+
+function unregister(handle) {
+    delete targets[handle];
+}
+
+function change(handle, style) {
+    targets[handle].style = style;
+}
+
+function changeMouseIcon(style) { // pointer, auto
+    document.getElementsByClassName('tonyu-canvas')[0].style.cursor = style;
+}
+
+while(1) {
+    var hoverOn = mouseOnAnyObjects();
+    if (hoverOn) {
+        changeMouseIcon(hoverOn.style);
+    } else {
+        changeMouseIcon("auto");
+    }
+    update();
+}

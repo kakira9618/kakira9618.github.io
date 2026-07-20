@@ -1,0 +1,34 @@
+
+{
+    "compiler": {
+        "namespace": "user",
+        "defaultSuperClass": "kernel.Actor",
+        "dependingProjects": [
+            {
+                "namespace": "kernel"
+            }
+        ],
+        "noLoopCheck": false,
+        "field_strict": true
+    },
+    "run": {
+        "mainClass": "user.Main",
+        "bootClass": "kernel.Boot",
+        "globals": {
+            "$defaultFPS": 60,
+            "$imageSmoothingDisabled": true,
+            "$soundLoadAndDecode": false
+        }
+    },
+    "plugins": {
+        "jquery_ui": 1
+    },
+    "kernelEditable": false,
+    "language": "tonyu",
+    "version": 1639557686041,
+    "social": {
+        "prjName": "dwordle",
+        "title": "dwordle",
+        "whenPrjDirExists": "selectPolicy"
+    }
+}

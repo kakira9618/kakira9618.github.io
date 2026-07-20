@@ -1,0 +1,26 @@
+var box;
+
+\onAppear() {
+    box = {
+        "guessing": {
+            "background": color(255, 255, 255),
+            "text": color(0, 0, 0),
+            "clicked": color(128, 128, 128),
+        },
+        "unused": {
+            "background": color(120, 124, 126),
+            "text": color(255, 255, 255),
+            "clicked": color(128, 128, 128),
+        },
+        "used": {
+            "background": color(201, 180, 88),
+            "text": color(255, 255, 255),
+            "clicked": color(128, 128, 128),
+        },
+        "correct": {
+            "background": color(106, 170, 100),
+            "text": color(255, 255, 255),
+            "clicked": color(128, 128, 128),
+        },
+    };
+}

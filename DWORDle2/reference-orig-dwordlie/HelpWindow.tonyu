@@ -1,0 +1,101 @@
+extends Window;
+native window;
+
+var lang;
+
+\onAppear() {
+    super.onAppear();
+    lang = window.navigator.language;
+    UIinit();
+}
+
+\UIinit() {
+    
+    new Actor({
+        x: $screenWidth / 2,
+        y: 130 * $screenP,
+        text: "Rules",
+        align: "center middle",
+        size: 40 * $screenP,
+        layer: $frontLayer,
+        lifeKeeper: this,
+    });
+    var sentenceSize = lang == "ja" ? 18 : 15;
+    
+    var desc1_ja = "基本的には「DWORDle」とルールは同じですが、";
+    var desc1_en = "The rules are the same as the \"DWORDle,";
+    var desc1_dy = lang == "ja" ? 0 : 0;
+    
+    new Actor({
+        x: $screenWidth / 2,
+        y: 200 * $screenP + desc1_dy * $screenP,
+        text: lang == "ja" ? desc1_ja : desc1_en,
+        align: "center middle",
+        size: sentenceSize * $screenP,
+        layer: $frontLayer,
+        lifeKeeper: this,
+    });
+    
+    var sentenceSize2 = lang == "ja" ? 18 : 13;
+    var desc1_5_ja = "判定時に必ず嘘を付きます";
+    var desc1_5_en = "but the result is always *not* correct.";
+    var desc1_5_dy = lang == "ja" ? 0 : 0;
+    
+    new StyledText({
+        x: $screenWidth / 2,
+        y: 200 * $screenP + desc1_5_dy * $screenP + 1.5 * sentenceSize * $screenP,
+        text: lang == "ja" ? desc1_5_ja : desc1_5_en,
+        align: "center middle",
+        fillStyle: "rgb(255, 0, 0)",
+        style: "bold",
+        size: 1.5 * sentenceSize2 * $screenP,
+        layer: $frontLayer,
+        lifeKeeper: this,
+    });
+    
+    var desc2_ja = "例): 緑はDWORDleの黄もしくは灰色を表します。";
+    var desc2_en = "Ex) A green is a yellow or a gray in DWORDle";
+    var desc2_dy = lang == "ja" ? 0 : -10;
+    new Actor({
+        x: $screenWidth / 2,
+        y: 270 * $screenP + desc2_dy * $screenP,
+        text: lang == "ja" ? desc2_ja : desc2_en,
+        align: "center middle",
+        size: sentenceSize * $screenP,
+        layer: $frontLayer,
+        lifeKeeper: this,
+    });
+    
+    var desc3_ja = "15回以内の試行で、\n2つの正解単語の「どちらか」を当ててください";
+    var desc3_en = "You must guess *either* of them within 15 tries.";
+    var desc3_dy = lang == "ja" ? 0 : 10;
+    
+    new Actor({
+        x: $screenWidth / 2,
+        y: 320 * $screenP + desc3_dy * $screenP,
+        text: lang == "ja" ? desc3_ja : desc3_en,
+        align: "center middle",
+        size: sentenceSize * $screenP,
+        layer: $frontLayer,
+        lifeKeeper: this,
+    });
+    
+    var desc4_ja = "嘘の判定は文字ごとに行われるため、\n同じ文字であっても結果が違うことがあります";
+    var desc4_en = "The judge will be made for each chars, \n\nso the results might be different among the same chars.";
+    var desc4_dy = lang == "ja" ? 0 : -10;
+    
+    new Actor({
+        x: $screenWidth / 2,
+        y: 390 * $screenP + desc4_dy * $screenP,
+        text: lang == "ja" ? desc4_ja : desc4_en,
+        align: "center middle",
+        size: sentenceSize * $screenP,
+        layer: $frontLayer,
+        lifeKeeper: this,
+    });
+}
+
+while(1) {
+    move();
+    update();
+}

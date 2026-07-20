@@ -1,0 +1,57 @@
+extends Button;
+var mhlZ;
+if (!mhlZ) mhlZ = 100;
+$MHL.register(this, "pointer", mhlZ);
+var round;
+var fontName;
+var style;
+if (!round) round = 10;
+if (!fontName) fontName = "monospace";
+if (!style) style = "";
+
+if (key) {
+    on("keyDown",key) \(keyEvent) {
+        if (disabled) return;
+        doStartClick();
+        keyEvent.on("up",doEndClick);
+    };
+}
+on("touch") \(touchEvent) {
+    if (disabled) return;
+    var f=touchEvent.finger;
+    doStartClick();
+    f.on("end",doEndClick);
+};
+\handleClickEvent() {
+    fireEvent("click");
+    if (typeof onClick==="function") onClick(this);
+}
+
+\draw(c) {
+    var e=curEffect;
+    c.globalAlpha=e.alpha/255;
+    c.fillStyle=e.fillStyle ? e.fillStyle+"" : "gray";
+    c.strokeStyle=e.strokeStyle ? e.strokeStyle+"" : "black";
+    //if (disabled) c.strokeStyle=disabledStrokeStyle+"";
+    var eleft=left, etop=top;
+    if (e.move) {
+        eleft+=e.move.x||0;
+        etop+=e.move.y||0;
+    }
+    //c.fillRect(eleft, etop, e.width, e.height);
+    //c.strokeRect(eleft, etop, e.width, e.height);
+    $Util.roundedRect(c, eleft, etop, e.width, e.height, round, true);
+    $Util.roundedRect(c, eleft, etop, e.width, e.height, round, false);
+    var size=e.height-e.padding*2;
+    //var f=c.font.replace(/^[0-9]+px /,"");
+    //c.font=size+"px "+f;//monospace";
+    var tempFont = c.font;
+    c.font = $Util.getFontString(size, fontName, style);
+    c.textBaseline="top";
+    c.fillStyle=e.strokeStyle;
+    //clicked?clickedStyle+"":
+    //disabled?disabledStrokeStyle+"":strokeStyle+"";
+    var r=c.measureText(text);
+    c.fillText(text, eleft+e.width/2-r.width/2, etop+e.padding);
+    c.font = tempFont;
+}

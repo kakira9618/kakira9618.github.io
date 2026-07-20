@@ -1,0 +1,30 @@
+native Math;
+
+var guessFlag;
+var r;
+
+\onAppear() {
+    p = -1;
+    guessFlag = new GuessFlag{
+        x: x,
+        y: y,
+        r: r,
+        move: true,
+        layer: $frontLayer,
+        lifeKeeper: this,
+    };
+    $MHL.register(this);
+}
+
+\getCrashRect() {
+    return {x, y, width: r * $screenP, height: r * $screenP};
+}
+
+while (1) {
+    var t = findTouch();
+    if ($gameState == "finish" && t) {
+        $Game.gameResultWindow.resumeWindow();
+        $MHL.register($Game.gameResultWindow, "pointer", 200);
+    }
+    update();
+}
