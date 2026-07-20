@@ -339,11 +339,11 @@ export function handlePhysicalKey(e) {
 
 function submitGuess() {
   if (inputBuffer.length !== 5) {
-    return rejectGuess(tr("文字数が足りません", "Not enough letters"));
+    return rejectGuess("Not enough letters");
   }
   const word = inputBuffer;
   if (!logic.isValidWord(word)) {
-    return rejectGuess(tr("単語リストにありません", "Not in word list"));
+    return rejectGuess("Not in word list");
   }
 
   const trueResult = logic.queryWord(word);

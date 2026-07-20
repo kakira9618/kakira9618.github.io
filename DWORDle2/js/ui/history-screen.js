@@ -57,10 +57,10 @@ function showStats() {
       el(
         "div",
         { class: "stat-metrics" },
-        el("div", {}, el("b", {}, s.count), el("div", { class: "hint" }, tr("プレイ", "Played"))),
-        el("div", {}, el("b", {}, `${winPct}%`), el("div", { class: "hint" }, tr("勝率", "Win"))),
-        el("div", {}, el("b", {}, s.currentStreak), el("div", { class: "hint" }, tr("連勝", "Streak"))),
-        el("div", {}, el("b", {}, s.maxStreak), el("div", { class: "hint" }, tr("最高", "Max")))
+        el("div", {}, el("b", {}, s.count), el("div", { class: "hint" }, "Played")),
+        el("div", {}, el("b", {}, winPct), el("div", { class: "hint" }, "Win %")),
+        el("div", {}, el("b", {}, s.currentStreak), el("div", { class: "hint" }, "Current Streak")),
+        el("div", {}, el("b", {}, s.maxStreak), el("div", { class: "hint" }, "Max Streak"))
       ),
       el(
         "div",
