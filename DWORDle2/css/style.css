@@ -284,20 +284,25 @@ body.theme-cyber .logo {
   width: 100%;
   display: flex;
   justify-content: center;
-  padding-top: 20px;
+  padding-top: 24px;
 }
 .uso-banner {
   display: none;
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: max-content;
   color: var(--accent);
   font-weight: 800;
   letter-spacing: 0.5em;
   text-shadow: var(--glow);
   font-size: 15px;
+  white-space: nowrap;
+}
+.title-brand .uso-banner {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  z-index: 1;
+  pointer-events: none;
 }
 body.mode-uso .uso-banner {
   display: block;

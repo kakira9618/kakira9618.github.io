@@ -11,7 +11,7 @@ import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "
 import { achievementToast, bgmUnlockCelebration } from "./ui/toast.js";
 
 // 画面モジュール（import するだけで registerScreen される）
-import "./ui/title-screen.js";
+import "./ui/title-screen.js?v=20260721-uso-banner";
 import "./ui/game-screen.js";
 import "./ui/result-screen.js";
 import "./ui/history-screen.js";

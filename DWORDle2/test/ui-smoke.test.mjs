@@ -103,6 +103,16 @@ try {
     normalLogoBox && usoLogoBox && Math.abs(normalLogoBox.y - usoLogoBox.y) <= 1,
     `DWORDle and DWORDlie logos should remain at the same vertical position: ${JSON.stringify({ normalLogoBox, usoLogoBox })}`
   );
+  const usoBanner = page.getByText("う そ ぴ ょ ん", { exact: true });
+  assert.equal(await usoBanner.isVisible(), true, "DWORDlie banner should be visible");
+  const usoBannerBox = await usoBanner.boundingBox();
+  assert.ok(
+    usoBannerBox && usoLogoBox
+      && usoBannerBox.y < usoLogoBox.y
+      && usoLogoBox.y >= usoBannerBox.y + usoBannerBox.height
+      && usoLogoBox.y - (usoBannerBox.y + usoBannerBox.height) <= 8,
+    `DWORDlie banner should sit immediately above the logo: ${JSON.stringify({ usoBannerBox, usoLogoBox })}`
+  );
   await page.getByRole("button", { name: "表モードへ" }).click();
   await assertNoSeriousA11yViolations("Title screen");
   const publicEntry = await page.evaluate(async () => {
