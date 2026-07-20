@@ -80,7 +80,7 @@ html,
 body {
   height: 100%;
   overscroll-behavior: none;
-  touch-action: pan-x pan-y;
+  touch-action: manipulation;
 }
 
 body {
@@ -88,6 +88,11 @@ body {
   color: var(--fg);
   font-family: var(--font-display);
   overflow: hidden;
+}
+
+#app,
+.screen {
+  touch-action: manipulation;
 }
 
 button {

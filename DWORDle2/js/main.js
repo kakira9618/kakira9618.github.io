@@ -53,6 +53,7 @@ addEventListener("keydown", unlock);
 for (const eventName of ["gesturestart", "gesturechange", "gestureend"]) {
   document.addEventListener(eventName, (event) => event.preventDefault(), { passive: false });
 }
+document.addEventListener("dblclick", (event) => event.preventDefault(), { passive: false });
 document.addEventListener("touchmove", (event) => {
   if (event.touches.length > 1) event.preventDefault();
 }, { passive: false });
