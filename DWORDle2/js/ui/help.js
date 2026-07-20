@@ -477,14 +477,21 @@ export function showFirstTutorial(mode) {
         { class: "tutorial-points" },
         point(
           "1",
+          currentLanguage() === "en" ? "Wordle with two answers" : "答えが 2 つある Wordle",
+          currentLanguage() === "en"
+            ? "Guess either answer to win."
+            : "どちらかを当てればクリアです。"
+        ),
+        point(
+          "2",
           currentLanguage() === "en" ? "Feedback checks both words" : "判定は 2 つの答えを参照",
           currentLanguage() === "en"
             ? "Green and yellow may refer to Word 1 or 2."
             : "緑・黄は、Word 1 / 2 のどちらかの情報です。"
         ),
         point(
-          "2",
-          currentLanguage() === "en" ? "All green may be unsolved" : "全部緑でも未正解",
+          "3",
+          currentLanguage() === "en" ? "All green may be unsolved" : "全部緑でも未正解の可能性",
           currentLanguage() === "en"
             ? "Match Word 1 or 2 exactly to win."
             : "入力全体が Word 1 / 2 と一致すればクリアです。"

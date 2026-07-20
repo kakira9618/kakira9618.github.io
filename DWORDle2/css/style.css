@@ -7,6 +7,7 @@
 
 :root {
   --col-w: min(500px, 100vw);
+  --app-height: 100vh;
   --header-h: 52px;
   --kbd-h: clamp(150px, 24vh, 200px);
   --tile-size: clamp(44px, min(11.5vw, 7.2vh), 62px);
@@ -130,10 +131,16 @@ body.theme-classic #fx3d {
   position: relative;
   z-index: 1;
   width: var(--col-w);
-  height: 100dvh;
+  height: 100vh;
+  height: var(--app-height, 100vh);
   margin: 0 auto;
   display: flex;
   flex-direction: column;
+}
+@supports (height: 100dvh) {
+  #app {
+    height: 100dvh;
+  }
 }
 
 .screen {
@@ -239,34 +246,6 @@ body.theme-cyber .btn:hover {
   text-align: center;
   overflow-y: auto;
 }
-/* 画面の低い端末では中央揃えの上側がスクロール範囲外へはみ出すため、
-   タイトルを上から配置して全メニューへ到達できるようにする。 */
-@media (max-height: 700px) {
-  #screen-title {
-    justify-content: flex-start;
-    gap: 10px;
-    padding: 64px 24px 24px;
-  }
-  #screen-title .logo {
-    font-size: clamp(38px, 10vw, 50px);
-  }
-  #screen-title .tagline {
-    margin-bottom: 6px;
-  }
-  #screen-title .title-menu {
-    gap: 8px;
-  }
-  #screen-title .title-menu .btn {
-    padding-block: 11px;
-  }
-  #screen-title .title-nav {
-    gap: 6px;
-    margin-top: 4px;
-  }
-  #screen-title .title-nav .btn {
-    padding-block: 9px;
-  }
-}
 .logo {
   font-size: clamp(40px, 11vw, 58px);
   font-weight: 900;
@@ -291,12 +270,29 @@ body.theme-cyber .logo {
   vertical-align: super;
 }
 .tagline {
+  min-height: 2.8em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--fg-dim);
   font-size: 14px;
+  line-height: 1.4;
   margin-bottom: 10px;
+}
+.title-brand {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding-top: 20px;
 }
 .uso-banner {
   display: none;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
   color: var(--accent);
   font-weight: 800;
   letter-spacing: 0.5em;

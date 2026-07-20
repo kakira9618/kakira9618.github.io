@@ -382,6 +382,7 @@ function render() {
               "lastPlayedMode",
               "legacyImportPrompted",
               "tutorialSeen",
+              "tutorialSeenUso",
             ]) {
               removeKey(key);
             }

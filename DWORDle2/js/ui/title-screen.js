@@ -145,8 +145,9 @@ function maybeOfferLegacyImport(afterClose = null) {
 }
 
 function maybeShowFirstTutorial(mode) {
-  if (loadJSON("tutorialSeen", false)) return;
-  saveJSON("tutorialSeen", true);
+  const key = mode === "uso" ? "tutorialSeenUso" : "tutorialSeen";
+  if (loadJSON(key, false)) return;
+  saveJSON(key, true);
   showFirstTutorial(mode);
 }
 
@@ -189,8 +190,12 @@ function render() {
         icon(isUso ? "mask" : "moon")
       )
     ),
-    el("div", { class: "uso-banner" }, tr("う そ ぴ ょ ん", "J U S T  K I D D I N G")),
-    el("div", { class: "logo" }, isUso ? "DWORDlie" : "DWORDle", el("span", { class: "two" }, " 2")),
+    el(
+      "div",
+      { class: "title-brand" },
+      el("div", { class: "uso-banner" }, tr("う そ ぴ ょ ん", "J U S T  K I D D I N G")),
+      el("div", { class: "logo" }, isUso ? "DWORDlie" : "DWORDle", el("span", { class: "two" }, " 2"))
+    ),
     el(
       "div",
       { class: "tagline" },
@@ -226,13 +231,16 @@ function render() {
     ),
     el("div", { class: "app-version", title: "DWORDle 2 version" }, `v${APP_VERSION}`)
   );
-  const firstVisit =
-    !loadJSON("tutorialSeen", false) &&
+  const noPlayData =
     getHistory().length === 0 &&
     !getCurrentGame("normal") &&
     !getCurrentGame("uso");
-  const importShown = maybeOfferLegacyImport(firstVisit ? () => maybeShowFirstTutorial(mode) : null);
-  if (firstVisit && !importShown) maybeShowFirstTutorial(mode);
+  const shouldShowTutorial =
+    mode === "uso"
+      ? !loadJSON("tutorialSeenUso", false)
+      : noPlayData && !loadJSON("tutorialSeen", false);
+  const importShown = maybeOfferLegacyImport(shouldShowTutorial ? () => maybeShowFirstTutorial(mode) : null);
+  if (shouldShowTutorial && !importShown) maybeShowFirstTutorial(mode);
 }
 
 registerScreen("title", {

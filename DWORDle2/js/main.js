@@ -20,6 +20,16 @@ import "./ui/achievements-screen.js";
 import "./ui/analysis-screen.js";
 import "./ui/settings-screen.js";
 
+// 古い Android Chrome は dvh に未対応のため、実際の表示領域を CSS 変数で補う。
+// 対応ブラウザでは CSS 側の 100dvh が優先される。
+function syncAppViewportHeight() {
+  document.documentElement.style.setProperty("--app-height", `${window.innerHeight}px`);
+}
+syncAppViewportHeight();
+addEventListener("resize", syncAppViewportHeight);
+addEventListener("orientationchange", syncAppViewportHeight);
+window.visualViewport?.addEventListener("resize", syncAppViewportHeight);
+
 // テーマの初期反映
 const theme = getSettings().theme;
 document.body.classList.toggle("theme-cyber", theme === "cyber");

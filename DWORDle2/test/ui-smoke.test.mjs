@@ -90,6 +90,18 @@ try {
   await tutorial.waitFor();
   assert.equal(await tutorial.evaluate((node) => node.contains(document.activeElement)), true, "Tutorial should receive focus");
   await page.getByRole("button", { name: "わかった" }).click();
+  const normalLogoBox = await page.locator(".logo").boundingBox();
+  await page.getByRole("button", { name: "裏モードへ" }).click();
+  const usoTutorial = page.getByRole("dialog", { name: "基本ルール" });
+  await usoTutorial.waitFor();
+  await usoTutorial.getByText("DWORDlieは、判定色がすべて嘘です。").waitFor();
+  await usoTutorial.getByRole("button", { name: "わかった" }).click();
+  const usoLogoBox = await page.locator(".logo").boundingBox();
+  assert.ok(
+    normalLogoBox && usoLogoBox && Math.abs(normalLogoBox.y - usoLogoBox.y) <= 1,
+    `DWORDle and DWORDlie logos should remain at the same vertical position: ${JSON.stringify({ normalLogoBox, usoLogoBox })}`
+  );
+  await page.getByRole("button", { name: "表モードへ" }).click();
   await assertNoSeriousA11yViolations("Title screen");
   const publicEntry = await page.evaluate(async () => {
     const assetPaths = ["/favicon.png", "/og.png", "/manifest.webmanifest"];
@@ -168,18 +180,57 @@ try {
       bgm: false,
       language: "ja",
       keyboardHints: true,
-      reduceFx: true,
+      reduceFx: false,
       randomLevel: 1,
     }));
     localStorage.setItem("dwordle2.legacyImportPrompted", "true");
     localStorage.setItem("dwordle2.tutorialSeen", "true");
   });
   await shortPage.goto(baseUrl, { waitUntil: "networkidle" });
+  await shortPage.addStyleTag({ content: "#app { height: var(--app-height) !important; }" });
+  const titleViewportMetrics = await shortPage.evaluate(() => ({
+    appHeight: document.getElementById("app").getBoundingClientRect().height,
+    innerHeight,
+    fallbackHeight: getComputedStyle(document.documentElement).getPropertyValue("--app-height").trim(),
+  }));
+  assert.ok(
+    Math.abs(titleViewportMetrics.appHeight - titleViewportMetrics.innerHeight) <= 1,
+    "Legacy Android viewport fallback should fill the visible title viewport"
+  );
+  assert.equal(titleViewportMetrics.fallbackHeight, `${titleViewportMetrics.innerHeight}px`);
   const shortLogoBox = await shortPage.locator(".logo").boundingBox();
   assert.ok(shortLogoBox && shortLogoBox.y >= 0, "Title logo should remain visible on a Pixel 3-height viewport");
   await shortPage.getByRole("button", { name: "デイリー問題" }).waitFor();
   await shortPage.getByRole("button", { name: "設定" }).scrollIntoViewIfNeeded();
   await shortPage.getByRole("button", { name: "設定" }).waitFor();
+
+  await shortPage.getByRole("button", { name: "番号を指定" }).click();
+  const shortPuzzleDialog = shortPage.getByRole("dialog", { name: "番号を指定してプレイ" });
+  await shortPuzzleDialog.locator('input[type="number"]').fill("1");
+  await shortPuzzleDialog.getByRole("button", { name: "スタート" }).click();
+  await shortPage.waitForURL(/#\/game$/);
+  await shortPage.locator("#screen-game.active").waitFor();
+  const gameViewportMetrics = await shortPage.evaluate(() => ({
+    appHeight: document.getElementById("app").getBoundingClientRect().height,
+    gameHeight: document.getElementById("screen-game").getBoundingClientRect().height,
+    innerHeight,
+  }));
+  assert.ok(
+    Math.abs(gameViewportMetrics.appHeight - gameViewportMetrics.innerHeight) <= 1 &&
+      Math.abs(gameViewportMetrics.gameHeight - gameViewportMetrics.innerHeight) <= 1,
+    `Legacy Android viewport fallback should fill the visible game viewport: ${JSON.stringify(gameViewportMetrics)}`
+  );
+  await shortPage.waitForTimeout(50);
+  const flightsBeforeLeave = await shortPage.evaluate(async () =>
+    (await import("./js/fx/bursts.js")).activeTileFlightCount()
+  );
+  assert.ok(flightsBeforeLeave > 0, "Tile gather animation should be active before leaving the game");
+  await shortPage.getByRole("button", { name: "タイトルへ戻る" }).click();
+  await shortPage.waitForURL(/#\/$/);
+  const flightsAfterLeave = await shortPage.evaluate(async () =>
+    (await import("./js/fx/bursts.js")).activeTileFlightCount()
+  );
+  assert.equal(flightsAfterLeave, 0, "Tile gather animation should be removed when leaving the game");
   await shortPage.close();
 
   console.log("UIスモーク + a11yテスト: OK");

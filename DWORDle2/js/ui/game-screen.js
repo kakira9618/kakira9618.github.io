@@ -12,7 +12,7 @@ import { checkOnGameFinish } from "../core/achievements.js";
 import { registerScreen, navigate, getAppMode, currentScreenName, rememberPlayedMode } from "./app.js";
 import { toast, achievementToast, bgmUnlockCelebration } from "./toast.js";
 import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js";
-import { burstAtElement, winBurst, colorForState, flyInTiles } from "../fx/bursts.js";
+import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/bursts.js";
 import { showHelpModal } from "./help.js";
 import { icon } from "./icons.js";
 import { tr } from "../core/i18n.js";
@@ -46,6 +46,7 @@ let buttonStates = {}; // キーボードの色状態 (normal モードのみ)
 let keyEls = {};
 let seedHidden = false;
 let finishedRecord = null; // 終了後に結果画面へ渡す
+let gatherSession = 0;
 
 function build() {
   root = document.getElementById("screen-game");
@@ -193,6 +194,7 @@ export function startNewGame(pid, mode) {
 
 function render() {
   if (!root) build();
+  gatherSession++;
   resultFab.textContent = tr("結果を見る", "View result");
   const mode = getAppMode();
   const current = getCurrentGame(mode);
@@ -261,9 +263,14 @@ function addRow(animate) {
 // 着地した瞬間に本物の DOM タイルへすり替える。
 // 着地座標を安定させるため、スクロールは即時に済ませてから飛ばす。
 function gatherRow(row) {
+  const session = gatherSession;
   row.tiles.forEach((t) => (t.style.opacity = "0"));
   boardScrollEl.scrollTop = boardScrollEl.scrollHeight;
   requestAnimationFrame(() => {
+    if (session !== gatherSession || currentScreenName() !== "game") {
+      row.tiles.forEach((tile) => (tile.style.opacity = ""));
+      return;
+    }
     const flight = flyInTiles(
       row.tiles,
       game.gameMode === "uso",
@@ -569,4 +576,13 @@ registerScreen("game", {
     return root;
   },
   render,
+  onLeave() {
+    gatherSession++;
+    cancelTileFlights();
+    rows.forEach((row) => {
+      row.tiles.forEach((tile) => (tile.style.opacity = ""));
+      row.gatherFlight = null;
+    });
+    releaseKeyboardPresses();
+  },
 });

@@ -254,6 +254,28 @@ export function flyInTiles(targetElements, isUso, initialTexts = [], scrollConta
   };
 }
 
+function disposeFlight(flight) {
+  for (const tile of flight.group) {
+    if (tile.mesh.parent) scene.remove(tile.mesh);
+    tile.mesh.material.dispose();
+    tile.face.texture.dispose();
+  }
+  flight.geo.dispose();
+  flight.resolveAll();
+}
+
+// ゲーム画面を離れた時など、進行中の集合タイルを即座に消す。
+export function cancelTileFlights() {
+  const pending = flights;
+  flights = [];
+  pending.forEach(disposeFlight);
+  if (renderer && particles.length === 0) renderer.clear();
+}
+
+export function activeTileFlightCount() {
+  return flights.length;
+}
+
 // ---- 描画ループ ----
 
 let lastTime = 0;
@@ -332,9 +354,7 @@ function loop(now) {
       f.mesh.material.opacity = Math.min(1, t * 2.2);
     }
     if (allDone) {
-      flight.geo.dispose();
-      flight.group.forEach((f) => f.face.texture.dispose());
-      flight.resolveAll();
+      disposeFlight(flight);
       return false;
     }
     return true;
