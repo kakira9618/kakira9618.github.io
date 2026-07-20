@@ -176,6 +176,8 @@ try {
   await page.goto(resultUrl, { waitUntil: "networkidle" });
   await page.getByRole("button", { name: "分析" }).click();
   await page.getByText("正解！").waitFor({ timeout: 30000 });
+  const analysisSummary = await page.getByText(/答えの組は .* 通り/).textContent();
+  assert.match(analysisSummary, /答えの組は 27,730 通り/, "Analysis should display unordered answer pairs");
   const solvedCard = page.locator(".turn-card").filter({ hasText: "正解！" });
   assert.equal(await solvedCard.getByText("もっと絞れたかもしれない単語").count(), 0, "Winning Guess should not show suggestions");
   await assertNoSeriousA11yViolations("Analysis screen");
@@ -234,16 +236,69 @@ try {
   );
   await shortPage.waitForTimeout(50);
   const flightsBeforeLeave = await shortPage.evaluate(async () =>
-    (await import("./js/fx/bursts.js")).activeTileFlightCount()
+    (await import("./js/fx/effects.js")).activeTileFlightCount()
   );
   assert.ok(flightsBeforeLeave > 0, "Tile gather animation should be active before leaving the game");
   await shortPage.getByRole("button", { name: "タイトルへ戻る" }).click();
   await shortPage.waitForURL(/#\/$/);
   const flightsAfterLeave = await shortPage.evaluate(async () =>
-    (await import("./js/fx/bursts.js")).activeTileFlightCount()
+    (await import("./js/fx/effects.js")).activeTileFlightCount()
   );
   assert.equal(flightsAfterLeave, 0, "Tile gather animation should be removed when leaving the game");
   await shortPage.close();
+
+  const fallbackContext = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
+  const fallbackPage = await fallbackContext.newPage();
+  await fallbackPage.addInitScript(() => {
+    localStorage.setItem("dwordle2.settings", JSON.stringify({ theme: "cyber", sfx: false, bgm: false, language: "ja" }));
+    localStorage.setItem("dwordle2.legacyImportPrompted", "true");
+    localStorage.setItem("dwordle2.tutorialSeen", "true");
+  });
+  await fallbackPage.route("**/vendor/three.module.min.js", (route) => route.abort("failed"));
+  await fallbackPage.goto(baseUrl, { waitUntil: "networkidle" });
+  await fallbackPage.locator("body.theme-classic").waitFor();
+  await fallbackPage.locator("#screen-title.active .logo").waitFor();
+  await fallbackPage.getByRole("button", { name: "番号を指定" }).click();
+  const fallbackDialog = fallbackPage.getByRole("dialog", { name: "番号を指定してプレイ" });
+  await fallbackDialog.locator('input[type="number"]').fill("1");
+  await fallbackDialog.getByRole("button", { name: "スタート" }).click();
+  await fallbackPage.locator("#screen-game.active").waitFor();
+  await fallbackContext.close();
+
+  const reducedContext = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    locale: "ja-JP",
+    reducedMotion: "reduce",
+  });
+  const reducedPage = await reducedContext.newPage();
+  await reducedPage.addInitScript(() => {
+    localStorage.setItem("dwordle2.settings", JSON.stringify({ theme: "cyber", sfx: false, bgm: false, language: "ja", reduceFx: false }));
+    localStorage.setItem("dwordle2.legacyImportPrompted", "true");
+    localStorage.setItem("dwordle2.tutorialSeen", "true");
+  });
+  await reducedPage.goto(baseUrl, { waitUntil: "networkidle" });
+  await reducedPage.locator("body.reduce-motion").waitFor();
+  await reducedPage.getByRole("button", { name: "番号を指定" }).click();
+  const reducedDialog = reducedPage.getByRole("dialog", { name: "番号を指定してプレイ" });
+  await reducedDialog.locator('input[type="number"]').fill("1");
+  await reducedDialog.getByRole("button", { name: "スタート" }).click();
+  await reducedPage.locator("#screen-game.active .row").last().waitFor();
+  const reducedFlights = await reducedPage.evaluate(async () =>
+    (await import("./js/fx/effects.js")).activeTileFlightCount()
+  );
+  assert.equal(reducedFlights, 0, "Reduced motion should suppress tile gather flights");
+  await reducedContext.close();
+
+  await page.evaluate(() => { location.hash = "#/settings"; });
+  await page.waitForURL(/#\/settings$/);
+  await page.getByRole("button", { name: "全データ削除" }).click();
+  const deleteDialog = page.getByRole("dialog", { name: "全データ削除" });
+  await Promise.all([
+    page.waitForNavigation({ waitUntil: "networkidle" }),
+    deleteDialog.getByRole("button", { name: "OK" }).click(),
+  ]);
+  assert.match(page.url(), /#\/$/, "Deleting all data should reload at the title route");
+  await page.locator("#screen-title.active").waitFor();
 
   console.log("UIスモーク + a11yテスト: OK");
 } finally {

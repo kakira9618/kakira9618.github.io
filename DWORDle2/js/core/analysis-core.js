@@ -1,6 +1,6 @@
 // 分析モードの計算コア。Worker (analysis.worker.js) とテストの両方から使う。
 //
-// 候補空間は「答えの組 (ans1, ans2)」の順序付きペア全体。
+// 候補空間は「答えの組 {ans1, ans2}」の順序なしペア全体。
 // 各 Guess の判定結果と矛盾しないペアだけを残していき、
 //   - 残り候補数の推移
 //   - 獲得情報量（bit）= log2(絞り込み前 / 絞り込み後)
@@ -8,7 +8,7 @@
 //   - もっと候補を絞れたはずの単語の提案
 // を turn ごとに計算する。
 //
-// ペア数が膨大な帯（極など、最大 14847*14846 ≈ 2.2 億）は一様サンプリングで
+// ペア数が膨大な帯（極など、最大 14847*14846/2 ≈ 1.1 億）は一様サンプリングで
 // 推定する（結果に sampled フラグを立てる）。乱数はシード付きで再現可能。
 
 import { queryWordPair, CELL } from "./logic.js";
@@ -168,7 +168,7 @@ export function analyzeGame(params, onProgress = () => {}) {
   const L = ANALYSIS_LIMITS;
   const candWords = candidateWordsForPID(pid);
   const N = candWords.length;
-  const totalPairs = N * (N - 1);
+  const totalPairs = (N * (N - 1)) / 2;
   const W = encodeWords(candWords);
   const guessBytes = encodeWords(guessWords);
 
@@ -180,17 +180,16 @@ export function analyzeGame(params, onProgress = () => {}) {
   let alive = new Uint32Array(enumCount); // ペアを a * N + b で持つ
   if (sampled) {
     for (let k = 0; k < enumCount; k++) {
-      const a = Math.floor(rng() * N);
+      let a = Math.floor(rng() * N);
       let b = Math.floor(rng() * (N - 1));
       if (b >= a) b++;
+      if (a > b) [a, b] = [b, a];
       alive[k] = a * N + b;
     }
   } else {
     let k = 0;
     for (let a = 0; a < N; a++) {
-      for (let b = 0; b < N; b++) {
-        if (a !== b) alive[k++] = a * N + b;
-      }
+      for (let b = a + 1; b < N; b++) alive[k++] = a * N + b;
     }
   }
 

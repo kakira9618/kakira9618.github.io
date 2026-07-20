@@ -2,13 +2,13 @@
 // ルート: #/result/<mode>/<startTime>
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate } from "./app.js";
+import { registerScreen, navigate } from "./app.js?v=20260721-runtime";
 import { findGame, MODES } from "../core/records.js";
 import { Logic, CELL } from "../core/logic.js";
 import { pidLabel, isDailyPID } from "../core/problems.js";
 import { playSfx } from "../audio/sound.js";
 import { toast } from "./toast.js";
-import { confirmAndStart } from "./game-screen.js";
+import { confirmAndStart } from "./game-screen.js?v=20260721-runtime";
 import { icon } from "./icons.js";
 import { downloadResultPNG } from "./snapshot.js";
 import { SHARE_URL } from "../config.js";

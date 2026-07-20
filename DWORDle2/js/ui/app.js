@@ -12,6 +12,7 @@
 
 import { loadJSON, saveJSON } from "../core/store.js";
 import { setUsoMood } from "../audio/sound.js";
+import { setBackgroundMood } from "../fx/effects.js";
 import { closeAllModals } from "./modal.js";
 
 const screens = new Map(); // name -> { element, render(params) }
@@ -30,8 +31,7 @@ export function setAppMode(mode) {
   document.body.classList.toggle("mode-uso", mode === "uso");
   document.body.classList.toggle("mode-normal", mode === "normal");
   setUsoMood(mode === "uso");
-  // 背景の色調も切り替える（循環 import を避けるため動的 import）
-  import("../fx/background.js").then((m) => m.setBackgroundMood(mode === "uso"));
+  setBackgroundMood(mode === "uso");
 }
 
 // モード切替を眺めただけの場合ではなく、実際に開始したゲームを次回の初期モードにする。

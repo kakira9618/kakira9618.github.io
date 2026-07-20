@@ -9,6 +9,7 @@
 import * as THREE from "three";
 import { FX, UI } from "../config.js";
 import { getSettings } from "../core/settings.js";
+import { shouldReduceMotion } from "../core/motion.js";
 
 let renderer = null;
 let scene = null;
@@ -17,8 +18,10 @@ let viewH = 0;
 let particles = []; // { mesh(Points), born, life }
 let flights = []; // { mesh, from, to, rot0, start, dur, onArrive, arrived }
 let running = false;
+let failureHandler = () => {};
 
-export function initBursts() {
+export function initBursts(onFailure = () => {}) {
+  failureHandler = onFailure;
   const canvas = document.getElementById("fx3d");
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -57,7 +60,7 @@ function ensureLoop() {
 // 中心 (cx, cy)（CSS ピクセル）から count 個の粒子を色 colorHex で放つ
 export function burstAt(cx, cy, colorHex, count) {
   const s = getSettings();
-  if (s.theme !== "cyber" || s.reduceFx) return; // 「演出を軽くする」= パーティクル完全オフ
+  if (s.theme !== "cyber" || shouldReduceMotion(s)) return;
   const cfg = FX.burst;
   const n = count;
 
@@ -100,12 +103,16 @@ export function winBurst(colors) {
   const cfg = FX.burst;
   for (let i = 0; i < 6; i++) {
     setTimeout(() => {
-      burstAt(
-        innerWidth * (0.25 + Math.random() * 0.5),
-        innerHeight * (0.2 + Math.random() * 0.35),
-        colors[i % colors.length],
-        cfg.countWin / 4
-      );
+      try {
+        burstAt(
+          innerWidth * (0.25 + Math.random() * 0.5),
+          innerHeight * (0.2 + Math.random() * 0.35),
+          colors[i % colors.length],
+          cfg.countWin / 4
+        );
+      } catch (error) {
+        failureHandler(error);
+      }
     }, i * 180);
   }
 }
@@ -162,7 +169,7 @@ function makeTileFace(w, h, edgeColor, fillColor, initialText = "") {
  */
 export function flyInTiles(targetElements, isUso, initialTexts = [], scrollContainer = null) {
   const s = getSettings();
-  if (s.theme !== "cyber" || s.reduceFx || targetElements.length === 0) {
+  if (s.theme !== "cyber" || shouldReduceMotion(s) || targetElements.length === 0) {
     return { skipped: true, promise: Promise.resolve(), onArrive: null };
   }
   const rects = targetElements.map((element) => element.getBoundingClientRect());
@@ -269,7 +276,13 @@ export function cancelTileFlights() {
   const pending = flights;
   flights = [];
   pending.forEach(disposeFlight);
-  if (renderer && particles.length === 0) renderer.clear();
+  if (renderer && particles.length === 0) {
+    try {
+      renderer.clear();
+    } catch {
+      // WebGL 障害時も DOM タイルの復帰処理を優先する。
+    }
+  }
 }
 
 export function activeTileFlightCount() {
@@ -280,6 +293,16 @@ export function activeTileFlightCount() {
 
 let lastTime = 0;
 function loop(now) {
+  try {
+    renderFrame(now);
+  } catch (error) {
+    running = false;
+    cancelTileFlights();
+    failureHandler(error);
+  }
+}
+
+function renderFrame(now) {
   const dt = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
   const cfg = FX.burst;

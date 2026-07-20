@@ -2,12 +2,12 @@
 // ルート: #/settings
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate } from "./app.js";
+import { registerScreen, navigate } from "./app.js?v=20260721-runtime";
 import { getSettings, setSetting } from "../core/settings.js";
 import { importFromLocalStorage, importFromText, scanLegacyHistory } from "../core/migrate.js";
 import { exportJSON } from "../core/records.js";
 import { removeKey } from "../core/store.js";
-import { getUnlocked } from "../core/achievements.js";
+import { getUnlocked } from "../core/achievements.js?v=20260721-runtime";
 import { BGM_TRACKS, playSfx } from "../audio/sound.js";
 import { toast } from "./toast.js";
 import { showModal, confirmModal } from "./modal.js";
@@ -386,6 +386,7 @@ function render() {
             ]) {
               removeKey(key);
             }
+            history.replaceState(null, "", "#/");
             location.reload();
           },
         }, icon("trash"), tr("全データ削除", "Delete all data"))

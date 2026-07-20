@@ -34,8 +34,10 @@ function check(cond, message) {
     const slow = resultToPatternId(queryWordPair(g, a, b));
     const bytes = encodeWords([g, a, b]);
     const fast = patternIdFast(bytes, 0, bytes, 5, 10);
+    const swapped = patternIdFast(bytes, 0, bytes, 10, 5);
     cases++;
     check(slow === fast, `pattern mismatch g=${g} a=${a} b=${b}: slow=${slow} fast=${fast}`);
+    check(fast === swapped, `answer pair order should not affect feedback g=${g} a=${a} b=${b}`);
   }
   // 繰り返し文字が絡むケースを重点的に
   const tricky = [
@@ -75,6 +77,7 @@ function check(cond, message) {
     `analyzeGame(easy): ${elapsed}ms, pairs ${res.initialPairs} -> ${res.turns.map((t) => t.after).join(" -> ")}`
   );
   check(res.sampled === false, "easy は厳密計算のはず");
+  check(res.initialPairs === (res.candListSize * (res.candListSize - 1)) / 2, "初期ペア数は順序なし組合せ");
   check(res.turns.length === 3, "turns 数");
   check(res.turns[0].before === res.initialPairs, "初期ペア数");
   for (let t = 0; t < res.turns.length; t++) {

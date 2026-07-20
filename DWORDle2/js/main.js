@@ -1,24 +1,24 @@
 // エントリポイント。画面登録・ルータ起動・3D 背景・音声の初期化。
 
-import { startRouter, initAppMode } from "./ui/app.js";
-import { initBackground } from "./fx/background.js";
-import { initBursts } from "./fx/bursts.js";
+import { startRouter, initAppMode } from "./ui/app.js?v=20260721-runtime";
+import { initEffects } from "./fx/effects.js";
 import { audioNeedsRecovery, bgmTracksUnlockedBy, restartBgmIfReady, stopBgm, unlockAudio } from "./audio/sound.js";
 import { getSettings, onSettingsChange } from "./core/settings.js";
+import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js";
 import { syncDocumentLanguage } from "./core/i18n.js";
-import { reconcileAchievementsOnce } from "./core/achievements.js";
-import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "./ui/game-screen.js";
+import { reconcileAchievementsOnce } from "./core/achievements.js?v=20260721-runtime";
+import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "./ui/game-screen.js?v=20260721-runtime";
 import { achievementToast, bgmUnlockCelebration } from "./ui/toast.js";
 
 // 画面モジュール（import するだけで registerScreen される）
-import "./ui/title-screen.js?v=20260721-uso-banner";
-import "./ui/game-screen.js";
-import "./ui/result-screen.js";
-import "./ui/history-screen.js";
-import "./ui/problems-screen.js";
-import "./ui/achievements-screen.js";
-import "./ui/analysis-screen.js";
-import "./ui/settings-screen.js";
+import "./ui/title-screen.js?v=20260721-runtime";
+import "./ui/game-screen.js?v=20260721-runtime";
+import "./ui/result-screen.js?v=20260721-runtime";
+import "./ui/history-screen.js?v=20260721-runtime";
+import "./ui/problems-screen.js?v=20260721-runtime";
+import "./ui/achievements-screen.js?v=20260721-runtime";
+import "./ui/analysis-screen.js?v=20260721-runtime";
+import "./ui/settings-screen.js?v=20260721-runtime";
 
 // 古い Android Chrome は dvh に未対応のため、実際の表示領域を CSS 変数で補う。
 // 対応ブラウザでは CSS 側の 100dvh が優先される。
@@ -31,17 +31,21 @@ addEventListener("orientationchange", syncAppViewportHeight);
 window.visualViewport?.addEventListener("resize", syncAppViewportHeight);
 
 // テーマの初期反映
-const theme = getSettings().theme;
-document.body.classList.toggle("theme-cyber", theme === "cyber");
-document.body.classList.toggle("theme-classic", theme === "classic");
+function syncDisplayClasses(settings = getSettings()) {
+  document.body.classList.toggle("theme-cyber", settings.theme === "cyber");
+  document.body.classList.toggle("theme-classic", settings.theme === "classic");
+  document.body.classList.toggle("reduce-motion", shouldReduceMotion(settings));
+}
+syncDisplayClasses();
 syncDocumentLanguage();
 onSettingsChange((settings, key) => {
+  if (key === "theme" || key === "reduceFx") syncDisplayClasses(settings);
   if (key === "language") syncDocumentLanguage(settings.language);
 });
+onMotionPreferenceChange(() => syncDisplayClasses());
 
 initAppMode();
-initBackground();
-initBursts();
+void initEffects();
 
 // 物理キーボード
 addEventListener("keydown", handlePhysicalKey);

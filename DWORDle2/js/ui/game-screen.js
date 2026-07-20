@@ -8,15 +8,16 @@ import { APP_VERSION, UI, FX } from "../config.js";
 import { Logic, CELL, usoConvert } from "../core/logic.js";
 import { MODES, saveCurrentGame, clearCurrentGame, getCurrentGame, addFinishedGame, isAlreadyPlayed, getHistory } from "../core/records.js";
 import { pidLabel } from "../core/problems.js";
-import { checkOnGameFinish } from "../core/achievements.js";
-import { registerScreen, navigate, getAppMode, currentScreenName, rememberPlayedMode } from "./app.js";
+import { checkOnGameFinish } from "../core/achievements.js?v=20260721-runtime";
+import { registerScreen, navigate, getAppMode, currentScreenName, rememberPlayedMode } from "./app.js?v=20260721-runtime";
 import { toast, achievementToast, bgmUnlockCelebration } from "./toast.js";
 import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js";
-import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/bursts.js";
+import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/effects.js";
 import { showHelpModal } from "./help.js";
 import { icon } from "./icons.js";
 import { tr } from "../core/i18n.js";
 import { getSettings } from "../core/settings.js";
+import { shouldReduceMotion } from "../core/motion.js";
 import { feedbackName, tileAriaLabel } from "./a11y.js";
 
 const KEY_ROWS = [
@@ -264,6 +265,10 @@ function addRow(animate) {
 // 着地座標を安定させるため、スクロールは即時に済ませてから飛ばす。
 function gatherRow(row) {
   const session = gatherSession;
+  if (shouldReduceMotion()) {
+    boardScrollEl.scrollTop = boardScrollEl.scrollHeight;
+    return;
+  }
   row.tiles.forEach((t) => (t.style.opacity = "0"));
   boardScrollEl.scrollTop = boardScrollEl.scrollHeight;
   requestAnimationFrame(() => {
@@ -279,7 +284,7 @@ function gatherRow(row) {
     );
     row.gatherFlight = flight;
     if (flight.skipped) {
-      // classic テーマ / パーティクルオフ時: 2D の簡易集合
+      // classic テーマ: 2D の簡易集合
       row.tiles.forEach((tile, i) => {
         tile.style.opacity = "";
         const ang = Math.random() * Math.PI * 2;
@@ -423,6 +428,18 @@ function rejectGuess(message) {
 
 // タイルを 1 枚ずつフリップして判定を開く
 function revealRow(row, word, result, done) {
+  if (shouldReduceMotion()) {
+    result.forEach((stateName, i) => {
+      const tile = row.tiles[i];
+      tile.classList.remove("reveal", "filled");
+      tile.classList.add(`state-${stateName}`);
+      tile.setAttribute("aria-label", tileAriaLabel(word[i], stateName));
+      if (game.gameMode === "normal") applyKeyStyle(word[i]);
+    });
+    playSfx(result.includes(CELL.CORRECT) ? "revealCorrect" : result.includes(CELL.USED) ? "revealUsed" : "revealUnused");
+    setTimeout(done, 0);
+    return;
+  }
   result.forEach((stateName, i) => {
     setTimeout(() => {
       const tile = row.tiles[i];

@@ -2,8 +2,8 @@
 // ルート: #/achievements
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate } from "./app.js";
-import { ACHIEVEMENTS, getUnlocked } from "../core/achievements.js";
+import { registerScreen, navigate } from "./app.js?v=20260721-runtime";
+import { ACHIEVEMENTS, getUnlocked } from "../core/achievements.js?v=20260721-runtime";
 import { playSfx } from "../audio/sound.js";
 import { icon } from "./icons.js";
 import { localizedAchievement, tr } from "../core/i18n.js";

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { DEFAULT_SETTINGS, normalizeVolume } from "../js/core/settings.js";
+import { shouldReduceMotion } from "../js/core/motion.js";
 
 assert.equal(DEFAULT_SETTINGS.sfxVolume, 100);
 assert.equal(DEFAULT_SETTINGS.bgmVolume, 100);
@@ -11,5 +12,9 @@ assert.equal(normalizeVolume("42"), 42);
 assert.equal(normalizeVolume(55.6), 56);
 assert.equal(normalizeVolume(120), 100);
 assert.equal(normalizeVolume("invalid"), 100);
+
+assert.equal(shouldReduceMotion({ ...DEFAULT_SETTINGS, reduceFx: false }, false), false);
+assert.equal(shouldReduceMotion({ ...DEFAULT_SETTINGS, reduceFx: true }, false), true);
+assert.equal(shouldReduceMotion({ ...DEFAULT_SETTINGS, reduceFx: false }, true), true);
 
 console.log("設定テスト: OK");

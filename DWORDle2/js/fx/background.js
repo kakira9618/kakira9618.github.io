@@ -6,6 +6,7 @@
 import * as THREE from "three";
 import { FX } from "../config.js";
 import { getSettings, onSettingsChange } from "../core/settings.js";
+import { onMotionPreferenceChange, shouldReduceMotion } from "../core/motion.js";
 
 let renderer = null;
 let scene = null;
@@ -18,6 +19,7 @@ let dust = null; // { points, speeds[] }
 let running = false;
 let uso = false;
 let t = 0;
+let failureHandler = () => {};
 
 // 柔らかい円形グラデーションのスプライトテクスチャ
 function makeGlowTexture(size = 128, inner = 0.0) {
@@ -38,7 +40,8 @@ function makeGlowTexture(size = 128, inner = 0.0) {
 
 let glowTex = null;
 
-export function initBackground() {
+export function initBackground(onFailure = () => {}) {
+  failureHandler = onFailure;
   const canvas = document.getElementById("bg3d");
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -86,6 +89,7 @@ export function initBackground() {
   onSettingsChange((s, key) => {
     if (key === "theme" || key === "reduceFx") applyTheme(s.theme);
   });
+  onMotionPreferenceChange(() => applyTheme(getSettings().theme));
 }
 
 function disposeLayer(layer) {
@@ -101,7 +105,7 @@ function rebuildParticles() {
   bokeh = null;
   dust = null;
   // 「演出を軽くする」= パーティクルを完全にオフ（グリッドと地平線は残す）
-  if (getSettings().reduceFx) return;
+  if (shouldReduceMotion()) return;
   const cfg = FX.bg;
   const colors = (uso ? cfg.particleColorsUso : cfg.particleColors).map((c) => new THREE.Color(c));
 
@@ -212,49 +216,60 @@ function resize() {
 }
 
 function applyTheme(theme) {
-  const shouldRun = theme === "cyber";
-  if (shouldRun && !running) {
-    running = true;
-    loop();
-  } else if (!shouldRun) {
+  try {
+    const shouldRun = theme === "cyber" && !shouldReduceMotion();
+    if (shouldRun && !running) {
+      running = true;
+      loop();
+    } else if (!shouldRun) {
+      running = false;
+      renderer?.clear();
+    }
+    if (shouldRun) rebuildParticles(); // 設定・OS の動きの抑制変更を反映
+  } catch (error) {
     running = false;
+    failureHandler(error);
   }
-  if (shouldRun) rebuildParticles(); // reduceFx 変更を反映
 }
 
 function loop() {
   if (!running) return;
-  requestAnimationFrame(loop);
-  t += 1 / 60;
-  const cfg = FX.bg;
-  const size = cfg.gridSize;
-  const z = (t * cfg.scrollSpeed) % size;
-  grid1.position.z = z;
-  grid2.position.z = z - size;
-  camera.position.x = Math.sin(t * 0.21) * cfg.cameraDrift;
-  camera.position.y = 6.5 + Math.sin(t * 0.34) * 0.8;
-  camera.lookAt(0, 4, -10);
+  try {
+    t += 1 / 60;
+    const cfg = FX.bg;
+    const size = cfg.gridSize;
+    const z = (t * cfg.scrollSpeed) % size;
+    grid1.position.z = z;
+    grid2.position.z = z - size;
+    camera.position.x = Math.sin(t * 0.21) * cfg.cameraDrift;
+    camera.position.y = 6.5 + Math.sin(t * 0.34) * 0.8;
+    camera.lookAt(0, 4, -10);
 
-  // 玉ボケ: ごくゆっくり漂い、明滅する
-  if (bokeh) {
-    bokeh.points.rotation.y = Math.sin(t * 0.03) * 0.05;
-    bokeh.points.position.y = Math.sin(t * 0.12) * 0.8;
-    bokeh.points.material.uniforms.opacity.value = cfg.bokehOpacity * (0.82 + 0.18 * Math.sin(t * 0.6));
-  }
-  // 塵: 上昇して上端で下へ戻る
-  if (dust) {
-    const pos = dust.points.geometry.attributes.position;
-    for (let i = 0; i < pos.count; i++) {
-      let y = pos.array[i * 3 + 1] + dust.speeds[i] / 60;
-      if (y > 46) y = 0;
-      pos.array[i * 3 + 1] = y;
-      pos.array[i * 3] += Math.sin(t * 0.5 + i) * 0.004; // 微かな横揺れ
+    // 玉ボケ: ごくゆっくり漂い、明滅する
+    if (bokeh) {
+      bokeh.points.rotation.y = Math.sin(t * 0.03) * 0.05;
+      bokeh.points.position.y = Math.sin(t * 0.12) * 0.8;
+      bokeh.points.material.uniforms.opacity.value = cfg.bokehOpacity * (0.82 + 0.18 * Math.sin(t * 0.6));
     }
-    pos.needsUpdate = true;
-    dust.points.material.uniforms.opacity.value = cfg.dustOpacity * (0.75 + 0.25 * Math.sin(t * 1.1 + 1));
-  }
-  // 地平線の発光もわずかに呼吸させる
-  horizon.material.opacity = 0.7 + 0.15 * Math.sin(t * 0.4);
+    // 塵: 上昇して上端で下へ戻る
+    if (dust) {
+      const pos = dust.points.geometry.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        let y = pos.array[i * 3 + 1] + dust.speeds[i] / 60;
+        if (y > 46) y = 0;
+        pos.array[i * 3 + 1] = y;
+        pos.array[i * 3] += Math.sin(t * 0.5 + i) * 0.004; // 微かな横揺れ
+      }
+      pos.needsUpdate = true;
+      dust.points.material.uniforms.opacity.value = cfg.dustOpacity * (0.75 + 0.25 * Math.sin(t * 1.1 + 1));
+    }
+    // 地平線の発光もわずかに呼吸させる
+    horizon.material.opacity = 0.7 + 0.15 * Math.sin(t * 0.4);
 
-  renderer.render(scene, camera);
+    renderer.render(scene, camera);
+    requestAnimationFrame(loop);
+  } catch (error) {
+    running = false;
+    failureHandler(error);
+  }
 }
