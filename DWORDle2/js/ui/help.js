@@ -24,7 +24,8 @@ const TIMING = {
   typeMs: 190,
   flipMs: 310,
   reactionMs: 720,
-  lieChoiceMs: 700,
+  lieCompareMs: 900,
+  lieFlipMs: 360,
   holdMs: 1700,
   switchOutMs: 160,
   switchInMs: 240,
@@ -105,9 +106,6 @@ function buildExample(mode, language) {
     isEnglish ? "Example answers" : "例：2 つの答え"
   );
   const caption = el("div", { class: "help-caption", "aria-live": "polite" }, "\u00a0");
-  const lieCaption = isEnglish
-    ? "Each letter gets its own lie."
-    : "文字ごとに嘘の判定をします。";
   const reactionLine = el("div", { class: "help-reaction-line", "aria-hidden": "true" });
   const box = el(
     "div",
@@ -192,27 +190,17 @@ function buildExample(mode, language) {
       : `灰 ${char} → どちらの Word にもなし`;
   };
 
-  // 本体と同じく、文字ごとに「本当の色以外の 2 色」からランダムに選ぶ。
-  // 教材では 1 文字ずつ候補 2 色を点滅させ、独立抽選であることを見せる。
-  const showLieChoice = (index, trueState, shownState) => {
-    const tile = guessTiles[index];
-    const choices = FEEDBACK_STATES.filter((state) => state !== trueState);
-    tile.classList.remove(...FEEDBACK_STATES, "flip", "lied");
-    tile.classList.add("choosing-lie", choices[0]);
-
+  // 元の判定色から、実際に選ばれた嘘の色へ一度だけ反転する。
+  const showLieResult = (lieResult) => {
+    guessTiles.forEach((tile) => tile.classList.remove("flip", "lied"));
+    void box.offsetWidth;
+    guessTiles.forEach((tile) => tile.classList.add("flip"));
     later(() => {
-      tile.classList.remove(choices[0]);
-      tile.classList.add(choices[1]);
-    }, 150);
-    later(() => {
-      tile.classList.remove(choices[1]);
-      tile.classList.add(choices[0]);
-    }, 300);
-    later(() => {
-      tile.classList.remove(...choices, "choosing-lie");
-      void tile.offsetWidth;
-      tile.classList.add("flip", shownState, "lied");
-    }, 470);
+      guessTiles.forEach((tile, index) => {
+        tile.classList.remove(...FEEDBACK_STATES);
+        tile.classList.add(lieResult[index], "lied");
+      });
+    }, TIMING.lieFlipMs / 2);
   };
 
   const drawIllustrativeLies = () => {
@@ -278,21 +266,17 @@ function buildExample(mode, language) {
 
     if (mode === "uso") {
       const lieResult = drawIllustrativeLies();
+      const originalColorStart = reactionDone + 180;
       later(() => {
         clearReaction();
-        caption.textContent = lieCaption;
-      }, reactionDone + 180);
-      const lieStart = reactionDone + 620;
-      lieResult.forEach((shownState, index) => {
-        later(
-          () => showLieChoice(index, trueResult[index], shownState),
-          lieStart + TIMING.lieChoiceMs * index
-        );
-      });
-      const lieDone = lieStart + TIMING.lieChoiceMs * lieResult.length;
+        caption.textContent = isEnglish ? "Original colors" : "元の色";
+      }, originalColorStart);
+      const lieStart = originalColorStart + TIMING.lieCompareMs;
       later(() => {
-        guessTiles.forEach((tile) => tile.classList.remove("choosing-lie"));
-      }, lieDone);
+        caption.textContent = isEnglish ? "Colors actually chosen" : "実際に選ばれる色";
+        showLieResult(lieResult);
+      }, lieStart);
+      const lieDone = lieStart + TIMING.lieFlipMs;
       later(playPrimaryExample, lieDone + TIMING.holdMs);
     } else {
       later(() => switchExample(playAllGreenExample), reactionDone + TIMING.holdMs);

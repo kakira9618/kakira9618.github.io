@@ -1422,14 +1422,6 @@ body.theme-cyber .rcell.correct { color: #04120b; }
 .htile.lied {
   box-shadow: 0 0 12px rgba(255, 43, 94, 0.8);
 }
-.htile.choosing-lie {
-  position: relative;
-  z-index: 4;
-  transform: scale(1.14);
-  outline: 2px dashed #ff7a9a;
-  outline-offset: 3px;
-  animation: helpLieChoice 0.3s ease-in-out infinite alternate;
-}
 .help-caption {
   min-height: 20px;
   width: 100%;
@@ -1549,10 +1541,6 @@ body.theme-cyber .rcell.correct { color: #04120b; }
 @keyframes helpAbsentMark {
   from { opacity: 0; transform: scale(0.4) rotate(-20deg); }
   to { opacity: 1; transform: scale(1) rotate(0); }
-}
-@keyframes helpLieChoice {
-  from { filter: brightness(0.9); box-shadow: 0 0 5px rgba(255, 43, 94, 0.35); }
-  to { filter: brightness(1.35); box-shadow: 0 0 18px rgba(255, 43, 94, 0.85); }
 }
 @keyframes helpExampleSwitchOut {
   from { opacity: 1; transform: translateX(0) skewX(0); }
