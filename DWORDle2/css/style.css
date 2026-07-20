@@ -332,11 +332,14 @@ body.mode-uso .uso-banner {
   gap: var(--tile-gap);
   align-items: center;
   perspective: 900px; /* タイル集合エフェクト用の 3D 空間 */
+  content-visibility: visible;
+  contain: none;
 }
 .row {
   display: flex;
   gap: var(--tile-gap);
-  transform-style: preserve-3d;
+  content-visibility: visible;
+  contain: none;
 }
 .tile {
   width: var(--tile-size);
@@ -351,11 +354,12 @@ body.mode-uso .uso-banner {
   color: var(--fg);
   text-transform: uppercase;
   transition: border-color 0.15s, background 0.15s;
-  will-change: transform;
+  content-visibility: visible;
+  contain: none;
 }
 body.theme-cyber .tile {
-  background: rgba(10, 16, 32, 0.55);
-  backdrop-filter: blur(3px);
+  /* 個別 backdrop-filter は画面外タイルをGPUレイヤーから退避させるため使わない。 */
+  background: rgba(10, 16, 32, 0.72);
 }
 .tile.filled {
   border-color: color-mix(in srgb, var(--fg) 45%, transparent);

@@ -284,8 +284,12 @@ function gatherRow(row) {
 
 function setTile(tile, char, stateName) {
   tile.textContent = char.toUpperCase();
-  tile.classList.add("filled");
-  if (stateName && stateName !== CELL.GUESSING) tile.classList.add(`state-${stateName}`);
+  if (stateName && stateName !== CELL.GUESSING) {
+    tile.classList.remove("filled");
+    tile.classList.add(`state-${stateName}`);
+  } else {
+    tile.classList.add("filled");
+  }
 }
 
 function scrollToBottom() {
@@ -399,6 +403,11 @@ function revealRow(row, word, result, done) {
         burstAtElement(tile, colorForState(stateName), FX.burst.countPerTile[stateName] ?? 7);
         if (game.gameMode === "normal") applyKeyStyle(word[i]);
       }, UI.revealFlipMs / 2);
+      setTimeout(() => {
+        // forwards の3Dアニメーション状態を残すと、Safariが各タイルを恒久的な
+        // GPUレイヤーとして扱い、画面外から戻した際に再描画が遅れる。
+        tile.classList.remove("reveal", "filled");
+      }, UI.revealFlipMs + 20);
     }, i * UI.revealIntervalMs);
   });
   setTimeout(done, 5 * UI.revealIntervalMs + UI.revealFlipMs / 2 + UI.afterRevealPauseMs);
