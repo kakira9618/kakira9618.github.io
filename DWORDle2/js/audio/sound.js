@@ -319,8 +319,9 @@ function noise({ dur = 0.12, gain = 0.25, freq = 2000, when = 0, q = 1.2, dest =
 
 const SFX = {
   key: () => {
-    tone({ freq: 1250, type: "triangle", dur: 0.05, gain: 0.25 });
-    noise({ dur: 0.03, gain: 0.1, freq: 4000 });
+    // 高域ノイズを使わず、低めの丸い音を短く重ねた柔らかな打鍵音。
+    tone({ freq: 620, type: "sine", dur: 0.075, gain: 0.17, attack: 0.01, slide: -70 });
+    tone({ freq: 880, type: "triangle", dur: 0.05, gain: 0.055, attack: 0.008, when: 0.004, slide: -90 });
   },
   delete: () => tone({ freq: 700, type: "triangle", dur: 0.05, gain: 0.2 }),
   revealUnused: () => tone({ freq: 220, type: "sine", dur: 0.14, gain: 0.3 }),
