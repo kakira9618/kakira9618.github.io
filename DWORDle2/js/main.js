@@ -3,7 +3,7 @@
 import { startRouter, initAppMode } from "./ui/app.js";
 import { initBackground } from "./fx/background.js";
 import { initBursts } from "./fx/bursts.js";
-import { bgmTracksUnlockedBy, unlockAudio } from "./audio/sound.js";
+import { audioNeedsRecovery, bgmTracksUnlockedBy, disposeAudio, restartBgmIfReady, stopBgm, unlockAudio } from "./audio/sound.js";
 import { getSettings, onSettingsChange } from "./core/settings.js";
 import { syncDocumentLanguage } from "./core/i18n.js";
 import { reconcileAchievementsOnce } from "./core/achievements.js";
@@ -40,15 +40,27 @@ addEventListener("blur", releaseKeyboardPresses);
 
 // 最初のユーザー操作で AudioContext を解錠（ブラウザの自動再生制限対策）
 const unlock = () => {
+  if (!audioNeedsRecovery()) return;
   // リロード直後は、設定値を変えずに内部だけ停止→再生して音源スケジュールを作り直す。
-  unlockAudio({ restartBgm: true }).then((isReady) => {
-    if (!isReady) return;
-    removeEventListener("pointerdown", unlock);
-    removeEventListener("keydown", unlock);
-  });
+  unlockAudio({ restartBgm: true });
 };
+// Safari は前面表示中にも AudioContext を中断することがあるため、監視は解除しない。
+// running 中は上の状態確認だけで終了する。
 addEventListener("pointerdown", unlock);
 addEventListener("keydown", unlock);
+
+// Safari は再読み込みやページキャッシュで AudioContext を保持することがある。
+// 離脱時に明示解放し、復帰時は状態に応じて即時再生または次の操作で再接続する。
+addEventListener("pagehide", () => {
+  disposeAudio();
+});
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    stopBgm();
+  } else {
+    restartBgmIfReady();
+  }
+});
 
 const recoveredAchievements = reconcileAchievementsOnce();
 startRouter();

@@ -112,21 +112,60 @@ function resetBgmBuses() {
   createBgmBuses();
 }
 
+function resetAudioContext(closeContext = false) {
+  const oldContext = ctx;
+  if (bgmTimer) clearTimeout(bgmTimer);
+  bgmTimer = null;
+  bgmRunning = false;
+  resumePromise = null;
+  for (const node of [...Object.values(bgmBuses()), bgmGain, sfxGain, masterGain]) {
+    try {
+      node?.disconnect();
+    } catch {
+      // Safari がすでに切断済みのノードを返しても、残りの状態は初期化する。
+    }
+  }
+  ctx = null;
+  masterGain = null;
+  sfxGain = null;
+  bgmGain = null;
+  busNormal = null;
+  busUso = null;
+  busGentle = null;
+  busClassic = null;
+  nextBarTime = 0;
+  barIndex = 0;
+  if (closeContext && oldContext?.state !== "closed") {
+    try {
+      Promise.resolve(oldContext.close()).catch(() => {});
+    } catch {
+      // ページ破棄中は close 自体が例外になる Safari がある。
+    }
+  }
+}
+
 function ensureContext() {
+  if (ctx?.state === "closed") resetAudioContext();
   if (ctx) return ctx;
   const AC = window.AudioContext || window.webkitAudioContext;
   if (!AC) return null;
-  ctx = new AC();
-  masterGain = ctx.createGain();
-  masterGain.gain.value = AUDIO.masterGain;
-  masterGain.connect(ctx.destination);
-  sfxGain = ctx.createGain();
-  sfxGain.gain.value = sfxTargetGain();
-  sfxGain.connect(masterGain);
-  bgmGain = ctx.createGain();
-  bgmGain.gain.value = 0;
-  bgmGain.connect(masterGain);
-  createBgmBuses();
+  try {
+    ctx = new AC();
+    masterGain = ctx.createGain();
+    masterGain.gain.value = AUDIO.masterGain;
+    masterGain.connect(ctx.destination);
+    sfxGain = ctx.createGain();
+    sfxGain.gain.value = sfxTargetGain();
+    sfxGain.connect(masterGain);
+    bgmGain = ctx.createGain();
+    bgmGain.gain.value = 0;
+    bgmGain.connect(masterGain);
+    createBgmBuses();
+  } catch {
+    // iOS Safari の同時 AudioContext 上限などで生成に失敗した場合は次の操作で再試行する。
+    resetAudioContext(true);
+    return null;
+  }
   return ctx;
 }
 
@@ -138,19 +177,30 @@ function resumeAudioContext() {
   if (!ensureContext() || ctx.state === "closed") return Promise.resolve(false);
   if (ctx.state === "running") return Promise.resolve(true);
   if (!resumePromise) {
+    const resumingContext = ctx;
     let resumeResult;
     try {
       // 自動再生制限を解除できるよう、ユーザー操作のイベント処理中に直接呼び出す。
-      resumeResult = ctx.resume();
+      resumeResult = resumingContext.resume();
     } catch {
+      if (ctx === resumingContext) resetAudioContext(true);
       return Promise.resolve(false);
     }
-    resumePromise = Promise.resolve(resumeResult)
-      .then(() => ctx.state === "running")
-      .catch(() => false)
+    let pendingResume;
+    pendingResume = Promise.resolve(resumeResult)
+      .then(() => {
+        const isRunning = ctx === resumingContext && resumingContext.state === "running";
+        if (!isRunning && ctx === resumingContext) resetAudioContext(true);
+        return isRunning;
+      })
+      .catch(() => {
+        if (ctx === resumingContext) resetAudioContext(true);
+        return false;
+      })
       .finally(() => {
-        resumePromise = null;
+        if (resumePromise === pendingResume) resumePromise = null;
       });
+    resumePromise = pendingResume;
   }
   return resumePromise;
 }
@@ -165,6 +215,26 @@ export function unlockAudio({ restartBgm = false } = {}) {
     startBgm();
   });
   return ready;
+}
+
+// Safari のページキャッシュや再読み込みで古い AudioContext を残さない。
+export function disposeAudio() {
+  resetAudioContext(true);
+}
+
+// 常設の入力ハンドラから、Safari の音声状態だけを軽量に確認する。
+export function audioNeedsRecovery() {
+  if (!ctx || ctx.state !== "running") return true;
+  return getSettings().bgm && !bgmRunning;
+}
+
+// バックグラウンド復帰時、Safari が AudioContext を自動復帰できた場合だけ即時再開する。
+// suspended / interrupted の場合は false を返し、次のユーザー操作で unlockAudio する。
+export function restartBgmIfReady() {
+  if (!ctx || ctx.state !== "running" || !getSettings().bgm) return false;
+  stopBgm();
+  startBgm();
+  return true;
 }
 
 // 表 / 裏の切替。予約済みの旧バスを破棄してから新しいモードを再生する。
@@ -613,7 +683,8 @@ export function startBgm() {
 export function stopBgm() {
   bgmRunning = false;
   if (bgmTimer) clearTimeout(bgmTimer);
-  if (ctx && bgmGain) {
+  bgmTimer = null;
+  if (ctx && ctx.state !== "closed" && bgmGain) {
     const t = ctx.currentTime;
     bgmGain.gain.cancelScheduledValues(t);
     bgmGain.gain.setValueAtTime(bgmGain.gain.value, t);

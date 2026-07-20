@@ -64,6 +64,8 @@ class FakeAudioContext {
     this.destination = new FakeNode(this);
     this.gains = [];
     this.startedOscillators = 0;
+    this.closeCalls = 0;
+    FakeAudioContext.instances.push(this);
     FakeAudioContext.instance = this;
   }
 
@@ -90,16 +92,29 @@ class FakeAudioContext {
     return { getChannelData: () => new Float32Array(length) };
   }
   resume() {
+    if (FakeAudioContext.failNextResume) {
+      FakeAudioContext.failNextResume = false;
+      return Promise.reject(new Error("Safari audio interruption"));
+    }
     return Promise.resolve().then(() => {
       this.state = "running";
     });
   }
+
+  close() {
+    this.closeCalls++;
+    this.state = "closed";
+    return Promise.resolve();
+  }
 }
+
+FakeAudioContext.instances = [];
+FakeAudioContext.failNextResume = false;
 
 globalThis.window = { AudioContext: FakeAudioContext };
 
 const { setSetting } = await import("../js/core/settings.js");
-const { playSfx, unlockAudio, setUsoMood, stopBgm } = await import("../js/audio/sound.js");
+const { audioNeedsRecovery, disposeAudio, playSfx, unlockAudio, setUsoMood, stopBgm } = await import("../js/audio/sound.js");
 
 setSetting("bgm", false);
 playSfx("ui");
@@ -109,6 +124,7 @@ assert.equal(await unlockAudio(), true);
 assert.equal(context.startedOscillators, 1, "the first SFX should play after the audio context resumes");
 setSetting("bgm", true);
 await unlockAudio();
+assert.equal(audioNeedsRecovery(), false, "running BGM should not be restarted on every input");
 for (let i = 0; i < 12; i++) setUsoMood(i % 2 === 0);
 
 const masterGain = context.gains.find((gain) => gain.connections.includes(context.destination));
@@ -133,5 +149,20 @@ setSetting("sfxVolume", 25);
 assert.equal(bgmGain.gain.value, 0.08);
 assert.equal(sfxGain.gain.value, 0.125);
 
+context.state = "closed";
+assert.equal(audioNeedsRecovery(), true, "a closed Safari audio context should request recovery");
+playSfx("ui");
+const rebuiltContext = FakeAudioContext.instance;
+assert.notEqual(rebuiltContext, context, "a closed Safari audio context should be replaced");
+assert.equal(await unlockAudio(), true);
+
+disposeAudio();
+assert.equal(rebuiltContext.state, "closed", "page exit should close the audio context");
+FakeAudioContext.failNextResume = true;
+assert.equal(await unlockAudio(), false, "an interrupted Safari audio context should fail cleanly");
+assert.equal(FakeAudioContext.instance.state, "closed", "a failed context should be released");
+assert.equal(await unlockAudio(), true, "the next user operation should create a fresh audio context");
+
 stopBgm();
+disposeAudio();
 console.log("音声テスト: OK");
