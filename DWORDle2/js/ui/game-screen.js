@@ -244,9 +244,8 @@ function gatherRow(row) {
   row.tiles.forEach((t) => (t.style.opacity = "0"));
   boardScrollEl.scrollTop = boardScrollEl.scrollHeight;
   requestAnimationFrame(() => {
-    const rects = row.tiles.map((t) => t.getBoundingClientRect());
     const flight = flyInTiles(
-      rects,
+      row.tiles,
       game.gameMode === "uso",
       row.tiles.map((tile) => tile.textContent)
     );

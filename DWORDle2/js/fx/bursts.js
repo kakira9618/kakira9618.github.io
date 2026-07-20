@@ -154,16 +154,18 @@ function makeTileFace(w, h, edgeColor, fillColor, initialText = "") {
 }
 
 /**
- * DOM タイルの位置 (rects: CSS 座標の {left,top,width,height}) へ、
+ * DOM タイル (targetElements) の現在位置へ、
  * 3D 空間の奥・外側からタイル面が回転しながら飛来する。
+ * 飛行中は各フレームで位置を取り直し、盤面スクロールにも追従する。
  * 各タイルが着地した瞬間に onArrive(i) を呼ぶ。全着地で resolve。
  * cyber テーマ以外・パーティクルオフ時は何もせず即 resolve する。
  */
-export function flyInTiles(rects, isUso, initialTexts = []) {
+export function flyInTiles(targetElements, isUso, initialTexts = []) {
   const s = getSettings();
-  if (s.theme !== "cyber" || s.reduceFx || rects.length === 0) {
+  if (s.theme !== "cyber" || s.reduceFx || targetElements.length === 0) {
     return { skipped: true, promise: Promise.resolve(), onArrive: null };
   }
+  const rects = targetElements.map((element) => element.getBoundingClientRect());
   const g = FX.gather;
   const edge = isUso ? g.edgeUso : g.edgeNormal;
   const w = rects[0].width;
@@ -213,6 +215,7 @@ export function flyInTiles(rects, isUso, initialTexts = []) {
       index: i,
       arrived: false,
       face,
+      targetElement: targetElements[i],
     });
   });
 
@@ -272,6 +275,15 @@ function loop(now) {
     let allDone = true;
     for (const f of flight.group) {
       if (f.arrived) continue;
+      const targetRect = f.targetElement.getBoundingClientRect();
+      const nextX = targetRect.left + targetRect.width / 2;
+      const nextY = toWorldY(targetRect.top + targetRect.height / 2);
+      const dx = nextX - f.to.x;
+      const dy = nextY - f.to.y;
+      // 集合先だけでなく飛行経路全体を移動し、スクロール操作へ即時追従させる。
+      f.from.x += dx;
+      f.from.y += dy;
+      f.to.set(nextX, nextY, 0);
       const t = (now - f.start) / f.dur;
       if (t < 0) {
         allDone = false;
