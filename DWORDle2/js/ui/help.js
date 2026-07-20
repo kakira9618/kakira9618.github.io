@@ -470,31 +470,24 @@ export function showFirstTutorial(mode) {
     );
 
   showModal({
-    title: currentLanguage() === "en" ? "Two quick rules" : "最初に 2 つの大事なルール",
+    title: currentLanguage() === "en" ? "Basic Rules" : "基本ルール",
     body: [
-      el(
-        "p",
-        { class: "tutorial-intro" },
-        currentLanguage() === "en"
-          ? "DWORDle looks familiar, but these two differences change how you solve it."
-          : "Wordle と似ていますが、次の 2 点が推理の鍵です。"
-      ),
       el(
         "ol",
         { class: "tutorial-points" },
         point(
           "1",
-          currentLanguage() === "en" ? "Feedback can cross both words" : "判定は 2 つの答えをまたぐ",
+          currentLanguage() === "en" ? "Feedback checks both words" : "判定は 2 つの答えを参照",
           currentLanguage() === "en"
-            ? "Each green or yellow tile may refer to Word 1 or Word 2."
-            : "緑・黄は、Word 1 / Word 2 のどちらかについての情報です。"
+            ? "Green and yellow may refer to Word 1 or 2."
+            : "緑・黄は、Word 1 / 2 のどちらかの情報です。"
         ),
         point(
           "2",
-          currentLanguage() === "en" ? "All green may not be solved" : "全部緑でも未正解の場合がある",
+          currentLanguage() === "en" ? "All green may be unsolved" : "全部緑でも未正解",
           currentLanguage() === "en"
-            ? "You win only when your whole Guess is exactly one of the two answers."
-            : "入力した単語全体が、2 つの答えのどちらかと一致すればクリアです。"
+            ? "Match Word 1 or 2 exactly to win."
+            : "入力全体が Word 1 / 2 と一致すればクリアです。"
         )
       ),
       mode === "uso"
@@ -502,8 +495,8 @@ export function showFirstTutorial(mode) {
             "p",
             { class: "tutorial-intro", style: { color: "#ff7a9a" } },
             currentLanguage() === "en"
-              ? "In DWORDlie, every displayed feedback color is a lie."
-              : "DWORDlieでは、表示される判定色がすべて嘘になります。"
+              ? "In DWORDlie, every color lies."
+              : "DWORDlieは、判定色がすべて嘘です。"
           )
         : null,
     ],

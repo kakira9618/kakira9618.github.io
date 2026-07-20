@@ -239,6 +239,34 @@ body.theme-cyber .btn:hover {
   text-align: center;
   overflow-y: auto;
 }
+/* 画面の低い端末では中央揃えの上側がスクロール範囲外へはみ出すため、
+   タイトルを上から配置して全メニューへ到達できるようにする。 */
+@media (max-height: 700px) {
+  #screen-title {
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 64px 24px 24px;
+  }
+  #screen-title .logo {
+    font-size: clamp(38px, 10vw, 50px);
+  }
+  #screen-title .tagline {
+    margin-bottom: 6px;
+  }
+  #screen-title .title-menu {
+    gap: 8px;
+  }
+  #screen-title .title-menu .btn {
+    padding-block: 11px;
+  }
+  #screen-title .title-nav {
+    gap: 6px;
+    margin-top: 4px;
+  }
+  #screen-title .title-nav .btn {
+    padding-block: 9px;
+  }
+}
 .logo {
   font-size: clamp(40px, 11vw, 58px);
   font-weight: 900;

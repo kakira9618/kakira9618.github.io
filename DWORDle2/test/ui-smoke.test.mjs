@@ -43,6 +43,11 @@ await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
 const address = server.address();
 const baseUrl = `http://127.0.0.1:${address.port}/`;
 const unlocked = Object.fromEntries(ACHIEVEMENTS.map((achievement) => [achievement.id, 1]));
+const ogPng = await readFile(path.join(projectRoot, "og.png"));
+const ihdrOffset = ogPng.indexOf(Buffer.from("IHDR"));
+assert.notEqual(ihdrOffset, -1, "OGP image should contain a PNG IHDR chunk");
+assert.equal(ogPng.readUInt32BE(ihdrOffset + 4), 1200, "OGP image width should be 1200px");
+assert.equal(ogPng.readUInt32BE(ihdrOffset + 8), 630, "OGP image height should be 630px");
 
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
@@ -81,7 +86,7 @@ async function assertNoSeriousA11yViolations(stage) {
 try {
   await page.goto(baseUrl, { waitUntil: "networkidle" });
 
-  const tutorial = page.getByRole("dialog", { name: "最初に 2 つの大事なルール" });
+  const tutorial = page.getByRole("dialog", { name: "基本ルール" });
   await tutorial.waitFor();
   assert.equal(await tutorial.evaluate((node) => node.contains(document.activeElement)), true, "Tutorial should receive focus");
   await page.getByRole("button", { name: "わかった" }).click();
@@ -154,6 +159,29 @@ try {
   const viewport = await page.locator('meta[name="viewport"]').getAttribute("content");
   assert.equal(viewport.includes("user-scalable=no"), false, "Pinch zoom must remain available");
   assert.equal(runtimeErrors.length, 0, `Runtime errors:\n${runtimeErrors.join("\n")}`);
+
+  const shortPage = await browser.newPage({ viewport: { width: 393, height: 559 }, locale: "ja-JP" });
+  await shortPage.addInitScript(() => {
+    localStorage.setItem("dwordle2.settings", JSON.stringify({
+      theme: "cyber",
+      sfx: false,
+      bgm: false,
+      language: "ja",
+      keyboardHints: true,
+      reduceFx: true,
+      randomLevel: 1,
+    }));
+    localStorage.setItem("dwordle2.legacyImportPrompted", "true");
+    localStorage.setItem("dwordle2.tutorialSeen", "true");
+  });
+  await shortPage.goto(baseUrl, { waitUntil: "networkidle" });
+  const shortLogoBox = await shortPage.locator(".logo").boundingBox();
+  assert.ok(shortLogoBox && shortLogoBox.y >= 0, "Title logo should remain visible on a Pixel 3-height viewport");
+  await shortPage.getByRole("button", { name: "デイリー問題" }).waitFor();
+  await shortPage.getByRole("button", { name: "設定" }).scrollIntoViewIfNeeded();
+  await shortPage.getByRole("button", { name: "設定" }).waitFor();
+  await shortPage.close();
+
   console.log("UIスモーク + a11yテスト: OK");
 } finally {
   await browser.close();
