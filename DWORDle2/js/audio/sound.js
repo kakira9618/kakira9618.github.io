@@ -157,10 +157,12 @@ function resumeAudioContext() {
 
 // 最初のユーザー操作で呼ぶ（main.js が登録する）。
 // resume 完了後に BGM を開始し、リロード直後や初回操作でも確実に音を出す。
-export function unlockAudio() {
+export function unlockAudio({ restartBgm = false } = {}) {
   const ready = resumeAudioContext();
   ready.then((isReady) => {
-    if (isReady && getSettings().bgm) startBgm();
+    if (!isReady || !getSettings().bgm) return;
+    if (restartBgm) stopBgm();
+    startBgm();
   });
   return ready;
 }

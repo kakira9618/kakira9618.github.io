@@ -73,6 +73,20 @@ function updateBgmSelection(selectedTrack) {
   }
 }
 
+function restoreScrollPosition(scroller, scrollTop) {
+  if (!scroller) return;
+  const restore = () => {
+    scroller.scrollTop = scrollTop;
+  };
+  restore();
+  // iOS Safari はクリック完了後にフォーカス位置へ遅れてスクロールするため、
+  // 次とその次の描画タイミングでも元の位置を復元する。
+  requestAnimationFrame(() => {
+    restore();
+    requestAnimationFrame(restore);
+  });
+}
+
 function showImportModal() {
   const ta = el("textarea", {
     placeholder: tr(
@@ -285,15 +299,19 @@ function render() {
               role: "radio",
               "aria-checked": String(isActive),
               "aria-disabled": String(Boolean(isLocked)),
-              onclick: () => {
+              onclick: (event) => {
                 if (isLocked) {
                   playSfx("invalid");
                   toast(tr(`実績「${unlockLabel}」で解放されます`, `Unlocks with the “${unlockLabel}” achievement`));
                   return;
                 }
+                const scroller = event.currentTarget.closest(".list-screen-body");
+                const scrollTop = scroller?.scrollTop ?? 0;
                 playSfx("ui");
                 setSetting("bgmTrack", track.id);
                 updateBgmSelection(track.id);
+                event.currentTarget.blur();
+                restoreScrollPosition(scroller, scrollTop);
               },
             },
             el("span", { class: "bgm-mark" }, isLocked ? icon("lock", 17) : isActive ? icon("music", 18) : "○"),

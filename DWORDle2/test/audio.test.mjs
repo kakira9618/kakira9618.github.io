@@ -120,6 +120,14 @@ const currentBuses = context.gains.filter((gain) => gain.connections.includes(bg
 assert.equal(currentBuses.length, 4, "only the current four BGM buses should remain connected");
 assert(context.gains.filter((gain) => gain.disconnected).length >= 4, "old BGM buses should be disconnected");
 
+const disconnectedBeforeReloadRestart = context.gains.filter((gain) => gain.disconnected).length;
+await unlockAudio({ restartBgm: true });
+await Promise.resolve();
+assert(
+  context.gains.filter((gain) => gain.disconnected).length >= disconnectedBeforeReloadRestart + 4,
+  "reload recovery should rebuild the four BGM buses"
+);
+
 setSetting("bgmVolume", 50);
 setSetting("sfxVolume", 25);
 assert.equal(bgmGain.gain.value, 0.08);

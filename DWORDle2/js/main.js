@@ -40,7 +40,8 @@ addEventListener("blur", releaseKeyboardPresses);
 
 // 最初のユーザー操作で AudioContext を解錠（ブラウザの自動再生制限対策）
 const unlock = () => {
-  unlockAudio().then((isReady) => {
+  // リロード直後は、設定値を変えずに内部だけ停止→再生して音源スケジュールを作り直す。
+  unlockAudio({ restartBgm: true }).then((isReady) => {
     if (!isReady) return;
     removeEventListener("pointerdown", unlock);
     removeEventListener("keydown", unlock);
