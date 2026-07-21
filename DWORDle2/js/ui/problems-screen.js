@@ -4,16 +4,16 @@
 // ルート: #/problems
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate, getAppMode } from "./app.js?v=20260722-bgm-ui-refresh";
+import { registerScreen, navigate, getAppMode } from "./app.js?v=20260722-bgm-unlock-batch";
 import { buildProblemStatus, MODES } from "../core/records.js";
 import { LEVELS, isValidPID, pidLabel } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260722-bgm-ui-refresh";
-import { showModal } from "./modal.js?v=20260722-bgm-ui-refresh";
-import { confirmAndStart } from "./game-screen.js?v=20260722-bgm-ui-refresh";
-import { toast } from "./toast.js?v=20260722-bgm-ui-refresh";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-bgm-ui-refresh";
+import { playSfx } from "../audio/sound.js?v=20260722-bgm-unlock-batch";
+import { showModal } from "./modal.js?v=20260722-bgm-unlock-batch";
+import { confirmAndStart } from "./game-screen.js?v=20260722-bgm-unlock-batch";
+import { toast } from "./toast.js?v=20260722-bgm-unlock-batch";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-bgm-unlock-batch";
 import { icon } from "./icons.js";
-import { localizedLevel, tr } from "../core/i18n.js?v=20260722-bgm-ui-refresh";
+import { localizedLevel, tr } from "../core/i18n.js?v=20260722-bgm-unlock-batch";
 
 const BLOCK_SIZE = 100;
 

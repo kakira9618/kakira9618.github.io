@@ -1,6 +1,6 @@
 // ユーザー設定と OS のアクセシビリティ設定をまとめた動きの抑制判定。
 
-import { getSettings } from "./settings.js?v=20260722-bgm-ui-refresh";
+import { getSettings } from "./settings.js?v=20260722-bgm-unlock-batch";
 
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 

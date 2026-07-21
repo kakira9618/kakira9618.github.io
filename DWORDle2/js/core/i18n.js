@@ -1,6 +1,6 @@
 // UI language helpers. The stored setting is the single source of truth.
 
-import { getSettings } from "./settings.js?v=20260722-bgm-ui-refresh";
+import { getSettings } from "./settings.js?v=20260722-bgm-unlock-batch";
 
 export function currentLanguage() {
   return getSettings().language === "en" ? "en" : "ja";

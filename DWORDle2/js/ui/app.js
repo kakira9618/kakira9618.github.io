@@ -11,10 +11,10 @@
 //   #/analysis/<mode>/<startTime> 分析画面
 
 import { loadJSON, saveJSON } from "../core/store.js";
-import { setUsoMood } from "../audio/sound.js?v=20260722-bgm-ui-refresh";
-import { setBackgroundMood } from "../fx/effects.js?v=20260722-bgm-ui-refresh";
-import { setPopBackgroundMood } from "../fx/pop-background.js?v=20260722-bgm-ui-refresh";
-import { closeAllModals } from "./modal.js?v=20260722-bgm-ui-refresh";
+import { setUsoMood } from "../audio/sound.js?v=20260722-bgm-unlock-batch";
+import { setBackgroundMood } from "../fx/effects.js?v=20260722-bgm-unlock-batch";
+import { setPopBackgroundMood } from "../fx/pop-background.js?v=20260722-bgm-unlock-batch";
+import { closeAllModals } from "./modal.js?v=20260722-bgm-unlock-batch";
 
 const screens = new Map(); // name -> { element, render(params) }
 let currentName = null;

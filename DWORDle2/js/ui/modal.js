@@ -1,8 +1,8 @@
 // モーダルダイアログ。
 
 import { el, clear } from "./dom.js";
-import { playSfx } from "../audio/sound.js?v=20260722-bgm-ui-refresh";
-import { tr } from "../core/i18n.js?v=20260722-bgm-ui-refresh";
+import { playSfx } from "../audio/sound.js?v=20260722-bgm-unlock-batch";
+import { tr } from "../core/i18n.js?v=20260722-bgm-unlock-batch";
 
 const layer = () => document.getElementById("modal-layer");
 const openCloseFns = new Set(); // closeAllModals 用

@@ -2,19 +2,19 @@
 // ルート: #/result/<mode>/<startTime>
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260722-bgm-ui-refresh";
+import { registerScreen, navigate } from "./app.js?v=20260722-bgm-unlock-batch";
 import { findGame, MODES } from "../core/records.js";
 import { Logic, CELL } from "../core/logic.js";
 import { pidLabel, isDailyPID } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260722-bgm-ui-refresh";
-import { toast } from "./toast.js?v=20260722-bgm-ui-refresh";
-import { confirmAndStart } from "./game-screen.js?v=20260722-bgm-ui-refresh";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-bgm-ui-refresh";
+import { playSfx } from "../audio/sound.js?v=20260722-bgm-unlock-batch";
+import { toast } from "./toast.js?v=20260722-bgm-unlock-batch";
+import { confirmAndStart } from "./game-screen.js?v=20260722-bgm-unlock-batch";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-bgm-unlock-batch";
 import { icon } from "./icons.js";
-import { downloadResultPNG } from "./snapshot.js?v=20260722-bgm-ui-refresh";
-import { SHARE_URL } from "../config.js?v=20260722-bgm-ui-refresh";
-import { tr } from "../core/i18n.js?v=20260722-bgm-ui-refresh";
-import { rowAriaLabel } from "./a11y.js?v=20260722-bgm-ui-refresh";
+import { downloadResultPNG } from "./snapshot.js?v=20260722-bgm-unlock-batch";
+import { SHARE_URL } from "../config.js?v=20260722-bgm-unlock-batch";
+import { tr } from "../core/i18n.js?v=20260722-bgm-unlock-batch";
+import { rowAriaLabel } from "./a11y.js?v=20260722-bgm-unlock-batch";
 
 let root = null;
 
