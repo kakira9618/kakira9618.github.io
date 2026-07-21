@@ -4,23 +4,23 @@
 // 原作と同じく、Guess は確定するたびに保存され、リロードしても再開できる。
 
 import { el, clear } from "./dom.js";
-import { APP_VERSION, UI, FX } from "../config.js?v=20260722-uso-modal-hint";
+import { APP_VERSION, UI, FX } from "../config.js?v=20260722-header-fit";
 import { Logic, CELL, usoConvert } from "../core/logic.js";
 import { MODES, saveCurrentGame, clearCurrentGame, getCurrentGame, addFinishedGame, isAlreadyPlayed, getHistory } from "../core/records.js";
 import { pidLabel } from "../core/problems.js";
-import { checkOnGameFinish } from "../core/achievements.js?v=20260722-uso-modal-hint";
-import { registerScreen, navigate, redirect, getAppMode, currentScreenName, rememberPlayedMode } from "./app.js?v=20260722-uso-modal-hint";
-import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./toast.js?v=20260722-uso-modal-hint";
-import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js?v=20260722-uso-modal-hint";
-import { hiddenThemesUnlockedBy } from "../core/settings.js?v=20260722-uso-modal-hint";
-import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/effects.js?v=20260722-uso-modal-hint";
-import { showHelpModal } from "./help.js?v=20260722-uso-modal-hint";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-uso-modal-hint";
+import { checkOnGameFinish } from "../core/achievements.js?v=20260722-header-fit";
+import { registerScreen, navigate, redirect, getAppMode, currentScreenName, rememberPlayedMode } from "./app.js?v=20260722-header-fit";
+import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./toast.js?v=20260722-header-fit";
+import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js?v=20260722-header-fit";
+import { hiddenThemesUnlockedBy } from "../core/settings.js?v=20260722-header-fit";
+import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/effects.js?v=20260722-header-fit";
+import { showHelpModal } from "./help.js?v=20260722-header-fit";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-header-fit";
 import { icon } from "./icons.js";
-import { tr } from "../core/i18n.js?v=20260722-uso-modal-hint";
-import { getSettings } from "../core/settings.js?v=20260722-uso-modal-hint";
-import { shouldReduceMotion } from "../core/motion.js?v=20260722-uso-modal-hint";
-import { announce, feedbackName, rowAriaLabel, tileAriaLabel } from "./a11y.js?v=20260722-uso-modal-hint";
+import { tr } from "../core/i18n.js?v=20260722-header-fit";
+import { getSettings } from "../core/settings.js?v=20260722-header-fit";
+import { shouldReduceMotion } from "../core/motion.js?v=20260722-header-fit";
+import { announce, feedbackName, rowAriaLabel, tileAriaLabel } from "./a11y.js?v=20260722-header-fit";
 
 const KEY_ROWS = [
   [..."qwertyuiop".split(""), "backspace"],
@@ -175,7 +175,16 @@ function updateHeader() {
   const mode = MODES[game.gameMode];
   headerTitleEl.textContent = mode.title;
   counterEl.textContent = `${game.guessWord.length + (state === "finish" ? 0 : 1)} / ${mode.maxGuess}`;
-  seedEl.textContent = seedHidden ? "No.????" : pidLabel(game.problemID);
+  const label = seedHidden ? "No.????" : pidLabel(game.problemID);
+  // "Daily 2026-07-22" のような 2 語ラベルは 2 行 + 小さめの文字で表示し、
+  // 狭い端末でもタイトルや右側のボタン群を削らずに収める
+  const words = label.split(" ");
+  seedEl.classList.toggle("seed-stacked", words.length > 1);
+  if (words.length > 1) {
+    seedEl.replaceChildren(...words.map((word) => el("span", {}, word)));
+  } else {
+    seedEl.textContent = label;
+  }
   seedEl.setAttribute("aria-label", seedHidden ? tr("問題番号を表示", "Show puzzle number") : tr("問題番号を隠す", "Hide puzzle number"));
 }
 
@@ -634,7 +643,7 @@ export async function confirmAndStart(pid, mode) {
   if (isAlreadyPlayed(pid, mode) || playedToday) {
     // 注意: 動的 import にも必ず ?v= トークンを付ける。素の URL だと古いキャッシュの
     // modal.js（旧トークンで sound.js を import する）が混ざり、BGM が二重再生される。
-    const { confirmModal } = await import("./modal.js?v=20260722-uso-modal-hint");
+    const { confirmModal } = await import("./modal.js?v=20260722-header-fit");
     const label = pidLabel(pid);
     const countNote = playedToday
       ? tr(
@@ -650,7 +659,7 @@ export async function confirmAndStart(pid, mode) {
   }
   const current = getCurrentGame(mode);
   if (current && current.guessWord.length > 0) {
-    const { confirmModal } = await import("./modal.js?v=20260722-uso-modal-hint");
+    const { confirmModal } = await import("./modal.js?v=20260722-header-fit");
     const ok = await confirmModal(
       tr("進行中のゲーム", "Game in progress"),
       tr(

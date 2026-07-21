@@ -1,8 +1,8 @@
 // Three.js を遅延ロードするエフェクト窓口。
 // WebGL / Three.js が利用できない環境でも、ゲーム本体はクラシック表示で続行する。
 
-import { UI } from "../config.js?v=20260722-uso-modal-hint";
-import { getSettings, setSetting } from "../core/settings.js?v=20260722-uso-modal-hint";
+import { UI } from "../config.js?v=20260722-header-fit";
+import { getSettings, setSetting } from "../core/settings.js?v=20260722-header-fit";
 
 let background = null;
 let bursts = null;
@@ -29,8 +29,8 @@ function fallBackToClassic(error) {
 export function initEffects() {
   if (initPromise) return initPromise;
   initPromise = Promise.all([
-    import("./background.js?v=20260722-uso-modal-hint"),
-    import("./bursts.js?v=20260722-uso-modal-hint"),
+    import("./background.js?v=20260722-header-fit"),
+    import("./bursts.js?v=20260722-header-fit"),
   ])
     .then(([backgroundModule, burstsModule]) => {
       backgroundModule.initBackground(fallBackToClassic);

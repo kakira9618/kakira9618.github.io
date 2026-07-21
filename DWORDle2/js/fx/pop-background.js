@@ -8,9 +8,9 @@
 // pop 以外のテーマでは canvas を空にして描画ループも止める。
 // 「演出を軽くする」時はアニメーションを止め、判定済みの静止したラインを 1 回だけ描く。
 
-import { FX } from "../config.js?v=20260722-uso-modal-hint";
-import { getSettings, onSettingsChange } from "../core/settings.js?v=20260722-uso-modal-hint";
-import { onMotionPreferenceChange, shouldReduceMotion } from "../core/motion.js?v=20260722-uso-modal-hint";
+import { FX } from "../config.js?v=20260722-header-fit";
+import { getSettings, onSettingsChange } from "../core/settings.js?v=20260722-header-fit";
+import { onMotionPreferenceChange, shouldReduceMotion } from "../core/motion.js?v=20260722-header-fit";
 
 let canvas = null;
 let ctx = null;

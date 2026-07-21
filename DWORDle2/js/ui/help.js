@@ -4,11 +4,11 @@
 // DWORDle では解説後、同じパネルを使って「全部緑でも不正解」の例を再生する。
 
 import { el } from "./dom.js";
-import { showModal } from "./modal.js?v=20260722-uso-modal-hint";
-import { playSfx } from "../audio/sound.js?v=20260722-uso-modal-hint";
+import { showModal } from "./modal.js?v=20260722-header-fit";
+import { playSfx } from "../audio/sound.js?v=20260722-header-fit";
 import { queryWordPair, usoConvert } from "../core/logic.js";
-import { currentLanguage } from "../core/i18n.js?v=20260722-uso-modal-hint";
-import { shouldReduceMotion } from "../core/motion.js?v=20260722-uso-modal-hint";
+import { currentLanguage } from "../core/i18n.js?v=20260722-header-fit";
+import { shouldReduceMotion } from "../core/motion.js?v=20260722-header-fit";
 
 const EX = {
   ans1: "blood",

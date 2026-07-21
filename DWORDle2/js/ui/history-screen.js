@@ -2,16 +2,16 @@
 // ルート: #/history
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260722-uso-modal-hint";
+import { registerScreen, navigate } from "./app.js?v=20260722-header-fit";
 import { getRecentGames, getStatistics, MODES } from "../core/records.js";
 import { Logic, CELL } from "../core/logic.js";
 import { pidLabel } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260722-uso-modal-hint";
-import { showModal } from "./modal.js?v=20260722-uso-modal-hint";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-uso-modal-hint";
+import { playSfx } from "../audio/sound.js?v=20260722-header-fit";
+import { showModal } from "./modal.js?v=20260722-header-fit";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-header-fit";
 import { icon } from "./icons.js";
-import { currentLanguage, tr } from "../core/i18n.js?v=20260722-uso-modal-hint";
-import { rowAriaLabel } from "./a11y.js?v=20260722-uso-modal-hint";
+import { currentLanguage, tr } from "../core/i18n.js?v=20260722-header-fit";
+import { rowAriaLabel } from "./a11y.js?v=20260722-header-fit";
 
 let root = null;
 let filter = "all"; // "all" | "normal" | "uso"

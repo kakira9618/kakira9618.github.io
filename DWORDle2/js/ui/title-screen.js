@@ -2,25 +2,25 @@
 // 右上のマスクボタンで DWORDlie（裏モード）に切り替わる。
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260722-uso-modal-hint";
+import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260722-header-fit";
 import { countPlays, getCurrentGame, getHistory, isAlreadyPlayed } from "../core/records.js";
 import { isDebugMode } from "../core/debug.js";
 import { LEVELS, todayPID, isValidPID, pidLabel, PID } from "../core/problems.js";
-import { getSettings, setSetting } from "../core/settings.js?v=20260722-uso-modal-hint";
+import { getSettings, setSetting } from "../core/settings.js?v=20260722-header-fit";
 import { loadJSON, saveJSON } from "../core/store.js";
 import { importFromLocalStorage, scanLegacyHistory } from "../core/migrate.js";
-import { playSfx } from "../audio/sound.js?v=20260722-uso-modal-hint";
-import { toast } from "./toast.js?v=20260722-uso-modal-hint";
-import { showModal } from "./modal.js?v=20260722-uso-modal-hint";
-import { finishHistoryImport } from "./history-import.js?v=20260722-uso-modal-hint";
-import { showFirstTutorial, showHelpModal } from "./help.js?v=20260722-uso-modal-hint";
-import { confirmAndStart } from "./game-screen.js?v=20260722-uso-modal-hint";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-uso-modal-hint";
-import { burstAtElement } from "../fx/effects.js?v=20260722-uso-modal-hint";
-import { shouldReduceMotion } from "../core/motion.js?v=20260722-uso-modal-hint";
+import { playSfx } from "../audio/sound.js?v=20260722-header-fit";
+import { toast } from "./toast.js?v=20260722-header-fit";
+import { showModal } from "./modal.js?v=20260722-header-fit";
+import { finishHistoryImport } from "./history-import.js?v=20260722-header-fit";
+import { showFirstTutorial, showHelpModal } from "./help.js?v=20260722-header-fit";
+import { confirmAndStart } from "./game-screen.js?v=20260722-header-fit";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-header-fit";
+import { burstAtElement } from "../fx/effects.js?v=20260722-header-fit";
+import { shouldReduceMotion } from "../core/motion.js?v=20260722-header-fit";
 import { icon } from "./icons.js";
-import { APP_VERSION } from "../config.js?v=20260722-uso-modal-hint";
-import { localizedLevel, tr } from "../core/i18n.js?v=20260722-uso-modal-hint";
+import { APP_VERSION } from "../config.js?v=20260722-header-fit";
+import { localizedLevel, tr } from "../core/i18n.js?v=20260722-header-fit";
 
 let root = null;
 let legacyImportCheckDone = false;

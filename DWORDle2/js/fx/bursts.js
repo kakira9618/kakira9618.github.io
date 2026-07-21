@@ -7,9 +7,9 @@
 // 本物の遠近感が付く。CSS 座標 (y 下向き) → ワールド座標は y を反転して使う。
 
 import * as THREE from "three";
-import { FX, UI } from "../config.js?v=20260722-uso-modal-hint";
-import { getSettings } from "../core/settings.js?v=20260722-uso-modal-hint";
-import { shouldReduceMotion } from "../core/motion.js?v=20260722-uso-modal-hint";
+import { FX, UI } from "../config.js?v=20260722-header-fit";
+import { getSettings } from "../core/settings.js?v=20260722-header-fit";
+import { shouldReduceMotion } from "../core/motion.js?v=20260722-header-fit";
 
 let renderer = null;
 let scene = null;
