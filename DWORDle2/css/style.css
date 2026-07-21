@@ -491,6 +491,94 @@ body.mode-uso .uso-banner {
   font-size: 14px;
   padding: 11px 8px;
 }
+/* タイトルメニューの段階解放。施錠中は彩度を落とし、解放時は一度だけ光って現れる */
+.menu-locked {
+  opacity: 0.5;
+  filter: saturate(0.3);
+  cursor: default;
+  flex-wrap: wrap;
+}
+/* 解放条件はラベルの下の行にまとめて置く */
+.menu-locked .unlock-hint {
+  flex-basis: 100%;
+  text-align: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--fg-dim);
+  white-space: nowrap;
+}
+@keyframes unlock-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.85);
+    filter: brightness(2.6) saturate(1.8) blur(6px);
+    box-shadow: 0 0 30px var(--accent);
+  }
+  45% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.06);
+    filter: brightness(1.5) saturate(1.3) blur(0);
+    box-shadow: 0 0 20px var(--accent);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    filter: none;
+    box-shadow: 0 0 0 transparent;
+  }
+}
+/* 解放の瞬間に斜めの光が走るシャインスイープ */
+@keyframes unlock-shine {
+  0% { transform: translateX(-130%); }
+  100% { transform: translateX(130%); }
+}
+.unlock-reveal {
+  position: relative;
+  overflow: hidden;
+  /* --reveal-delay は JS が項目ごとの時間差として設定する */
+  animation: unlock-reveal 0.9s cubic-bezier(0.2, 0.8, 0.3, 1) var(--reveal-delay, 0s) backwards;
+}
+.unlock-reveal::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.55) 50%, transparent 60%);
+  transform: translateX(-130%);
+  pointer-events: none;
+  animation: unlock-shine 0.6s ease-out calc(var(--reveal-delay, 0s) + 0.4s) backwards;
+}
+/* 解錠演出: 鍵がガチャガチャ揺れてから開き、拡大しながら消える */
+.unlock-lock {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #ffd166;
+  filter: drop-shadow(0 0 7px rgba(255, 209, 102, 0.9));
+  pointer-events: none;
+  animation: unlock-lock-shake 0.38s ease-in-out var(--reveal-delay, 0s) backwards;
+}
+.unlock-lock.open {
+  animation: unlock-lock-open 0.55s ease-out forwards;
+}
+@keyframes unlock-lock-shake {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(-14deg); }
+  40% { transform: rotate(11deg); }
+  60% { transform: rotate(-9deg); }
+  80% { transform: rotate(6deg); }
+}
+@keyframes unlock-lock-open {
+  0% { opacity: 1; transform: scale(1); }
+  35% { opacity: 1; transform: scale(1.35); }
+  100% { opacity: 0; transform: scale(2); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .unlock-reveal,
+  .unlock-reveal::after,
+  .unlock-lock {
+    animation: none;
+  }
+}
 .version-note {
   color: var(--fg-dim);
   font-size: 11px;
@@ -1154,12 +1242,14 @@ body.theme-cyber .card.tappable:hover {
 }
 
 /* ---- 履歴一覧 ---- */
+/* 一覧の行は枠線を持たず、背景の面とバッジの色だけで区切ってシンプルに見せる */
 .history-item {
   display: flex;
   align-items: center;
   gap: 12px;
   width: 100%;
   text-align: left;
+  border: none;
 }
 .history-item .badge {
   flex: none;
@@ -1171,8 +1261,8 @@ body.theme-cyber .card.tappable:hover {
   font-weight: 900;
   font-size: 17px;
 }
-.badge.win { background: color-mix(in srgb, var(--tile-correct) 25%, transparent); color: var(--tile-correct); border: 1px solid var(--tile-correct); }
-.badge.lose { background: color-mix(in srgb, var(--danger) 18%, transparent); color: #ff7a7a; border: 1px solid var(--danger); }
+.badge.win { background: color-mix(in srgb, var(--tile-correct) 25%, transparent); color: var(--tile-correct); }
+.badge.lose { background: color-mix(in srgb, var(--danger) 18%, transparent); color: #ff7a7a; }
 .history-item .info {
   flex: 1;
   min-width: 0;
@@ -1191,6 +1281,7 @@ body.theme-cyber .card.tappable:hover {
 .history-controls {
   padding: 0;
   overflow: hidden;
+  border: none;
 }
 .history-controls-summary {
   display: flex;
@@ -1308,6 +1399,8 @@ body.theme-cyber .card.tappable:hover {
 .history-pagination .btn {
   min-width: 34px;
   padding: 8px 9px;
+  border: none;
+  background: color-mix(in srgb, var(--bg-panel-2) 60%, transparent);
 }
 .history-page-status {
   min-width: 0;
@@ -1334,13 +1427,14 @@ body.theme-cyber .card.tappable:hover {
   font-weight: 800;
   letter-spacing: 0.06em;
   border-radius: 999px;
-  padding: 2px 8px;
-  border: 1px solid var(--border);
-  color: var(--fg-dim);
+  padding: 2.5px 8px;
+  background: color-mix(in srgb, var(--fg-dim) 14%, transparent);
+  /* 地に薄く色が付いたぶん、文字は --fg-dim より明るくしてコントラストを確保する */
+  color: color-mix(in srgb, var(--fg) 50%, var(--fg-dim));
 }
 .mode-chip.uso {
   color: #ff7a9a;
-  border-color: #ff2b5e88;
+  background: color-mix(in srgb, #ff2b5e 16%, transparent);
 }
 
 /* ---- 問題一覧 ---- */
@@ -1381,6 +1475,23 @@ body.theme-cyber .card.tappable:hover {
   transition: box-shadow 0.15s, transform 0.1s;
 }
 .block-cell:active { transform: scale(0.95); }
+/* ブロック内を全問クリアすると金色で讃える */
+.block-cell.complete {
+  background: linear-gradient(160deg, rgba(255, 209, 102, 0.3), rgba(255, 154, 60, 0.12));
+  border-color: rgba(255, 209, 102, 0.75);
+}
+.block-cell.complete .bn,
+.block-cell.complete .bp {
+  color: #ffd166;
+}
+/* 明色テーマでは金文字が沈むため濃いアンバーに切り替える */
+body.theme-pop .block-cell.complete .bn,
+body.theme-pop .block-cell.complete .bp {
+  color: #a86a00;
+}
+body.theme-cyber .block-cell.complete {
+  box-shadow: 0 0 10px rgba(255, 209, 102, 0.28);
+}
 .block-cell .bn {
   font-size: 11px;
   color: var(--fg-dim);
@@ -2390,5 +2501,15 @@ body.reduce-motion .guess-flag-cloth {
   }
   .seg button.active {
     background: rgba(127, 127, 127, 0.25);
+  }
+  .mode-chip {
+    background: rgba(127, 127, 127, 0.18);
+    color: var(--fg);
+  }
+  .mode-chip.uso {
+    background: rgba(255, 43, 94, 0.18);
+  }
+  .history-pagination .btn {
+    background: rgba(127, 127, 127, 0.12);
   }
 }

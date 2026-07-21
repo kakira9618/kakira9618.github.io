@@ -4,15 +4,16 @@
 // ルート: #/problems
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate, getAppMode } from "./app.js?v=20260722-oldchrome-colormix";
+import { registerScreen, navigate, getAppMode } from "./app.js?v=20260722-bgm-ui-refresh";
 import { buildProblemStatus, MODES } from "../core/records.js";
 import { LEVELS, isValidPID, pidLabel } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260722-oldchrome-colormix";
-import { showModal } from "./modal.js?v=20260722-oldchrome-colormix";
-import { confirmAndStart } from "./game-screen.js?v=20260722-oldchrome-colormix";
-import { toast } from "./toast.js?v=20260722-oldchrome-colormix";
+import { playSfx } from "../audio/sound.js?v=20260722-bgm-ui-refresh";
+import { showModal } from "./modal.js?v=20260722-bgm-ui-refresh";
+import { confirmAndStart } from "./game-screen.js?v=20260722-bgm-ui-refresh";
+import { toast } from "./toast.js?v=20260722-bgm-ui-refresh";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-bgm-ui-refresh";
 import { icon } from "./icons.js";
-import { localizedLevel, tr } from "../core/i18n.js?v=20260722-oldchrome-colormix";
+import { localizedLevel, tr } from "../core/i18n.js?v=20260722-bgm-ui-refresh";
 
 const BLOCK_SIZE = 100;
 
@@ -99,6 +100,7 @@ function render() {
     el("h1", { class: "title" }, tr("問題一覧", "Puzzles")),
     el("span", { class: "spacer" }),
     el("span", { class: `mode-chip ${mode === "uso" ? "uso" : ""}` }, MODES[mode].title),
+    soundToggleButton(),
     el(
       "button",
       {
@@ -170,14 +172,18 @@ function render() {
           if (st.cleared > 0) c++;
         }
       }
-      const ratio = c / (e - s + 1);
+      const total = e - s + 1;
+      const ratio = c / total;
+      const complete = c === total; // ブロック内を全問クリア
       blocks.push(
         el(
           "button",
           {
-            class: "block-cell",
-            "aria-label": tr(`問題 ${s} から ${e}、クリア ${c}、プレイ ${p}`, `Puzzles ${s} to ${e}, ${c} cleared, ${p} played`),
-            style: ratio > 0 && SUPPORTS_COLOR_MIX ? { background: `color-mix(in srgb, var(--tile-correct) ${Math.round(8 + ratio * 42)}%, var(--bg-panel))` } : {},
+            class: `block-cell ${complete ? "complete" : ""}`,
+            "aria-label": complete
+              ? tr(`問題 ${s} から ${e}、全問クリア`, `Puzzles ${s} to ${e}, all cleared`)
+              : tr(`問題 ${s} から ${e}、クリア ${c}、プレイ ${p}`, `Puzzles ${s} to ${e}, ${c} cleared, ${p} played`),
+            style: !complete && ratio > 0 && SUPPORTS_COLOR_MIX ? { background: `color-mix(in srgb, var(--tile-correct) ${Math.round(8 + ratio * 42)}%, var(--bg-panel))` } : {},
             onclick: () => {
               playSfx("ui");
               blockStart = s;
@@ -185,7 +191,7 @@ function render() {
             },
           },
           el("div", { class: "bn" }, `${s}`),
-          el("div", { class: "bp" }, p > 0 ? `✓${c}/${p}` : "—")
+          el("div", { class: "bp" }, complete ? `★${c}/${total}` : p > 0 ? `✓${c}/${p}` : "—")
         )
       );
     }
