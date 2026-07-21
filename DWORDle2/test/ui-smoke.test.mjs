@@ -114,6 +114,11 @@ try {
     `DWORDlie banner should sit immediately above the logo: ${JSON.stringify({ usoBannerBox, usoLogoBox })}`
   );
   await page.getByRole("button", { name: "表モードへ" }).click();
+  await page.getByText("答えは2つ、盤面は1つ。10 手以内に「どちらか」を当てろ。", { exact: true }).waitFor();
+  assert.equal(
+    await page.getByText("答えが 2 つある Wordle。10 手以内に「どちらか」を当てろ。", { exact: true }).count(),
+    0
+  );
   const randomButton = page.getByRole("button", { name: "ランダム（難しさを選択）", exact: true });
   await randomButton.waitFor();
   await randomButton.click();
