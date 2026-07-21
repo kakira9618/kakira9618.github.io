@@ -1,6 +1,6 @@
 // サイバーテーマの 3D 背景（Three.js）。
-// 流れるネオングリッド + 地平線の発光 + 玉ボケ（大きく柔らかい光）+
-// ゆっくり上昇する塵。すべて柔らかいスプライトで描き、きらめき（明滅）を付ける。
+// 流れるネオングリッド + 地平線の発光 + 蛍（強く光る芯とぼんやりした暈を持ち、
+// 明滅しながら漂って軌跡を残す）+ ゆっくり上昇する塵。
 // さらに空には大きくふわっとした光をいくつか浮かべ、
 // グリッドや光の色相をごくゆっくり揺らして、じわじわ変わる空にする。
 // classic テーマでは canvas ごと非表示になり、描画ループも止める。
@@ -16,7 +16,7 @@ let camera = null;
 let grid1 = null;
 let grid2 = null;
 let horizon = null;
-let bokeh = null; // { points, phases[] }
+let fireflies = null; // { points }（明滅・漂い・軌跡はシェーダ内で時間から計算する）
 let dust = null; // { points, speeds[] }
 let skyGlows = []; // [{ sprite, baseX, baseY, scale, speed, phase }]
 let running = false;
@@ -41,7 +41,26 @@ function makeGlowTexture(size = 128, inner = 0.0) {
   return tex;
 }
 
+// 蛍用テクスチャ。小さく強い芯と、広くぼんやりした暈を 1 枚に描く
+function makeFireflyTexture(size = 128) {
+  const cv = document.createElement("canvas");
+  cv.width = cv.height = size;
+  const g = cv.getContext("2d");
+  const grad = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  grad.addColorStop(0, "rgba(255,255,255,1)");
+  grad.addColorStop(0.08, "rgba(255,255,255,0.95)");
+  grad.addColorStop(0.2, "rgba(255,255,255,0.4)");
+  grad.addColorStop(0.45, "rgba(255,255,255,0.12)");
+  grad.addColorStop(1, "rgba(255,255,255,0)");
+  g.fillStyle = grad;
+  g.fillRect(0, 0, size, size);
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
 let glowTex = null;
+let fireflyTex = null;
 
 // 空に浮かぶ大きくふわっとした光を並べる
 function buildSkyObjects() {
@@ -97,6 +116,7 @@ export function initBackground(onFailure = () => {}) {
   camera.lookAt(0, 4, 0);
 
   glowTex = makeGlowTexture();
+  fireflyTex = makeFireflyTexture();
 
   const cfg = FX.bg;
   grid1 = new THREE.GridHelper(cfg.gridSize, cfg.gridDivisions, cfg.gridColor, cfg.gridColor);
@@ -144,41 +164,63 @@ function disposeLayer(layer) {
 }
 
 function rebuildParticles() {
-  disposeLayer(bokeh);
+  disposeLayer(fireflies);
   disposeLayer(dust);
-  bokeh = null;
+  fireflies = null;
   dust = null;
   // 「演出を軽くする」= パーティクルを完全にオフ（グリッドと地平線は残す）
   if (shouldReduceMotion()) return;
   const cfg = FX.bg;
   const colors = (uso ? cfg.particleColorsUso : cfg.particleColors).map((c) => new THREE.Color(c));
 
-  // ---- 玉ボケ層: 大きく柔らかい光を奥行きに散らす ----
+  // ---- 蛍層: 明滅しながら漂う光。頭 1 点 + 過去位置をたどる軌跡の点で 1 匹を描く ----
   {
-    const count = cfg.bokehCount;
+    const ff = cfg.firefly;
+    const perFly = 1 + ff.trailPoints; // 頭 + 軌跡
+    const count = ff.count * perFly;
     const geo = new THREE.BufferGeometry();
     const pos = new Float32Array(count * 3);
     const col = new Float32Array(count * 3);
     const size = new Float32Array(count);
-    const phases = new Float32Array(count);
-    for (let i = 0; i < count; i++) {
-      pos[i * 3] = (Math.random() - 0.5) * 150;
-      pos[i * 3 + 1] = 2 + Math.random() * 40;
-      pos[i * 3 + 2] = -10 - Math.random() * 150;
-      // 白を混ぜて上品に（彩度を落とす）
-      const c = colors[i % colors.length].clone().lerp(new THREE.Color(0xffffff), 0.25 + Math.random() * 0.3);
-      col[i * 3] = c.r;
-      col[i * 3 + 1] = c.g;
-      col[i * 3 + 2] = c.b;
-      size[i] = cfg.bokehSize[0] + Math.random() * (cfg.bokehSize[1] - cfg.bokehSize[0]);
-      phases[i] = Math.random() * Math.PI * 2;
+    const wander = new Float32Array(count * 3); // 漂いの振幅
+    const freq = new Float32Array(count * 3); // 漂いの角速度
+    const phase = new Float32Array(count * 3); // 漂いの位相
+    const blink = new Float32Array(count * 2); // [明滅速度, 明滅位相]
+    const trail = new Float32Array(count); // 0 = 頭、1..N = 軌跡
+    const rand = (range) => range[0] + Math.random() * (range[1] - range[0]);
+    for (let i = 0; i < ff.count; i++) {
+      // 2 乗で手前に寄せ、蛍が小さな点にならないようにする
+      const base = [(Math.random() - 0.5) * 120, 2 + Math.random() * 26, -10 - Math.random() * Math.random() * 90];
+      // 芯を白く見せるぶん、暈の色はやや濃いめに残す
+      const c = colors[i % colors.length].clone().lerp(new THREE.Color(0xffffff), 0.15 + Math.random() * 0.2);
+      const s = rand(ff.size);
+      const w = [rand(ff.wanderRadius), rand(ff.wanderRadius) * 0.55, rand(ff.wanderRadius) * 0.7];
+      const f = [rand(ff.wanderSpeed), rand(ff.wanderSpeed), rand(ff.wanderSpeed)];
+      const p = [Math.random() * Math.PI * 2, Math.random() * Math.PI * 2, Math.random() * Math.PI * 2];
+      const b = [rand(ff.blinkSpeed), Math.random()];
+      for (let k = 0; k < perFly; k++) {
+        const j = i * perFly + k;
+        pos.set(base, j * 3);
+        col.set([c.r, c.g, c.b], j * 3);
+        size[j] = s;
+        wander.set(w, j * 3);
+        freq.set(f, j * 3);
+        phase.set(p, j * 3);
+        blink.set(b, j * 2);
+        trail[j] = k;
+      }
     }
     geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
     geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
     geo.setAttribute("size", new THREE.BufferAttribute(size, 1));
-    const mat = makeSpriteShaderMaterial(cfg.bokehOpacity);
-    bokeh = { points: new THREE.Points(geo, mat), phases };
-    scene.add(bokeh.points);
+    geo.setAttribute("aWander", new THREE.BufferAttribute(wander, 3));
+    geo.setAttribute("aFreq", new THREE.BufferAttribute(freq, 3));
+    geo.setAttribute("aPhase", new THREE.BufferAttribute(phase, 3));
+    geo.setAttribute("aBlink", new THREE.BufferAttribute(blink, 2));
+    geo.setAttribute("aTrail", new THREE.BufferAttribute(trail, 1));
+    fireflies = { points: new THREE.Points(geo, makeFireflyMaterial()) };
+    fireflies.points.frustumCulled = false; // 位置はシェーダで動かすため元の境界では判定できない
+    scene.add(fireflies.points);
   }
 
   // ---- 塵層: 小さな光がゆっくり立ち上る ----
@@ -207,6 +249,84 @@ function rebuildParticles() {
     dust = { points: new THREE.Points(geo, mat), speeds };
     scene.add(dust.points);
   }
+}
+
+// 蛍用の Points シェーダ。位置（漂い）・明滅・軌跡の減衰をすべて時間から解析的に
+// 計算する。軌跡の点は「少し過去の時刻」で同じ式を評価するだけで頭の跡をたどる。
+function makeFireflyMaterial() {
+  const ff = FX.bg.firefly;
+  return new THREE.ShaderMaterial({
+    uniforms: {
+      map: { value: fireflyTex },
+      uTime: { value: 0 },
+      uOpacity: { value: ff.opacity },
+      uBaseGlow: { value: ff.baseGlow },
+      uTrailDt: { value: ff.trailSpacingSec },
+      uTrailPoints: { value: ff.trailPoints },
+      uTrailSize: { value: ff.trailSize },
+      uTrailGlow: { value: ff.trailGlow },
+    },
+    vertexShader: `
+      attribute float size;
+      attribute vec3 aWander;
+      attribute vec3 aFreq;
+      attribute vec3 aPhase;
+      attribute vec2 aBlink;
+      attribute float aTrail;
+      uniform float uTime;
+      uniform float uBaseGlow;
+      uniform float uTrailDt;
+      uniform float uTrailPoints;
+      uniform float uTrailSize;
+      uniform float uTrailGlow;
+      varying vec3 vColor;
+      varying float vGlow;
+      void main() {
+        vColor = color;
+        // 軌跡の点ほど過去の時刻で評価する
+        float t = uTime - aTrail * uTrailDt;
+        vec3 p = position + vec3(
+          sin(t * aFreq.x + aPhase.x) * aWander.x,
+          sin(t * aFreq.y + aPhase.y) * aWander.y,
+          sin(t * aFreq.z + aPhase.z) * aWander.z
+        );
+        // 副振動で単純な楕円軌道になるのを崩す
+        p.x += sin(t * aFreq.y * 1.7 + aPhase.z) * aWander.x * 0.35;
+        p.y += sin(t * aFreq.z * 2.3 + aPhase.x) * aWander.y * 0.3;
+
+        // 蛍の明滅: すっと立ち上がり、ゆっくり減衰して、しばらくぼんやりする
+        float cyc = fract(t * aBlink.x + aBlink.y);
+        float flare = smoothstep(0.0, 0.07, cyc) * pow(1.0 - smoothstep(0.10, 0.62, cyc), 1.5);
+        float glow = mix(uBaseGlow, 1.0, flare);
+
+        float isTrail = step(0.5, aTrail);
+        float k = aTrail / max(uTrailPoints, 1.0);
+        vGlow = glow * mix(1.0, uTrailGlow * (1.0 - k), isTrail);
+
+        vec4 mv = modelViewMatrix * vec4(p, 1.0);
+        float sizeScale = mix(0.85 + 0.45 * flare, uTrailSize * (1.0 - 0.5 * k), isTrail);
+        gl_PointSize = size * sizeScale * (240.0 / -mv.z);
+        gl_Position = projectionMatrix * mv;
+      }
+    `,
+    fragmentShader: `
+      uniform sampler2D map;
+      uniform float uOpacity;
+      varying vec3 vColor;
+      varying float vGlow;
+      void main() {
+        vec4 tex = texture2D(map, gl_PointCoord);
+        // 中心の芯は白く飛ばし、暈は蛍の色を残す
+        float core = smoothstep(0.35, 0.95, tex.a);
+        vec3 col = mix(vColor, vec3(1.0), core * 0.8);
+        gl_FragColor = vec4(col, vGlow * uOpacity * tex.a);
+      }
+    `,
+    vertexColors: true,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
 }
 
 // サイズ属性つきの Points 用シェーダ（柔らかい円 + 距離減衰）
@@ -290,11 +410,9 @@ function loop() {
     camera.position.y = 6.5 + Math.sin(t * 0.34) * 0.8;
     camera.lookAt(0, 4, -10);
 
-    // 玉ボケ: ごくゆっくり漂い、明滅する
-    if (bokeh) {
-      bokeh.points.rotation.y = Math.sin(t * 0.03) * 0.05;
-      bokeh.points.position.y = Math.sin(t * 0.12) * 0.8;
-      bokeh.points.material.uniforms.opacity.value = cfg.bokehOpacity * (0.82 + 0.18 * Math.sin(t * 0.6));
+    // 蛍: 漂い・明滅・軌跡はすべてシェーダ内で時間から計算する
+    if (fireflies) {
+      fireflies.points.material.uniforms.uTime.value = t;
     }
     // 塵: 上昇して上端で下へ戻る
     if (dust) {

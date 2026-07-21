@@ -29,10 +29,20 @@ export const FX = {
     gridDivisions: 60,
     gridSize: 260,
     gridOpacity: 0.2,
-    // 大きく柔らかい玉ボケ層
-    bokehCount: 34,
-    bokehSize: [4, 13], // ワールド単位の [最小, 最大]
-    bokehOpacity: 0.34,
+    // 蛍の層: 強く光る芯 + ぼんやりした暈を持ち、明滅しながら漂って軌跡を残す
+    firefly: {
+      count: 36,
+      size: [3.4, 6.8], // 頭の光のワールドサイズ [最小, 最大]
+      opacity: 0.8, // 発光ピーク時の明るさ（盤面が見えなくなるほど上げない）
+      baseGlow: 0.2, // ぼんやり期の明るさ（発光ピーク比）
+      blinkSpeed: [0.06, 0.16], // 明滅の速さ（1 秒あたりの周期数）
+      wanderRadius: [4, 11], // 漂いの振幅（ワールド単位）
+      wanderSpeed: [0.07, 0.2], // 漂いの角速度
+      trailPoints: 14, // 軌跡の点数（頭を除く）
+      trailSpacingSec: 0.45, // 軌跡 1 点あたりの時間差（詰めるほど滑らかな尾になる）
+      trailSize: 0.7, // 軌跡のサイズ（頭に対する比）
+      trailGlow: 0.5, // 軌跡の明るさ（頭に対する比。末尾へさらに減衰）
+    },
     // 細かい塵の層（ゆっくり上昇）
     dustCount: 200,
     dustSize: [0.5, 1.3],
