@@ -14,7 +14,7 @@ import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebra
 import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js";
 import { hiddenThemesUnlockedBy } from "../core/settings.js";
 import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/effects.js";
-import { showHelpModal } from "./help.js";
+import { showHelpModal } from "./help.js?v=20260721-ux-input";
 import { icon } from "./icons.js";
 import { tr } from "../core/i18n.js";
 import { getSettings } from "../core/settings.js";

@@ -12,7 +12,7 @@ import { playSfx } from "../audio/sound.js";
 import { toast } from "./toast.js?v=20260721-pop-achievements";
 import { showModal } from "./modal.js";
 import { finishHistoryImport } from "./history-import.js?v=20260721-pop-achievements";
-import { showFirstTutorial, showHelpModal } from "./help.js";
+import { showFirstTutorial, showHelpModal } from "./help.js?v=20260721-ux-input";
 import { confirmAndStart } from "./game-screen.js?v=20260721-pop-achievements";
 import { icon } from "./icons.js";
 import { APP_VERSION } from "../config.js";

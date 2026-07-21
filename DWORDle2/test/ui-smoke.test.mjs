@@ -214,7 +214,7 @@ try {
   });
   await page.locator("body.theme-pop.mode-normal").waitFor();
   await page.evaluate(async () => {
-    const { showHelpModal } = await import("./js/ui/help.js?v=20260721-pop-help");
+    const { showHelpModal } = await import("./js/ui/help.js?v=20260721-ux-input");
     showHelpModal("normal");
   });
   const popHelp = page.getByRole("dialog", { name: "DWORDle 遊び方" });
@@ -232,6 +232,38 @@ try {
     helpLayering.line > helpLayering.answerTile && helpLayering.line > helpLayering.guessArea,
     `Help reaction line should render above tiles and letters: ${JSON.stringify(helpLayering)}`
   );
+  await popHelp.locator(".help-reaction-line.show").waitFor({ timeout: 8000 });
+  const helpLineGeometry = await popHelp.evaluate((dialog) => {
+    const box = dialog.querySelector(".help-example-box");
+    const line = dialog.querySelector(".help-reaction-line.show");
+    const from = dialog.querySelector(".help-guess-area .htile.reacting");
+    const to = dialog.querySelector(".answer-tile.reacting");
+    const boxRect = box.getBoundingClientRect();
+    const fromRect = from.getBoundingClientRect();
+    const toRect = to.getBoundingClientRect();
+    const angle = Number(line.style.transform.match(/rotate\(([-\d.]+)rad\)/)?.[1]);
+    const width = Number.parseFloat(line.style.width);
+    const startX = boxRect.left + Number.parseFloat(line.style.left);
+    const startY = boxRect.top + Number.parseFloat(line.style.top) + line.offsetHeight / 2;
+    return {
+      startX,
+      startY,
+      endX: startX + width * Math.cos(angle),
+      endY: startY + width * Math.sin(angle),
+      expectedStartX: fromRect.left + fromRect.width / 2,
+      expectedStartY: fromRect.top,
+      expectedEndX: toRect.left + toRect.width / 2,
+      expectedEndY: toRect.top + toRect.height / 2,
+    };
+  });
+  for (const [actual, expected, label] of [
+    [helpLineGeometry.startX, helpLineGeometry.expectedStartX, "start x"],
+    [helpLineGeometry.startY, helpLineGeometry.expectedStartY, "start y"],
+    [helpLineGeometry.endX, helpLineGeometry.expectedEndX, "end x"],
+    [helpLineGeometry.endY, helpLineGeometry.expectedEndY, "end y"],
+  ]) {
+    assert.ok(Math.abs(actual - expected) <= 1, `Help reaction line ${label} should match: ${JSON.stringify(helpLineGeometry)}`);
+  }
   await popHelp.getByRole("button", { name: "閉じる" }).click();
   await page.getByRole("radio", { name: "クラシック", exact: true }).click();
   await page.locator("body.theme-classic").waitFor();

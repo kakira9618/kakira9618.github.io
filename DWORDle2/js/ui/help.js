@@ -160,14 +160,15 @@ function buildExample(mode, language) {
     const fromRect = from.getBoundingClientRect();
     const toRect = to.getBoundingClientRect();
     const x1 = fromRect.left + fromRect.width / 2 - boxRect.left;
-    const y1 = fromRect.top + fromRect.height / 2 - boxRect.top;
+    const y1 = fromRect.top - boxRect.top;
     const x2 = toRect.left + toRect.width / 2 - boxRect.left;
     const y2 = toRect.top + toRect.height / 2 - boxRect.top;
     const distance = Math.hypot(x2 - x1, y2 - y1);
     const angle = Math.atan2(y2 - y1, x2 - x1);
+    const lineHalfHeight = reactionLine.offsetHeight / 2;
     Object.assign(reactionLine.style, {
       left: `${x1}px`,
-      top: `${y1}px`,
+      top: `${y1 - lineHalfHeight}px`,
       width: `${distance}px`,
       transform: `rotate(${angle}rad)`,
     });
