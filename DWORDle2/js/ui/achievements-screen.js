@@ -2,11 +2,11 @@
 // ルート: #/achievements
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260722-habit-ui";
-import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, getUnlocked } from "../core/achievements.js?v=20260722-habit-ui";
-import { playSfx } from "../audio/sound.js";
+import { registerScreen, navigate } from "./app.js?v=20260722-pop-locale-scale";
+import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, getUnlocked } from "../core/achievements.js?v=20260722-pop-locale-scale";
+import { playSfx } from "../audio/sound.js?v=20260722-pop-locale-scale";
 import { icon } from "./icons.js";
-import { localizedAchievement, tr } from "../core/i18n.js";
+import { localizedAchievement, tr } from "../core/i18n.js?v=20260722-pop-locale-scale";
 
 let root = null;
 

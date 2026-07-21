@@ -2,19 +2,19 @@
 // ルート: #/settings
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260722-habit-ui";
-import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js";
+import { registerScreen, navigate } from "./app.js?v=20260722-pop-locale-scale";
+import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js?v=20260722-pop-locale-scale";
 import { importFromLocalStorage, importFromText, scanLegacyHistory } from "../core/migrate.js";
 import { exportJSON } from "../core/records.js";
 import { removeKey } from "../core/store.js";
-import { getUnlocked } from "../core/achievements.js?v=20260722-habit-ui";
-import { BGM_TRACKS, playSfx } from "../audio/sound.js";
-import { toast } from "./toast.js?v=20260722-habit-ui";
-import { showModal, confirmModal } from "./modal.js";
+import { getUnlocked } from "../core/achievements.js?v=20260722-pop-locale-scale";
+import { BGM_TRACKS, playSfx } from "../audio/sound.js?v=20260722-pop-locale-scale";
+import { toast } from "./toast.js?v=20260722-pop-locale-scale";
+import { showModal, confirmModal } from "./modal.js?v=20260722-pop-locale-scale";
 import { icon } from "./icons.js";
-import { finishHistoryImport } from "./history-import.js?v=20260722-habit-ui";
-import { APP_VERSION } from "../config.js";
-import { currentLanguage, isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js";
+import { finishHistoryImport } from "./history-import.js?v=20260722-pop-locale-scale";
+import { APP_VERSION } from "../config.js?v=20260722-pop-locale-scale";
+import { currentLanguage, isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js?v=20260722-pop-locale-scale";
 import { isDebugMode, tryEnableDebugMode } from "../core/debug.js";
 
 let root = null;

@@ -4,22 +4,22 @@
 // 原作と同じく、Guess は確定するたびに保存され、リロードしても再開できる。
 
 import { el, clear } from "./dom.js";
-import { APP_VERSION, UI, FX } from "../config.js";
+import { APP_VERSION, UI, FX } from "../config.js?v=20260722-pop-locale-scale";
 import { Logic, CELL, usoConvert } from "../core/logic.js";
 import { MODES, saveCurrentGame, clearCurrentGame, getCurrentGame, addFinishedGame, isAlreadyPlayed, getHistory } from "../core/records.js";
 import { pidLabel } from "../core/problems.js";
-import { checkOnGameFinish } from "../core/achievements.js?v=20260722-habit-ui";
-import { registerScreen, navigate, getAppMode, currentScreenName, rememberPlayedMode } from "./app.js?v=20260722-habit-ui";
-import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./toast.js?v=20260722-habit-ui";
-import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js";
-import { hiddenThemesUnlockedBy } from "../core/settings.js";
-import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/effects.js";
-import { showHelpModal } from "./help.js?v=20260722-habit-ui";
+import { checkOnGameFinish } from "../core/achievements.js?v=20260722-pop-locale-scale";
+import { registerScreen, navigate, getAppMode, currentScreenName, rememberPlayedMode } from "./app.js?v=20260722-pop-locale-scale";
+import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./toast.js?v=20260722-pop-locale-scale";
+import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js?v=20260722-pop-locale-scale";
+import { hiddenThemesUnlockedBy } from "../core/settings.js?v=20260722-pop-locale-scale";
+import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/effects.js?v=20260722-pop-locale-scale";
+import { showHelpModal } from "./help.js?v=20260722-pop-locale-scale";
 import { icon } from "./icons.js";
-import { tr } from "../core/i18n.js";
-import { getSettings } from "../core/settings.js";
-import { shouldReduceMotion } from "../core/motion.js";
-import { feedbackName, tileAriaLabel } from "./a11y.js";
+import { tr } from "../core/i18n.js?v=20260722-pop-locale-scale";
+import { getSettings } from "../core/settings.js?v=20260722-pop-locale-scale";
+import { shouldReduceMotion } from "../core/motion.js?v=20260722-pop-locale-scale";
+import { feedbackName, tileAriaLabel } from "./a11y.js?v=20260722-pop-locale-scale";
 
 const KEY_ROWS = [
   [..."qwertyuiop".split(""), "backspace"],

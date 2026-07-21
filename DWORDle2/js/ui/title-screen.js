@@ -2,21 +2,21 @@
 // 右上のマスクボタンで DWORDlie（裏モード）に切り替わる。
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260722-habit-ui";
+import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260722-pop-locale-scale";
 import { getCurrentGame, getHistory, isAlreadyPlayed } from "../core/records.js";
 import { LEVELS, todayPID, isValidPID, pidLabel, PID } from "../core/problems.js";
-import { getSettings, setSetting } from "../core/settings.js";
+import { getSettings, setSetting } from "../core/settings.js?v=20260722-pop-locale-scale";
 import { loadJSON, saveJSON } from "../core/store.js";
 import { importFromLocalStorage, scanLegacyHistory } from "../core/migrate.js";
-import { playSfx } from "../audio/sound.js";
-import { toast } from "./toast.js?v=20260722-habit-ui";
-import { showModal } from "./modal.js";
-import { finishHistoryImport } from "./history-import.js?v=20260722-habit-ui";
-import { showFirstTutorial, showHelpModal } from "./help.js?v=20260722-habit-ui";
-import { confirmAndStart } from "./game-screen.js?v=20260722-habit-ui";
+import { playSfx } from "../audio/sound.js?v=20260722-pop-locale-scale";
+import { toast } from "./toast.js?v=20260722-pop-locale-scale";
+import { showModal } from "./modal.js?v=20260722-pop-locale-scale";
+import { finishHistoryImport } from "./history-import.js?v=20260722-pop-locale-scale";
+import { showFirstTutorial, showHelpModal } from "./help.js?v=20260722-pop-locale-scale";
+import { confirmAndStart } from "./game-screen.js?v=20260722-pop-locale-scale";
 import { icon } from "./icons.js";
-import { APP_VERSION } from "../config.js";
-import { localizedLevel, tr } from "../core/i18n.js";
+import { APP_VERSION } from "../config.js?v=20260722-pop-locale-scale";
+import { localizedLevel, tr } from "../core/i18n.js?v=20260722-pop-locale-scale";
 
 let root = null;
 let legacyImportCheckDone = false;

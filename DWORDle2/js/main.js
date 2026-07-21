@@ -1,26 +1,26 @@
 // エントリポイント。画面登録・ルータ起動・3D 背景・音声の初期化。
 
-import { startRouter, initAppMode } from "./ui/app.js?v=20260722-habit-ui";
-import { initEffects } from "./fx/effects.js";
-import { initPopBackground } from "./fx/pop-background.js";
-import { audioNeedsRecovery, bgmTracksUnlockedBy, restartBgmIfReady, stopBgm, unlockAudio } from "./audio/sound.js";
-import { getSettings, onSettingsChange } from "./core/settings.js";
-import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js";
-import { syncDocumentLanguage } from "./core/i18n.js";
-import { reconcileAchievementsOnce } from "./core/achievements.js?v=20260722-habit-ui";
-import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "./ui/game-screen.js?v=20260722-habit-ui";
-import { achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./ui/toast.js?v=20260722-habit-ui";
-import { hiddenThemesUnlockedBy } from "./core/settings.js";
+import { startRouter, initAppMode } from "./ui/app.js?v=20260722-pop-locale-scale";
+import { initEffects } from "./fx/effects.js?v=20260722-pop-locale-scale";
+import { initPopBackground } from "./fx/pop-background.js?v=20260722-pop-locale-scale";
+import { audioNeedsRecovery, bgmTracksUnlockedBy, restartBgmIfReady, stopBgm, unlockAudio } from "./audio/sound.js?v=20260722-pop-locale-scale";
+import { getSettings, onSettingsChange } from "./core/settings.js?v=20260722-pop-locale-scale";
+import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js?v=20260722-pop-locale-scale";
+import { syncDocumentLanguage } from "./core/i18n.js?v=20260722-pop-locale-scale";
+import { reconcileAchievementsOnce } from "./core/achievements.js?v=20260722-pop-locale-scale";
+import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "./ui/game-screen.js?v=20260722-pop-locale-scale";
+import { achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./ui/toast.js?v=20260722-pop-locale-scale";
+import { hiddenThemesUnlockedBy } from "./core/settings.js?v=20260722-pop-locale-scale";
 
 // 画面モジュール（import するだけで registerScreen される）
-import "./ui/title-screen.js?v=20260722-habit-ui";
-import "./ui/game-screen.js?v=20260722-habit-ui";
-import "./ui/result-screen.js?v=20260722-habit-ui";
-import "./ui/history-screen.js?v=20260722-habit-ui";
-import "./ui/problems-screen.js?v=20260722-habit-ui";
-import "./ui/achievements-screen.js?v=20260722-habit-ui";
-import "./ui/analysis-screen.js?v=20260722-habit-ui";
-import "./ui/settings-screen.js?v=20260722-habit-ui";
+import "./ui/title-screen.js?v=20260722-pop-locale-scale";
+import "./ui/game-screen.js?v=20260722-pop-locale-scale";
+import "./ui/result-screen.js?v=20260722-pop-locale-scale";
+import "./ui/history-screen.js?v=20260722-pop-locale-scale";
+import "./ui/problems-screen.js?v=20260722-pop-locale-scale";
+import "./ui/achievements-screen.js?v=20260722-pop-locale-scale";
+import "./ui/analysis-screen.js?v=20260722-pop-locale-scale";
+import "./ui/settings-screen.js?v=20260722-pop-locale-scale";
 
 // 古い Android Chrome は dvh に未対応のため、実際の表示領域を CSS 変数で補う。
 // 対応ブラウザでは CSS 側の 100dvh が優先される。
