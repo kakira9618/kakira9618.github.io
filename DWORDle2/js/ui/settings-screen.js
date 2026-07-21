@@ -282,6 +282,7 @@ function render() {
   );
   const hiddenTheme = HIDDEN_THEMES[0];
   const hiddenThemeUnlocked = Boolean(unlocked[hiddenTheme.unlockAchievement]);
+  const hiddenThemeName = isEnglish() ? (hiddenTheme.nameEn ?? hiddenTheme.name) : hiddenTheme.name;
   const hiddenThemeUnlockLabel = isEnglish() ? (hiddenTheme.unlockLabelEn ?? hiddenTheme.unlockLabel) : hiddenTheme.unlockLabel;
   const themeSeg = el(
     "div",
@@ -289,7 +290,7 @@ function render() {
     [
       ["cyber", tr("サイバー", "Cyber"), true],
       ["classic", tr("クラシック", "Classic"), true],
-      [hiddenTheme.id, hiddenThemeUnlocked ? hiddenTheme.name : "???", hiddenThemeUnlocked],
+      [hiddenTheme.id, hiddenThemeUnlocked ? hiddenThemeName : "???", hiddenThemeUnlocked],
     ].map(([key, label, available]) =>
       el(
         "button",

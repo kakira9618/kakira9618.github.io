@@ -211,6 +211,16 @@ try {
   assert.equal(usoPopVisuals.choiceColor, "rgb(255, 247, 252)");
   assert.notEqual(usoPopVisuals.pageBackground, normalPopVisuals.pageBackground);
   await assertNoSeriousA11yViolations("Pop DWORDlie settings");
+  await page.getByRole("button", { name: "タイトルへ戻る" }).click();
+  await page.getByRole("button", { name: "番号を指定" }).click();
+  const usoPopPuzzleDialog = page.getByRole("dialog", { name: "番号を指定してプレイ" });
+  const usoPopPuzzleInputBackground = await usoPopPuzzleDialog.locator('input[type="number"]').evaluate(
+    (node) => getComputedStyle(node).backgroundColor
+  );
+  assert.notEqual(usoPopPuzzleInputBackground, "rgb(255, 255, 255)", "DWORDlie Pop should keep its existing dark puzzle-number input");
+  await usoPopPuzzleDialog.getByRole("button", { name: "キャンセル" }).click();
+  await page.getByRole("button", { name: "設定" }).click();
+  await page.waitForURL(/#\/settings$/);
 
   await page.evaluate(async () => {
     const { setAppMode } = await import("./js/ui/app.js?v=20260722-habit-ui");
@@ -269,6 +279,16 @@ try {
     assert.ok(Math.abs(actual - expected) <= 1, `Help reaction line ${label} should match: ${JSON.stringify(helpLineGeometry)}`);
   }
   await popHelp.getByRole("button", { name: "閉じる" }).click();
+  await page.getByRole("button", { name: "タイトルへ戻る" }).click();
+  await page.getByRole("button", { name: "番号を指定" }).click();
+  const popPuzzleDialog = page.getByRole("dialog", { name: "番号を指定してプレイ" });
+  const popPuzzleInputBackground = await popPuzzleDialog.locator('input[type="number"]').evaluate(
+    (node) => getComputedStyle(node).backgroundColor
+  );
+  assert.equal(popPuzzleInputBackground, "rgb(255, 255, 255)", "The Pop puzzle-number input should use a white background");
+  await popPuzzleDialog.getByRole("button", { name: "キャンセル" }).click();
+  await page.getByRole("button", { name: "設定" }).click();
+  await page.waitForURL(/#\/settings$/);
   await page.getByRole("radio", { name: "クラシック", exact: true }).click();
   await page.locator("body.theme-classic").waitFor();
   // クラス切替直後は数フレームだけ旧テーマの文字色が残る（transition の過渡状態）。
@@ -648,6 +668,14 @@ try {
     assert.equal(await freshPage.getByRole("radio", { name: "Grand Finale" }).getAttribute("aria-disabled"), "false", "debug mode should unlock hidden BGM");
     await debugPop.click();
     await freshPage.getByRole("radio", { name: "Grand Finale" }).click();
+    await freshPage.getByRole("radio", { name: "English" }).click();
+    const englishPop = freshPage.getByRole("radiogroup", { name: "Theme" }).getByRole("radio", { name: "Pop", exact: true });
+    assert.equal(await englishPop.count(), 1, "the Pop theme should use its English name in the English UI");
+    assert.equal(
+      await freshPage.getByRole("radiogroup", { name: "Theme" }).getByRole("radio", { name: "ポップ", exact: true }).count(),
+      0,
+      "the Japanese Pop theme name should not remain in the English UI"
+    );
 
     await freshPage.evaluate(() => { location.hash = "#/achievements"; });
     await freshPage.waitForURL(/#\/achievements$/);

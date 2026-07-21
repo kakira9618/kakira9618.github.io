@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "python3 -m http.server 8642",
     "test": "npm run test:unit && npm run test:ui",
-    "test:unit": "node test/parity.test.mjs && node test/analysis.test.mjs && node test/achievements.test.mjs && node test/settings.test.mjs && node test/debug.test.mjs && node test/migrate.test.mjs && node test/audio.test.mjs",
+    "test:unit": "node test/parity.test.mjs && node test/analysis.test.mjs && node test/achievements.test.mjs && node test/settings.test.mjs && node test/debug.test.mjs && node test/migrate.test.mjs && node test/audio.test.mjs && node test/pop-background.test.mjs",
     "test:ui": "node test/ui-smoke.test.mjs"
   },
   "devDependencies": {

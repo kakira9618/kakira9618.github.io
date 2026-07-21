@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
-import { DEFAULT_SETTINGS, normalizeVolume } from "../js/core/settings.js";
+import { DEFAULT_SETTINGS, HIDDEN_THEMES, normalizeVolume } from "../js/core/settings.js";
 import { shouldReduceMotion } from "../js/core/motion.js";
 
 assert.equal(DEFAULT_SETTINGS.sfxVolume, 100);
 assert.equal(DEFAULT_SETTINGS.bgmVolume, 100);
 assert.equal(DEFAULT_SETTINGS.keyboardHints, true);
+assert.equal(HIDDEN_THEMES.find((theme) => theme.id === "pop")?.name, "ポップ");
+assert.equal(HIDDEN_THEMES.find((theme) => theme.id === "pop")?.nameEn, "Pop");
 
 assert.equal(normalizeVolume(-10), 0);
 assert.equal(normalizeVolume(0), 0);

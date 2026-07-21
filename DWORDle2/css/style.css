@@ -732,6 +732,10 @@ body.theme-cyber .modal {
   color: var(--fg);
   font-size: 16px;
 }
+body.theme-pop.mode-normal .modal input[type="number"] {
+  background: #ffffff;
+  color: #4a3550;
+}
 .modal textarea {
   min-height: 110px;
   font-family: ui-monospace, monospace;

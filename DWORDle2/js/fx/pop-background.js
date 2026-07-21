@@ -140,12 +140,18 @@ function draw() {
 const rand = (min, max) => min + Math.random() * (max - min);
 const easeInOutCubic = (p) => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2);
 
+export function randomTileLineScale(random = Math.random) {
+  const [min, max] = FX.popBg.tiles.scale;
+  return min + random() * (max - min);
+}
+
 let particles = [];
 
 // ラインが完全に画面外へ出たと見なせる余白（回転を考慮したラインの半径ぶん）
 function lineMargin() {
   const cfg = FX.popBg.tiles;
-  return ((cfg.tilesPerLine - 1) / 2) * cfg.pitchPx + cfg.sizePx;
+  const maxScale = cfg.scale[1];
+  return (((cfg.tilesPerLine - 1) / 2) * cfg.pitchPx + cfg.sizePx) * maxScale;
 }
 
 // band(0..lineCount-1) ごとに横位置を散らして、ラインが一箇所に固まらないようにする
@@ -165,6 +171,7 @@ function makeLine(band, y) {
     x: bandX(band),
     y,
     angle: rand(0, Math.PI * 2),
+    scale: randomTileLineScale(),
     spin: rand(cfg.spinDegPerSec[0], cfg.spinDegPerSec[1]) * (Math.PI / 180) * (Math.random() < 0.5 ? -1 : 1),
     vy,
     // dir=+1: 白 → 判定色 / dir=-1: 判定色 → 白。flipAt を過ぎるとフリップが走る
@@ -263,7 +270,7 @@ function stepLines(dt) {
     line.tiles.forEach((tile, k) => {
       if (tile.burst || tile.dir !== 1 || t < tile.flipAt + cfg.revealFlipSec / 2) return;
       tile.burst = true;
-      const off = (k - (cfg.tilesPerLine - 1) / 2) * cfg.pitchPx;
+      const off = (k - (cfg.tilesPerLine - 1) / 2) * cfg.pitchPx * line.scale;
       spawnParticles(line.x + Math.cos(line.angle) * off, line.y + Math.sin(line.angle) * off, tile.color, line.vy);
     });
   }
@@ -309,6 +316,7 @@ function drawLines() {
     ctx.save();
     ctx.translate(line.x, line.y);
     ctx.rotate(line.angle);
+    ctx.scale(line.scale, line.scale);
     for (let k = 0; k < cfg.tilesPerLine; k++) {
       const tile = line.tiles[k];
       const x = (k - (cfg.tilesPerLine - 1) / 2) * cfg.pitchPx;
