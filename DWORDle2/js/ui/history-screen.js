@@ -2,15 +2,16 @@
 // ルート: #/history
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260722-oldchrome-colormix";
+import { registerScreen, navigate } from "./app.js?v=20260722-bgm-ui-refresh";
 import { getRecentGames, getStatistics, MODES } from "../core/records.js";
 import { Logic, CELL } from "../core/logic.js";
 import { pidLabel } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260722-oldchrome-colormix";
-import { showModal } from "./modal.js?v=20260722-oldchrome-colormix";
+import { playSfx } from "../audio/sound.js?v=20260722-bgm-ui-refresh";
+import { showModal } from "./modal.js?v=20260722-bgm-ui-refresh";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-bgm-ui-refresh";
 import { icon } from "./icons.js";
-import { currentLanguage, tr } from "../core/i18n.js?v=20260722-oldchrome-colormix";
-import { rowAriaLabel } from "./a11y.js?v=20260722-oldchrome-colormix";
+import { currentLanguage, tr } from "../core/i18n.js?v=20260722-bgm-ui-refresh";
+import { rowAriaLabel } from "./a11y.js?v=20260722-bgm-ui-refresh";
 
 let root = null;
 let filter = "all"; // "all" | "normal" | "uso"
@@ -319,6 +320,7 @@ function render() {
     ),
     el("h1", { class: "title" }, tr("プレイ履歴", "Play History")),
     el("span", { class: "spacer" }),
+    soundToggleButton(),
     el(
       "button",
       { class: "icon-btn", title: tr("統計", "Statistics"), "aria-label": tr("統計", "Statistics"), onclick: showStats },

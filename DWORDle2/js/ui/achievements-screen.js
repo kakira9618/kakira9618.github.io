@@ -2,11 +2,12 @@
 // ルート: #/achievements
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260722-oldchrome-colormix";
-import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, getUnlocked } from "../core/achievements.js?v=20260722-oldchrome-colormix";
-import { playSfx } from "../audio/sound.js?v=20260722-oldchrome-colormix";
+import { registerScreen, navigate } from "./app.js?v=20260722-bgm-ui-refresh";
+import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, getUnlocked } from "../core/achievements.js?v=20260722-bgm-ui-refresh";
+import { playSfx } from "../audio/sound.js?v=20260722-bgm-ui-refresh";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-bgm-ui-refresh";
 import { icon } from "./icons.js";
-import { localizedAchievement, tr } from "../core/i18n.js?v=20260722-oldchrome-colormix";
+import { localizedAchievement, tr } from "../core/i18n.js?v=20260722-bgm-ui-refresh";
 
 let root = null;
 
@@ -55,7 +56,8 @@ function render() {
     ),
     el("h1", { class: "title" }, tr("実績", "Achievements")),
     el("span", { class: "spacer" }),
-    el("span", { class: "sub" }, `${count} / ${ACHIEVEMENTS.length}`)
+    el("span", { class: "sub" }, `${count} / ${ACHIEVEMENTS.length}`),
+    soundToggleButton()
   );
 
   // カードがすべて非フォーカス要素のため、スクロール領域自体をキーボードで
