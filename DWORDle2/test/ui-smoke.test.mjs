@@ -128,9 +128,9 @@ try {
     };
   });
   assert.equal(publicEntry.ogImage, "https://kakira9618.github.io/DWORDle2/og.png");
-  assert.equal(publicEntry.ogDescription, "答えは2つ。盤面は1つ。10手以内にどちらかを当てろ！");
+  assert.equal(publicEntry.ogDescription, "答えは2つ。盤面は1つ。新感覚Wordle！");
   assert.equal(publicEntry.twitterCard, "summary_large_image");
-  assert.equal(publicEntry.twitterDescription, "答えは2つ。盤面は1つ。10手以内にどちらかを当てろ！");
+  assert.equal(publicEntry.twitterDescription, "答えは2つ。盤面は1つ。新感覚Wordle！");
   assert.equal(publicEntry.manifest, "manifest.webmanifest");
   assert.deepEqual(publicEntry.statuses, [200, 200, 200], "Public metadata assets should be served");
 
