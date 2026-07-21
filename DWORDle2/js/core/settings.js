@@ -8,7 +8,7 @@ export const DEFAULT_SETTINGS = {
   sfxVolume: 100, // 効果音の音量（0〜100）
   bgm: true, // BGM（最初のユーザー操作後に再生開始）
   bgmVolume: 100, // BGM の音量（0〜100）
-  bgmTrack: "auto", // "auto" | "normal" | "uso" | "gentle" | "classic"
+  bgmTrack: "auto", // "auto"（モード・テーマ連動）または BGM_TRACKS のトラック id
   language: "ja", // "ja" | "en"
   keyboardHints: true, // DWORDle のキーボードを判定色で塗り分ける
   reduceFx: false, // 演出を軽くする（パーティクルを完全にオフ）

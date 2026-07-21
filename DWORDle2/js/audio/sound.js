@@ -24,8 +24,8 @@ export const BGM_TRACKS = [
     id: "auto",
     name: "モード連動",
     nameEn: "Follow mode",
-    desc: "プレイ中のモードに合う曲を自動で選択",
-    descEn: "Automatically choose the track for the current mode",
+    desc: "プレイ中のモードとテーマに合う曲を自動で選択",
+    descEn: "Automatically choose the track for the current mode and theme",
   },
   {
     id: "normal",
@@ -40,6 +40,16 @@ export const BGM_TRACKS = [
     nameEn: "DWORDlie",
     desc: "暗く不穏なドローン",
     descEn: "Dark, ominous drone",
+  },
+  {
+    id: "pop",
+    name: "Candy Pop",
+    nameEn: "Candy Pop",
+    desc: "Pop テーマの既定曲。甘く弾むキャンディポップ",
+    descEn: "Default for the Pop theme: a sweet, bouncy candy-pop tune",
+    unlockAchievement: "rainbow",
+    unlockLabel: "三色盛り",
+    unlockLabelEn: "Three Colors",
   },
   {
     id: "gentle",
@@ -189,9 +199,11 @@ export function bgmTracksUnlockedBy(achievements) {
 }
 
 function selectedTrack() {
-  const wanted = getSettings().bgmTrack;
+  const settings = getSettings();
+  const wanted = settings.bgmTrack;
   if (wanted === "auto" || !BGM_TRACKS.some((track) => track.id === wanted)) {
-    return usoMood ? "uso" : "normal";
+    if (usoMood) return "uso"; // 裏モードはテーマによらず不穏な曲にする
+    return settings.theme === "pop" ? "pop" : "normal";
   }
   return wanted;
 }
@@ -695,21 +707,27 @@ function scheduleBarUso(t0, chord, bar, bus) {
 }
 
 // Extra BGM: 柔らかいサイン波中心で、不穏な響きを避けた夜の曲。
+// デチューンした三角波の重ね・ゆったり歩くベース・柔らかい鐘で穏やかなまま厚みを出す。
 function scheduleBarGentle(t0, chord, bar, bus) {
   const beat = 60 / GENTLE.tempo;
-  for (const m of chord) {
+  for (const [i, m] of chord.entries()) {
     const osc = ctx.createOscillator();
     osc.type = "sine";
     osc.frequency.value = midiHz(m);
     const g = ctx.createGain();
     g.gain.setValueAtTime(0, t0);
-    g.gain.linearRampToValueAtTime(0.045, t0 + beat);
-    g.gain.setValueAtTime(0.045, t0 + beat * 3);
+    g.gain.linearRampToValueAtTime(0.055, t0 + beat);
+    g.gain.setValueAtTime(0.055, t0 + beat * 3);
     g.gain.linearRampToValueAtTime(0, t0 + beat * 4);
     osc.connect(g).connect(bus);
     osc.start(t0);
     osc.stop(t0 + beat * 4 + 0.1);
+    // わずかにデチューンした三角波を重ねて和音に厚みを出す
+    bgmTone(bus, { midi: m, t: t0, dur: beat * 4, type: "triangle", gain: 0.016, attack: beat, detune: i % 2 ? 6 : -6 });
   }
+  // ベース: ルート → 5 度をゆったり歩く
+  bgmTone(bus, { midi: chord[0] - 12, t: t0, dur: beat * 2, type: "sine", gain: 0.08, attack: 0.02 });
+  bgmTone(bus, { midi: chord[0] - 12 + (bar % 2 ? 7 : 0), t: t0 + beat * 2, dur: beat * 2, type: "sine", gain: 0.065, attack: 0.02 });
   const pattern = [0, 2, 1, 2, 0, 1, 2, 1];
   pattern.forEach((note, i) => {
     if ((i + bar) % 3 === 1) return;
@@ -719,12 +737,16 @@ function scheduleBarGentle(t0, chord, bar, bus) {
     osc.frequency.value = midiHz(chord[note] + 12);
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.0001, ti);
-    g.gain.exponentialRampToValueAtTime(0.04, ti + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.05, ti + 0.02);
     g.gain.exponentialRampToValueAtTime(0.0001, ti + beat * 0.8);
     osc.connect(g).connect(bus);
     osc.start(ti);
     osc.stop(ti + beat);
+    // 1 オクターブ上の小さな残響を添える
+    bgmTone(bus, { midi: chord[note] + 24, t: ti + beat * 0.5, dur: beat * 0.6, type: "sine", gain: 0.011 });
   });
+  // 2 小節ごとの柔らかい鐘
+  if (bar % 2 === 0) bgmBell(bus, { midi: chord[2] + 24, t: t0 + beat * 3, dur: 1.8, gain: 0.014 });
 }
 
 // Extra BGM: 軽快な 8-bit アレンジ。
@@ -767,6 +789,45 @@ function scheduleBarClassic(t0, chord, bar, bus) {
     [2, 3, 4, 5].forEach((deg, i) => {
       bgmTone(bus, { midi: degrees[deg], t: t0 + (3 + i * 0.25) * beat, dur: beat * 0.2, type: "square", gain: 0.024, attack: 0.004 });
     });
+  }
+}
+
+// Pop テーマの既定曲 Candy Pop: 甘く弾むキャンディポップ。
+// スキップするベース + 手拍子 + 裏拍のプラック + 明るいメロディ + 鐘のきらめき。
+function scheduleBarPop(t0, chord, bar, bus) {
+  const beat = 60 / TRACKS.pop.tempo;
+  // ベース: ルートとオクターブでスキップする 8 分
+  const bassLine = [0, 12, 7, 12, 0, 12, 5, 7];
+  bassLine.forEach((interval, i) => {
+    bgmTone(bus, { midi: chord[0] - 24 + interval, t: t0 + (i * beat) / 2, dur: beat * 0.32, type: "triangle", gain: i % 2 ? 0.055 : 0.1, attack: 0.006 });
+  });
+  // ドラム: 丸いキック（1・3 拍）+ 手拍子風スネア（2・4 拍に二度打ち）+ 8 分裏のハット
+  for (const b of [0, 2]) bgmTone(bus, { midi: 36, t: t0 + b * beat, dur: 0.1, type: "sine", gain: 0.1, bend: -12 });
+  for (const b of [1, 3]) {
+    bgmNoise(bus, { t: t0 + b * beat, dur: 0.055, gain: 0.036, freq: 2400, q: 0.8 });
+    bgmNoise(bus, { t: t0 + b * beat + 0.03, dur: 0.05, gain: 0.022, freq: 3000, q: 0.8 });
+  }
+  for (let i = 0; i < 8; i++) bgmNoise(bus, { t: t0 + ((i + 0.5) * beat) / 2, dur: 0.03, gain: 0.013, freq: 8600 });
+  // 裏拍の和音プラック（ウクレレ風に軽く）
+  for (const b of [0.5, 1.5, 2.5, 3.5]) {
+    for (const m of chord) bgmTone(bus, { midi: m + 12, t: t0 + b * beat, dur: beat * 0.2, type: "triangle", gain: 0.017, attack: 0.004 });
+  }
+  // メロディ: スキップするような明るいフレーズ（コード構成音への度数。-1 = 休符）
+  const degrees = [chord[0] + 12, chord[1] + 12, chord[2] + 12, chord[0] + 24, chord[1] + 24, chord[2] + 24];
+  const phrases = [
+    [0, -1, 1, 2, -1, 2, 1, 2],
+    [3, -1, 2, 1, 2, -1, 1, 0],
+    [0, 1, 2, -1, 3, -1, 4, 3],
+    [2, 1, 0, -1, 1, -1, -1, -1], // 小節末は鐘の駆け上がりに譲る
+  ];
+  phrases[bar % 4].forEach((deg, i) => {
+    if (deg < 0) return;
+    bgmTone(bus, { midi: degrees[deg], t: t0 + (i * beat) / 2, dur: beat * 0.38, type: "square", gain: 0.026, attack: 0.005 });
+  });
+  // 鐘のきらめき: 小節あたまの星 + 4 小節目の駆け上がり
+  bgmBell(bus, { midi: chord[0] + 24, t: t0, dur: 1.1, gain: 0.02 });
+  if (bar % 4 === 3) {
+    [0, 1, 2].forEach((deg, i) => bgmBell(bus, { midi: chord[deg] + 24, t: t0 + (2.5 + i * 0.5) * beat, dur: 1.0, gain: 0.018 }));
   }
 }
 
@@ -824,40 +885,55 @@ function bgmBell(bus, { midi, t, dur = 1.6, gain = 0.05 }) {
 
 // ---- Extra BGM の 1 小節スケジューラ（12 曲）----
 
-// Star Parade: 明るく弾むポップマーチ。裏拍のスタブと軽いハット。
+// Star Parade: 明るく弾むポップマーチ。マーチドラム・裏拍のスタブ・オクターブ重ねのメロディ。
 function scheduleBarParade(t0, chord, bar, bus) {
   const beat = 60 / TRACKS.parade.tempo;
   for (let b = 0; b < 4; b++) {
-    bgmTone(bus, { midi: chord[0] - 24 + (b % 2 === 1 ? 7 : 0), t: t0 + b * beat, dur: beat * 0.55, type: "triangle", gain: 0.11, attack: 0.008 });
-    bgmNoise(bus, { t: t0 + (b + 0.5) * beat, dur: 0.05, gain: 0.028, freq: 7500 });
+    bgmTone(bus, { midi: chord[0] - 24 + (b % 2 === 1 ? 7 : 0), t: t0 + b * beat, dur: beat * 0.55, type: "triangle", gain: 0.12, attack: 0.008 });
+    bgmNoise(bus, { t: t0 + (b + 0.5) * beat, dur: 0.05, gain: 0.032, freq: 7500 });
     for (const m of chord) {
-      bgmTone(bus, { midi: m, t: t0 + (b + 0.5) * beat, dur: beat * 0.28, type: "triangle", gain: 0.02 });
+      bgmTone(bus, { midi: m, t: t0 + (b + 0.5) * beat, dur: beat * 0.28, type: "triangle", gain: 0.026 });
     }
+  }
+  // マーチドラム: キック（1・3 拍）+ スネア（2・4 拍）+ 2 小節ごとの小さなロール
+  for (const b of [0, 2]) bgmTone(bus, { midi: 36, t: t0 + b * beat, dur: 0.09, type: "sine", gain: 0.09, bend: -12 });
+  for (const b of [1, 3]) bgmNoise(bus, { t: t0 + b * beat, dur: 0.08, gain: 0.04, freq: 3400, q: 0.7 });
+  if (bar % 2 === 1) {
+    for (let i = 0; i < 4; i++) bgmNoise(bus, { t: t0 + (3.5 + i * 0.125) * beat, dur: 0.04, gain: 0.022 + i * 0.004, freq: 3400, q: 0.7 });
   }
   const melody = [2, -1, 1, 2, 0, -1, 1, 2];
   melody.forEach((note, i) => {
     if (note < 0) return;
     const lift = bar % 4 === 3 && i >= 6 ? 12 : 0;
-    bgmTone(bus, { midi: chord[note] + 12 + lift, t: t0 + i * beat / 2, dur: beat * 0.42, type: "square", gain: 0.028, attack: 0.006 });
+    bgmTone(bus, { midi: chord[note] + 12 + lift, t: t0 + i * beat / 2, dur: beat * 0.42, type: "square", gain: 0.034, attack: 0.006 });
+    // ピッコロ風にオクターブ上を薄く重ねる
+    bgmTone(bus, { midi: chord[note] + 24 + lift, t: t0 + i * beat / 2, dur: beat * 0.36, type: "square", gain: 0.011, attack: 0.006 });
   });
 }
 
-// Neon Rush: 8 分駆動のベースが走るシンセウェーブ。
+// Neon Rush: 8 分駆動のベースが走るシンセウェーブ。4 つ打ちとパッドで土台を厚く。
 function scheduleBarRush(t0, chord, bar, bus) {
   const beat = 60 / TRACKS.rush.tempo;
   for (let i = 0; i < 8; i++) {
     const accent = i % 2 === 0;
-    bgmTone(bus, { midi: chord[0] - 24 + (i === 7 ? 12 : 0), t: t0 + i * beat / 2, dur: beat * 0.4, type: "sawtooth", gain: accent ? 0.075 : 0.05, attack: 0.005 });
-    if (i % 2 === 1) bgmNoise(bus, { t: t0 + i * beat / 2, dur: 0.04, gain: 0.024, freq: 8500 });
+    bgmTone(bus, { midi: chord[0] - 24 + (i === 7 ? 12 : 0), t: t0 + i * beat / 2, dur: beat * 0.4, type: "sawtooth", gain: accent ? 0.09 : 0.06, attack: 0.005 });
+    if (i % 2 === 1) bgmNoise(bus, { t: t0 + i * beat / 2, dur: 0.04, gain: 0.028, freq: 8500 });
+  }
+  // 4 つ打ちキック + 2・4 拍のスネアで疾走感の土台を作る
+  for (let b = 0; b < 4; b++) bgmTone(bus, { midi: 34, t: t0 + b * beat, dur: 0.09, type: "sine", gain: 0.095, bend: -12 });
+  for (const b of [1, 3]) bgmNoise(bus, { t: t0 + b * beat, dur: 0.09, gain: 0.038, freq: 2600, q: 0.8 });
+  // 薄いパッドで和音を敷く
+  for (const [i, m] of chord.entries()) {
+    bgmTone(bus, { midi: m + 12, t: t0, dur: beat * 4, type: "sawtooth", gain: 0.009, attack: beat, detune: i % 2 ? 9 : -9 });
   }
   const arp = [0, 1, 2, 1];
   for (let i = 0; i < 16; i++) {
     if ((bar + Math.floor(i / 4)) % 2 === 1 && i % 4 === 3) continue;
-    bgmTone(bus, { midi: chord[arp[i % 4]] + 12 + (i % 8 === 6 ? 12 : 0), t: t0 + i * beat / 4, dur: beat * 0.22, type: "sawtooth", gain: 0.02, detune: 6 });
+    bgmTone(bus, { midi: chord[arp[i % 4]] + 12 + (i % 8 === 6 ? 12 : 0), t: t0 + i * beat / 4, dur: beat * 0.22, type: "sawtooth", gain: 0.026, detune: 6 });
   }
 }
 
-// Deep Dive: 深海。低い正弦のうねりとソナーピン。
+// Deep Dive: 深海。低い正弦のうねりに遠い鼓動とソナーピンを重ねる。
 function scheduleBarDeepsea(t0, chord, bar, bus) {
   const beat = 60 / TRACKS.deepsea.tempo;
   for (const [m, det] of [[chord[0] - 24, -4], [chord[0] - 17, 4], [chord[1] - 12, 0]]) {
@@ -867,56 +943,74 @@ function scheduleBarDeepsea(t0, chord, bar, bus) {
     osc.detune.value = det;
     const g = ctx.createGain();
     g.gain.setValueAtTime(0, t0);
-    g.gain.linearRampToValueAtTime(0.07, t0 + beat * 1.6);
-    g.gain.linearRampToValueAtTime(0.02, t0 + beat * 4);
+    g.gain.linearRampToValueAtTime(0.09, t0 + beat * 1.6);
+    g.gain.linearRampToValueAtTime(0.026, t0 + beat * 4);
     osc.connect(g).connect(bus);
     osc.start(t0);
     osc.stop(t0 + beat * 4 + 0.1);
   }
-  bgmNoise(bus, { t: t0, dur: beat * 4, gain: 0.006, freq: 500, q: 0.4 });
-  if (bar % 2 === 1) bgmBell(bus, { midi: chord[2] + 24, t: t0 + beat * 1.5, dur: 2.6, gain: 0.022 });
+  // 中音の和音を薄く敷いて水中の厚みを出す
+  bgmTone(bus, { midi: chord[2] - 12, t: t0, dur: beat * 4, type: "sine", gain: 0.032, attack: beat * 2 });
+  // 遠い鼓動のような低いパルス
+  for (const b of [0, 2]) bgmTone(bus, { midi: 28, t: t0 + b * beat, dur: 0.5, type: "sine", gain: 0.045, attack: 0.05, bend: -5 });
+  bgmNoise(bus, { t: t0, dur: beat * 4, gain: 0.009, freq: 500, q: 0.4 });
+  // ソナーピンは毎小節、高さを交互に変えて響かせる
+  bgmBell(bus, { midi: chord[bar % 2 ? 2 : 1] + 24, t: t0 + beat * 1.5, dur: 2.6, gain: 0.026 });
 }
 
-// Midnight Velvet: スウィングするジャズ風。7th コードとウォーキングベース。
+// Midnight Velvet: スウィングするジャズ風。7th コードとウォーキングベース、控えめなキック。
 function scheduleBarVelvet(t0, chord, bar, bus) {
   const beat = 60 / TRACKS.velvet.tempo;
   const walk = [chord[0] - 24, chord[1] - 24, chord[2] - 24, chord[0] - 24 + (bar % 2 === 0 ? 2 : -1)];
   walk.forEach((m, b) => {
-    bgmTone(bus, { midi: m, t: t0 + b * beat, dur: beat * 0.85, type: "triangle", gain: 0.085, attack: 0.012 });
+    bgmTone(bus, { midi: m, t: t0 + b * beat, dur: beat * 0.85, type: "triangle", gain: 0.1, attack: 0.012 });
   });
+  // コンピング: 2 拍目のロングと 4 拍目裏のショートで会話させる
   for (const m of [...chord, chord[0] + 11]) {
-    bgmTone(bus, { midi: m, t: t0 + beat * 1.5, dur: beat * 1.2, type: "triangle", gain: 0.017, detune: 5 });
+    bgmTone(bus, { midi: m, t: t0 + beat * 1.5, dur: beat * 1.2, type: "triangle", gain: 0.024, detune: 5 });
+    bgmTone(bus, { midi: m, t: t0 + beat * 3.5, dur: beat * 0.4, type: "triangle", gain: 0.015, detune: -5 });
   }
   for (let b = 0; b < 4; b++) {
-    bgmNoise(bus, { t: t0 + b * beat, dur: 0.09, gain: 0.02, freq: 9000, q: 0.8 });
-    bgmNoise(bus, { t: t0 + (b + 0.67) * beat, dur: 0.05, gain: 0.013, freq: 9500, q: 0.8 });
+    bgmNoise(bus, { t: t0 + b * beat, dur: 0.09, gain: 0.024, freq: 9000, q: 0.8 });
+    bgmNoise(bus, { t: t0 + (b + 0.67) * beat, dur: 0.05, gain: 0.016, freq: 9500, q: 0.8 });
   }
+  // 1・3 拍の柔らかいキックでスウィングを支える
+  for (const b of [0, 2]) bgmTone(bus, { midi: 33, t: t0 + b * beat, dur: 0.09, type: "sine", gain: 0.05, bend: -8 });
   if (bar % 2 === 1) {
     const phrase = [chord[2] + 12, chord[1] + 12, chord[0] + 12];
     phrase.forEach((m, i) => {
-      bgmTone(bus, { midi: m, t: t0 + (2 + i * 0.67) * beat, dur: beat * 0.55, type: "sine", gain: 0.038 });
+      bgmTone(bus, { midi: m, t: t0 + (2 + i * 0.67) * beat, dur: beat * 0.55, type: "sine", gain: 0.046 });
     });
+  } else {
+    // 偶数小節は短い応答フレーズ
+    bgmTone(bus, { midi: chord[1] + 12, t: t0 + beat * 2.33, dur: beat * 0.5, type: "sine", gain: 0.036 });
+    bgmTone(bus, { midi: chord[0] + 12, t: t0 + beat * 3, dur: beat * 0.7, type: "sine", gain: 0.04 });
   }
 }
 
-// Victory March: ファンファーレ行進曲。1・3 拍のブラス風と 2・4 拍のスネア。
+// Victory March: ファンファーレ行進曲。ブラス風の厚い和音・行進ドラム・シンバル。
 function scheduleBarMarch(t0, chord, bar, bus) {
   const beat = 60 / TRACKS.march.tempo;
   for (const b of [0, 2]) {
     for (const m of chord) {
-      bgmTone(bus, { midi: m, t: t0 + b * beat, dur: beat * 0.7, type: "sawtooth", gain: 0.022, detune: 7 });
-      bgmTone(bus, { midi: m, t: t0 + b * beat, dur: beat * 0.7, type: "sawtooth", gain: 0.022, detune: -7 });
+      bgmTone(bus, { midi: m, t: t0 + b * beat, dur: beat * 0.7, type: "sawtooth", gain: 0.028, detune: 7 });
+      bgmTone(bus, { midi: m, t: t0 + b * beat, dur: beat * 0.7, type: "sawtooth", gain: 0.028, detune: -7 });
     }
-    bgmTone(bus, { midi: chord[0] - 24, t: t0 + b * beat, dur: beat * 0.8, type: "triangle", gain: 0.1, attack: 0.01 });
+    bgmTone(bus, { midi: chord[0] - 24, t: t0 + b * beat, dur: beat * 0.8, type: "triangle", gain: 0.11, attack: 0.01 });
   }
-  for (const b of [1, 3]) bgmNoise(bus, { t: t0 + b * beat, dur: 0.11, gain: 0.05, freq: 3400, q: 0.7 });
+  // 2・4 拍のスネアに加え、8 分の軽いハットと小節あたまのシンバルで行進を刻む
+  for (const b of [1, 3]) bgmNoise(bus, { t: t0 + b * beat, dur: 0.11, gain: 0.055, freq: 3400, q: 0.7 });
+  for (let i = 0; i < 8; i++) bgmNoise(bus, { t: t0 + i * beat / 2, dur: 0.03, gain: 0.014, freq: 8000 });
+  if (bar % 4 === 0) bgmNoise(bus, { t: t0, dur: 0.35, gain: 0.03, freq: 9000, q: 0.5 });
   if (bar % 4 === 3) {
-    for (let i = 0; i < 6; i++) bgmNoise(bus, { t: t0 + (3.4 + i * 0.1) * beat, dur: 0.05, gain: 0.028, freq: 3400, q: 0.7 });
+    for (let i = 0; i < 6; i++) bgmNoise(bus, { t: t0 + (3.4 + i * 0.1) * beat, dur: 0.05, gain: 0.032, freq: 3400, q: 0.7 });
   }
   const fanfare = bar % 2 === 0 ? [0, 1, 2, -1] : [2, -1, 1, 0];
   fanfare.forEach((note, i) => {
     if (note < 0) return;
-    bgmTone(bus, { midi: chord[note] + 12, t: t0 + i * beat, dur: beat * 0.5, type: "square", gain: 0.024, attack: 0.008 });
+    bgmTone(bus, { midi: chord[note] + 12, t: t0 + i * beat, dur: beat * 0.5, type: "square", gain: 0.03, attack: 0.008 });
+    // トランペットのオクターブ重ね
+    bgmTone(bus, { midi: chord[note] + 24, t: t0 + i * beat, dur: beat * 0.45, type: "square", gain: 0.012, attack: 0.008 });
   });
 }
 
@@ -934,114 +1028,155 @@ function scheduleBarAbyssgate(t0, chord, bar, bus) {
     f.frequency.linearRampToValueAtTime(140, t0 + beat * 4);
     const g = ctx.createGain();
     g.gain.setValueAtTime(0, t0);
-    g.gain.linearRampToValueAtTime(0.08, t0 + 0.7);
-    g.gain.setValueAtTime(0.08, t0 + beat * 4 - 0.7);
+    g.gain.linearRampToValueAtTime(0.095, t0 + 0.7);
+    g.gain.setValueAtTime(0.095, t0 + beat * 4 - 0.7);
     g.gain.linearRampToValueAtTime(0, t0 + beat * 4);
     osc.connect(f).connect(g).connect(bus);
     osc.start(t0);
     osc.stop(t0 + beat * 4 + 0.1);
   }
-  bgmBell(bus, { midi: chord[0], t: t0, dur: 3.2, gain: 0.05 });
+  // 高めのドローンを薄く重ねて門の奥行きを出す
+  bgmTone(bus, { midi: chord[0] - 12, t: t0, dur: beat * 4, type: "triangle", gain: 0.03, attack: beat });
+  // 深い鼓動
+  for (const b of [0, 2.5]) bgmTone(bus, { midi: 30, t: t0 + b * beat, dur: 0.4, type: "sine", gain: 0.05, attack: 0.04, bend: -6 });
+  bgmBell(bus, { midi: chord[0], t: t0, dur: 3.2, gain: 0.055 });
+  if (bar % 4 === 2) bgmBell(bus, { midi: chord[1] + 12, t: t0 + beat * 2, dur: 2.8, gain: 0.03 });
   if (bar % 2 === 1) {
     const climb = [chord[0], chord[1], chord[2]];
     climb.forEach((m, i) => {
-      bgmTone(bus, { midi: m + 12, t: t0 + (1.5 + i * 0.75) * beat, dur: beat * 0.8, type: "triangle", gain: 0.03 });
+      bgmTone(bus, { midi: m + 12, t: t0 + (1.5 + i * 0.75) * beat, dur: beat * 0.8, type: "triangle", gain: 0.038 });
     });
   }
 }
 
-// Waltz of Lies: 3 拍子。1 拍目のベースと 2・3 拍目の和音、回るメロディ。
+// Waltz of Lies: 3 拍子。1 拍目のベースと 2・3 拍目の和音、回るメロディとハモリ。
 function scheduleBarWaltz(t0, chord, bar, bus) {
   const beat = 60 / TRACKS.waltz.tempo;
-  bgmTone(bus, { midi: chord[0] - 24, t: t0, dur: beat * 0.9, type: "triangle", gain: 0.1, attack: 0.01 });
+  bgmTone(bus, { midi: chord[0] - 24, t: t0, dur: beat * 0.9, type: "triangle", gain: 0.11, attack: 0.01 });
+  // 3 拍目の裏に 5 度の経過音を挟んで次の小節へつなぐ
+  bgmTone(bus, { midi: chord[0] - 17, t: t0 + beat * 2.5, dur: beat * 0.4, type: "triangle", gain: 0.05, attack: 0.01 });
   for (const b of [1, 2]) {
     for (const m of chord) {
-      bgmTone(bus, { midi: m, t: t0 + b * beat, dur: beat * 0.5, type: "triangle", gain: 0.022, detune: b === 2 ? 6 : -6 });
+      bgmTone(bus, { midi: m, t: t0 + b * beat, dur: beat * 0.5, type: "triangle", gain: 0.028, detune: b === 2 ? 6 : -6 });
     }
+    // ブラシのような掠れを添える
+    bgmNoise(bus, { t: t0 + b * beat, dur: 0.06, gain: 0.016, freq: 6500, q: 0.8 });
   }
   const spin = [[0, 1, 2], [2, 1, 0], [1, 2, 0], [2, 0, 1]][bar % 4];
   spin.forEach((note, i) => {
-    bgmTone(bus, { midi: chord[note] + 12 + (bar % 8 === 7 ? 12 : 0), t: t0 + (i + 0.5) * beat, dur: beat * 0.6, type: "sine", gain: 0.036 });
+    const lift = bar % 8 === 7 ? 12 : 0;
+    bgmTone(bus, { midi: chord[note] + 12 + lift, t: t0 + (i + 0.5) * beat, dur: beat * 0.6, type: "sine", gain: 0.044 });
+    // 1 オクターブ下のハモリで回転に影を付ける
+    bgmTone(bus, { midi: chord[note] + lift, t: t0 + (i + 0.5) * beat, dur: beat * 0.55, type: "sine", gain: 0.016 });
   });
 }
 
-// Rainy Bookshop: ローファイ。緩いエレピ風の 7th、ビニールノイズ、丸いキック。
+// Rainy Bookshop: ローファイ。緩いエレピ風の 7th、ビニールノイズ、丸いキック、まばらなリック。
 function scheduleBarLofi(t0, chord, bar, bus) {
   const beat = 60 / TRACKS.lofi.tempo;
   for (const [i, m] of [...chord, chord[0] + 10].entries()) {
-    bgmTone(bus, { midi: m, t: t0 + 0.012 * i, dur: beat * 3.6, type: "triangle", gain: 0.026, detune: (i % 2 ? 9 : -9) });
+    bgmTone(bus, { midi: m, t: t0 + 0.012 * i, dur: beat * 3.6, type: "triangle", gain: 0.032, detune: (i % 2 ? 9 : -9) });
   }
-  bgmTone(bus, { midi: chord[0] - 24, t: t0, dur: beat * 1.8, type: "sine", gain: 0.1, attack: 0.015 });
-  bgmTone(bus, { midi: chord[2] - 24, t: t0 + beat * 2, dur: beat * 1.8, type: "sine", gain: 0.08, attack: 0.015 });
-  for (const b of [0, 2.5]) bgmTone(bus, { midi: 32, t: t0 + b * beat, dur: 0.1, type: "sine", gain: 0.09, bend: -10 });
-  for (const b of [1, 3]) bgmNoise(bus, { t: t0 + b * beat, dur: 0.08, gain: 0.03, freq: 4200, q: 0.6 });
+  bgmTone(bus, { midi: chord[0] - 24, t: t0, dur: beat * 1.8, type: "sine", gain: 0.11, attack: 0.015 });
+  bgmTone(bus, { midi: chord[2] - 24, t: t0 + beat * 2, dur: beat * 1.8, type: "sine", gain: 0.09, attack: 0.015 });
+  for (const b of [0, 2.5]) bgmTone(bus, { midi: 32, t: t0 + b * beat, dur: 0.1, type: "sine", gain: 0.1, bend: -10 });
+  for (const b of [1, 3]) bgmNoise(bus, { t: t0 + b * beat, dur: 0.08, gain: 0.036, freq: 4200, q: 0.6 });
+  // 8 分裏の柔らかいハット
+  for (let i = 0; i < 8; i++) bgmNoise(bus, { t: t0 + (i + 0.5) * beat / 2, dur: 0.025, gain: 0.009, freq: 7200, q: 1.2 });
   for (let i = 0; i < 7; i++) {
     bgmNoise(bus, { t: t0 + Math.random() * beat * 4, dur: 0.02, gain: 0.008, freq: 8800, q: 2.5 });
   }
+  // 奇数小節に下降するエレピのリック
+  if (bar % 2 === 1) {
+    [chord[2] + 12, chord[1] + 12, chord[0] + 12].forEach((m, i) => {
+      bgmTone(bus, { midi: m, t: t0 + (2 + i * 0.5) * beat, dur: beat * 0.7, type: "triangle", gain: 0.028, detune: -6 });
+    });
+  }
 }
 
-// Bit Carnival: にぎやかなチップチューン。忙しい旋律とオクターブ跳躍。
+// Bit Carnival: にぎやかなチップチューン。忙しい旋律とオクターブ跳躍、お祭りのドラム。
 function scheduleBarCarnival(t0, chord, bar, bus) {
   const beat = 60 / TRACKS.carnival.tempo;
   for (let i = 0; i < 8; i++) {
-    bgmTone(bus, { midi: chord[0] - 24 + (i % 2 === 1 ? 7 : 0), t: t0 + i * beat / 2, dur: beat * 0.3, type: "triangle", gain: 0.085, attack: 0.006 });
-    bgmNoise(bus, { t: t0 + (i + 0.5) * beat / 2, dur: 0.025, gain: 0.02, freq: 9000 });
+    bgmTone(bus, { midi: chord[0] - 24 + (i % 2 === 1 ? 7 : 0), t: t0 + i * beat / 2, dur: beat * 0.3, type: "triangle", gain: 0.095, attack: 0.006 });
+    bgmNoise(bus, { t: t0 + (i + 0.5) * beat / 2, dur: 0.025, gain: 0.024, freq: 9000 });
   }
+  // キック（1・3 拍）とスネア（2・4 拍）で祭囃子を締める
+  for (const b of [0, 2]) bgmTone(bus, { midi: 36, t: t0 + b * beat, dur: 0.08, type: "sine", gain: 0.09, bend: -14 });
+  for (const b of [1, 3]) bgmNoise(bus, { t: t0 + b * beat, dur: 0.06, gain: 0.032, freq: 4000, q: 0.8 });
   const jump = [0, 2, 1, 2, 0, 2, 1, 2, 2, 0, 1, 0, 2, 1, 2, 1];
   for (let i = 0; i < 16; i++) {
     const oct = i % 4 === 2 ? 24 : 12;
-    bgmTone(bus, { midi: chord[jump[i]] + oct, t: t0 + i * beat / 4, dur: beat * 0.2, type: "square", gain: 0.022, attack: 0.004 });
+    bgmTone(bus, { midi: chord[jump[i]] + oct, t: t0 + i * beat / 4, dur: beat * 0.2, type: "square", gain: 0.026, attack: 0.004 });
   }
+  // 4 小節目の終わりに笛が駆け上がる
+  if (bar % 4 === 3) bgmTone(bus, { midi: chord[0] + 12, t: t0 + 3 * beat, dur: beat * 0.9, type: "square", gain: 0.022, bend: 12 });
 }
 
-// Aurora: きらめく高音のスプリンクルと温かいパッド。
+// Aurora: きらめく高音のスプリンクルと温かいパッド、静かな脈。
 function scheduleBarAurora(t0, chord, bar, bus) {
   const beat = 60 / TRACKS.aurora.tempo;
   for (const [i, m] of chord.entries()) {
-    bgmTone(bus, { midi: m, t: t0, dur: beat * 4, type: "triangle", gain: 0.028, attack: beat, detune: i % 2 ? 7 : -7 });
+    bgmTone(bus, { midi: m, t: t0, dur: beat * 4, type: "triangle", gain: 0.036, attack: beat, detune: i % 2 ? 7 : -7 });
   }
-  bgmTone(bus, { midi: chord[0] - 24, t: t0, dur: beat * 4, type: "sine", gain: 0.07, attack: 0.05 });
+  // 高いところで揺らめく薄いレイヤー
+  bgmTone(bus, { midi: chord[2] + 12, t: t0, dur: beat * 4, type: "sine", gain: 0.02, attack: beat * 1.5, detune: 8 });
+  bgmTone(bus, { midi: chord[0] - 24, t: t0, dur: beat * 4, type: "sine", gain: 0.085, attack: 0.05 });
+  // 2・4 拍にオーロラの脈のような低いうねり
+  for (const b of [1, 3]) bgmTone(bus, { midi: chord[0] - 12, t: t0 + b * beat, dur: beat * 0.8, type: "sine", gain: 0.03, attack: 0.05 });
   const penta = [0, 2, 4, 7, 9];
-  const sprinkles = 5 + (bar % 3);
+  const sprinkles = 7 + (bar % 3);
   for (let i = 0; i < sprinkles; i++) {
     const m = chord[0] + 24 + penta[Math.floor(Math.random() * penta.length)];
     const ti = t0 + Math.random() * beat * 3.5;
-    bgmBell(bus, { midi: m, t: ti, dur: 1.4, gain: 0.02 });
+    bgmBell(bus, { midi: m, t: ti, dur: 1.4, gain: 0.024 });
   }
 }
 
-// Morning Light: add9 の柔らかいパッドとハープ風ロールアルペジオ。
+// Morning Light: add9 の柔らかいパッドとハープ風ロールアルペジオ、そっと動くベース。
 function scheduleBarMorning(t0, chord, bar, bus) {
   const beat = 60 / TRACKS.morning.tempo;
   for (const m of [...chord, chord[0] + 14]) {
-    bgmTone(bus, { midi: m, t: t0, dur: beat * 4, type: "sine", gain: 0.03, attack: beat * 0.8 });
+    bgmTone(bus, { midi: m, t: t0, dur: beat * 4, type: "sine", gain: 0.036, attack: beat * 0.8 });
   }
-  bgmTone(bus, { midi: chord[0] - 12, t: t0, dur: beat * 4, type: "sine", gain: 0.05, attack: 0.06 });
+  bgmTone(bus, { midi: chord[0] - 12, t: t0, dur: beat * 4, type: "sine", gain: 0.06, attack: 0.06 });
+  // 2・4 拍に 5 度の柔らかい脈を足してベースを歩かせる
+  for (const b of [1, 3]) bgmTone(bus, { midi: chord[0] - 12 + 7, t: t0 + b * beat, dur: beat * 0.7, type: "sine", gain: 0.032, attack: 0.03 });
+  // 裏拍のごく軽いシェイカー
+  for (let i = 0; i < 4; i++) bgmNoise(bus, { t: t0 + (i + 0.5) * beat, dur: 0.03, gain: 0.008, freq: 8500 });
   const roll = [chord[0], chord[1], chord[2], chord[0] + 12, chord[1] + 12];
   roll.forEach((m, i) => {
-    bgmTone(bus, { midi: m, t: t0 + i * 0.07, dur: beat * 1.6, type: "triangle", gain: 0.03, attack: 0.008 });
+    bgmTone(bus, { midi: m, t: t0 + i * 0.07, dur: beat * 1.6, type: "triangle", gain: 0.038, attack: 0.008 });
   });
   if (bar % 2 === 1) {
-    bgmTone(bus, { midi: chord[2] + 12, t: t0 + beat * 2, dur: beat * 1.4, type: "sine", gain: 0.032 });
+    bgmTone(bus, { midi: chord[2] + 12, t: t0 + beat * 2, dur: beat * 1.4, type: "sine", gain: 0.04 });
+  } else {
+    // 偶数小節は高いところでそっと応える
+    bgmTone(bus, { midi: chord[1] + 24, t: t0 + beat * 3, dur: beat * 0.9, type: "sine", gain: 0.026, attack: 0.03 });
   }
 }
 
-// Grand Finale: 祝祭のフィナーレ。上昇カスケードとスネアロール。
+// Grand Finale: 祝祭のフィナーレ。上昇カスケードとフルドラム、きらめく鐘。
 function scheduleBarFinale(t0, chord, bar, bus) {
   const beat = 60 / TRACKS.finale.tempo;
   for (let b = 0; b < 4; b++) {
     for (const m of chord) {
-      bgmTone(bus, { midi: m, t: t0 + b * beat, dur: beat * 0.5, type: "sawtooth", gain: 0.016, detune: b % 2 ? 8 : -8 });
+      bgmTone(bus, { midi: m, t: t0 + b * beat, dur: beat * 0.5, type: "sawtooth", gain: 0.02, detune: b % 2 ? 8 : -8 });
     }
-    bgmTone(bus, { midi: chord[0] - 24 + (b === 3 ? 5 : 0), t: t0 + b * beat, dur: beat * 0.6, type: "triangle", gain: 0.1, attack: 0.008 });
-    bgmNoise(bus, { t: t0 + (b + 0.5) * beat, dur: 0.05, gain: 0.026, freq: 8000 });
+    bgmTone(bus, { midi: chord[0] - 24 + (b === 3 ? 5 : 0), t: t0 + b * beat, dur: beat * 0.6, type: "triangle", gain: 0.11, attack: 0.008 });
+    bgmNoise(bus, { t: t0 + (b + 0.5) * beat, dur: 0.05, gain: 0.03, freq: 8000 });
   }
+  // 4 つ打ちキックと 2・4 拍のスネアで祝祭を推し進める
+  for (let b = 0; b < 4; b++) bgmTone(bus, { midi: 36, t: t0 + b * beat, dur: 0.08, type: "sine", gain: 0.085, bend: -12 });
+  for (const b of [1, 3]) bgmNoise(bus, { t: t0 + b * beat, dur: 0.07, gain: 0.036, freq: 3600, q: 0.7 });
   const cascade = [0, 1, 2, 0, 1, 2, 0, 1];
   cascade.forEach((note, i) => {
-    bgmTone(bus, { midi: chord[note] + 12 + Math.floor(i / 3) * 12, t: t0 + i * beat / 2, dur: beat * 0.4, type: "square", gain: 0.02, attack: 0.006 });
+    bgmTone(bus, { midi: chord[note] + 12 + Math.floor(i / 3) * 12, t: t0 + i * beat / 2, dur: beat * 0.4, type: "square", gain: 0.026, attack: 0.006 });
   });
+  // 2 小節ごとに高い鐘のきらめき
+  if (bar % 2 === 0) bgmBell(bus, { midi: chord[0] + 36, t: t0, dur: 1.4, gain: 0.014 });
   if (bar % 4 === 3) {
-    for (let i = 0; i < 8; i++) bgmNoise(bus, { t: t0 + (3 + i * 0.125) * beat, dur: 0.06, gain: 0.02 + i * 0.003, freq: 3600, q: 0.7 });
+    for (let i = 0; i < 8; i++) bgmNoise(bus, { t: t0 + (3 + i * 0.125) * beat, dur: 0.06, gain: 0.024 + i * 0.003, freq: 3600, q: 0.7 });
   }
 }
 
@@ -1051,6 +1186,7 @@ const TRACKS = {
   uso: { ...USO, beats: 4, schedule: scheduleBarUso },
   gentle: { ...GENTLE, beats: 4, schedule: scheduleBarGentle },
   classic: { ...CLASSIC, beats: 4, schedule: scheduleBarClassic },
+  pop: { tempo: 122, beats: 4, chords: [[60, 64, 67], [57, 60, 64], [53, 57, 60], [55, 59, 62]], schedule: scheduleBarPop },
   parade: { tempo: 118, beats: 4, chords: [[60, 64, 67], [65, 69, 72], [67, 71, 74], [60, 64, 67]], schedule: scheduleBarParade },
   rush: { tempo: 132, beats: 4, chords: [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]], schedule: scheduleBarRush },
   deepsea: { tempo: 54, beats: 4, chords: [[50, 53, 57], [48, 52, 55], [46, 50, 53], [48, 52, 55]], schedule: scheduleBarDeepsea },
@@ -1118,4 +1254,6 @@ onSettingsChange((s, key) => {
     bgmGain.gain.setTargetAtTime(bgmTargetGain(s), ctx.currentTime, 0.02);
   }
   if (key === "bgmTrack") refreshBgmMix(true);
+  // モード連動ではテーマも選曲に効くため、テーマ変更で選び直す
+  if (key === "theme" && s.bgmTrack === "auto") refreshBgmMix(true);
 });

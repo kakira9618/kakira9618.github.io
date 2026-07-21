@@ -140,7 +140,8 @@ try {
   }
 
   // 隠しテーマ Pop: 実績「三色盛り」解放済みなので選択でき、body クラスに反映される
-  await page.getByRole("radio", { name: "Pop" }).click();
+  // BGM 一覧の「Candy Pop」と部分一致しないよう exact 指定でテーマの Pop を選ぶ
+  await page.getByRole("radio", { name: "Pop", exact: true }).click();
   await page.locator("body.theme-pop").waitFor();
   await page.getByRole("radio", { name: "クラシック" }).click();
   await page.locator("body.theme-classic").waitFor();

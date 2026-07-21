@@ -48,7 +48,10 @@ class FakeOscillator extends FakeNode {
     this.detune = new FakeParam();
   }
 
-  start() { this.context.startedOscillators++; }
+  start() {
+    this.context.startedOscillators++;
+    this.context.startedFrequencies.push(this.frequency.value);
+  }
   stop() {}
 }
 
@@ -64,6 +67,7 @@ class FakeAudioContext {
     this.destination = new FakeNode(this);
     this.gains = [];
     this.startedOscillators = 0;
+    this.startedFrequencies = [];
     this.resumeCalls = 0;
     FakeAudioContext.instances.push(this);
     FakeAudioContext.instance = this;
@@ -187,6 +191,32 @@ for (const track of BGM_TRACKS.filter((track) => track.id !== "auto")) {
   );
   previousStarts = rebuiltContext.startedOscillators;
 }
+
+// モード連動 + Pop テーマでは Candy Pop が自動選択されること
+assert(
+  BGM_TRACKS.some((track) => track.id === "pop" && track.unlockAchievement === "rainbow"),
+  "the Candy Pop track should unlock together with the Pop theme (rainbow achievement)"
+);
+setSetting("bgmTrack", "auto");
+const popBellHz = 440 * Math.pow(2, (84 - 69) / 12) * 2.76; // Candy Pop の小節あたまの鐘の第 2 倍音
+const beforeTheme = rebuiltContext.startedFrequencies.length;
+setSetting("theme", "pop");
+const themeFreqs = rebuiltContext.startedFrequencies.slice(beforeTheme);
+assert(
+  themeFreqs.some((freq) => Math.abs(freq - popBellHz) < 0.01),
+  "auto BGM should schedule Candy Pop while the Pop theme is active"
+);
+
+// Pop テーマでも裏モードでは不穏な曲が優先されること
+const beforeUso = rebuiltContext.startedFrequencies.length;
+setUsoMood(true);
+const usoFreqs = rebuiltContext.startedFrequencies.slice(beforeUso);
+assert(usoFreqs.length > 0, "switching to uso mood should reschedule BGM");
+assert(
+  !usoFreqs.some((freq) => Math.abs(freq - popBellHz) < 0.01),
+  "uso mood should override the Pop theme track"
+);
+setUsoMood(false);
 
 stopBgm();
 console.log("音声テスト: OK");
