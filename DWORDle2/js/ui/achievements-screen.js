@@ -3,7 +3,7 @@
 
 import { el, clear, fmtDateTime } from "./dom.js";
 import { registerScreen, navigate } from "./app.js?v=20260721-debug";
-import { ACHIEVEMENTS, getUnlocked } from "../core/achievements.js?v=20260721-debug";
+import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, getUnlocked } from "../core/achievements.js?v=20260721-debug";
 import { playSfx } from "../audio/sound.js";
 import { icon } from "./icons.js";
 import { localizedAchievement, tr } from "../core/i18n.js";
@@ -65,8 +65,19 @@ function render() {
         el("div", { class: "bar-fill", style: { width: `${(100 * count) / ACHIEVEMENTS.length}%` } })
       ),
       el("span", { class: "bar-value" }, `${Math.round((100 * count) / ACHIEVEMENTS.length)}%`)
-    ),
-    el("div", { class: "ach-grid" }, normal.map((a) => achCard(a, unlocked[a.id]))),
+    )
+  );
+  // 通常実績はカテゴリごとに見出し + 解放数を付けて並べる
+  for (const category of ACHIEVEMENT_CATEGORIES) {
+    const items = normal.filter((a) => a.cat === category.id);
+    if (items.length === 0) continue;
+    body.append(
+      el("div", { class: "progress-note", style: { marginTop: "8px" } },
+        `${tr(category.ja, category.en)}  ${items.filter((a) => unlocked[a.id]).length} / ${items.length}`),
+      el("div", { class: "ach-grid" }, items.map((a) => achCard(a, unlocked[a.id])))
+    );
+  }
+  body.append(
     el("div", { class: "progress-note", style: { marginTop: "8px" } },
       tr(
         `隠し実績 ${hidden.filter((a) => unlocked[a.id]).length} / ${hidden.length}`,

@@ -87,6 +87,22 @@ const ACHIEVEMENT_EN = {
   "h-abyss": ["One Strike into the Abyss", "Clear an Extreme puzzle within 4 Guesses"],
   "h-lightning": ["Lightning Fast", "Clear a game in 3 or more Guesses and within 10 seconds"],
   "h-lexicon": ["Fountain of Words", "Use 100 different Guess words total"],
+  "wins-200": ["Living Legend", "Win 200 games total"],
+  "play-streak-3": ["Three Days Straight", "Play on 3 consecutive days"],
+  "play-streak-7": ["One-Week Habit", "Play on 7 consecutive days"],
+  "play-streak-14": ["Two-Week Fever", "Play on 14 consecutive days"],
+  "daily-streak-30": ["Perfect Month", "Clear Daily puzzles 30 days in a row"],
+  "play-days-100": ["A Hundred Days", "Play on 100 different days"],
+  "plays-30": ["Getting the Hang of It", "Finish 30 games total"],
+  "plays-500": ["Master of the Board", "Finish 500 games total"],
+  "guesses-3000": ["Three Thousand Words", "Make 3,000 Guesses total"],
+  "all-letters": ["A to Z", "Use every letter of the alphabet within one game"],
+  "h-plays-5000": ["Endless Pursuit", "Finish 5,000 games total"],
+  "h-uso-800": ["Eight Hundred Lies", "Win 800 DWORDlie games"],
+  "h-play-days-365": ["365 Days of Footprints", "Play on 365 different days"],
+  "h-play-streak-365": ["A Year's Vow", "Play on 365 consecutive days"],
+  "h-play-streak-1095": ["Thousand-Day Training", "Play on 1,095 consecutive days (3 years)"],
+  "h-play-streak-1825": ["Five-Year Legend", "Play on 1,825 consecutive days (5 years)"],
 };
 
 export function localizedAchievement(achievement) {

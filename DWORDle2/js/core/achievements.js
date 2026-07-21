@@ -1,4 +1,4 @@
-// 実績システム。通常 40 種 + 隠し 10 種。
+// 実績システム。通常 50 種 + 隠し 16 種。
 //
 // 解放判定はイベント駆動:
 //   - checkOnGameFinish(ctx): ゲーム終了時（ctx はこのファイル冒頭のコメント参照）
@@ -23,58 +23,81 @@ import { totalWins, totalPlays, currentWinStreak, dailyClearStreak, getHistory }
 import { CELL, Logic } from "./logic.js";
 import { isDebugMode } from "./debug.js";
 
-const RECONCILE_VERSION = 2;
+const RECONCILE_VERSION = 3;
+
+// 実績画面の見出しに使うカテゴリ。ACHIEVEMENTS はこの順に並べる
+export const ACHIEVEMENT_CATEGORIES = [
+  { id: "basic", ja: "入門", en: "Getting Started" },
+  { id: "wins", ja: "勝利・連勝", en: "Wins & Streaks" },
+  { id: "speed", ja: "手数・スピード", en: "Guesses & Speed" },
+  { id: "habit", ja: "毎日の継続", en: "Daily Habits" },
+  { id: "volume", ja: "やり込み", en: "Dedication" },
+  { id: "board", ja: "盤面の模様", en: "Board Patterns" },
+  { id: "modes", ja: "モード・難易度", en: "Modes & Difficulty" },
+  { id: "calendar", ja: "時の記念", en: "Calendar" },
+  { id: "misc", ja: "その他", en: "Miscellaneous" },
+];
 
 export const ACHIEVEMENTS = [
   // --- 入門 ---
-  { id: "first-play", icon: "footprints", color: "#8fd3ff", name: "はじめの一歩", desc: "初めてゲームを最後までプレイする" },
-  { id: "first-clear", icon: "trophy", color: "#ffd166", name: "初勝利", desc: "初めてクリアする" },
-  { id: "daily-clear", icon: "calendar", color: "#7bd88f", name: "今日の一問", desc: "デイリー問題をクリアする" },
-  // --- 難易度・モード ---
-  { id: "extreme-clear", icon: "mountain", color: "#ff8c66", name: "語彙の深淵", desc: "極 (No.10000-19999) の問題を 1 問クリアする" },
-  { id: "level-clear", icon: "compass", color: "#66e0d5", name: "開拓者", desc: "レベル問題 (No.20000-39999) を 1 問クリアする" },
-  { id: "uso-clear", icon: "mask", color: "#ff5f8f", name: "嘘を見抜く", desc: "裏モード DWORDlie をクリアする" },
-  { id: "uso-5", icon: "layers", color: "#ff7aa8", name: "嘘マスター", desc: "裏モード DWORDlie で通算 5 勝する" },
-  // --- 手数 ---
-  { id: "one-shot", icon: "bolt", color: "#ffe066", name: "神の一手", desc: "1 手目でクリアする" },
-  { id: "two-shot", icon: "eye", color: "#c9a0ff", name: "エスパー", desc: "2 手以内にクリアする" },
-  { id: "within-4", icon: "target", color: "#ff9f66", name: "早解き名人", desc: "4 手以内にクリアする" },
-  { id: "last-gasp", icon: "hourglass", color: "#a0b8d0", name: "土壇場", desc: "最終手でクリアする" },
-  // --- 連勝・通算 ---
-  { id: "streak-3", icon: "wave", color: "#66c7ff", name: "波に乗って", desc: "3 連勝する" },
-  { id: "streak-5", icon: "flame", color: "#ff9a5c", name: "連勝街道", desc: "5 連勝する" },
-  { id: "streak-10", icon: "crown", color: "#ffd700", name: "無敗神話", desc: "10 連勝する" },
-  { id: "wins-10", icon: "star", color: "#ffe680", name: "勝ち星コレクター", desc: "通算 10 勝する" },
-  { id: "wins-50", icon: "shield", color: "#9fd8a8", name: "歴戦の勇者", desc: "通算 50 勝する" },
-  { id: "wins-100", icon: "gem", color: "#7ee8ff", name: "レジェンド", desc: "通算 100 勝する" },
-  { id: "plays-100", icon: "book", color: "#d8b88f", name: "習うより慣れろ", desc: "通算 100 回プレイする" },
+  { id: "first-play", cat: "basic", icon: "footprints", color: "#8fd3ff", name: "はじめの一歩", desc: "初めてゲームを最後までプレイする" },
+  { id: "first-clear", cat: "basic", icon: "trophy", color: "#ffd166", name: "初勝利", desc: "初めてクリアする" },
+  { id: "daily-clear", cat: "basic", icon: "calendar", color: "#7bd88f", name: "今日の一問", desc: "デイリー問題をクリアする" },
+  // --- 勝利・連勝 ---
+  { id: "wins-10", cat: "wins", icon: "star", color: "#ffe680", name: "勝ち星コレクター", desc: "通算 10 勝する" },
+  { id: "wins-50", cat: "wins", icon: "shield", color: "#9fd8a8", name: "歴戦の勇者", desc: "通算 50 勝する" },
+  { id: "wins-100", cat: "wins", icon: "gem", color: "#7ee8ff", name: "レジェンド", desc: "通算 100 勝する" },
+  { id: "wins-200", cat: "wins", icon: "trophy", color: "#ffb860", name: "生ける伝説", desc: "通算 200 勝する" },
+  { id: "streak-3", cat: "wins", icon: "wave", color: "#66c7ff", name: "波に乗って", desc: "3 連勝する" },
+  { id: "streak-5", cat: "wins", icon: "flame", color: "#ff9a5c", name: "連勝街道", desc: "5 連勝する" },
+  { id: "streak-10", cat: "wins", icon: "crown", color: "#ffd700", name: "無敗神話", desc: "10 連勝する" },
+  { id: "revenge", cat: "wins", icon: "swords", color: "#ff8080", name: "リベンジ", desc: "一度敗北した問題をクリアする" },
+  // --- 手数・スピード ---
+  { id: "one-shot", cat: "speed", icon: "bolt", color: "#ffe066", name: "神の一手", desc: "1 手目でクリアする" },
+  { id: "two-shot", cat: "speed", icon: "eye", color: "#c9a0ff", name: "エスパー", desc: "2 手以内にクリアする" },
+  { id: "within-4", cat: "speed", icon: "target", color: "#ff9f66", name: "早解き名人", desc: "4 手以内にクリアする" },
+  { id: "last-gasp", cat: "speed", icon: "hourglass", color: "#a0b8d0", name: "土壇場", desc: "最終手でクリアする" },
+  { id: "speed-60", cat: "speed", icon: "gauge", color: "#7cf5ff", name: "スピードスター", desc: "開始から 60 秒以内にクリアする" },
+  { id: "slow-10", cat: "speed", icon: "clock", color: "#c8b8a0", name: "熟考の人", desc: "10 分以上かけてクリアする" },
+  // --- 毎日の継続（Streak）---
+  { id: "play-streak-3", cat: "habit", icon: "footprints", color: "#a8e8c0", name: "三日坊主卒業", desc: "3 日連続でプレイする" },
+  { id: "play-streak-7", cat: "habit", icon: "calendar", color: "#88d8b8", name: "一週間の習慣", desc: "7 日連続でプレイする" },
+  { id: "play-streak-14", cat: "habit", icon: "flame", color: "#ffb088", name: "二週間の熱中", desc: "14 日連続でプレイする" },
+  { id: "daily-7", cat: "habit", icon: "flag", color: "#8fd88f", name: "週間皆勤", desc: "デイリー問題を 7 日連続でクリアする" },
+  { id: "daily-streak-30", cat: "habit", icon: "flag", color: "#68c888", name: "月間皆勤", desc: "デイリー問題を 30 日連続でクリアする" },
+  { id: "daily-30", cat: "habit", icon: "calendar", color: "#7bd88f", name: "デイリー常連", desc: "デイリー問題を通算 30 回クリアする" },
+  { id: "play-days-30", cat: "habit", icon: "footprints", color: "#c8ffb0", name: "継続は力なり", desc: "通算 30 日プレイする" },
+  { id: "play-days-100", cat: "habit", icon: "footprints", color: "#b0e8a0", name: "百日の歩み", desc: "通算 100 日プレイする" },
+  // --- やり込み ---
+  { id: "plays-30", cat: "volume", icon: "book", color: "#e6d2a8", name: "だんだん慣れてきた", desc: "通算 30 回プレイする" },
+  { id: "plays-100", cat: "volume", icon: "book", color: "#d8b88f", name: "習うより慣れろ", desc: "通算 100 回プレイする" },
+  { id: "plays-300", cat: "volume", icon: "book", color: "#d8c8a8", name: "盤上の住人", desc: "通算 300 回プレイする" },
+  { id: "plays-500", cat: "volume", icon: "book", color: "#c8a878", name: "盤上の主", desc: "通算 500 回プレイする" },
+  { id: "guesses-1000", cat: "volume", icon: "type", color: "#b8d8ff", name: "千語の探求者", desc: "通算 1000 回 Guess する" },
+  { id: "guesses-3000", cat: "volume", icon: "type", color: "#9cc8ff", name: "三千語の探求者", desc: "通算 3000 回 Guess する" },
+  { id: "same-day-5", cat: "volume", icon: "layers", color: "#ffcf80", name: "今日は絶好調", desc: "同じ日に 5 回クリアする" },
   // --- 盤面の模様 ---
-  { id: "all-gray", icon: "cloud", color: "#a8b0bd", name: "完全なる空振り", desc: "1 回の Guess で 5 文字すべて灰色になる" },
-  { id: "rainbow", icon: "palette", color: "#ffb3de", name: "三色盛り", desc: "1 回の Guess で緑・黄・灰をすべて出す" },
-  { id: "green-start", icon: "rocket", color: "#8fffb0", name: "ロケットスタート", desc: "初手で緑を 3 つ以上出す" },
-  { id: "green-zero", icon: "moon", color: "#b8c4ff", name: "大逆転", desc: "最終手まで緑が 1 つも無い状態からクリアする" },
-  { id: "revenge", icon: "swords", color: "#ff8080", name: "リベンジ", desc: "一度敗北した問題をクリアする" },
-  // --- 時間 ---
-  { id: "speed-60", icon: "gauge", color: "#7cf5ff", name: "スピードスター", desc: "開始から 60 秒以内にクリアする" },
-  { id: "slow-10", icon: "clock", color: "#c8b8a0", name: "熟考の人", desc: "10 分以上かけてクリアする" },
-  { id: "night-owl", icon: "nightMoon", color: "#9a8fff", name: "真夜中のDWORDler", desc: "深夜 0 時〜4 時にクリアする" },
-  { id: "daily-7", icon: "flag", color: "#8fd88f", name: "週間皆勤", desc: "デイリー問題を 7 日連続でクリアする" },
-  // --- 日付・カレンダー ---
-  { id: "early-bird", icon: "sun", color: "#ffd280", name: "早起きDWORDler", desc: "朝 5 時〜8 時にクリアする" },
-  { id: "new-year", icon: "sunrise", color: "#ffb3a0", name: "初日の出DWORDler", desc: "1 月 1 日にクリアする" },
-  { id: "christmas", icon: "gift", color: "#ff8f8f", name: "聖夜の贈り物", desc: "12 月 25 日にクリアする" },
-  { id: "weekend", icon: "calendar", color: "#a0d8ff", name: "週末DWORDler", desc: "土曜日と日曜日の両方でクリアする（別の週でもOK）" },
-  { id: "same-day-5", icon: "layers", color: "#ffcf80", name: "今日は絶好調", desc: "同じ日に 5 回クリアする" },
-  { id: "play-days-30", icon: "footprints", color: "#c8ffb0", name: "継続は力なり", desc: "通算 30 日プレイする" },
-  // --- 回数 ---
-  { id: "daily-30", icon: "flag", color: "#7bd88f", name: "デイリー常連", desc: "デイリー問題を通算 30 回クリアする" },
-  { id: "plays-300", icon: "book", color: "#d8c8a8", name: "盤上の住人", desc: "通算 300 回プレイする" },
-  { id: "guesses-1000", icon: "type", color: "#b8d8ff", name: "千語の探求者", desc: "通算 1000 回 Guess する" },
-  { id: "uso-20", icon: "mask", color: "#ff9ab8", name: "嘘八百も見抜く", desc: "裏モード DWORDlie で通算 20 勝する" },
+  { id: "all-gray", cat: "board", icon: "cloud", color: "#a8b0bd", name: "完全なる空振り", desc: "1 回の Guess で 5 文字すべて灰色になる" },
+  { id: "rainbow", cat: "board", icon: "palette", color: "#ffb3de", name: "三色盛り", desc: "1 回の Guess で緑・黄・灰をすべて出す" },
+  { id: "green-start", cat: "board", icon: "rocket", color: "#8fffb0", name: "ロケットスタート", desc: "初手で緑を 3 つ以上出す" },
+  { id: "green-zero", cat: "board", icon: "moon", color: "#b8c4ff", name: "大逆転", desc: "最終手まで緑が 1 つも無い状態からクリアする" },
+  { id: "all-letters", cat: "board", icon: "type", color: "#ffd0e8", name: "アルファベット制覇", desc: "1 ゲームの Guess で A から Z まで全ての文字を使う" },
+  // --- モード・難易度 ---
+  { id: "uso-clear", cat: "modes", icon: "mask", color: "#ff5f8f", name: "嘘を見抜く", desc: "裏モード DWORDlie をクリアする" },
+  { id: "uso-5", cat: "modes", icon: "layers", color: "#ff7aa8", name: "嘘マスター", desc: "裏モード DWORDlie で通算 5 勝する" },
+  { id: "uso-20", cat: "modes", icon: "mask", color: "#ff9ab8", name: "嘘八百も見抜く", desc: "裏モード DWORDlie で通算 20 勝する" },
+  { id: "extreme-clear", cat: "modes", icon: "mountain", color: "#ff8c66", name: "語彙の深淵", desc: "極 (No.10000-19999) の問題を 1 問クリアする" },
+  { id: "level-clear", cat: "modes", icon: "compass", color: "#66e0d5", name: "開拓者", desc: "レベル問題 (No.20000-39999) を 1 問クリアする" },
+  // --- 時の記念 ---
+  { id: "night-owl", cat: "calendar", icon: "nightMoon", color: "#9a8fff", name: "真夜中のDWORDler", desc: "深夜 0 時〜4 時にクリアする" },
+  { id: "early-bird", cat: "calendar", icon: "sun", color: "#ffd280", name: "早起きDWORDler", desc: "朝 5 時〜8 時にクリアする" },
+  { id: "new-year", cat: "calendar", icon: "sunrise", color: "#ffb3a0", name: "初日の出DWORDler", desc: "1 月 1 日にクリアする" },
+  { id: "christmas", cat: "calendar", icon: "gift", color: "#ff8f8f", name: "聖夜の贈り物", desc: "12 月 25 日にクリアする" },
+  { id: "weekend", cat: "calendar", icon: "calendar", color: "#a0d8ff", name: "週末DWORDler", desc: "土曜日と日曜日の両方でクリアする（別の週でもOK）" },
   // --- その他 ---
-  { id: "analyst", icon: "flask", color: "#66ffc2", name: "アナリスト", desc: "分析モードを使う" },
-  { id: "migrator", icon: "box", color: "#d0a878", name: "引っ越し完了", desc: "旧作からプレイ履歴を移行する" },
-  { id: "collector", icon: "medal", color: "#ffcf5c", name: "実績ハンター", desc: "実績を 15 個解放する" },
+  { id: "analyst", cat: "misc", icon: "flask", color: "#66ffc2", name: "アナリスト", desc: "分析モードを使う" },
+  { id: "migrator", cat: "misc", icon: "box", color: "#d0a878", name: "引っ越し完了", desc: "旧作からプレイ履歴を移行する" },
+  { id: "collector", cat: "misc", icon: "medal", color: "#ffcf5c", name: "実績ハンター", desc: "実績を 15 個解放する" },
 
   // --- 隠し実績（解放するまで内容非公開）---
   { id: "h-mirror", hidden: true, icon: "mirror", color: "#c0e8ff", name: "鏡の言葉", desc: "回文になっている単語を Guess する" },
@@ -87,6 +110,12 @@ export const ACHIEVEMENTS = [
   { id: "h-abyss", hidden: true, icon: "skull", color: "#ff9090", name: "深淵を一撃", desc: "極 (No.10000-19999) を 4 手以内にクリアする" },
   { id: "h-lightning", hidden: true, icon: "bolt", color: "#fff0a0", name: "電光石火", desc: "3 手以上で、開始から 10 秒以内にクリアする" },
   { id: "h-lexicon", hidden: true, icon: "book", color: "#c0ffd8", name: "語彙の泉", desc: "通算 100 種類の異なる単語を Guess する" },
+  { id: "h-plays-5000", hidden: true, icon: "layers", color: "#d8b8ff", name: "無限の探求", desc: "通算 5000 回プレイする" },
+  { id: "h-uso-800", hidden: true, icon: "mask", color: "#ff6f9f", name: "嘘八百", desc: "裏モード DWORDlie で通算 800 勝する" },
+  { id: "h-play-days-365", hidden: true, icon: "footprints", color: "#c0ffe0", name: "365 日の足跡", desc: "通算 365 日プレイする" },
+  { id: "h-play-streak-365", hidden: true, icon: "sunrise", color: "#ffd890", name: "一年の誓い", desc: "365 日連続でプレイする（1 日 1 回を 1 年）" },
+  { id: "h-play-streak-1095", hidden: true, icon: "mountain", color: "#a0d8e8", name: "千日修行", desc: "1095 日連続でプレイする（3 年）" },
+  { id: "h-play-streak-1825", hidden: true, icon: "crown", color: "#ffe060", name: "五年の伝説", desc: "1825 日連続でプレイする（5 年）" },
 ];
 
 let unlocked = loadJSON("achievements", {}); // { id: unlockedAt(sec) }
@@ -169,6 +198,20 @@ function maxHistoricalDailyStreak(dailyPids) {
   return best;
 }
 
+// 連続した日数の最長記録（dayNums は「エポックからの日数」の Set）
+function maxConsecutiveDays(dayNums) {
+  const days = [...dayNums].sort((a, b) => a - b);
+  let best = 0;
+  let streak = 0;
+  let previous = null;
+  for (const day of days) {
+    streak = previous !== null && day - previous === 1 ? streak + 1 : 1;
+    best = Math.max(best, streak);
+    previous = day;
+  }
+  return best;
+}
+
 // 完了時刻（秒）。endTime が無い移行レコードは startTime を使う。
 function completedAtSec(record) {
   const endTime = Number(record.endTime);
@@ -181,11 +224,12 @@ function completedAtSec(record) {
 // ゲーム終了時（履歴に現在のレコードを追加した後）と履歴復元の両方から使う。
 function calendarAndCountIds(records) {
   const ids = new Set();
-  const playDays = new Set();
+  const playDays = new Set(); // ローカル日付ごとの「エポックからの日数」
   const winsPerDay = new Map();
   const clearedWeekdays = new Set();
+  const dailyClearPids = [];
   let games = 0;
-  let dailyClears = 0;
+  let wins = 0;
   let guessTotal = 0;
   let usoWins = 0;
   for (const record of records) {
@@ -194,10 +238,11 @@ function calendarAndCountIds(records) {
     guessTotal += record.guessWord.length;
     const at = completedAtSec(record);
     const date = at === null ? null : new Date(at * 1000);
-    if (date) playDays.add(date.toDateString());
+    if (date) playDays.add(Math.floor(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000));
     if (!record.clear) continue;
+    wins++;
     if (record.gameMode === "uso") usoWins++;
-    if (isDailyPID(record.problemID)) dailyClears++;
+    if (isDailyPID(record.problemID)) dailyClearPids.push(record.problemID);
     if (!date) continue;
     winsPerDay.set(date.toDateString(), (winsPerDay.get(date.toDateString()) ?? 0) + 1);
     clearedWeekdays.add(date.getDay());
@@ -207,12 +252,28 @@ function calendarAndCountIds(records) {
     if (date.getMonth() === 11 && date.getDate() === 25) ids.add("christmas");
   }
   if (clearedWeekdays.has(0) && clearedWeekdays.has(6)) ids.add("weekend");
-  if ([...winsPerDay.values()].some((wins) => wins >= 5)) ids.add("same-day-5");
+  if ([...winsPerDay.values()].some((dayWins) => dayWins >= 5)) ids.add("same-day-5");
   if (playDays.size >= 30) ids.add("play-days-30");
-  if (dailyClears >= 30) ids.add("daily-30");
+  if (playDays.size >= 100) ids.add("play-days-100");
+  if (playDays.size >= 365) ids.add("h-play-days-365");
+  const playStreak = maxConsecutiveDays(playDays);
+  if (playStreak >= 3) ids.add("play-streak-3");
+  if (playStreak >= 7) ids.add("play-streak-7");
+  if (playStreak >= 14) ids.add("play-streak-14");
+  if (playStreak >= 365) ids.add("h-play-streak-365");
+  if (playStreak >= 1095) ids.add("h-play-streak-1095");
+  if (playStreak >= 1825) ids.add("h-play-streak-1825");
+  if (dailyClearPids.length >= 30) ids.add("daily-30");
+  if (maxHistoricalDailyStreak(dailyClearPids) >= 30) ids.add("daily-streak-30");
+  if (games >= 30) ids.add("plays-30");
   if (games >= 300) ids.add("plays-300");
+  if (games >= 500) ids.add("plays-500");
+  if (games >= 5000) ids.add("h-plays-5000");
+  if (wins >= 200) ids.add("wins-200");
   if (guessTotal >= 1000) ids.add("guesses-1000");
+  if (guessTotal >= 3000) ids.add("guesses-3000");
   if (usoWins >= 20) ids.add("uso-20");
+  if (usoWins >= 800) ids.add("h-uso-800");
   return ids;
 }
 
@@ -271,6 +332,7 @@ export function achievementIdsFromHistory(records) {
       if (word && isPalindrome(word)) ids.add("h-mirror");
       if (turn > 0 && isAnagram(record.guessWord[turn - 1], word)) ids.add("h-anagram");
     }
+    if (lettersUsed.size >= 26) ids.add("all-letters");
     if (
       mode === "uso" &&
       Array.isArray(record.usoResults) &&
@@ -397,6 +459,7 @@ export function checkOnGameFinish(ctx) {
     if (t > 0 && isAnagram(record.guessWord[t - 1], w)) unlock("h-anagram", newly);
   }
   const lettersUsed = new Set(record.guessWord.join(""));
+  if (lettersUsed.size >= 26) unlock("all-letters", newly);
   if (isUso && Array.isArray(record.usoResults)) {
     if (record.usoResults.some((row) => row.every((s) => s === CELL.CORRECT))) {
       unlock("h-uso-green", newly);
