@@ -365,6 +365,14 @@ try {
   assert.equal(await page.locator(".amark").count(), 0, "The old textual answer marker should be removed");
   await assertNoSeriousA11yViolations("Result screen");
 
+  await page.getByRole("button", { name: "もう一度", exact: true }).click();
+  const replayDialog = page.getByRole("dialog", { name: "プレイ済みの問題" });
+  await replayDialog.getByText(
+    "この問題は本日プレイ済みです。今回のプレイは、プレイ数・勝利数などのカウント系実績には加算されません。",
+    { exact: false }
+  ).waitFor();
+  await replayDialog.getByRole("button", { name: "キャンセル" }).click();
+
   await page.evaluate(() => { location.hash = "#/history"; });
   await page.waitForURL(/#\/history$/);
   const historyItem = page.locator("button.history-item").first();

@@ -621,12 +621,26 @@ function finishGame(justFinished) {
 
 // すでにプレイ済みなら確認してから開始する（原作の確認ダイアログ相当）
 export async function confirmAndStart(pid, mode) {
-  if (isAlreadyPlayed(pid, mode)) {
+  const today = new Date().toDateString();
+  const playedToday = getHistory().some((record) => {
+    if (record.problemID !== pid) return false;
+    const endTime = Number(record.endTime);
+    const startTime = Number(record.startTime);
+    const playedAt = Number.isFinite(endTime) && endTime > 0 ? endTime : startTime;
+    return Number.isFinite(playedAt) && new Date(playedAt * 1000).toDateString() === today;
+  });
+  if (isAlreadyPlayed(pid, mode) || playedToday) {
     const { confirmModal } = await import("./modal.js");
     const label = pidLabel(pid);
+    const countNote = playedToday
+      ? tr(
+          "\n\n※この問題は本日プレイ済みです。今回のプレイは、プレイ数・勝利数などのカウント系実績には加算されません。",
+          "\n\nThis puzzle has already been played today. This play will not be added to play, win, or other count-based achievement totals."
+        )
+      : "";
     const ok = await confirmModal(
       tr("プレイ済みの問題", "Puzzle already played"),
-      tr(`${label} はすでにプレイしています。\nもう一度プレイしますか？`, `${label} has already been played.\nPlay it again?`)
+      tr(`${label} はすでにプレイしています。\nもう一度プレイしますか？`, `${label} has already been played.\nPlay it again?`) + countNote
     );
     if (!ok) return false;
   }
