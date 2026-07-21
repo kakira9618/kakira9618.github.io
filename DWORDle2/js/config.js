@@ -44,37 +44,13 @@ export const FX = {
     horizonColorUso: 0x55081e,
     cameraDrift: 2.2, // カメラの揺らぎ幅
     scrollSpeed: 7.0, // グリッドの流れる速さ
-    // 大きめの天体（リング付き惑星）。空にゆっくり漂う
-    planet: {
-      size: 56, // スプライトの一辺（ワールド単位）
-      pos: [-38, 58, -150], // 縦画面でロゴに重ならない左上
-      driftAmp: 6, // 漂いの振幅
-      palette: { base: "#2e5f9e", light: "#9fd8ff", band: "rgba(255,255,255,0.10)", ring: "rgba(150,215,255,0.65)" },
-      paletteUso: { base: "#6e1524", light: "#ff9a70", band: "rgba(0,0,0,0.16)", ring: "rgba(255,120,95,0.5)" },
-    },
-    // 小さな月。空を何分もかけて横断する
-    moon: {
-      size: 14,
-      y: 66,
-      z: -120,
-      crossSec: 420, // 画面を横断する秒数
-      span: 260, // 横断する幅（ワールド単位）
-    },
-    // 星雲（巨大で極薄のスプライト）。じわじわ流れて空の印象を変える
-    nebula: {
-      count: 3,
-      opacity: 0.055,
-      scale: [140, 230],
-      colors: [0x3355aa, 0x7744aa, 0x116688],
-      colorsUso: [0x881133, 0x662244, 0x883311],
-    },
-    // 流れ星。たまに現れて斜めに走る
-    shootingStar: {
-      minIntervalSec: 6,
-      maxIntervalSec: 16,
-      speed: 200, // ワールド単位 / 秒
-      lifeSec: 1.0,
-      length: 26, // 尾の長さ（スプライトの横伸ばし）
+    // 空に浮かぶ大きくふわっとした光。ゆっくり漂い、呼吸するように明滅する
+    skyGlow: {
+      count: 7,
+      opacity: 0.19,
+      scale: [70, 160], // ワールド単位の [最小, 最大]
+      colors: [0x3d6dff, 0x8a55ff, 0x1fb8d8, 0xe055b0],
+      colorsUso: [0xff3d5e, 0xff7744, 0xa03dff, 0xcc2244],
     },
     hueDriftAmp: 0.05, // 色相のゆっくりした揺らぎ幅（0-1 の色相環比）
     hueDriftSpeed: 0.021, // 揺らぎの速さ（小さいほどじわじわ変わる）

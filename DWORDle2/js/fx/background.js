@@ -1,8 +1,8 @@
 // サイバーテーマの 3D 背景（Three.js）。
 // 流れるネオングリッド + 地平線の発光 + 玉ボケ（大きく柔らかい光）+
 // ゆっくり上昇する塵。すべて柔らかいスプライトで描き、きらめき（明滅）を付ける。
-// さらに大きめの天体（リング付き惑星・月）・星雲・流れ星を置き、
-// グリッドや天体の色相をごくゆっくり揺らして、じわじわ変わる空にする。
+// さらに空には大きくふわっとした光をいくつか浮かべ、
+// グリッドや光の色相をごくゆっくり揺らして、じわじわ変わる空にする。
 // classic テーマでは canvas ごと非表示になり、描画ループも止める。
 
 import * as THREE from "three";
@@ -18,11 +18,7 @@ let grid2 = null;
 let horizon = null;
 let bokeh = null; // { points, phases[] }
 let dust = null; // { points, speeds[] }
-let planet = null; // リング付き惑星（Sprite）
-let moon = null; // ゆっくり横断する月（Sprite）
-let nebulae = []; // [{ sprite, baseX, baseY, speed, phase }]
-let shootingStars = []; // [{ sprite, vx, vy, born }]
-let nextShootingStarAt = 0;
+let skyGlows = []; // [{ sprite, baseX, baseY, scale, speed, phase }]
 let running = false;
 let uso = false;
 let t = 0;
@@ -47,203 +43,50 @@ function makeGlowTexture(size = 128, inner = 0.0) {
 
 let glowTex = null;
 
-// リング付き惑星のテクスチャ。光源は左上、リングは奥→球→手前の順で描く。
-function makePlanetTexture(palette, size = 256) {
-  const cv = document.createElement("canvas");
-  cv.width = cv.height = size;
-  const g = cv.getContext("2d");
-  const cx = size / 2;
-  const cy = size / 2;
-  const R = size * 0.25;
-  const ringTilt = -0.46;
-  const ringRx = R * 1.9;
-  const ringRy = R * 0.52;
-
-  // 淡い光輪
-  const halo = g.createRadialGradient(cx, cy, R * 0.8, cx, cy, R * 2.1);
-  halo.addColorStop(0, "rgba(255,255,255,0.16)");
-  halo.addColorStop(1, "rgba(255,255,255,0)");
-  g.fillStyle = halo;
-  g.fillRect(0, 0, size, size);
-
-  const strokeRing = (clipLower) => {
-    g.save();
-    g.translate(cx, cy);
-    g.rotate(ringTilt);
-    if (clipLower) {
-      g.beginPath();
-      g.rect(-size / 2, 0, size, size / 2);
-      g.clip();
-    }
-    for (const [scale, width, alpha] of [[1, R * 0.34, 0.85], [0.8, R * 0.1, 0.5]]) {
-      g.beginPath();
-      g.ellipse(0, 0, ringRx * scale, ringRy * scale, 0, 0, Math.PI * 2);
-      g.globalAlpha = alpha;
-      g.strokeStyle = palette.ring;
-      g.lineWidth = width;
-      g.stroke();
-    }
-    g.globalAlpha = 1;
-    g.restore();
-  };
-
-  strokeRing(false); // 奥側（全周を薄く敷く）
-
-  // 球体: 左上からの光
-  const sphere = g.createRadialGradient(cx - R * 0.45, cy - R * 0.5, R * 0.1, cx, cy, R * 1.12);
-  sphere.addColorStop(0, palette.light);
-  sphere.addColorStop(0.55, palette.base);
-  sphere.addColorStop(1, "rgba(0,0,0,0.9)");
-  g.beginPath();
-  g.arc(cx, cy, R, 0, Math.PI * 2);
-  g.fillStyle = sphere;
-  g.fill();
-
-  // 縞模様（球にクリップして数本）
-  g.save();
-  g.beginPath();
-  g.arc(cx, cy, R, 0, Math.PI * 2);
-  g.clip();
-  g.fillStyle = palette.band;
-  for (const [yr, hr] of [[-0.45, 0.1], [-0.1, 0.16], [0.32, 0.12]]) {
-    g.beginPath();
-    g.ellipse(cx, cy + R * yr, R * 1.05, R * hr, -0.06, 0, Math.PI * 2);
-    g.fill();
-  }
-  g.restore();
-
-  strokeRing(true); // 手前側（球の下半分の前を通る）
-
-  const tex = new THREE.CanvasTexture(cv);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
-}
-
-// シンプルな影付きの月テクスチャ
-function makeMoonTexture(size = 96) {
-  const cv = document.createElement("canvas");
-  cv.width = cv.height = size;
-  const g = cv.getContext("2d");
-  const cx = size / 2;
-  const R = size * 0.4;
-  const grad = g.createRadialGradient(cx - R * 0.4, cx - R * 0.42, R * 0.1, cx, cx, R * 1.05);
-  grad.addColorStop(0, "rgba(235,240,250,0.95)");
-  grad.addColorStop(0.7, "rgba(150,165,195,0.85)");
-  grad.addColorStop(1, "rgba(40,50,70,0.6)");
-  g.beginPath();
-  g.arc(cx, cx, R, 0, Math.PI * 2);
-  g.fillStyle = grad;
-  g.fill();
-  // クレーター
-  g.fillStyle = "rgba(90,105,135,0.35)";
-  for (const [x, y, r] of [[0.62, 0.4, 0.1], [0.4, 0.62, 0.07], [0.55, 0.6, 0.05]]) {
-    g.beginPath();
-    g.arc(size * x, size * y, size * r, 0, Math.PI * 2);
-    g.fill();
-  }
-  const tex = new THREE.CanvasTexture(cv);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
-}
-
-function spriteOf(texture, opacity = 1) {
-  return new THREE.Sprite(
-    new THREE.SpriteMaterial({
-      map: texture,
-      transparent: true,
-      opacity,
-      depthWrite: false,
-      fog: false, // 遠景の天体はフォグで消さない
-    })
-  );
-}
-
+// 空に浮かぶ大きくふわっとした光を並べる
 function buildSkyObjects() {
-  const cfg = FX.bg;
+  const cfg = FX.bg.skyGlow;
   disposeSkyObjects();
 
-  // 惑星
-  planet = spriteOf(makePlanetTexture(uso ? cfg.planet.paletteUso : cfg.planet.palette), 0.9);
-  planet.scale.set(cfg.planet.size, cfg.planet.size, 1);
-  planet.position.set(...cfg.planet.pos);
-  scene.add(planet);
-
-  // 月
-  moon = spriteOf(makeMoonTexture(), 0.8);
-  moon.scale.set(cfg.moon.size, cfg.moon.size, 1);
-  moon.position.set(0, cfg.moon.y, cfg.moon.z);
-  scene.add(moon);
-
-  // 星雲
-  nebulae = [];
-  const colors = uso ? cfg.nebula.colorsUso : cfg.nebula.colors;
-  for (let i = 0; i < cfg.nebula.count; i++) {
+  const colors = uso ? cfg.colorsUso : cfg.colors;
+  for (let i = 0; i < cfg.count; i++) {
     const sprite = new THREE.Sprite(
       new THREE.SpriteMaterial({
         map: glowTex,
         color: colors[i % colors.length],
         transparent: true,
-        opacity: cfg.nebula.opacity,
+        opacity: cfg.opacity,
         blending: THREE.AdditiveBlending,
         depthWrite: false,
-        fog: false,
+        fog: false, // 遠景の光はフォグで消さない
       })
     );
-    const scale = cfg.nebula.scale[0] + Math.random() * (cfg.nebula.scale[1] - cfg.nebula.scale[0]);
-    sprite.scale.set(scale * (1.4 + Math.random() * 0.5), scale, 1);
+    const scale = cfg.scale[0] + Math.random() * (cfg.scale[1] - cfg.scale[0]);
+    const aspect = 1 + Math.random() * 0.3;
+    sprite.scale.set(scale * aspect, scale, 1);
     const baseX = (Math.random() - 0.5) * 240;
-    const baseY = 28 + Math.random() * 45;
-    sprite.position.set(baseX, baseY, -160 - Math.random() * 30);
+    const baseY = 14 + Math.random() * 55;
+    sprite.position.set(baseX, baseY, -130 - Math.random() * 50);
     scene.add(sprite);
-    nebulae.push({ sprite, baseX, baseY, speed: 0.6 + Math.random() * 0.8, phase: Math.random() * Math.PI * 2 });
+    skyGlows.push({ sprite, baseX, baseY, scale, aspect, speed: 0.6 + Math.random() * 0.8, phase: Math.random() * Math.PI * 2 });
   }
 }
 
 function disposeSkyObjects() {
-  for (const obj of [planet, moon, ...nebulae.map((n) => n.sprite), ...shootingStars.map((s) => s.sprite)]) {
-    if (!obj) continue;
-    scene.remove(obj);
-    obj.material.map?.dispose?.();
-    obj.material.dispose();
+  for (const glow of skyGlows) {
+    scene.remove(glow.sprite);
+    glow.sprite.material.dispose();
   }
-  planet = null;
-  moon = null;
-  nebulae = [];
-  shootingStars = [];
-}
-
-// 流れ星を 1 つ発生させる（引き伸ばした glow スプライトを走らせる）
-function spawnShootingStar() {
-  const cfg = FX.bg.shootingStar;
-  const sprite = new THREE.Sprite(
-    new THREE.SpriteMaterial({
-      map: glowTex,
-      color: uso ? 0xffa088 : 0xcdefff,
-      transparent: true,
-      opacity: 0,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      fog: false,
-    })
-  );
-  const angle = -0.5 - Math.random() * 0.5; // 右上から左下へ
-  const dir = Math.random() < 0.5 ? 1 : -1; // 左右どちらからも流れる
-  sprite.scale.set(cfg.length, 1.1, 1);
-  sprite.material.rotation = dir > 0 ? angle : Math.PI - angle;
-  sprite.position.set(dir * (30 + Math.random() * 90) * -1, 46 + Math.random() * 22, -110 - Math.random() * 40);
-  scene.add(sprite);
-  shootingStars.push({
-    sprite,
-    vx: Math.cos(angle) * cfg.speed * dir,
-    vy: Math.sin(angle) * cfg.speed,
-    born: t,
-  });
+  skyGlows = [];
 }
 
 export function initBackground(onFailure = () => {}) {
   failureHandler = onFailure;
   const canvas = document.getElementById("bg3d");
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  // 一度も render しないまま clear() すると WebGL 初期値の不透明黒で塗られるため、
+  // 透明クリア色を明示する（fx/bursts.js と同じ対策）。
+  renderer.setClearColor(0x000000, 0);
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 
   scene = new THREE.Scene();
@@ -479,53 +322,14 @@ function loop() {
     horizonBase.offsetHSL(hueShift, 0, 0.01 * Math.sin(t * 0.09));
     horizon.material.color.copy(horizonBase);
 
-    // 惑星: ごくゆっくり漂い、呼吸するように明滅し、わずかに傾きを変える
-    if (planet) {
-      const p = cfg.planet;
-      planet.position.x = p.pos[0] + Math.sin(t * 0.017) * p.driftAmp;
-      planet.position.y = p.pos[1] + Math.sin(t * 0.023 + 1.7) * p.driftAmp * 0.45;
-      planet.material.rotation = Math.sin(t * 0.011) * 0.09;
-      planet.material.opacity = 0.82 + 0.1 * Math.sin(t * 0.06);
-      const tint = 0.94 + 0.06 * Math.sin(t * cfg.hueDriftSpeed * 1.4 + 0.8);
-      planet.material.color.setRGB(tint, tint, 1);
+    // 空の大きな光: 別々の周期でゆっくり漂い、呼吸するように明滅・伸縮する
+    for (const glow of skyGlows) {
+      glow.sprite.position.x = glow.baseX + Math.sin(t * 0.006 * glow.speed + glow.phase) * 30;
+      glow.sprite.position.y = glow.baseY + Math.sin(t * 0.004 * glow.speed + glow.phase * 2) * 8;
+      glow.sprite.material.opacity = cfg.skyGlow.opacity * (0.6 + 0.4 * Math.sin(t * 0.08 * glow.speed + glow.phase));
+      const breath = 1 + 0.08 * Math.sin(t * 0.05 * glow.speed + glow.phase * 3);
+      glow.sprite.scale.set(glow.scale * glow.aspect * breath, glow.scale * breath, 1);
     }
-
-    // 月: 何分もかけて空を横断し、端まで行ったら反対側から戻る
-    if (moon) {
-      const m = cfg.moon;
-      const progress = (t / m.crossSec + 0.42) % 1; // 起動直後から画面内に見える位相で始める
-      moon.position.x = -m.span / 2 + progress * m.span;
-      moon.position.y = m.y - Math.sin(progress * Math.PI) * -6;
-      moon.material.opacity = 0.55 + 0.25 * Math.sin(progress * Math.PI);
-    }
-
-    // 星雲: 別々の周期で極めてゆっくり流れ、濃さも変える
-    for (const n of nebulae) {
-      n.sprite.position.x = n.baseX + Math.sin(t * 0.006 * n.speed + n.phase) * 30;
-      n.sprite.position.y = n.baseY + Math.sin(t * 0.004 * n.speed + n.phase * 2) * 8;
-      n.sprite.material.opacity = cfg.nebula.opacity * (0.65 + 0.35 * Math.sin(t * 0.05 * n.speed + n.phase));
-    }
-
-    // 流れ星: たまに発生して斜めに走り、素早く消える
-    if (t >= nextShootingStarAt) {
-      const sc = cfg.shootingStar;
-      if (nextShootingStarAt > 0) spawnShootingStar();
-      nextShootingStarAt = t + sc.minIntervalSec + Math.random() * (sc.maxIntervalSec - sc.minIntervalSec);
-    }
-    shootingStars = shootingStars.filter((star) => {
-      const age = t - star.born;
-      const life = cfg.shootingStar.lifeSec;
-      if (age > life) {
-        scene.remove(star.sprite);
-        star.sprite.material.dispose();
-        return false;
-      }
-      star.sprite.position.x += star.vx / 60;
-      star.sprite.position.y += star.vy / 60;
-      // 出現直後にすっと明るくなり、後半で尾を引いて消える
-      star.sprite.material.opacity = age < life * 0.25 ? (age / (life * 0.25)) * 0.8 : 0.8 * (1 - (age - life * 0.25) / (life * 0.75));
-      return true;
-    });
 
     renderer.render(scene, camera);
     requestAnimationFrame(loop);
