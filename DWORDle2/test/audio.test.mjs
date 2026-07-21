@@ -179,8 +179,8 @@ assert.equal(rebuiltContext.resumeCalls, resumeCallsAfterStall + 1);
 
 // すべての BGM トラック（隠し曲を含む）が選択でき、エラーなく音源を予約できること
 assert(
-  BGM_TRACKS.filter((track) => track.unlockAchievement).length >= 12,
-  "there should be at least 12 unlockable hidden BGM tracks"
+  BGM_TRACKS.filter((track) => track.unlockAchievement).length >= 13,
+  "there should be at least 13 unlockable hidden BGM tracks"
 );
 let previousStarts = rebuiltContext.startedOscillators;
 for (const track of BGM_TRACKS.filter((track) => track.id !== "auto")) {
@@ -192,31 +192,65 @@ for (const track of BGM_TRACKS.filter((track) => track.id !== "auto")) {
   previousStarts = rebuiltContext.startedOscillators;
 }
 
-// モード連動 + Pop テーマでは Candy Pop が自動選択されること
+// Pop テーマの表・裏の曲は Pop テーマ解放と同じ実績（rainbow）で解放されること
 assert(
   BGM_TRACKS.some((track) => track.id === "pop" && track.unlockAchievement === "rainbow"),
   "the Candy Pop track should unlock together with the Pop theme (rainbow achievement)"
 );
+assert(
+  BGM_TRACKS.some((track) => track.id === "bitter" && track.unlockAchievement === "rainbow"),
+  "the Bitter Candy track should unlock together with the Pop theme (rainbow achievement)"
+);
+// クラシックテーマの表・裏の曲は初期状態で解放されていること
+for (const id of ["retro", "glitch"]) {
+  assert(
+    BGM_TRACKS.some((track) => track.id === id && !track.unlockAchievement),
+    `the "${id}" track should be unlocked from the start`
+  );
+}
+
+// bgmBell が予約する第 2 倍音の周波数（各テーマ曲の自動選択を識別する）
+const bellHz = (midi) => 440 * Math.pow(2, (midi - 69) / 12) * 2.76;
+const scheduledAfter = (fn) => {
+  const before = rebuiltContext.startedFrequencies.length;
+  fn();
+  return rebuiltContext.startedFrequencies.slice(before);
+};
+
+// モード連動 + Pop テーマでは Candy Pop が自動選択されること
 setSetting("bgmTrack", "auto");
-const popBellHz = 440 * Math.pow(2, (84 - 69) / 12) * 2.76; // Candy Pop の小節あたまの鐘の第 2 倍音
-const beforeTheme = rebuiltContext.startedFrequencies.length;
-setSetting("theme", "pop");
-const themeFreqs = rebuiltContext.startedFrequencies.slice(beforeTheme);
+const popBellHz = bellHz(84); // Candy Pop の小節あたまの鐘（C6）
+const themeFreqs = scheduledAfter(() => setSetting("theme", "pop"));
 assert(
   themeFreqs.some((freq) => Math.abs(freq - popBellHz) < 0.01),
   "auto BGM should schedule Candy Pop while the Pop theme is active"
 );
 
-// Pop テーマでも裏モードでは不穏な曲が優先されること
-const beforeUso = rebuiltContext.startedFrequencies.length;
-setUsoMood(true);
-const usoFreqs = rebuiltContext.startedFrequencies.slice(beforeUso);
+// Pop テーマの裏モードでは Candy Pop ではなく Bitter Candy が選ばれること
+const usoFreqs = scheduledAfter(() => setUsoMood(true));
 assert(usoFreqs.length > 0, "switching to uso mood should reschedule BGM");
 assert(
   !usoFreqs.some((freq) => Math.abs(freq - popBellHz) < 0.01),
   "uso mood should override the Pop theme track"
 );
-setUsoMood(false);
+assert(
+  usoFreqs.some((freq) => Math.abs(freq - bellHz(81)) < 0.01), // Bitter Candy のオルゴール（A5）
+  "uso mood on the Pop theme should schedule Bitter Candy"
+);
+
+// クラシックテーマの裏モードでは Glitch Letters が選ばれること
+const classicUsoFreqs = scheduledAfter(() => setSetting("theme", "classic"));
+assert(
+  classicUsoFreqs.some((freq) => Math.abs(freq - bellHz(80)) < 0.01), // Glitch Letters の濁った鐘（G#5）
+  "uso mood on the Classic theme should schedule Glitch Letters"
+);
+
+// クラシックテーマの表モードでは Retro Letters が選ばれること
+const classicFreqs = scheduledAfter(() => setUsoMood(false));
+assert(
+  classicFreqs.some((freq) => Math.abs(freq - bellHz(91)) < 0.01), // Retro Letters のオルゴール（G6）
+  "auto BGM should schedule Retro Letters while the Classic theme is active"
+);
 
 stopBgm();
 console.log("音声テスト: OK");

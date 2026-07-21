@@ -31,22 +31,46 @@ export const BGM_TRACKS = [
     id: "normal",
     name: "DWORDle",
     nameEn: "DWORDle",
-    desc: "明るいネオン・アンビエント",
-    descEn: "Bright neon ambient",
+    desc: "サイバーテーマの表の曲。明るいネオン・アンビエント",
+    descEn: "The Cyber theme's normal-mode track: bright neon ambient",
   },
   {
     id: "uso",
     name: "DWORDlie",
     nameEn: "DWORDlie",
-    desc: "暗く不穏なドローン",
-    descEn: "Dark, ominous drone",
+    desc: "サイバーテーマの裏の曲。暗く不穏なドローン",
+    descEn: "The Cyber theme's uso-mode track: a dark, ominous drone",
+  },
+  {
+    id: "retro",
+    name: "Retro Letters",
+    nameEn: "Retro Letters",
+    desc: "クラシックテーマの表の曲。素朴であたたかいチップチューン",
+    descEn: "The Classic theme's normal-mode track: a simple, warm chiptune",
+  },
+  {
+    id: "glitch",
+    name: "Glitch Letters",
+    nameEn: "Glitch Letters",
+    desc: "クラシックテーマの裏の曲。壊れかけたゲーム機のような不穏なチップチューン",
+    descEn: "The Classic theme's uso-mode track: an eerie chiptune like a broken console",
   },
   {
     id: "pop",
     name: "Candy Pop",
     nameEn: "Candy Pop",
-    desc: "Pop テーマの既定曲。甘く弾むキャンディポップ",
-    descEn: "Default for the Pop theme: a sweet, bouncy candy-pop tune",
+    desc: "Pop テーマの表の曲。甘く弾むキャンディポップ",
+    descEn: "The Pop theme's normal-mode track: a sweet, bouncy candy-pop tune",
+    unlockAchievement: "rainbow",
+    unlockLabel: "三色盛り",
+    unlockLabelEn: "Three Colors",
+  },
+  {
+    id: "bitter",
+    name: "Bitter Candy",
+    nameEn: "Bitter Candy",
+    desc: "Pop テーマの裏の曲。甘さに毒がにじむダークなキャンディポップ",
+    descEn: "The Pop theme's uso-mode track: a candy-pop tune with poison under the sweetness",
     unlockAchievement: "rainbow",
     unlockLabel: "三色盛り",
     unlockLabelEn: "Three Colors",
@@ -198,12 +222,19 @@ export function bgmTracksUnlockedBy(achievements) {
   return BGM_TRACKS.filter((track) => track.unlockAchievement && ids.has(track.unlockAchievement));
 }
 
+// テーマごとの表 / 裏の既定曲。モード連動（auto）ではテーマとモードの両方から選ぶ。
+const THEME_TRACKS = {
+  cyber: { normal: "normal", uso: "uso" },
+  classic: { normal: "retro", uso: "glitch" },
+  pop: { normal: "pop", uso: "bitter" },
+};
+
 function selectedTrack() {
   const settings = getSettings();
   const wanted = settings.bgmTrack;
   if (wanted === "auto" || !BGM_TRACKS.some((track) => track.id === wanted)) {
-    if (usoMood) return "uso"; // 裏モードはテーマによらず不穏な曲にする
-    return settings.theme === "pop" ? "pop" : "normal";
+    const themeTracks = THEME_TRACKS[settings.theme] ?? THEME_TRACKS.cyber;
+    return usoMood ? themeTracks.uso : themeTracks.normal;
   }
   return wanted;
 }
@@ -511,10 +542,11 @@ export function playSfx(name) {
 
 // ---- BGM（生成音楽）----
 //
-// 表 (normal): 明るめのアンビエント。Am–F–C–G、上昇アルペジオ + パッド + 丸いベース。
-// 裏 (uso):    遅く暗いドローン。Am–Fm–E 系のクラスタパッド + 下降アルペジオ +
-//              トライトーンの唸り + まばらな鐘。
-// lookahead 方式で小節単位にスケジュールし、モードごとに専用バスへ流す。
+// テーマごとに表 / 裏の専用曲を持つ（THEME_TRACKS 参照）。
+//   サイバー:   normal（明るいアンビエント）/ uso（遅く暗いドローン）
+//   クラシック: retro（あたたかいチップチューン）/ glitch（壊れたゲーム機風）
+//   Pop:        pop（キャンディポップ）/ bitter（ダークなキャンディポップ）
+// lookahead 方式で小節単位にスケジュールし、トラックごとに専用バスへ流す。
 
 const midiHz = (m) => 440 * Math.pow(2, (m - 69) / 12);
 
@@ -829,6 +861,114 @@ function scheduleBarPop(t0, chord, bar, bus) {
   if (bar % 4 === 3) {
     [0, 1, 2].forEach((deg, i) => bgmBell(bus, { midi: chord[deg] + 24, t: t0 + (2.5 + i * 0.5) * beat, dur: 1.0, gain: 0.018 }));
   }
+}
+
+// クラシックテーマの表の曲 Retro Letters: 素朴であたたかいチップチューン。
+// ゆったり歩く三角波ベース + 軽いブラシ + 控えめな和音スタブ + 歌うような矩形波リード。
+function scheduleBarRetro(t0, chord, bar, bus) {
+  const beat = 60 / TRACKS.retro.tempo;
+  // ベース: 4 分でルートと 5 度をゆったり歩く（偶数小節の結びは 4 度で次へつなぐ）
+  const bassLine = [0, 7, 0, bar % 2 ? 5 : 7];
+  bassLine.forEach((interval, b) => {
+    bgmTone(bus, { midi: chord[0] - 24 + interval, t: t0 + b * beat, dur: beat * 0.6, type: "triangle", gain: 0.1, attack: 0.008 });
+  });
+  // ドラム: 2・4 拍の軽いブラシと裏拍の小さなハットだけで静かに刻む
+  for (const b of [1, 3]) bgmNoise(bus, { t: t0 + b * beat, dur: 0.05, gain: 0.018, freq: 5200, q: 0.8 });
+  for (let i = 0; i < 4; i++) bgmNoise(bus, { t: t0 + (i + 0.5) * beat, dur: 0.03, gain: 0.009, freq: 8200 });
+  // 2・4 拍の和音スタブ（柔らかい相づち）
+  for (const b of [1, 3]) {
+    for (const m of chord) bgmTone(bus, { midi: m, t: t0 + b * beat, dur: beat * 0.25, type: "square", gain: 0.007, attack: 0.005 });
+  }
+  // リード: 4 小節ひとまとまりの歌うようなフレーズ（休符多め。-1 = 休符）
+  const degrees = [chord[0] + 12, chord[1] + 12, chord[2] + 12, chord[0] + 24, chord[1] + 24, chord[2] + 24];
+  const phrases = [
+    [0, -1, 1, 2, -1, 1, 2, 3],
+    [2, -1, 1, 0, 1, -1, 2, -1],
+    [1, 2, 3, -1, 2, 1, 0, -1],
+    [2, -1, 1, 0, -1, -1, -1, -1], // 結びは余韻を残す
+  ];
+  phrases[bar % 4].forEach((deg, i) => {
+    if (deg < 0) return;
+    bgmTone(bus, { midi: degrees[deg], t: t0 + (i * beat) / 2, dur: beat * 0.42, type: "square", gain: 0.023, attack: 0.006 });
+  });
+  // 2 小節ごとにオルゴールの鐘をそっと鳴らす
+  if (bar % 2 === 0) bgmBell(bus, { midi: chord[2] + 24, t: t0 + beat * 3, dur: 1.6, gain: 0.016 });
+}
+
+// クラシックテーマの裏の曲 Glitch Letters: 壊れかけたゲーム機のような不穏なチップチューン。
+// 音程のずれたユニゾンドローン + 半音クラスタ + 垂れ下がるリード + まばらなグリッチノイズ。
+function scheduleBarGlitch(t0, chord, bar, bus) {
+  const beat = 60 / TRACKS.glitch.tempo;
+  // ドローン: ルートの三角波に、わずかに音程のずれたユニゾンを重ねて狂ったうなりを出す
+  bgmTone(bus, { midi: chord[0] - 24, t: t0, dur: beat * 4, type: "triangle", gain: 0.085, attack: 0.6 });
+  bgmTone(bus, { midi: chord[0] - 24, t: t0, dur: beat * 4, type: "triangle", gain: 0.05, attack: 0.6, detune: 22 });
+  // 半音でぶつかるクラスタパッドを薄く敷く
+  bgmTone(bus, { midi: chord[1], t: t0, dur: beat * 4, type: "triangle", gain: 0.014, attack: beat });
+  bgmTone(bus, { midi: chord[1] + 1, t: t0, dur: beat * 4, type: "triangle", gain: 0.012, attack: beat, detune: 10 });
+  // 不揃いな鼓動（1 拍目と 2 拍半）
+  for (const b of [0, 2.5]) bgmTone(bus, { midi: 30, t: t0 + b * beat, dur: 0.35, type: "sine", gain: 0.05, attack: 0.04, bend: -6 });
+  // リード: 下降気味のまばらなフレーズ。時々音程が垂れ下がる（電池切れ風。-1 = 休符）
+  const degrees = [chord[0] + 12, chord[1] + 12, chord[2] + 12, chord[0] + 24];
+  const phrases = [
+    [2, -1, 1, 0, -1, -1, 1, -1],
+    [-1, 2, 1, -1, 0, -1, -1, -1],
+    [3, -1, 2, 1, -1, 0, -1, -1],
+    [1, 0, -1, -1, -1, -1, -1, -1],
+  ];
+  phrases[bar % 4].forEach((deg, i) => {
+    if (deg < 0) return;
+    const droop = (i + bar) % 3 === 2 ? -1 : 0;
+    bgmTone(bus, { midi: degrees[deg], t: t0 + (i * beat) / 2, dur: beat * 0.5, type: "square", gain: 0.02, attack: 0.006, bend: droop });
+    bgmTone(bus, { midi: degrees[deg], t: t0 + (i * beat) / 2, dur: beat * 0.5, type: "square", gain: 0.011, attack: 0.006, detune: -14, bend: droop });
+  });
+  // グリッチノイズ: 16 分格子の決まった位置で短くバースト
+  for (let i = 0; i < 16; i++) {
+    if ((bar * 5 + i * 3) % 7 !== 0) continue;
+    bgmNoise(bus, { t: t0 + (i * beat) / 4, dur: 0.025, gain: 0.016, freq: 5200 + (i % 3) * 1800, q: 2.2 });
+  }
+  // 2 小節ごとに、トライトーンで濁った鐘を遠くで鳴らす
+  if (bar % 2 === 1) {
+    bgmBell(bus, { midi: chord[0] + 24, t: t0 + beat * 1.5, dur: 2.4, gain: 0.02 });
+    bgmBell(bus, { midi: chord[0] + 30, t: t0 + beat * 1.5, dur: 2.4, gain: 0.009 });
+  }
+}
+
+// Pop テーマの裏の曲 Bitter Candy: 甘さに毒がにじむダークなキャンディポップ。
+// 短調に沈むスキップベース + くぐもった手拍子 + ずれたオルゴール + ささやく短調メロディ。
+function scheduleBarBitter(t0, chord, bar, bus) {
+  const beat = 60 / TRACKS.bitter.tempo;
+  // ベース: Candy Pop と同じスキップを短調で。7 音目のトライトーンが毒
+  const bassLine = [0, 12, 7, 12, 0, 12, 6, 7];
+  bassLine.forEach((interval, i) => {
+    bgmTone(bus, { midi: chord[0] - 24 + interval, t: t0 + (i * beat) / 2, dur: beat * 0.32, type: "triangle", gain: i % 2 ? 0.05 : 0.095, attack: 0.006 });
+  });
+  // ドラム: 鈍いキック + くぐもった手拍子（低めのノイズを二度打ち）+ 8 分裏のハット
+  for (const b of [0, 2]) bgmTone(bus, { midi: 34, t: t0 + b * beat, dur: 0.11, type: "sine", gain: 0.1, bend: -12 });
+  for (const b of [1, 3]) {
+    bgmNoise(bus, { t: t0 + b * beat, dur: 0.06, gain: 0.032, freq: 1600, q: 0.8 });
+    bgmNoise(bus, { t: t0 + b * beat + 0.035, dur: 0.05, gain: 0.018, freq: 2000, q: 0.8 });
+  }
+  for (let i = 0; i < 8; i++) bgmNoise(bus, { t: t0 + ((i + 0.5) * beat) / 2, dur: 0.03, gain: 0.011, freq: 7000 });
+  // 裏拍の和音プラック（甘さの名残を、音程を下にずらして）
+  for (const b of [0.5, 1.5, 2.5, 3.5]) {
+    for (const m of chord) bgmTone(bus, { midi: m + 12, t: t0 + b * beat, dur: beat * 0.18, type: "triangle", gain: 0.014, attack: 0.004, detune: -9 });
+  }
+  // メロディ: ささやくような短調フレーズ（-1 = 休符）
+  const degrees = [chord[0] + 12, chord[1] + 12, chord[2] + 12, chord[0] + 24, chord[1] + 24];
+  const phrases = [
+    [0, -1, 1, 0, -1, 2, 1, 0],
+    [2, -1, 3, 2, 1, -1, 0, -1],
+    [0, 1, 2, -1, 2, 3, 2, 1],
+    [1, 0, -1, -1, 0, -1, -1, -1],
+  ];
+  phrases[bar % 4].forEach((deg, i) => {
+    if (deg < 0) return;
+    bgmTone(bus, { midi: degrees[deg], t: t0 + (i * beat) / 2, dur: beat * 0.36, type: "square", gain: 0.022, attack: 0.005 });
+  });
+  // ずれたオルゴール: 小節あたまに半音上から落ちる鐘、奇数小節は遠くでもう一度
+  bgmBell(bus, { midi: chord[0] + 25, t: t0, dur: 0.5, gain: 0.011 });
+  bgmBell(bus, { midi: chord[0] + 24, t: t0 + beat * 0.25, dur: 1.4, gain: 0.02 });
+  if (bar % 2 === 1) bgmBell(bus, { midi: chord[2] + 24, t: t0 + beat * 2.5, dur: 1.2, gain: 0.012 });
 }
 
 // ---- Extra BGM 用の小さな音源ヘルパー ----
@@ -1187,6 +1327,9 @@ const TRACKS = {
   gentle: { ...GENTLE, beats: 4, schedule: scheduleBarGentle },
   classic: { ...CLASSIC, beats: 4, schedule: scheduleBarClassic },
   pop: { tempo: 122, beats: 4, chords: [[60, 64, 67], [57, 60, 64], [53, 57, 60], [55, 59, 62]], schedule: scheduleBarPop },
+  retro: { tempo: 104, beats: 4, chords: [[60, 64, 67], [57, 60, 64], [53, 57, 60], [55, 59, 62]], schedule: scheduleBarRetro },
+  glitch: { tempo: 76, beats: 4, chords: [[57, 60, 64], [56, 59, 63], [53, 56, 60], [52, 55, 59]], schedule: scheduleBarGlitch },
+  bitter: { tempo: 112, beats: 4, chords: [[57, 60, 64], [55, 59, 62], [53, 57, 60], [52, 56, 59]], schedule: scheduleBarBitter },
   parade: { tempo: 118, beats: 4, chords: [[60, 64, 67], [65, 69, 72], [67, 71, 74], [60, 64, 67]], schedule: scheduleBarParade },
   rush: { tempo: 132, beats: 4, chords: [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]], schedule: scheduleBarRush },
   deepsea: { tempo: 54, beats: 4, chords: [[50, 53, 57], [48, 52, 55], [46, 50, 53], [48, 52, 55]], schedule: scheduleBarDeepsea },

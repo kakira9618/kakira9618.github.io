@@ -162,7 +162,7 @@ try {
   );
   assert.equal(popHelpTileBackground, "rgb(255, 255, 255)", "Pop help tiles should match the white in-game tiles");
   await popHelp.getByRole("button", { name: "閉じる" }).click();
-  await page.getByRole("radio", { name: "クラシック" }).click();
+  await page.getByRole("radio", { name: "クラシック", exact: true }).click();
   await page.locator("body.theme-classic").waitFor();
   // クラス切替直後は数フレームだけ旧テーマの文字色が残る（transition の過渡状態）。
   // axe が過渡状態を拾わないよう、見出し文字の実際の色が classic に戻るまで待つ。
