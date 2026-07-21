@@ -4,22 +4,22 @@
 // 原作と同じく、Guess は確定するたびに保存され、リロードしても再開できる。
 
 import { el, clear } from "./dom.js";
-import { APP_VERSION, UI, FX } from "../config.js?v=20260722-classic-baroque";
+import { APP_VERSION, UI, FX } from "../config.js?v=20260722-oldchrome-colormix";
 import { Logic, CELL, usoConvert } from "../core/logic.js";
 import { MODES, saveCurrentGame, clearCurrentGame, getCurrentGame, addFinishedGame, isAlreadyPlayed, getHistory } from "../core/records.js";
 import { pidLabel } from "../core/problems.js";
-import { checkOnGameFinish } from "../core/achievements.js?v=20260722-classic-baroque";
-import { registerScreen, navigate, redirect, getAppMode, currentScreenName, rememberPlayedMode } from "./app.js?v=20260722-classic-baroque";
-import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./toast.js?v=20260722-classic-baroque";
-import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js?v=20260722-classic-baroque";
-import { hiddenThemesUnlockedBy } from "../core/settings.js?v=20260722-classic-baroque";
-import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/effects.js?v=20260722-classic-baroque";
-import { showHelpModal } from "./help.js?v=20260722-classic-baroque";
+import { checkOnGameFinish } from "../core/achievements.js?v=20260722-oldchrome-colormix";
+import { registerScreen, navigate, redirect, getAppMode, currentScreenName, rememberPlayedMode } from "./app.js?v=20260722-oldchrome-colormix";
+import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./toast.js?v=20260722-oldchrome-colormix";
+import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js?v=20260722-oldchrome-colormix";
+import { hiddenThemesUnlockedBy } from "../core/settings.js?v=20260722-oldchrome-colormix";
+import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/effects.js?v=20260722-oldchrome-colormix";
+import { showHelpModal } from "./help.js?v=20260722-oldchrome-colormix";
 import { icon } from "./icons.js";
-import { tr } from "../core/i18n.js?v=20260722-classic-baroque";
-import { getSettings } from "../core/settings.js?v=20260722-classic-baroque";
-import { shouldReduceMotion } from "../core/motion.js?v=20260722-classic-baroque";
-import { announce, feedbackName, rowAriaLabel, tileAriaLabel } from "./a11y.js?v=20260722-classic-baroque";
+import { tr } from "../core/i18n.js?v=20260722-oldchrome-colormix";
+import { getSettings } from "../core/settings.js?v=20260722-oldchrome-colormix";
+import { shouldReduceMotion } from "../core/motion.js?v=20260722-oldchrome-colormix";
+import { announce, feedbackName, rowAriaLabel, tileAriaLabel } from "./a11y.js?v=20260722-oldchrome-colormix";
 
 const KEY_ROWS = [
   [..."qwertyuiop".split(""), "backspace"],

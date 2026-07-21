@@ -2,15 +2,15 @@
 // ルート: #/history
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260722-classic-baroque";
+import { registerScreen, navigate } from "./app.js?v=20260722-oldchrome-colormix";
 import { getRecentGames, getStatistics, MODES } from "../core/records.js";
 import { Logic, CELL } from "../core/logic.js";
 import { pidLabel } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260722-classic-baroque";
-import { showModal } from "./modal.js?v=20260722-classic-baroque";
+import { playSfx } from "../audio/sound.js?v=20260722-oldchrome-colormix";
+import { showModal } from "./modal.js?v=20260722-oldchrome-colormix";
 import { icon } from "./icons.js";
-import { currentLanguage, tr } from "../core/i18n.js?v=20260722-classic-baroque";
-import { rowAriaLabel } from "./a11y.js?v=20260722-classic-baroque";
+import { currentLanguage, tr } from "../core/i18n.js?v=20260722-oldchrome-colormix";
+import { rowAriaLabel } from "./a11y.js?v=20260722-oldchrome-colormix";
 
 let root = null;
 let filter = "all"; // "all" | "normal" | "uso"

@@ -4,17 +4,21 @@
 // ルート: #/problems
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate, getAppMode } from "./app.js?v=20260722-classic-baroque";
+import { registerScreen, navigate, getAppMode } from "./app.js?v=20260722-oldchrome-colormix";
 import { buildProblemStatus, MODES } from "../core/records.js";
 import { LEVELS, isValidPID, pidLabel } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260722-classic-baroque";
-import { showModal } from "./modal.js?v=20260722-classic-baroque";
-import { confirmAndStart } from "./game-screen.js?v=20260722-classic-baroque";
-import { toast } from "./toast.js?v=20260722-classic-baroque";
+import { playSfx } from "../audio/sound.js?v=20260722-oldchrome-colormix";
+import { showModal } from "./modal.js?v=20260722-oldchrome-colormix";
+import { confirmAndStart } from "./game-screen.js?v=20260722-oldchrome-colormix";
+import { toast } from "./toast.js?v=20260722-oldchrome-colormix";
 import { icon } from "./icons.js";
-import { localizedLevel, tr } from "../core/i18n.js?v=20260722-classic-baroque";
+import { localizedLevel, tr } from "../core/i18n.js?v=20260722-oldchrome-colormix";
 
 const BLOCK_SIZE = 100;
+
+// color-mix 非対応の旧 Chrome では、var() 入りのインライン color-mix が
+// 「計算値時に無効」となり背景ごと消えるため、ヒートマップ色付けをやめて素の面に留める。
+const SUPPORTS_COLOR_MIX = CSS.supports("color", "color-mix(in srgb, red 50%, white)");
 
 let root = null;
 let levelIdx = 0; // LEVELS のインデックス
@@ -173,7 +177,7 @@ function render() {
           {
             class: "block-cell",
             "aria-label": tr(`問題 ${s} から ${e}、クリア ${c}、プレイ ${p}`, `Puzzles ${s} to ${e}, ${c} cleared, ${p} played`),
-            style: ratio > 0 ? { background: `color-mix(in srgb, var(--tile-correct) ${Math.round(8 + ratio * 42)}%, var(--bg-panel))` } : {},
+            style: ratio > 0 && SUPPORTS_COLOR_MIX ? { background: `color-mix(in srgb, var(--tile-correct) ${Math.round(8 + ratio * 42)}%, var(--bg-panel))` } : {},
             onclick: () => {
               playSfx("ui");
               blockStart = s;

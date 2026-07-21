@@ -2212,10 +2212,10 @@ body.reduce-motion *::after {
 .guess-flag-slot {
   position: absolute;
   top: 50%;
-  left: calc(100% + 10px);
+  left: calc(100% + 14px);
   transform: translateY(-50%);
-  width: 27px;
-  height: 38px;
+  width: 23px;
+  height: 33px;
 }
 .guess-flag {
   position: absolute;
@@ -2226,10 +2226,10 @@ body.reduce-motion *::after {
 }
 .guess-flag-pole {
   position: absolute;
-  left: 5px;
+  left: 4px;
   top: 2px;
   width: 2px;
-  height: 33px;
+  height: 28px;
   border-radius: 2px;
   background: currentColor;
 }
@@ -2237,17 +2237,17 @@ body.reduce-motion *::after {
   position: absolute;
   left: 1px;
   bottom: 2px;
-  width: 10px;
+  width: 9px;
   height: 2px;
   border-radius: 2px;
   background: currentColor;
 }
 .guess-flag-cloth {
   position: absolute;
-  left: 6px;
-  top: 2px;
-  width: 20px;
-  height: 18px;
+  left: 5px;
+  top: 3px;
+  width: 17px;
+  height: 15px;
   transform-origin: left center;
   transform-style: preserve-3d;
   animation: resultGuessFlagRotate 5.6s linear infinite;
@@ -2257,7 +2257,7 @@ body.reduce-motion *::after {
   content: "";
   position: absolute;
   left: 0;
-  width: 21px;
+  width: 18px;
   height: 2px;
   border-radius: 2px;
   background: currentColor;
@@ -2285,8 +2285,8 @@ body.reduce-motion *::after {
     font-size: 11px;
   }
   .guess-flag-slot {
-    left: calc(100% + 8px);
-    width: 25px;
+    left: calc(100% + 12px);
+    width: 22px;
   }
 }
 body.reduce-motion .guess-flag-cloth {
@@ -2354,5 +2354,34 @@ body.reduce-motion .guess-flag-cloth {
   .history-page-status {
     grid-column: 1 / -1;
     grid-row: 1;
+  }
+}
+
+/* ==========================================================================
+   color-mix() 非対応の旧 Chrome (<111) フォールバック
+   var() を含む color-mix 宣言はパース時に落とせず「計算値時に無効」となり、
+   カスケード下の宣言ではなく初期値 (background: transparent / outline: none 等)
+   に化ける。面・枠・フォーカスの手がかりが消える箇所だけを、素の変数による
+   近似色でここでまとめて上書きする（装飾のグロー等は消えたままでよい）。
+   ========================================================================== */
+@supports not (color: color-mix(in srgb, red 50%, white)) {
+  :where(button, a, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 3px solid var(--accent);
+  }
+  .btn-primary {
+    background: var(--bg-panel-2);
+    border-color: var(--accent);
+  }
+  .tile.filled {
+    border-color: var(--fg-dim);
+  }
+  .ach-unlock {
+    border-color: var(--ach-color, #ffd166);
+  }
+  .ach-unlock-badge {
+    background: rgba(255, 255, 255, 0.04);
+  }
+  .seg button.active {
+    background: rgba(127, 127, 127, 0.25);
   }
 }

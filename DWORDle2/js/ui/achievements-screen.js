@@ -2,11 +2,11 @@
 // ルート: #/achievements
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260722-classic-baroque";
-import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, getUnlocked } from "../core/achievements.js?v=20260722-classic-baroque";
-import { playSfx } from "../audio/sound.js?v=20260722-classic-baroque";
+import { registerScreen, navigate } from "./app.js?v=20260722-oldchrome-colormix";
+import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, getUnlocked } from "../core/achievements.js?v=20260722-oldchrome-colormix";
+import { playSfx } from "../audio/sound.js?v=20260722-oldchrome-colormix";
 import { icon } from "./icons.js";
-import { localizedAchievement, tr } from "../core/i18n.js?v=20260722-classic-baroque";
+import { localizedAchievement, tr } from "../core/i18n.js?v=20260722-oldchrome-colormix";
 
 let root = null;
 

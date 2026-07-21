@@ -6,9 +6,9 @@
 // classic テーマでは canvas ごと非表示になり、描画ループも止める。
 
 import * as THREE from "three";
-import { FX } from "../config.js?v=20260722-classic-baroque";
-import { getSettings, onSettingsChange } from "../core/settings.js?v=20260722-classic-baroque";
-import { onMotionPreferenceChange, shouldReduceMotion } from "../core/motion.js?v=20260722-classic-baroque";
+import { FX } from "../config.js?v=20260722-oldchrome-colormix";
+import { getSettings, onSettingsChange } from "../core/settings.js?v=20260722-oldchrome-colormix";
+import { onMotionPreferenceChange, shouldReduceMotion } from "../core/motion.js?v=20260722-oldchrome-colormix";
 
 let renderer = null;
 let scene = null;

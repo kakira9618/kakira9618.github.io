@@ -1,8 +1,8 @@
 // モーダルダイアログ。
 
 import { el, clear } from "./dom.js";
-import { playSfx } from "../audio/sound.js?v=20260722-classic-baroque";
-import { tr } from "../core/i18n.js?v=20260722-classic-baroque";
+import { playSfx } from "../audio/sound.js?v=20260722-oldchrome-colormix";
+import { tr } from "../core/i18n.js?v=20260722-oldchrome-colormix";
 
 const layer = () => document.getElementById("modal-layer");
 const openCloseFns = new Set(); // closeAllModals 用

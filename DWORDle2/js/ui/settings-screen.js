@@ -2,19 +2,19 @@
 // ルート: #/settings
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260722-classic-baroque";
-import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js?v=20260722-classic-baroque";
+import { registerScreen, navigate } from "./app.js?v=20260722-oldchrome-colormix";
+import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js?v=20260722-oldchrome-colormix";
 import { importFromLocalStorage, importFromText, scanLegacyHistory } from "../core/migrate.js";
 import { exportJSON } from "../core/records.js";
 import { removeKey } from "../core/store.js";
-import { getUnlocked } from "../core/achievements.js?v=20260722-classic-baroque";
-import { BGM_TRACKS, playSfx } from "../audio/sound.js?v=20260722-classic-baroque";
-import { toast } from "./toast.js?v=20260722-classic-baroque";
-import { showModal, confirmModal } from "./modal.js?v=20260722-classic-baroque";
+import { getUnlocked } from "../core/achievements.js?v=20260722-oldchrome-colormix";
+import { BGM_TRACKS, playSfx } from "../audio/sound.js?v=20260722-oldchrome-colormix";
+import { toast } from "./toast.js?v=20260722-oldchrome-colormix";
+import { showModal, confirmModal } from "./modal.js?v=20260722-oldchrome-colormix";
 import { icon } from "./icons.js";
-import { finishHistoryImport } from "./history-import.js?v=20260722-classic-baroque";
-import { APP_VERSION } from "../config.js?v=20260722-classic-baroque";
-import { currentLanguage, isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js?v=20260722-classic-baroque";
+import { finishHistoryImport } from "./history-import.js?v=20260722-oldchrome-colormix";
+import { APP_VERSION } from "../config.js?v=20260722-oldchrome-colormix";
+import { currentLanguage, isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js?v=20260722-oldchrome-colormix";
 import { isDebugMode, tryEnableDebugMode } from "../core/debug.js";
 
 let root = null;

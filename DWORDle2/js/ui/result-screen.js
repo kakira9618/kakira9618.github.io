@@ -2,18 +2,18 @@
 // ルート: #/result/<mode>/<startTime>
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260722-classic-baroque";
+import { registerScreen, navigate } from "./app.js?v=20260722-oldchrome-colormix";
 import { findGame, MODES } from "../core/records.js";
 import { Logic, CELL } from "../core/logic.js";
 import { pidLabel, isDailyPID } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260722-classic-baroque";
-import { toast } from "./toast.js?v=20260722-classic-baroque";
-import { confirmAndStart } from "./game-screen.js?v=20260722-classic-baroque";
+import { playSfx } from "../audio/sound.js?v=20260722-oldchrome-colormix";
+import { toast } from "./toast.js?v=20260722-oldchrome-colormix";
+import { confirmAndStart } from "./game-screen.js?v=20260722-oldchrome-colormix";
 import { icon } from "./icons.js";
-import { downloadResultPNG } from "./snapshot.js?v=20260722-classic-baroque";
-import { SHARE_URL } from "../config.js?v=20260722-classic-baroque";
-import { tr } from "../core/i18n.js?v=20260722-classic-baroque";
-import { rowAriaLabel } from "./a11y.js?v=20260722-classic-baroque";
+import { downloadResultPNG } from "./snapshot.js?v=20260722-oldchrome-colormix";
+import { SHARE_URL } from "../config.js?v=20260722-oldchrome-colormix";
+import { tr } from "../core/i18n.js?v=20260722-oldchrome-colormix";
+import { rowAriaLabel } from "./a11y.js?v=20260722-oldchrome-colormix";
 
 let root = null;
 
