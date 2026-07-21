@@ -5,12 +5,12 @@
 // 実績 → Extra BGM / テーマの順で自然に連結する。
 
 import { el } from "./dom.js";
-import { UI } from "../config.js?v=20260722-bgm-ui-refresh";
-import { playSfx } from "../audio/sound.js?v=20260722-bgm-ui-refresh";
-import { winBurst } from "../fx/effects.js?v=20260722-bgm-ui-refresh";
+import { UI } from "../config.js?v=20260722-bgm-unlock-batch";
+import { playSfx } from "../audio/sound.js?v=20260722-bgm-unlock-batch";
+import { winBurst } from "../fx/effects.js?v=20260722-bgm-unlock-batch";
 import { icon } from "./icons.js";
-import { setSetting } from "../core/settings.js?v=20260722-bgm-ui-refresh";
-import { isEnglish, localizedAchievement, tr } from "../core/i18n.js?v=20260722-bgm-ui-refresh";
+import { setSetting } from "../core/settings.js?v=20260722-bgm-unlock-batch";
+import { isEnglish, localizedAchievement, tr } from "../core/i18n.js?v=20260722-bgm-unlock-batch";
 
 const layer = () => document.getElementById("toast-layer");
 const unlockLayer = () => document.getElementById("unlock-layer");
@@ -298,9 +298,61 @@ function showBgmUnlockDialog(track) {
   });
 }
 
+// 2 曲以上の同時解放（履歴インポートや複数実績の同時達成）を 1 枚にまとめて報告する。
+function showBgmUnlockListDialog(tracks) {
+  playSfx("achievement");
+  const titleId = `bgm-unlock-title-${++unlockDialogSerial}`;
+  const descId = `bgm-unlock-desc-${unlockDialogSerial}`;
+
+  return openUnlockCard({
+    autoCloseMs: 8000,
+    closingMs: 450,
+    build: (close) =>
+      el(
+        "div",
+        {
+          class: "bgm-unlock multiple",
+          role: "dialog",
+          "aria-modal": "true",
+          "aria-labelledby": titleId,
+          "aria-describedby": descId,
+        },
+        el("div", { class: "bgm-unlock-rays", "aria-hidden": "true" }),
+        el("div", { class: "bgm-unlock-kicker" }, "EXTRA BGM UNLOCKED"),
+        el("div", { class: "bgm-unlock-title", id: titleId }, tr(`BGM を ${tracks.length} 曲解放！`, `${tracks.length} tracks unlocked!`)),
+        scrollableUnlockGrid(
+          el(
+            "div",
+            { class: "ach-unlock-grid", id: descId },
+            tracks.map((track, index) =>
+              el(
+                "div",
+                { class: "ach-unlock-mini", style: `animation-delay:${Math.min(index, 12) * 60}ms;` },
+                el("span", { class: "ach-unlock-mini-icon", style: "color:#ffd166;" }, icon("music", 20)),
+                el("span", { class: "ach-unlock-mini-name" }, isEnglish() ? (track.nameEn ?? track.name) : track.name)
+              )
+            )
+          )
+        ),
+        el("div", { class: "bgm-unlock-desc" }, tr("設定の BGM からいつでも選べます", "Choose them anytime in Settings → BGM")),
+        el(
+          "div",
+          { class: "bgm-unlock-actions" },
+          el("button", { class: "btn btn-primary", onclick: () => close() }, "OK")
+        )
+      ),
+  });
+}
+
 // Extra BGM を解放キューへ即時登録する。表示間隔はキュー側で一元管理する。
+// 1 曲は試聴ボタン付きの個別カード、2 曲以上は 1 枚のまとめカードで報告する。
 export function bgmUnlockCelebration(tracks) {
-  tracks.forEach((track) => enqueueUnlockDialog(() => showBgmUnlockDialog(track)));
+  if (!Array.isArray(tracks) || tracks.length === 0) return;
+  if (tracks.length === 1) {
+    enqueueUnlockDialog(() => showBgmUnlockDialog(tracks[0]));
+  } else {
+    enqueueUnlockDialog(() => showBgmUnlockListDialog(tracks));
+  }
 }
 
 // ---- 隠しテーマ解放 ----
