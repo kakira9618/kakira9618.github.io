@@ -249,7 +249,7 @@ function render() {
       { class: "icon-btn", "aria-label": tr("タイトルへ戻る", "Back to title"), onclick: () => { playSfx("ui"); navigate("/"); } },
       icon("arrowLeft")
     ),
-    el("div", { class: "title" }, tr("設定", "Settings")),
+    el("h1", { class: "title" }, tr("設定", "Settings")),
     el("span", { class: "spacer" }),
     isDebugMode() ? el("span", { class: "debug-status" }, "DEBUG ON") : null
   );
@@ -424,8 +424,11 @@ function render() {
           class: "btn",
           onclick: () => {
             const blob = new Blob([exportJSON()], { type: "application/json" });
-            const a = el("a", { href: URL.createObjectURL(blob), download: `dwordle2_history_${Date.now()}.json` });
+            const url = URL.createObjectURL(blob);
+            const a = el("a", { href: url, download: `dwordle2_history_${Date.now()}.json` });
             a.click();
+            // ダウンロード開始後に解放する（エクスポート連打で Blob が溜まらないように）
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
             toast(tr("履歴をダウンロードしました", "History downloaded"));
           },
         }, icon("download"), tr("履歴をエクスポート", "Export history")),

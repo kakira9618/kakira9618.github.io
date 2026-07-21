@@ -51,6 +51,12 @@ export function navigate(path) {
   location.hash = path;
 }
 
+// render 中のガードで使うリダイレクト。履歴エントリを積み替えるので、
+// 戻るボタンでリダイレクト元へ戻って往復ループになるのを防ぐ。
+export function redirect(path) {
+  location.replace(`#${path}`);
+}
+
 export function currentScreenName() {
   return currentName;
 }

@@ -10,6 +10,7 @@
 //   2. 手動: 旧作の履歴 JSON（クリップボードダンプ）を貼り付け
 
 import { addImportedGames } from "./records.js";
+import { isValidPID } from "./problems.js";
 
 // オブジェクトが旧作の 1 ゲームレコードかどうか
 function looksLikeGame(v) {
@@ -18,6 +19,16 @@ function looksLikeGame(v) {
     typeof v === "object" &&
     typeof v.problemID === "number" &&
     Array.isArray(v.guessWord)
+  );
+}
+
+// 実際に取り込んでよいレコードかどうか。壊れた PID（No.0 エイリアスや範囲外）や
+// 5 文字の英単語でない Guess が混ざった行を履歴へ持ち込まない。
+function isImportableGame(v) {
+  return (
+    looksLikeGame(v) &&
+    isValidPID(v.problemID) &&
+    v.guessWord.every((w) => typeof w === "string" && /^[a-z]{5}$/.test(w))
   );
 }
 
@@ -32,7 +43,7 @@ function looksLikeHistoryFile(obj) {
 function convertHistoryFile(obj, importedTag) {
   const records = [];
   for (const [key, game] of Object.entries(obj)) {
-    if (key === "version" || !looksLikeGame(game)) continue;
+    if (key === "version" || !isImportableGame(game)) continue;
     if (!game.complete || game.guessWord.length === 0) continue; // 途中放棄は取り込まない
     records.push({
       startTime: Number(game.startTime ?? key),
@@ -104,7 +115,7 @@ export function importFromText(text) {
   }
   if (obj && obj.app === "dwordle2" && Array.isArray(obj.history)) {
     // 本作のエクスポート形式
-    const records = obj.history.filter(looksLikeGame).map((g) => ({ ...g, imported: g.imported ?? "json" }));
+    const records = obj.history.filter(isImportableGame).map((g) => ({ ...g, imported: g.imported ?? "json" }));
     return { added: addImportedGames(records), total: records.length };
   }
   if (looksLikeHistoryFile(obj)) {

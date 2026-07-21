@@ -53,12 +53,19 @@ function render() {
       { class: "icon-btn", "aria-label": tr("タイトルへ戻る", "Back to title"), onclick: () => { playSfx("ui"); navigate("/"); } },
       icon("arrowLeft")
     ),
-    el("div", { class: "title" }, tr("実績", "Achievements")),
+    el("h1", { class: "title" }, tr("実績", "Achievements")),
     el("span", { class: "spacer" }),
     el("span", { class: "sub" }, `${count} / ${ACHIEVEMENTS.length}`)
   );
 
-  const body = el("div", { class: "list-screen-body" });
+  // カードがすべて非フォーカス要素のため、スクロール領域自体をキーボードで
+  // フォーカス・スクロールできるようにする（axe: scrollable-region-focusable）
+  const body = el("div", {
+    class: "list-screen-body",
+    tabindex: "0",
+    role: "region",
+    "aria-label": tr("実績一覧", "Achievements list"),
+  });
   body.append(
     el("div", { class: "bar-wrap" },
       el("div", { class: "bar-track" },

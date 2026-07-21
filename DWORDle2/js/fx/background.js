@@ -385,6 +385,7 @@ function applyTheme(theme) {
     const shouldRun = theme === "cyber" && !shouldReduceMotion();
     if (shouldRun && !running) {
       running = true;
+      lastFrameAt = 0;
       loop();
     } else if (!shouldRun) {
       running = false;
@@ -397,10 +398,16 @@ function applyTheme(theme) {
   }
 }
 
-function loop() {
+let lastFrameAt = 0;
+
+function loop(now = performance.now()) {
   if (!running) return;
   try {
-    t += 1 / 60;
+    // rAF の間隔は環境依存（120Hz 端末では約 8ms）のため、実経過時間で進める。
+    // タブ復帰などの長い空白は 0.1 秒に丸めて演出の飛びを防ぐ。
+    const dt = lastFrameAt ? Math.min((now - lastFrameAt) / 1000, 0.1) : 1 / 60;
+    lastFrameAt = now;
+    t += dt;
     const cfg = FX.bg;
     const size = cfg.gridSize;
     const z = (t * cfg.scrollSpeed) % size;
@@ -418,10 +425,10 @@ function loop() {
     if (dust) {
       const pos = dust.points.geometry.attributes.position;
       for (let i = 0; i < pos.count; i++) {
-        let y = pos.array[i * 3 + 1] + dust.speeds[i] / 60;
+        let y = pos.array[i * 3 + 1] + dust.speeds[i] * dt;
         if (y > 46) y = 0;
         pos.array[i * 3 + 1] = y;
-        pos.array[i * 3] += Math.sin(t * 0.5 + i) * 0.004; // 微かな横揺れ
+        pos.array[i * 3] += Math.sin(t * 0.5 + i) * 0.24 * dt; // 微かな横揺れ（60fps 時 0.004/frame 相当）
       }
       pos.needsUpdate = true;
       dust.points.material.uniforms.opacity.value = cfg.dustOpacity * (0.75 + 0.25 * Math.sin(t * 1.1 + 1));

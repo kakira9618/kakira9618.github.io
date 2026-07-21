@@ -39,10 +39,14 @@ function resize() {
   const h = innerHeight;
   viewH = h;
   renderer.setSize(w, h, false);
-  // fov から「z=0 で 1px = 1world」になるカメラ距離を求める
+  // fov から「z=0 で 1px = 1world」になるカメラ距離を求める。
+  // resize はモバイルのアドレスバー伸縮で連続発火するため、カメラは作り直さず更新する。
   const fov = 45;
   const dist = h / 2 / Math.tan(THREE.MathUtils.degToRad(fov / 2));
-  camera = new THREE.PerspectiveCamera(fov, w / h, 10, dist * 5);
+  if (!camera) camera = new THREE.PerspectiveCamera(fov, w / h, 10, dist * 5);
+  camera.aspect = w / h;
+  camera.far = dist * 5;
+  camera.updateProjectionMatrix();
   camera.position.set(w / 2, h / 2, dist);
   camera.lookAt(w / 2, h / 2, 0);
 }

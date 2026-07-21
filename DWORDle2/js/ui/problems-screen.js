@@ -92,7 +92,7 @@ function render() {
         }
       },
     }, icon("arrowLeft")),
-    el("div", { class: "title" }, tr("問題一覧", "Puzzles")),
+    el("h1", { class: "title" }, tr("問題一覧", "Puzzles")),
     el("span", { class: "spacer" }),
     el("span", { class: `mode-chip ${mode === "uso" ? "uso" : ""}` }, MODES[mode].title),
     el(

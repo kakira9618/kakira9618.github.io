@@ -181,6 +181,42 @@ console.log(`出題一致テスト: ${seedsToTest.length} seeds`);
   check(isDailyPID(todayPID()), "todayPID はデイリー判定されるはず");
 }
 
+// ---- 5. usoConvert（DWORDlie の嘘変換）----
+// 原作 Game.usoConvert(): 真の判定と必ず異なる状態を、残り 2 状態から等確率で返す。
+{
+  const { CELL, usoConvert } = await import("../js/core/logic.js");
+  const STATES = [CELL.UNUSED, CELL.USED, CELL.CORRECT];
+
+  check(usoConvert(CELL.GUESSING) === CELL.GUESSING, "guessing は変換されないはず");
+
+  // 決定的な乱数列での境界確認: 真の状態と同じ値を引いたら引き直す
+  const seq = (values) => {
+    let i = 0;
+    return () => values[i++];
+  };
+  check(usoConvert(CELL.UNUSED, seq([0 / 3, 1 / 3])) === CELL.USED, "同値 (unused) を引いたら引き直して used になるはず");
+  check(usoConvert(CELL.UNUSED, seq([2 / 3])) === CELL.CORRECT, "unused から correct へ変換できるはず");
+  check(usoConvert(CELL.USED, seq([1 / 3, 1 / 3, 2 / 3])) === CELL.CORRECT, "同値 (used) を何度引いても最終的に別状態になるはず");
+  check(usoConvert(CELL.CORRECT, seq([0 / 3])) === CELL.UNUSED, "correct から unused へ変換できるはず");
+
+  // 実乱数での不変条件と分布: 真の状態は決して返らず、残り 2 状態がほぼ半々
+  for (const state of STATES) {
+    const counts = new Map(STATES.map((s) => [s, 0]));
+    const N = 30000;
+    for (let i = 0; i < N; i++) {
+      const lie = usoConvert(state);
+      counts.set(lie, counts.get(lie) + 1);
+    }
+    check(counts.get(state) === 0, `${state} の嘘に ${state} 自身が混ざってはいけない`);
+    const others = STATES.filter((s) => s !== state);
+    for (const other of others) {
+      const ratio = counts.get(other) / N;
+      check(Math.abs(ratio - 0.5) < 0.02, `${state} → ${other} は約 50% のはず (実測 ${(ratio * 100).toFixed(1)}%)`);
+    }
+  }
+  console.log("usoConvert テスト: OK");
+}
+
 if (failures === 0) {
   console.log("ALL TESTS PASSED");
 } else {

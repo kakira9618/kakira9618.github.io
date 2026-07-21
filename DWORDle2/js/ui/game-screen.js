@@ -9,7 +9,7 @@ import { Logic, CELL, usoConvert } from "../core/logic.js";
 import { MODES, saveCurrentGame, clearCurrentGame, getCurrentGame, addFinishedGame, isAlreadyPlayed, getHistory } from "../core/records.js";
 import { pidLabel } from "../core/problems.js";
 import { checkOnGameFinish } from "../core/achievements.js?v=20260722-review-fixes";
-import { registerScreen, navigate, getAppMode, currentScreenName, rememberPlayedMode } from "./app.js?v=20260722-review-fixes";
+import { registerScreen, navigate, redirect, getAppMode, currentScreenName, rememberPlayedMode } from "./app.js?v=20260722-review-fixes";
 import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./toast.js?v=20260722-review-fixes";
 import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js?v=20260722-review-fixes";
 import { hiddenThemesUnlockedBy } from "../core/settings.js?v=20260722-review-fixes";
@@ -19,7 +19,7 @@ import { icon } from "./icons.js";
 import { tr } from "../core/i18n.js?v=20260722-review-fixes";
 import { getSettings } from "../core/settings.js?v=20260722-review-fixes";
 import { shouldReduceMotion } from "../core/motion.js?v=20260722-review-fixes";
-import { feedbackName, tileAriaLabel } from "./a11y.js?v=20260722-review-fixes";
+import { announce, feedbackName, rowAriaLabel, tileAriaLabel } from "./a11y.js?v=20260722-review-fixes";
 
 const KEY_ROWS = [
   [..."qwertyuiop".split(""), "backspace"],
@@ -55,7 +55,7 @@ function build() {
   root = document.getElementById("screen-game");
   clear(root);
 
-  headerTitleEl = el("div", { class: "title" }, "DWORDle");
+  headerTitleEl = el("h1", { class: "title" }, "DWORDle");
   counterEl = el("span", { class: "sub" }, "0 / 10");
   seedEl = el(
     "button",
@@ -202,7 +202,8 @@ function render() {
   const mode = getAppMode();
   const current = getCurrentGame(mode);
   if (!current) {
-    navigate("/");
+    // navigate だと #/game が履歴に残り、戻るボタンで再リダイレクトの往復になる
+    redirect("/");
     return;
   }
   game = current;
@@ -481,6 +482,7 @@ function revealRow(row, word, result, done) {
       if (game.gameMode === "normal") applyKeyStyle(word[i]);
     });
     playSfx(result.includes(CELL.CORRECT) ? "revealCorrect" : result.includes(CELL.USED) ? "revealUsed" : "revealUnused");
+    announce(rowAriaLabel(word, result));
     setTimeout(() => {
       if (session === gatherSession) done();
     }, 0);
@@ -507,7 +509,9 @@ function revealRow(row, word, result, done) {
     }, i * UI.revealIntervalMs);
   });
   setTimeout(() => {
-    if (session === gatherSession) done();
+    if (session !== gatherSession) return;
+    announce(rowAriaLabel(word, result));
+    done();
   }, 5 * UI.revealIntervalMs + UI.revealFlipMs / 2 + UI.afterRevealPauseMs);
 }
 

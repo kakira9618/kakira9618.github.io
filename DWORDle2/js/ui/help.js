@@ -8,6 +8,7 @@ import { showModal } from "./modal.js?v=20260722-review-fixes";
 import { playSfx } from "../audio/sound.js?v=20260722-review-fixes";
 import { queryWordPair, usoConvert } from "../core/logic.js";
 import { currentLanguage } from "../core/i18n.js?v=20260722-review-fixes";
+import { shouldReduceMotion } from "../core/motion.js?v=20260722-review-fixes";
 
 const EX = {
   ans1: "blood",
@@ -340,15 +341,18 @@ function buildExample(mode, language) {
         : "各文字がどちらかと一致 → 全部緑";
     }, reactionDone);
     later(() => {
-      box.animate(
-        [
-          { transform: "translateX(0)" },
-          { transform: "translateX(-4px)" },
-          { transform: "translateX(4px)" },
-          { transform: "translateX(0)" },
-        ],
-        { duration: 280, easing: "ease-out" }
-      );
+      // CSS の reduce-motion クランプは Web Animations API には効かないため個別に抑制する
+      if (!shouldReduceMotion()) {
+        box.animate(
+          [
+            { transform: "translateX(0)" },
+            { transform: "translateX(-4px)" },
+            { transform: "translateX(4px)" },
+            { transform: "translateX(0)" },
+          ],
+          { duration: 280, easing: "ease-out" }
+        );
+      }
       caption.textContent = isEnglish
         ? "Not either answer → keep playing"
         : "どちらの答えでもない → 続行";

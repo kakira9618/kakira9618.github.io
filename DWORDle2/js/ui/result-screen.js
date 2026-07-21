@@ -86,7 +86,7 @@ function render(args) {
       },
       icon("arrowLeft")
     ),
-    el("div", { class: "title" }, "RESULT"),
+    el("h1", { class: "title" }, "RESULT"),
     el("span", { class: "spacer" }),
     el("span", { class: "sub" }, pidLabel(record.problemID)),
     el("span", { class: `mode-chip ${record.gameMode === "uso" ? "uso" : ""}` }, MODES[record.gameMode].title)

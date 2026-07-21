@@ -54,4 +54,41 @@ assert(achievementIds.has("migrator"));
 assert(achievementIds.has("first-clear"));
 assert(achievementIds.has("uso-clear"));
 
+// ---- (startTime, gameMode) の衝突: 別 problemID は 1 秒ずらして共存し、再インポートは冪等 ----
+{
+  const { addImportedGames } = await import("../js/core/records.js");
+  const makeImported = (problemID) => {
+    const logic = new Logic(problemID);
+    return {
+      startTime: 1_700_000_000, // 既存の problemID 1 と同時刻
+      endTime: 1_700_000_030,
+      gameMode: "normal",
+      problemID,
+      guessWord: [logic.ans1],
+      imported: "json",
+    };
+  };
+  assert.equal(addImportedGames([makeImported(5)]), 1, "same startTime with a different puzzle should be imported");
+  const moved = getHistory().find((record) => record.problemID === 5);
+  assert.equal(moved.startTime, 1_700_000_001, "the colliding record should be shifted by one second");
+  assert.equal(addImportedGames([makeImported(5)]), 0, "re-importing the shifted record should be skipped as a duplicate");
+}
+
+// ---- 壊れたレコードの除外: No.0（デイリーエイリアス）や不正な Guess は取り込まない ----
+{
+  const { importFromText } = await import("../js/core/migrate.js");
+  const before = getHistory().length;
+  const { added } = await (async () => importFromText(JSON.stringify({
+    app: "dwordle2",
+    version: 1,
+    history: [
+      { startTime: 1_800_000_000, endTime: 1_800_000_030, gameMode: "normal", problemID: 0, guessWord: ["about"] },
+      { startTime: 1_800_000_100, endTime: 1_800_000_130, gameMode: "normal", problemID: 99999, guessWord: ["about"] },
+      { startTime: 1_800_000_200, endTime: 1_800_000_230, gameMode: "normal", problemID: 7, guessWord: ["ABCDE!"] },
+    ],
+  })))();
+  assert.equal(added, 0, "records with an invalid PID or malformed Guesses must be rejected");
+  assert.equal(getHistory().length, before);
+}
+
 console.log("履歴移行テスト: OK");

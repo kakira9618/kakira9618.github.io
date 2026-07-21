@@ -62,7 +62,7 @@ function render(args) {
       },
       icon("arrowLeft")
     ),
-    el("div", { class: "title" }, tr("分析モード", "Analysis")),
+    el("h1", { class: "title" }, tr("分析モード", "Analysis")),
     el("span", { class: "spacer" }),
     record ? el("span", { class: "sub" }, pidLabel(record.problemID)) : null
   );
@@ -159,6 +159,22 @@ function render(args) {
       progressWrap.remove();
       body.append(el("p", { class: "hint" }, tr(`分析に失敗しました: ${msg.message}`, `Analysis failed: ${msg.message}`)));
     }
+  };
+  // モジュールのロード失敗や worker 内の未捕捉例外は onmessage に届かないため、
+  // ここで受けて進捗表示が「分析中…」のまま止まり続けるのを防ぐ。
+  worker.onerror = (event) => {
+    if (token !== renderToken) return;
+    progressWrap.remove();
+    body.append(
+      el(
+        "p",
+        { class: "hint" },
+        tr(
+          `分析を開始できませんでした: ${event.message || "Worker の読み込みに失敗しました"}`,
+          `Could not start analysis: ${event.message || "failed to load the worker"}`
+        )
+      )
+    );
   };
   worker.postMessage({
     pid: record.problemID,

@@ -24,3 +24,18 @@ export function rowAriaLabel(word, states) {
   const feedback = states.map(feedbackName).join(tr("、", ", "));
   return tr(`${upper} の判定：${feedback}`, `${upper} feedback: ${feedback}`);
 }
+
+// 判定結果などをスクリーンリーダーへ自動で読み上げる（#sr-announcer は aria-live=polite）。
+// タイルの aria-label 更新だけでは announce されないため、専用のライブリージョンに流す。
+let announceTimer = null;
+
+export function announce(message) {
+  const node = document.getElementById("sr-announcer");
+  if (!node) return;
+  // 同じ文言が連続しても読み上げられるよう、一度空にしてから入れ直す
+  node.textContent = "";
+  clearTimeout(announceTimer);
+  announceTimer = setTimeout(() => {
+    node.textContent = message;
+  }, 50);
+}

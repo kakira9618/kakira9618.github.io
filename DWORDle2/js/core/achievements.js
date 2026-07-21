@@ -17,7 +17,7 @@
 //   hadLostBefore, // この問題で過去に敗北していたか
 // }
 
-import { loadJSON, saveJSON } from "./store.js";
+import { loadJSON, saveJSON, onExternalChange } from "./store.js";
 import { isDailyPID, PID } from "./problems.js";
 import { totalWins, totalPlays, currentWinStreak, dailyClearStreak, getHistory } from "./records.js";
 import { CELL, Logic } from "./logic.js";
@@ -120,6 +120,11 @@ export const ACHIEVEMENTS = [
 ];
 
 let unlocked = loadJSON("achievements", {}); // { id: unlockedAt(sec) }
+
+// 別タブで解放された実績を取り込み、こちらの保存で巻き戻さないようにする
+onExternalChange("achievements", () => {
+  unlocked = { ...loadJSON("achievements", {}), ...unlocked };
+});
 
 // 旧バージョンで長期 Streak 実績を解放済みなら、新しい通算日数実績へ引き継ぐ。
 const achievementIdMigrations = {

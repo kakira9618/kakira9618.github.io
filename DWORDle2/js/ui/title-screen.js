@@ -195,7 +195,7 @@ function render() {
       "div",
       { class: "title-brand" },
       el("div", { class: "uso-banner" }, tr("う そ ぴ ょ ん", "J U S T  K I D D I N G")),
-      el("div", { class: "logo" }, isUso ? "DWORDlie" : "DWORDle", el("span", { class: "two" }, " 2"))
+      el("h1", { class: "logo" }, isUso ? "DWORDlie" : "DWORDle", el("span", { class: "two" }, " 2"))
     ),
     el(
       "div",

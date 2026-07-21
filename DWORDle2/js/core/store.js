@@ -37,3 +37,13 @@ export function saveJSON(key, value) {
 export function removeKey(key) {
   localStorage.removeItem(PREFIX + key);
 }
+
+// 別タブによる書き換えの監視。storage イベントは他タブでの変更時にのみ発火するので、
+// インメモリキャッシュを持つモジュールはこれで無効化し、read-modify-write の
+// 上書きで他タブの保存内容が消えるのを防ぐ。
+export function onExternalChange(key, handler) {
+  if (typeof addEventListener !== "function") return;
+  addEventListener("storage", (event) => {
+    if (event.key === PREFIX + key) handler();
+  });
+}

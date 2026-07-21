@@ -317,7 +317,7 @@ function render() {
       { class: "icon-btn", "aria-label": tr("タイトルへ戻る", "Back to title"), onclick: () => { playSfx("ui"); navigate("/"); } },
       icon("arrowLeft")
     ),
-    el("div", { class: "title" }, tr("プレイ履歴", "Play History")),
+    el("h1", { class: "title" }, tr("プレイ履歴", "Play History")),
     el("span", { class: "spacer" }),
     el(
       "button",

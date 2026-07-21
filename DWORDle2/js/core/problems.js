@@ -57,10 +57,12 @@ export function isDailyPID(pid) {
   return pid > PID.DAILY_THRESHOLD;
 }
 
+// No.0（デイリーエイリアス）は入力時に todayPID() へ変換される一時的な表記であり、
+// プレイ・保存される PID としては無効（レコードに混入すると別問題として扱われてしまう）。
 export function isValidPID(pid) {
-  if (pid === null || pid === undefined || Number.isNaN(pid)) return false;
+  if (!Number.isInteger(pid)) return false;
   if (isDailyPID(pid)) return true;
-  return pid >= 0 && pid <= PID.LEVEL_MAX;
+  return pid >= PID.EASY_MIN && pid <= PID.LEVEL_MAX;
 }
 
 // 今日のデイリー PID（例: 2026年7月20日 -> 20260720）。原作互換（ローカル日付）。

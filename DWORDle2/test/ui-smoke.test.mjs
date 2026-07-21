@@ -312,10 +312,14 @@ try {
   await page.waitForURL(/#\/game$/);
   await page.locator("#screen-game.active .row").last().waitFor();
 
+  await assertNoSeriousA11yViolations("Game screen");
   const answer = new Logic(1).ans1;
   await page.keyboard.type(answer);
   await page.keyboard.press("Enter");
   await page.waitForURL(/#\/result\/normal\/\d+$/, { timeout: 15000 });
+  // 判定結果はライブリージョンで自動読み上げされる
+  const announced = await page.locator("#sr-announcer").textContent();
+  assert.match(announced, /の判定：/, "Guess feedback should be announced via the live region");
   const resultUrl = page.url();
   await page.getByText("GAME CLEAR").waitFor();
   await page.getByRole("img", { name: /緑、位置一致/ }).first().waitFor();
@@ -340,6 +344,7 @@ try {
   await page.waitForURL(/#\/history$/);
   const historyItem = page.locator("button.history-item").first();
   await historyItem.waitFor();
+  await assertNoSeriousA11yViolations("History screen");
   await historyItem.focus();
   await page.keyboard.press("Enter");
   await page.waitForURL(/#\/result\/normal\/\d+$/);
@@ -348,9 +353,15 @@ try {
   await page.waitForURL(/#\/problems$/);
   const block = page.locator("button.block-cell").first();
   await block.waitFor();
+  await assertNoSeriousA11yViolations("Problems screen");
   await block.focus();
   await page.keyboard.press("Enter");
   await page.locator("button.num-cell").first().waitFor();
+
+  await page.evaluate(() => { location.hash = "#/achievements"; });
+  await page.waitForURL(/#\/achievements$/);
+  await page.getByRole("heading", { name: "実績" }).waitFor();
+  await assertNoSeriousA11yViolations("Achievements screen");
 
   await page.goto(resultUrl, { waitUntil: "networkidle" });
   await page.getByRole("button", { name: "分析" }).click();

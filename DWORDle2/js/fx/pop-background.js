@@ -70,6 +70,7 @@ function applyTheme(theme) {
   const animate = active && !shouldReduceMotion();
   if (animate && !running) {
     running = true;
+    lastFrameAt = 0;
     requestAnimationFrame(loop);
   } else if (!animate) {
     running = false;
@@ -84,10 +85,16 @@ function applyTheme(theme) {
   }
 }
 
-function loop() {
+let lastFrameAt = 0;
+
+function loop(now = performance.now()) {
   if (!running) return;
-  t += 1 / 60;
-  stepLines(1 / 60);
+  // rAF の間隔は環境依存（120Hz 端末では約 8ms）のため、実経過時間で進める。
+  // タブ復帰などの長い空白は 0.1 秒に丸めて演出の飛びを防ぐ。
+  const dt = lastFrameAt ? Math.min((now - lastFrameAt) / 1000, 0.1) : 1 / 60;
+  lastFrameAt = now;
+  t += dt;
+  stepLines(dt);
   draw();
   requestAnimationFrame(loop);
 }

@@ -11,7 +11,7 @@
 //     imported: "auto" | "json" | undefined, // 旧作から移行したレコードの印
 //   }
 
-import { loadJSON, saveJSON } from "./store.js";
+import { loadJSON, saveJSON, onExternalChange } from "./store.js";
 import { Logic } from "./logic.js";
 import { isDailyPID } from "./problems.js";
 
@@ -21,6 +21,11 @@ export const MODES = {
 };
 
 let history = null; // startTime 昇順の配列（キャッシュ）
+
+// 別タブが履歴を書き換えたらキャッシュを捨て、次の保存で他タブの記録を巻き戻さないようにする
+onExternalChange("history", () => {
+  history = null;
+});
 
 function ensureLoaded() {
   if (history === null) {
@@ -73,9 +78,19 @@ export function addImportedGames(records) {
   ensureLoaded();
   let added = 0;
   for (const rec of records) {
-    const dup = history.some(
-      (g) => g.startTime === rec.startTime && g.gameMode === rec.gameMode && g.problemID === rec.problemID
-    );
+    // (startTime, gameMode) は findGame・結果画面 URL のキーなので一意にする。
+    // 別 problemID と衝突したら 1 秒ずつずらす。ずらした先に同じ problemID の
+    // レコードが見つかった場合は、過去のインポートで移動済みの重複なのでスキップする。
+    let dup = false;
+    for (;;) {
+      const existing = history.find((g) => g.startTime === rec.startTime && g.gameMode === rec.gameMode);
+      if (!existing) break;
+      if (existing.problemID === rec.problemID) {
+        dup = true;
+        break;
+      }
+      rec.startTime++;
+    }
     if (dup) continue;
     rec.clear = computeClear(rec);
     history.push(rec);
