@@ -7,10 +7,13 @@ import { hiddenThemesUnlockedBy } from "../core/settings.js?v=20260722-lockfx-pa
 import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./toast.js?v=20260722-lockfx-pace";
 import { tr } from "../core/i18n.js?v=20260722-lockfx-pace";
 
-export function finishHistoryImport(added) {
+// withAchievements=false のとき（「実績は解除しない」を選んだインポート）は、
+// 実績の再集計も migrate 実績も走らせない。取り込まれたレコード自体は
+// noAchievements 付きで保存されるため、後からの再集計でも解除されない。
+export function finishHistoryImport(added, { withAchievements = true } = {}) {
   _reload();
-  const newly = reconcileAchievementsFromHistory();
-  if (added > 0) newly.push(...checkOnEvent("migrate"));
+  const newly = withAchievements ? reconcileAchievementsFromHistory() : [];
+  if (withAchievements && added > 0) newly.push(...checkOnEvent("migrate"));
 
   if (added > 0) {
     toast(tr(`${added} 件のプレイ履歴をマージしました`, `Merged ${added} play ${added === 1 ? "record" : "records"}`));

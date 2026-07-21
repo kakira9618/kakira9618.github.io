@@ -150,9 +150,10 @@ function showImportModal() {
     ),
   });
   let closeModal = () => {};
+  const achievementsCheck = el("input", { type: "checkbox", checked: true });
   const complete = (added) => {
     closeModal();
-    finishHistoryImport(added);
+    finishHistoryImport(added, { withAchievements: achievementsCheck.checked });
     render();
   };
   const manualImport = () => {
@@ -162,7 +163,7 @@ function showImportModal() {
       return;
     }
     try {
-      const { added } = importFromText(ta.value);
+      const { added } = importFromText(ta.value, { withAchievements: achievementsCheck.checked });
       complete(added);
     } catch (e) {
       const englishMessage = e.message === "JSON として読み取れませんでした"
@@ -182,11 +183,6 @@ function showImportModal() {
         tr(
           "旧 DWORDle / DWORDlie のプレイ履歴を、現在の DWORDle 2 の履歴にマージします。既存の履歴は上書きされません。",
           "Merge play history from the original DWORDle / DWORDlie into your current DWORDle 2 history. Existing records are never overwritten."
-        ),
-        el("br"),
-        tr(
-          "履歴の条件を満たす実績も自動で解放されます。",
-          "Achievements supported by the imported history are unlocked automatically."
         )
       ),
       el(
@@ -196,6 +192,12 @@ function showImportModal() {
           "自動検出は、このブラウザに保存された旧 DWORDle と DWORDlie の両方に対応しています。",
           "Auto-detect supports both the original DWORDle and DWORDlie histories saved in this browser."
         )
+      ),
+      el(
+        "label",
+        { class: "import-achievements-choice" },
+        achievementsCheck,
+        tr("履歴の条件を満たす実績も解除する", "Also unlock achievements supported by the history")
       ),
       el("button", {
         class: "btn btn-primary",

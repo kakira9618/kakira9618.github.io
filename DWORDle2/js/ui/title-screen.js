@@ -115,6 +115,7 @@ function maybeOfferLegacyImport(afterClose = null) {
   saveJSON("legacyImportPrompted", true);
   if (found.length === 0) return false;
 
+  const achievementsCheck = el("input", { type: "checkbox", checked: true });
   showModal({
     title: tr("旧作のプレイ履歴が見つかりました", "Original game history found"),
     body: [
@@ -130,9 +131,15 @@ function maybeOfferLegacyImport(afterClose = null) {
         "p",
         { class: "hint" },
         tr(
-          "履歴はマージされ、既存データは上書きされません。対応する実績も自動で解放されます。",
-          "History is merged without overwriting existing data, and supported achievements are unlocked automatically."
+          "履歴はマージされ、既存データは上書きされません。",
+          "History is merged without overwriting existing data."
         )
+      ),
+      el(
+        "label",
+        { class: "import-achievements-choice" },
+        achievementsCheck,
+        tr("履歴の条件を満たす実績も解除する", "Also unlock achievements supported by the history")
       ),
     ],
     actions: [
@@ -140,7 +147,10 @@ function maybeOfferLegacyImport(afterClose = null) {
       {
         label: tr("インポート", "Import"),
         primary: true,
-        onClick: () => finishHistoryImport(importFromLocalStorage()),
+        onClick: () => {
+          const withAchievements = achievementsCheck.checked;
+          finishHistoryImport(importFromLocalStorage({ withAchievements }), { withAchievements });
+        },
       },
     ],
     onClose: afterClose,
@@ -160,6 +170,12 @@ function maybeShowFirstTutorial(mode, afterClose = null) {
 // 1 回プレイで DWORDlie（uso）以外をすべて解放し、2 回プレイで DWORDlie を解放する。
 // プレイ回数は countPlays()（同日・同問題の再プレイも数え、旧作インポートは数えない）。
 const MENU_UNLOCKS = { history: 1, achievements: 1, random: 1, problems: 1, number: 1, uso: 2 };
+// 解放お披露目アニメーションの項目ごとの時間差
+const UNLOCK_REVEAL_STAGGER_MS = 150;
+// DWORDlie 解放モーダルは解錠演出（鍵シェイク→開錠）が終わってから出す
+const USO_UNLOCK_MODAL_DELAY_MS = 1100;
+// reduce-motion 時は解錠演出がないので、描画が落ち着く最短の間だけ置く
+const USO_UNLOCK_MODAL_DELAY_REDUCED_MS = 250;
 
 function render() {
   if (!root) build();
@@ -178,7 +194,7 @@ function render() {
   let revealCount = 0;
   const applyReveal = (button, req) => {
     if (!justUnlocked(req)) return button;
-    const delayMs = revealCount++ * 150;
+    const delayMs = revealCount++ * UNLOCK_REVEAL_STAGGER_MS;
     button.classList.add("unlock-reveal");
     button.style.setProperty("--reveal-delay", `${delayMs}ms`);
     // 解錠演出: 金の鍵がガチャガチャ揺れ、開いた瞬間にパーティクルが弾けて光が走る
@@ -332,6 +348,55 @@ function render() {
   // お披露目は 1 回だけ。新規解放があった描画でのみ効果音を添える
   if (!bypass && plays !== seenPlays) saveJSON("menuUnlockSeen", plays);
   if (revealCount > 0) playSfx("achievement");
+  // DWORDlie の解放は大きな節目なので、解錠演出のあとにモーダルで案内する
+  if (!isUso && justUnlocked(MENU_UNLOCKS.uso)) {
+    const delayMs = shouldReduceMotion()
+      ? USO_UNLOCK_MODAL_DELAY_REDUCED_MS
+      : revealCount * UNLOCK_REVEAL_STAGGER_MS + USO_UNLOCK_MODAL_DELAY_MS;
+    setTimeout(() => {
+      if (!root.classList.contains("active")) return; // 既に別画面へ移動していたら出さない
+      playSfx("help");
+      showModal({
+        title: tr("裏モード解放！", "Secret mode unlocked!"),
+        body: [
+          el("div", { class: "uso-unlock-mask", "aria-hidden": "true" }, icon("mask", 44)),
+          el(
+            "p",
+            { style: { fontSize: "14px" } },
+            tr("裏モード「DWORDlie」が解放されました。", "The secret mode “DWORDlie” is now unlocked.")
+          ),
+          el(
+            "p",
+            { class: "hint" },
+            tr(
+              "答えは 2 つ、判定は必ず嘘。すべての色を疑って 15 手以内に見抜くモードです。",
+              "Two answers, and every clue lies. Doubt every color and see through it within 15 guesses."
+            )
+          ),
+          el(
+            "p",
+            { class: "hint" },
+            tr(
+              "タイトル右上の月アイコンからいつでも切り替えられます。",
+              "Switch anytime with the moon icon at the top right of the title screen."
+            )
+          ),
+        ],
+        actions: [
+          { label: tr("あとで", "Later"), onClick: () => {} },
+          {
+            label: tr("DWORDlie で遊ぶ", "Play DWORDlie"),
+            primary: true,
+            onClick: () => {
+              playSfx("swoosh");
+              setAppMode("uso");
+              render();
+            },
+          },
+        ],
+      });
+    }, delayMs);
+  }
   const noPlayData =
     getHistory().length === 0 &&
     !getCurrentGame("normal") &&

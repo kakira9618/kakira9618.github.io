@@ -365,9 +365,10 @@ function calendarAndCountIds(records) {
 
 // 保存済み履歴だけから判定可能な実績 ID を復元する。
 // 分析モード利用など、履歴に情報が残らない条件は対象外。
+// noAchievements 付きレコード（「実績は解除しない」を選んだインポート）は判定に使わない。
 export function achievementIdsFromHistory(records) {
   const games = records
-    .filter((record) => Array.isArray(record?.guessWord) && record.guessWord.length > 0)
+    .filter((record) => Array.isArray(record?.guessWord) && record.guessWord.length > 0 && !record.noAchievements)
     .slice()
     .sort((a, b) => a.startTime - b.startTime);
   const ids = new Set();

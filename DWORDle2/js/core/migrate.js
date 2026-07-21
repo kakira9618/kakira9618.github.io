@@ -39,8 +39,10 @@ function looksLikeHistoryFile(obj) {
   return games.length > 0 && games.every(looksLikeGame);
 }
 
-// 旧作履歴ファイル → 本作レコード配列
-function convertHistoryFile(obj, importedTag) {
+// 旧作履歴ファイル → 本作レコード配列。
+// withAchievements=false なら noAchievements を付け、実績判定から恒久的に除外する
+// （後からの再集計 reconcileAchievementsFromHistory でも解除されない）。
+function convertHistoryFile(obj, importedTag, withAchievements = true) {
   const records = [];
   for (const [key, game] of Object.entries(obj)) {
     if (key === "version" || !isImportableGame(game)) continue;
@@ -53,6 +55,7 @@ function convertHistoryFile(obj, importedTag) {
       guessWord: game.guessWord.slice(),
       usoResults: Array.isArray(game.usoResults) ? game.usoResults : undefined,
       imported: importedTag,
+      ...(withAchievements ? {} : { noAchievements: true }),
     });
   }
   return records;
@@ -96,17 +99,17 @@ export function scanLegacyHistory() {
 }
 
 // 自動検出 → 取り込み。追加された件数を返す。
-export function importFromLocalStorage() {
+export function importFromLocalStorage({ withAchievements = true } = {}) {
   let added = 0;
   for (const { obj } of scanLegacyHistory()) {
-    added += addImportedGames(convertHistoryFile(obj, "auto"));
+    added += addImportedGames(convertHistoryFile(obj, "auto", withAchievements));
   }
   return added;
 }
 
 // テキスト（旧作の履歴 JSON / 本作のエクスポート JSON）からの取り込み。
 // 成功時 { added, total }、解釈できなければ Error を投げる。
-export function importFromText(text) {
+export function importFromText(text, { withAchievements = true } = {}) {
   let obj;
   try {
     obj = JSON.parse(text);
@@ -114,12 +117,14 @@ export function importFromText(text) {
     throw new Error("JSON として読み取れませんでした");
   }
   if (obj && obj.app === "dwordle2" && Array.isArray(obj.history)) {
-    // 本作のエクスポート形式
-    const records = obj.history.filter(isImportableGame).map((g) => ({ ...g, imported: g.imported ?? "json" }));
+    // 本作のエクスポート形式。レコード既存の noAchievements（過去の選択）は維持する
+    const records = obj.history
+      .filter(isImportableGame)
+      .map((g) => ({ ...g, imported: g.imported ?? "json", ...(withAchievements ? {} : { noAchievements: true }) }));
     return { added: addImportedGames(records), total: records.length };
   }
   if (looksLikeHistoryFile(obj)) {
-    const records = convertHistoryFile(obj, "json");
+    const records = convertHistoryFile(obj, "json", withAchievements);
     return { added: addImportedGames(records), total: records.length };
   }
   throw new Error("DWORDle / DWORDlie の履歴形式ではないようです");

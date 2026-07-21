@@ -825,6 +825,36 @@ try {
     await freshContext.close();
   }
 
+  // DWORDlie 解放の瞬間（seenPlays 1 → plays 2）はモーダルで案内し、そのまま裏モードへ切り替えられる
+  const usoUnlockContext = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
+  const usoUnlockPage = await usoUnlockContext.newPage();
+  try {
+    await usoUnlockPage.addInitScript(() => {
+      localStorage.setItem("dwordle2.tutorialSeen", "true");
+      localStorage.setItem("dwordle2.tutorialSeenUso", "true");
+      localStorage.setItem("dwordle2.legacyImportPrompted", "true");
+      localStorage.setItem("dwordle2.playCount", "2");
+      localStorage.setItem("dwordle2.menuUnlockSeen", "1");
+    });
+    await usoUnlockPage.goto(baseUrl, { waitUntil: "networkidle" });
+    const usoUnlockDialog = usoUnlockPage.getByRole("dialog", { name: "裏モード解放！" });
+    await usoUnlockDialog.waitFor();
+    await usoUnlockDialog.getByText("判定は必ず嘘").waitFor();
+    await usoUnlockDialog.getByRole("button", { name: "DWORDlie で遊ぶ" }).click();
+    await usoUnlockPage.locator(".logo").filter({ hasText: "DWORDlie" }).waitFor();
+
+    // 案内は解放の描画 1 回きり。リロード後は出ない
+    await usoUnlockPage.reload({ waitUntil: "networkidle" });
+    await usoUnlockPage.waitForTimeout(1800);
+    assert.equal(
+      await usoUnlockPage.getByRole("dialog", { name: "裏モード解放！" }).count(),
+      0,
+      "the DWORDlie unlock modal must appear only once"
+    );
+  } finally {
+    await usoUnlockContext.close();
+  }
+
   console.log("UIスモーク + a11yテスト: OK");
 } finally {
   await browser.close();

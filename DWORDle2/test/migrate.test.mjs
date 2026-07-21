@@ -91,6 +91,40 @@ assert(achievementIds.has("uso-clear"));
   assert.equal(getHistory().length, before);
 }
 
+// ---- 実績を解除しないインポート: noAchievements が付き、実績判定から恒久的に除外される ----
+{
+  const { importFromText } = await import("../js/core/migrate.js");
+  const logic = new Logic(11);
+  const { added } = importFromText(
+    JSON.stringify({
+      version: 1,
+      "1750000000": {
+        complete: true,
+        startTime: 1_750_000_000,
+        endTime: 1_750_000_005, // 3 手 5 秒クリア → 通常なら h-lightning が付く
+        gameMode: "normal",
+        problemID: 11,
+        guessWord: ["about", "brick", logic.ans1],
+      },
+    }),
+    { withAchievements: false }
+  );
+  assert.equal(added, 1);
+  const record = getHistory().find((r) => r.problemID === 11);
+  assert.equal(record.noAchievements, true, "records imported without achievements must carry the flag");
+  const ids = achievementIdsFromHistory(getHistory());
+  assert(!ids.has("h-lightning"), "flagged records must not unlock achievements in later reconciles");
+
+  // 本作エクスポート形式の再インポートでも、レコード既存の noAchievements は維持される
+  const { added: reAdded } = importFromText(
+    JSON.stringify({ app: "dwordle2", version: 1, history: [{ ...record, startTime: 1_750_100_000 }] }),
+    { withAchievements: true }
+  );
+  assert.equal(reAdded, 1);
+  const reRecord = getHistory().find((r) => r.startTime === 1_750_100_000);
+  assert.equal(reRecord.noAchievements, true, "re-importing an export must preserve the original choice");
+}
+
 // ---- 段階解放のプレイ回数: インポートは数えず、同じ問題の再プレイは数える ----
 {
   const { addFinishedGame, countPlays } = await import("../js/core/records.js");
