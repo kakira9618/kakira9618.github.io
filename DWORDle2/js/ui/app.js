@@ -11,10 +11,10 @@
 //   #/analysis/<mode>/<startTime> 分析画面
 
 import { loadJSON, saveJSON } from "../core/store.js";
-import { setUsoMood } from "../audio/sound.js?v=20260722-lockfx-pace";
-import { setBackgroundMood } from "../fx/effects.js?v=20260722-lockfx-pace";
-import { setPopBackgroundMood } from "../fx/pop-background.js?v=20260722-lockfx-pace";
-import { closeAllModals } from "./modal.js?v=20260722-lockfx-pace";
+import { setUsoMood } from "../audio/sound.js?v=20260722-uso-modal-hint";
+import { setBackgroundMood } from "../fx/effects.js?v=20260722-uso-modal-hint";
+import { setPopBackgroundMood } from "../fx/pop-background.js?v=20260722-uso-modal-hint";
+import { closeAllModals } from "./modal.js?v=20260722-uso-modal-hint";
 
 const screens = new Map(); // name -> { element, render(params) }
 let currentName = null;

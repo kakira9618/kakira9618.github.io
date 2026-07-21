@@ -9,6 +9,7 @@ const ICONS = {
   sunrise: '<path d="M4 17.5a8 8 0 0 1 16 0"/><path d="M2 21h20M12 3v4M5.2 8.2l1.9 1.9M18.8 8.2l-1.9 1.9M8.5 14.5 12 11l3.5 3.5"/>',
   gift: '<rect x="4" y="10" width="16" height="10.5" rx="1.5"/><path d="M3 6.5h18v3.5H3zM12 6.5v14M12 6.5C9.5 6.5 7 5.6 7 3.8 7 2.4 9 2 10 3c1 .9 2 3.5 2 3.5M12 6.5c2.5 0 5-.9 5-2.7C17 2.4 15 2 14 3c-1 .9-2 3.5-2 3.5"/>',
   arrowLeft: '<path d="M15 5 L8 12 L15 19"/>',
+  arrowUp: '<path d="M12 20V5M5.5 11.5 12 5l6.5 6.5"/>',
   calendar: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 9.5h16M8.5 3v4M15.5 3v4"/>',
   dice: '<rect x="4" y="4" width="16" height="16" rx="3"/><g fill="currentColor" stroke="none"><circle cx="9" cy="9" r="1.4"/><circle cx="15" cy="9" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="9" cy="15" r="1.4"/><circle cx="15" cy="15" r="1.4"/></g>',
   hash: '<path d="M9.5 4 L7.5 20 M16.5 4 L14.5 20 M5 9.5 H20 M4 14.5 H19"/>',

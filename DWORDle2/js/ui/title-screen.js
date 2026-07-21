@@ -2,25 +2,25 @@
 // 右上のマスクボタンで DWORDlie（裏モード）に切り替わる。
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260722-lockfx-pace";
+import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260722-uso-modal-hint";
 import { countPlays, getCurrentGame, getHistory, isAlreadyPlayed } from "../core/records.js";
 import { isDebugMode } from "../core/debug.js";
 import { LEVELS, todayPID, isValidPID, pidLabel, PID } from "../core/problems.js";
-import { getSettings, setSetting } from "../core/settings.js?v=20260722-lockfx-pace";
+import { getSettings, setSetting } from "../core/settings.js?v=20260722-uso-modal-hint";
 import { loadJSON, saveJSON } from "../core/store.js";
 import { importFromLocalStorage, scanLegacyHistory } from "../core/migrate.js";
-import { playSfx } from "../audio/sound.js?v=20260722-lockfx-pace";
-import { toast } from "./toast.js?v=20260722-lockfx-pace";
-import { showModal } from "./modal.js?v=20260722-lockfx-pace";
-import { finishHistoryImport } from "./history-import.js?v=20260722-lockfx-pace";
-import { showFirstTutorial, showHelpModal } from "./help.js?v=20260722-lockfx-pace";
-import { confirmAndStart } from "./game-screen.js?v=20260722-lockfx-pace";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-lockfx-pace";
-import { burstAtElement } from "../fx/effects.js?v=20260722-lockfx-pace";
-import { shouldReduceMotion } from "../core/motion.js?v=20260722-lockfx-pace";
+import { playSfx } from "../audio/sound.js?v=20260722-uso-modal-hint";
+import { toast } from "./toast.js?v=20260722-uso-modal-hint";
+import { showModal } from "./modal.js?v=20260722-uso-modal-hint";
+import { finishHistoryImport } from "./history-import.js?v=20260722-uso-modal-hint";
+import { showFirstTutorial, showHelpModal } from "./help.js?v=20260722-uso-modal-hint";
+import { confirmAndStart } from "./game-screen.js?v=20260722-uso-modal-hint";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-uso-modal-hint";
+import { burstAtElement } from "../fx/effects.js?v=20260722-uso-modal-hint";
+import { shouldReduceMotion } from "../core/motion.js?v=20260722-uso-modal-hint";
 import { icon } from "./icons.js";
-import { APP_VERSION } from "../config.js?v=20260722-lockfx-pace";
-import { localizedLevel, tr } from "../core/i18n.js?v=20260722-lockfx-pace";
+import { APP_VERSION } from "../config.js?v=20260722-uso-modal-hint";
+import { localizedLevel, tr } from "../core/i18n.js?v=20260722-uso-modal-hint";
 
 let root = null;
 let legacyImportCheckDone = false;
@@ -176,6 +176,10 @@ const UNLOCK_REVEAL_STAGGER_MS = 150;
 const USO_UNLOCK_MODAL_DELAY_MS = 1100;
 // reduce-motion 時は解錠演出がないので、描画が落ち着く最短の間だけ置く
 const USO_UNLOCK_MODAL_DELAY_REDUCED_MS = 250;
+// 解放モーダル中の位置ガイド矢印: ボタン下端から矢印までの間隔
+const USO_ARROW_GAP_PX = 8;
+// 位置ガイド矢印のサイズ
+const USO_ARROW_SIZE = 30;
 
 function render() {
   if (!root) build();
@@ -356,7 +360,46 @@ function render() {
     setTimeout(() => {
       if (!root.classList.contains("active")) return; // 既に別画面へ移動していたら出さない
       playSfx("help");
-      showModal({
+      const switchToUso = () => {
+        playSfx("swoosh");
+        setAppMode("uso");
+        render();
+      };
+      // タイトル画面は #app (z:1) のスタッキングコンテキスト内にあり、実ボタンを
+      // モーダル暗幕 (z:100) より上へは出せない。そこで切り替えボタンの複製を
+      // body 直下 (z:120) に同じ位置で重ね、明るいまま見せて矢印で場所を指す。
+      // 複製のタップでもそのまま切り替えられる。
+      const rect = modeToggle.getBoundingClientRect();
+      let spotlight = null;
+      let guideArrow = null;
+      let closeModal = () => {};
+      if (rect.width > 0) {
+        spotlight = el(
+          "button",
+          {
+            class: "icon-btn unlock-spotlight",
+            "aria-hidden": "true",
+            tabindex: "-1",
+            style: { left: `${rect.left}px`, top: `${rect.top}px`, width: `${rect.width}px`, height: `${rect.height}px` },
+            onclick: () => {
+              closeModal();
+              switchToUso();
+            },
+          },
+          icon("moon")
+        );
+        guideArrow = el(
+          "div",
+          {
+            class: "unlock-arrow",
+            "aria-hidden": "true",
+            style: { left: `${rect.left + rect.width / 2}px`, top: `${rect.bottom + USO_ARROW_GAP_PX}px` },
+          },
+          icon("arrowUp", USO_ARROW_SIZE)
+        );
+        document.body.append(spotlight, guideArrow);
+      }
+      closeModal = showModal({
         title: tr("裏モード解放！", "Secret mode unlocked!"),
         body: [
           el("div", { class: "uso-unlock-mask", "aria-hidden": "true" }, icon("mask", 44)),
@@ -377,8 +420,8 @@ function render() {
             "p",
             { class: "hint" },
             tr(
-              "タイトル右上の月アイコンからいつでも切り替えられます。",
-              "Switch anytime with the moon icon at the top right of the title screen."
+              "タイトル右上の月アイコンからいつでも DWORDlie へ切り替えられます。DWORDlie 中は同じボタンがマスクアイコンになり、タップすると DWORDle へ戻ります。",
+              "Switch to DWORDlie anytime with the moon icon at the top right of the title screen. While in DWORDlie, the same button shows a mask icon — tap it to return to DWORDle."
             )
           ),
         ],
@@ -387,13 +430,13 @@ function render() {
           {
             label: tr("DWORDlie で遊ぶ", "Play DWORDlie"),
             primary: true,
-            onClick: () => {
-              playSfx("swoosh");
-              setAppMode("uso");
-              render();
-            },
+            onClick: switchToUso,
           },
         ],
+        onClose: () => {
+          spotlight?.remove();
+          guideArrow?.remove();
+        },
       });
     }, delayMs);
   }

@@ -1,8 +1,8 @@
 // モーダルダイアログ。
 
 import { el, clear } from "./dom.js";
-import { playSfx } from "../audio/sound.js?v=20260722-lockfx-pace";
-import { tr } from "../core/i18n.js?v=20260722-lockfx-pace";
+import { playSfx } from "../audio/sound.js?v=20260722-uso-modal-hint";
+import { tr } from "../core/i18n.js?v=20260722-uso-modal-hint";
 
 const layer = () => document.getElementById("modal-layer");
 const openCloseFns = new Set(); // closeAllModals 用

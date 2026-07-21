@@ -4,16 +4,16 @@
 // ルート: #/problems
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate, getAppMode } from "./app.js?v=20260722-lockfx-pace";
+import { registerScreen, navigate, getAppMode } from "./app.js?v=20260722-uso-modal-hint";
 import { buildProblemStatus, MODES } from "../core/records.js";
 import { LEVELS, isValidPID, pidLabel } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260722-lockfx-pace";
-import { showModal } from "./modal.js?v=20260722-lockfx-pace";
-import { confirmAndStart } from "./game-screen.js?v=20260722-lockfx-pace";
-import { toast } from "./toast.js?v=20260722-lockfx-pace";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-lockfx-pace";
+import { playSfx } from "../audio/sound.js?v=20260722-uso-modal-hint";
+import { showModal } from "./modal.js?v=20260722-uso-modal-hint";
+import { confirmAndStart } from "./game-screen.js?v=20260722-uso-modal-hint";
+import { toast } from "./toast.js?v=20260722-uso-modal-hint";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-uso-modal-hint";
 import { icon } from "./icons.js";
-import { localizedLevel, tr } from "../core/i18n.js?v=20260722-lockfx-pace";
+import { localizedLevel, tr } from "../core/i18n.js?v=20260722-uso-modal-hint";
 
 const BLOCK_SIZE = 100;
 

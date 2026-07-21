@@ -2,11 +2,11 @@
 // オフにする前の個別設定（BGM だけオン等）を覚えておき、復帰時にそのまま戻す。
 
 import { el } from "./dom.js";
-import { getSettings, setSetting, onSettingsChange } from "../core/settings.js?v=20260722-lockfx-pace";
+import { getSettings, setSetting, onSettingsChange } from "../core/settings.js?v=20260722-uso-modal-hint";
 import { loadJSON, saveJSON } from "../core/store.js";
-import { playSfx } from "../audio/sound.js?v=20260722-lockfx-pace";
+import { playSfx } from "../audio/sound.js?v=20260722-uso-modal-hint";
 import { icon } from "./icons.js";
-import { tr } from "../core/i18n.js?v=20260722-lockfx-pace";
+import { tr } from "../core/i18n.js?v=20260722-uso-modal-hint";
 
 const isSoundOn = (s = getSettings()) => s.bgm || s.sfx;
 

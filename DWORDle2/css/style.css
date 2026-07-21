@@ -519,6 +519,49 @@ body.mode-uso .uso-banner {
   color: #ff5f8f;
   filter: drop-shadow(0 0 10px rgba(255, 43, 94, 0.7));
 }
+/* DWORDlie 解放モーダル中のスポットライト:
+   モーダル暗幕 (z:100) の上に切り替えボタンの複製を重ね、明るいまま脈動させる */
+.unlock-spotlight {
+  position: fixed;
+  z-index: 120;
+  margin: 0;
+  animation: unlock-spotlight-pulse 1.3s ease-in-out infinite;
+}
+@keyframes unlock-spotlight-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent); }
+  50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 75%, transparent); }
+}
+/* サイバー: ネオンの残光を足す */
+body.theme-cyber .unlock-spotlight {
+  filter: drop-shadow(0 0 10px var(--accent));
+}
+/* 解放モーダルの位置ガイド矢印。テーマの accent 色を継承して上下に揺れる */
+.unlock-arrow {
+  position: fixed;
+  z-index: 120;
+  pointer-events: none;
+  color: var(--accent);
+  animation: unlock-arrow-bob 0.85s ease-in-out infinite;
+}
+@keyframes unlock-arrow-bob {
+  0%, 100% { transform: translate(-50%, 9px); }
+  50% { transform: translate(-50%, 0); }
+}
+/* サイバー: ネオンの残光 / クラシック: 発光なしの単色（既定のまま） */
+body.theme-cyber .unlock-arrow {
+  filter: drop-shadow(0 0 8px var(--accent));
+}
+/* ポップ: 太めの線でゴムまりのように弾む */
+body.theme-pop .unlock-arrow {
+  animation: unlock-arrow-bounce 0.75s cubic-bezier(0.35, 1.7, 0.45, 1) infinite;
+}
+body.theme-pop .unlock-arrow svg {
+  stroke-width: 3;
+}
+@keyframes unlock-arrow-bounce {
+  0%, 100% { transform: translate(-50%, 11px) scaleY(0.92); }
+  55% { transform: translate(-50%, 0) scaleY(1.06); }
+}
 /* 施錠中はホバーで光らせない（タップ可能だが実行はできないため） */
 body.theme-cyber .btn.menu-locked:hover,
 body.theme-cyber .icon-btn.menu-locked:hover {

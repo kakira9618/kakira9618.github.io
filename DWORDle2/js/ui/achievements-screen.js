@@ -2,12 +2,12 @@
 // ルート: #/achievements
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260722-lockfx-pace";
-import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, getUnlocked } from "../core/achievements.js?v=20260722-lockfx-pace";
-import { playSfx } from "../audio/sound.js?v=20260722-lockfx-pace";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-lockfx-pace";
+import { registerScreen, navigate } from "./app.js?v=20260722-uso-modal-hint";
+import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, getUnlocked } from "../core/achievements.js?v=20260722-uso-modal-hint";
+import { playSfx } from "../audio/sound.js?v=20260722-uso-modal-hint";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-uso-modal-hint";
 import { icon } from "./icons.js";
-import { localizedAchievement, tr } from "../core/i18n.js?v=20260722-lockfx-pace";
+import { localizedAchievement, tr } from "../core/i18n.js?v=20260722-uso-modal-hint";
 
 let root = null;
 

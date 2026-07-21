@@ -1,6 +1,6 @@
 // 判定タイルを色だけに依存せず読み上げるための共通ラベル。
 
-import { tr } from "../core/i18n.js?v=20260722-lockfx-pace";
+import { tr } from "../core/i18n.js?v=20260722-uso-modal-hint";
 
 export function feedbackName(state) {
   const names = {
