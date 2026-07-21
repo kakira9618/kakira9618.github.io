@@ -151,6 +151,17 @@ try {
   // BGM 一覧の「Candy Pop」と部分一致しないよう exact 指定でテーマの Pop を選ぶ
   await page.getByRole("radio", { name: "Pop", exact: true }).click();
   await page.locator("body.theme-pop").waitFor();
+  await page.evaluate(async () => {
+    const { showHelpModal } = await import("./js/ui/help.js?v=20260721-pop-help");
+    showHelpModal("normal");
+  });
+  const popHelp = page.getByRole("dialog", { name: "DWORDle 遊び方" });
+  await popHelp.waitFor();
+  const popHelpTileBackground = await popHelp.locator(".help-answers .htile").first().evaluate(
+    (node) => getComputedStyle(node).backgroundColor
+  );
+  assert.equal(popHelpTileBackground, "rgb(255, 255, 255)", "Pop help tiles should match the white in-game tiles");
+  await popHelp.getByRole("button", { name: "閉じる" }).click();
   await page.getByRole("radio", { name: "クラシック" }).click();
   await page.locator("body.theme-classic").waitFor();
   // クラス切替直後は数フレームだけ旧テーマの文字色が残る（transition の過渡状態）。

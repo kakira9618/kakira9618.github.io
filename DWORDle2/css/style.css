@@ -1775,6 +1775,10 @@ body.theme-cyber .rcell.correct { color: #04120b; }
   border: 2px solid var(--border);
   color: var(--fg);
 }
+/* Pop の未判定タイルはゲーム盤面と同じ白地にする */
+body.theme-pop .htile:not(.unused):not(.used):not(.correct) {
+  background: #ffffff;
+}
 .htile.typed {
   animation: pop 120ms ease;
   border-color: color-mix(in srgb, var(--fg) 45%, transparent);
