@@ -111,7 +111,9 @@
     letter-spacing: 0.04em;
     text-shadow: 0 4px 22px rgba(0, 0, 0, 0.9);
   }
-  .tagline .num { color: var(--correct); font-size: 1.15em; }
+  .tagline .num { font-size: 1.25em; }
+  .tagline .num.two { color: var(--used); }
+  .tagline .num.one { color: var(--correct); }
 </style>
 </head>
 <body>
@@ -147,7 +149,7 @@
 
   <div class="copy">
     <div class="logo">DWORDle<span class="two"> 2</span></div>
-    <div class="tagline">答えが <span class="num">2</span> つある Wordle</div>
+    <div class="tagline">答えは<span class="num two">2</span>つ。盤面は<span class="num one">1</span>つ。</div>
   </div>
 </body>
 </html>
