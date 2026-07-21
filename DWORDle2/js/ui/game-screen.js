@@ -10,7 +10,7 @@ import { MODES, saveCurrentGame, clearCurrentGame, getCurrentGame, addFinishedGa
 import { pidLabel } from "../core/problems.js";
 import { checkOnGameFinish } from "../core/achievements.js?v=20260721-runtime";
 import { registerScreen, navigate, getAppMode, currentScreenName, rememberPlayedMode } from "./app.js?v=20260721-runtime";
-import { toast, achievementToast, bgmUnlockCelebration } from "./toast.js";
+import { toast, achievementToast, bgmUnlockCelebration } from "./toast.js?v=20260721-unlock-dialog";
 import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js";
 import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/effects.js";
 import { showHelpModal } from "./help.js";
@@ -532,16 +532,16 @@ function finishGame(justFinished) {
       playSfx("lose");
     }
 
-    // 演出の後に結果画面へ
+    // 演出の後にまず結果画面へ進み、その上で解放通知を表示する。
     setTimeout(() => {
+      navigate(`/result/${record.gameMode}/${record.startTime}`);
       if (newly.length > 0) {
         achievementToast(newly);
         const bgmUnlocks = bgmTracksUnlockedBy(newly);
         if (bgmUnlocks.length > 0) {
-          bgmUnlockCelebration(bgmUnlocks, newly.length * 700 + 3400);
+          bgmUnlockCelebration(bgmUnlocks);
         }
       }
-      navigate(`/result/${record.gameMode}/${record.startTime}`);
     }, cleared ? 1400 : 900);
   } else {
     // リロード等で復帰した決着済みゲーム: 履歴に保存だけして結果ボタンを出す

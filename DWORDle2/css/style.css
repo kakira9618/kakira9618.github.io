@@ -638,24 +638,38 @@ body.theme-cyber .toast {
   color: var(--fg-dim);
 }
 
-/* Extra BGM 解放演出 */
-.bgm-unlock {
+/* 解放ダイアログ共通レイヤー。単純な rgba 面にして旧 Chrome でも暗幕を保証する。 */
+#unlock-layer {
   position: fixed;
   z-index: 230;
-  inset: 50% auto auto 50%;
+  inset: 0;
+  display: none;
+  place-items: center;
+  padding: 14px;
+  background-color: rgba(0, 0, 0, 0.72);
+  pointer-events: auto;
+}
+#unlock-layer.is-active {
+  display: grid;
+}
+
+/* Extra BGM 解放演出 */
+.bgm-unlock {
+  position: relative;
+  z-index: 1;
   width: min(410px, calc(100vw - 28px));
+  max-width: 100%;
   padding: 28px 22px 20px;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, #ffd65c 72%, transparent);
+  border: 1px solid rgba(255, 214, 92, 0.72);
   border-radius: 18px;
-  background:
-    radial-gradient(circle at 50% 20%, rgba(255, 214, 92, 0.25), transparent 48%),
-    color-mix(in srgb, var(--bg-panel-2) 94%, #101626);
+  /* color-mix 非対応の旧 Chrome でも必ず不透明寄りの面を描く。 */
+  background-color: #111827;
+  background-image: radial-gradient(circle at 50% 20%, rgba(255, 214, 92, 0.25), rgba(17, 24, 39, 0) 48%);
   color: var(--fg);
   text-align: center;
   pointer-events: auto;
-  box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.68), 0 0 42px rgba(255, 214, 92, 0.42);
-  transform: translate(-50%, -50%);
+  box-shadow: 0 0 42px rgba(255, 214, 92, 0.42);
   animation: bgmUnlockIn 0.72s cubic-bezier(0.16, 1.35, 0.35, 1);
 }
 .bgm-unlock-rays {
@@ -717,15 +731,15 @@ body.theme-cyber .toast {
 }
 .bgm-unlock.closing {
   opacity: 0;
-  transform: translate(-50%, -50%) scale(0.9);
+  transform: scale(0.9);
   transition: opacity 0.45s, transform 0.45s;
 }
 .bgm-unlock.selected {
-  box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.68), 0 0 64px rgba(0, 230, 138, 0.7);
+  box-shadow: 0 0 64px rgba(0, 230, 138, 0.7);
 }
 @keyframes bgmUnlockIn {
-  from { opacity: 0; transform: translate(-50%, -46%) scale(0.72) rotateX(18deg); }
-  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  from { opacity: 0; transform: translateY(4%) scale(0.72) rotateX(18deg); }
+  to { opacity: 1; transform: none; }
 }
 @keyframes bgmUnlockSpin {
   to { transform: translateX(-50%) rotate(360deg); }
@@ -1692,44 +1706,111 @@ body.reduce-motion *::after {
   gap: 4px;
   align-items: center;
 }
-.answer-row .alabel {
+.answer-row .answer-label-group {
   position: absolute;
   top: 50%;
   right: calc(100% + 10px);
   transform: translateY(-50%);
+  width: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  white-space: nowrap;
+}
+.answer-row .alabel {
   font-size: 12px;
   color: var(--fg-dim);
   text-align: right;
-  white-space: nowrap;
 }
 .answer-row .rcell {
   width: 30px;
   height: 30px;
   font-size: 13px;
 }
-.answer-row .amark {
+.guess-flag-slot {
+  position: relative;
+  width: 27px;
+  height: 38px;
+  flex: none;
+}
+.guess-flag {
   position: absolute;
-  top: 50%;
-  left: calc(100% + 10px);
-  transform: translateY(-50%);
-  width: 86px;
-  font-size: 10.5px;
-  font-weight: 800;
-  color: color-mix(in srgb, var(--tile-correct) 82%, white);
-  text-shadow: 0 0 8px color-mix(in srgb, var(--tile-correct) 60%, transparent);
-  white-space: nowrap;
+  inset: 0;
+  color: #fff;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.42));
+  perspective: 80px;
+}
+.guess-flag-pole {
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 2px;
+  height: 33px;
+  border-radius: 2px;
+  background: currentColor;
+}
+.guess-flag-base {
+  position: absolute;
+  left: 1px;
+  bottom: 2px;
+  width: 10px;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+}
+.guess-flag-cloth {
+  position: absolute;
+  left: 6px;
+  top: 2px;
+  width: 20px;
+  height: 18px;
+  transform-origin: left center;
+  transform-style: preserve-3d;
+  animation: resultGuessFlagRotate 5.6s linear infinite;
+}
+.guess-flag-cloth::before,
+.guess-flag-cloth::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  width: 21px;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  transform-origin: left center;
+}
+.guess-flag-cloth::before {
+  top: 0;
+  transform: rotate(25deg);
+}
+.guess-flag-cloth::after {
+  bottom: 0;
+  transform: rotate(-25deg);
+}
+@keyframes resultGuessFlagRotate {
+  from { transform: rotateY(0deg); }
+  to { transform: rotateY(360deg); }
 }
 @media (max-width: 380px) {
-  .answer-row .alabel {
+  .answer-row .answer-label-group {
     right: calc(100% + 8px);
+    width: 62px;
+    gap: 3px;
+  }
+  .answer-row .alabel {
     font-size: 11px;
   }
-  .answer-row .amark {
-    left: calc(100% + 8px);
-    width: 62px;
-    font-size: 9px;
-    line-height: 1.15;
-    white-space: normal;
+  .guess-flag-slot {
+    width: 25px;
+  }
+}
+body.reduce-motion .guess-flag-cloth {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .guess-flag-cloth {
+    animation: none;
   }
 }
 

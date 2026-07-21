@@ -8,7 +8,6 @@ import { MODES } from "../core/records.js";
 import { pidLabel } from "../core/problems.js";
 import { CELL } from "../core/logic.js";
 import { getSettings } from "../core/settings.js";
-import { tr } from "../core/i18n.js";
 
 // レイアウト定数（すべて基準幅 720px に対する px）
 const SS = {
@@ -58,6 +57,24 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.arcTo(x, y + h, x, y, r);
   ctx.arcTo(x, y, x + w, y, r);
   ctx.closePath();
+}
+
+function drawGuessFlag(ctx, x, y, r, color) {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(x, y - r);
+  ctx.lineTo(x, y + r * 0.66);
+  ctx.moveTo(x - r / 4, y + r * 0.66);
+  ctx.lineTo(x + r / 4, y + r * 0.66);
+  ctx.moveTo(x, y - r);
+  ctx.lineTo(x + r, y - r / 2);
+  ctx.moveTo(x, y);
+  ctx.lineTo(x + r, y - r / 2);
+  ctx.stroke();
+  ctx.restore();
 }
 
 // record + logic + 表示用判定から PNG canvas を作る
@@ -168,9 +185,9 @@ export function renderResultCanvas(record, logic, displayRows) {
   // 答え（盤面グリッドと同寸・同位置）
   y += 26;
   const lastWord = record.guessWord[rows - 1];
-  const ansW = gridW;
   const ax0 = gx0;
   for (const [label, word] of [["Word 1", logic.ans1], ["Word 2", logic.ans2]]) {
+    if (cleared && word === lastWord) drawGuessFlag(ctx, ax0 - 82, y + SS.tile / 2, 20, st.fg);
     ctx.font = `600 16px "Avenir Next", sans-serif`;
     ctx.fillStyle = st.dim;
     ctx.textAlign = "right";
@@ -188,18 +205,6 @@ export function renderResultCanvas(record, logic, displayRows) {
       ctx.stroke();
       ctx.fillStyle = st.fg;
       ctx.fillText(word[i].toUpperCase(), x + SS.tile / 2, y + SS.tile / 2 + 1);
-    }
-    if (word === lastWord) {
-      ctx.font = `800 14px "Avenir Next", sans-serif`;
-      ctx.fillStyle = st.clear;
-      ctx.textAlign = "left";
-      if (st.glow) {
-        ctx.shadowColor = st.clear;
-        ctx.shadowBlur = 10;
-      }
-      ctx.fillText(tr("◀ あなたの答え!", "◀ Your answer!"), ax0 + ansW + 14, y + SS.tile / 2);
-      ctx.shadowBlur = 0;
-      ctx.textAlign = "center";
     }
     y += SS.tile + 10;
   }

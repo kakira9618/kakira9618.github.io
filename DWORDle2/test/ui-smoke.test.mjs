@@ -155,6 +155,14 @@ try {
   const resultUrl = page.url();
   await page.getByText("GAME CLEAR").waitFor();
   await page.getByRole("img", { name: /緑、位置一致/ }).first().waitFor();
+  const guessedAnswerRow = page.locator(".answer-row:has(.guess-flag)");
+  assert.equal(await guessedAnswerRow.count(), 1, "The guessed answer should have one rotating flag");
+  assert.match(
+    await guessedAnswerRow.getAttribute("aria-label"),
+    /あなたが当てた答え/,
+    "The flag meaning should also be exposed to assistive technology"
+  );
+  assert.equal(await page.locator(".amark").count(), 0, "The old textual answer marker should be removed");
   await assertNoSeriousA11yViolations("Result screen");
 
   await page.evaluate(() => { location.hash = "#/history"; });
@@ -288,6 +296,38 @@ try {
   );
   assert.equal(reducedFlights, 0, "Reduced motion should suppress tile gather flights");
   await reducedContext.close();
+
+  await page.evaluate(async () => {
+    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260721-unlock-dialog");
+    bgmUnlockCelebration([
+      { id: "queue-test-a", name: "Queue Test A", desc: "First unlock" },
+      { id: "queue-test-b", name: "Queue Test B", desc: "Second unlock" },
+    ]);
+  });
+  const firstUnlock = page.getByRole("dialog", { name: "Queue Test A" });
+  await firstUnlock.waitFor({ timeout: 1600 });
+  assert.equal(await page.locator(".bgm-unlock").count(), 1, "Unlock dialogs should be serialized");
+  assert.equal(
+    await firstUnlock.evaluate((node) => getComputedStyle(node).backgroundColor),
+    "rgb(17, 24, 39)",
+    "The unlock card should retain an opaque fallback background on old Chrome"
+  );
+  assert.notEqual(
+    await page.locator("#unlock-layer").evaluate((node) => getComputedStyle(node).backgroundColor),
+    "rgba(0, 0, 0, 0)",
+    "The unlock dialog should have a separately rendered backdrop"
+  );
+  assert.equal(
+    await firstUnlock.evaluate((node) => node.contains(document.activeElement)),
+    true,
+    "The unlock dialog should receive focus"
+  );
+  await firstUnlock.getByRole("button", { name: "あとで" }).click();
+  const secondUnlock = page.getByRole("dialog", { name: "Queue Test B" });
+  await secondUnlock.waitFor({ timeout: 1600 });
+  assert.equal(await page.locator(".bgm-unlock").count(), 1, "Only one queued unlock dialog should be visible");
+  await secondUnlock.getByRole("button", { name: "あとで" }).click();
+  await page.locator(".bgm-unlock").waitFor({ state: "detached" });
 
   await page.evaluate(() => { location.hash = "#/settings"; });
   await page.waitForURL(/#\/settings$/);

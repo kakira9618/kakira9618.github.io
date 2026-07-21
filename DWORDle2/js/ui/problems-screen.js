@@ -9,8 +9,8 @@ import { buildProblemStatus, MODES } from "../core/records.js";
 import { LEVELS, isValidPID, pidLabel } from "../core/problems.js";
 import { playSfx } from "../audio/sound.js";
 import { showModal } from "./modal.js";
-import { confirmAndStart } from "./game-screen.js?v=20260721-runtime";
-import { toast } from "./toast.js";
+import { confirmAndStart } from "./game-screen.js?v=20260721-unlock-dialog";
+import { toast } from "./toast.js?v=20260721-unlock-dialog";
 import { icon } from "./icons.js";
 import { localizedLevel, tr } from "../core/i18n.js";
 

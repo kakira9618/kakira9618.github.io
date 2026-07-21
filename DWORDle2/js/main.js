@@ -7,18 +7,18 @@ import { getSettings, onSettingsChange } from "./core/settings.js";
 import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js";
 import { syncDocumentLanguage } from "./core/i18n.js";
 import { reconcileAchievementsOnce } from "./core/achievements.js?v=20260721-runtime";
-import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "./ui/game-screen.js?v=20260721-runtime";
-import { achievementToast, bgmUnlockCelebration } from "./ui/toast.js";
+import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "./ui/game-screen.js?v=20260721-unlock-dialog";
+import { achievementToast, bgmUnlockCelebration } from "./ui/toast.js?v=20260721-unlock-dialog";
 
 // 画面モジュール（import するだけで registerScreen される）
-import "./ui/title-screen.js?v=20260721-runtime";
-import "./ui/game-screen.js?v=20260721-runtime";
-import "./ui/result-screen.js?v=20260721-runtime";
-import "./ui/history-screen.js?v=20260721-runtime";
-import "./ui/problems-screen.js?v=20260721-runtime";
-import "./ui/achievements-screen.js?v=20260721-runtime";
-import "./ui/analysis-screen.js?v=20260721-runtime";
-import "./ui/settings-screen.js?v=20260721-runtime";
+import "./ui/title-screen.js?v=20260721-unlock-dialog";
+import "./ui/game-screen.js?v=20260721-unlock-dialog";
+import "./ui/result-screen.js?v=20260721-unlock-dialog";
+import "./ui/history-screen.js?v=20260721-unlock-dialog";
+import "./ui/problems-screen.js?v=20260721-unlock-dialog";
+import "./ui/achievements-screen.js?v=20260721-unlock-dialog";
+import "./ui/analysis-screen.js?v=20260721-unlock-dialog";
+import "./ui/settings-screen.js?v=20260721-unlock-dialog";
 
 // 古い Android Chrome は dvh に未対応のため、実際の表示領域を CSS 変数で補う。
 // 対応ブラウザでは CSS 側の 100dvh が優先される。
@@ -83,7 +83,7 @@ if (recoveredAchievements.length) {
     achievementToast(recoveredAchievements);
     const bgmUnlocks = bgmTracksUnlockedBy(recoveredAchievements);
     if (bgmUnlocks.length) {
-      bgmUnlockCelebration(bgmUnlocks, recoveredAchievements.length * 700 + 3400);
+      bgmUnlockCelebration(bgmUnlocks);
     }
   }, 350);
 }

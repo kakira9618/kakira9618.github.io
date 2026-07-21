@@ -7,10 +7,10 @@ import { findGame, MODES } from "../core/records.js";
 import { Logic, CELL } from "../core/logic.js";
 import { pidLabel, isDailyPID } from "../core/problems.js";
 import { playSfx } from "../audio/sound.js";
-import { toast } from "./toast.js";
-import { confirmAndStart } from "./game-screen.js?v=20260721-runtime";
+import { toast } from "./toast.js?v=20260721-unlock-dialog";
+import { confirmAndStart } from "./game-screen.js?v=20260721-unlock-dialog";
 import { icon } from "./icons.js";
-import { downloadResultPNG } from "./snapshot.js";
+import { downloadResultPNG } from "./snapshot.js?v=20260721-unlock-dialog";
 import { SHARE_URL } from "../config.js";
 import { tr } from "../core/i18n.js";
 import { rowAriaLabel } from "./a11y.js";
@@ -94,14 +94,39 @@ function render(args) {
 
   // 答えを判定グリッドと同じ寸法・位置の 2 x 5 タイルで表示。
   // ラベルと印はタイル列の外に絶対配置し、有無で行がずれないようにする。
-  const answerRow = (no, word) =>
-    el(
+  const answerRow = (no, word) => {
+    const matched = cleared && lastWord === word;
+    return el(
       "div",
-      { class: "answer-row", role: "img", "aria-label": `Word ${no}: ${word.toUpperCase()}` },
-      el("span", { class: "alabel" }, `Word ${no}`),
-      word.split("").map((c) => el("span", { class: "rcell htile", "aria-hidden": "true" }, c)),
-      el("span", { class: "amark" }, lastWord === word ? tr("◀ あなたの答え!", "◀ Your answer!") : "")
+      {
+        class: "answer-row",
+        role: "img",
+        "aria-label": tr(
+          `Word ${no}: ${word.toUpperCase()}${matched ? "、あなたが当てた答え" : ""}`,
+          `Word ${no}: ${word.toUpperCase()}${matched ? ", your answer" : ""}`
+        ),
+      },
+      el(
+        "span",
+        { class: "answer-label-group", "aria-hidden": "true" },
+        el(
+          "span",
+          { class: "guess-flag-slot" },
+          matched
+            ? el(
+                "span",
+                { class: "guess-flag" },
+                el("span", { class: "guess-flag-pole" }),
+                el("span", { class: "guess-flag-base" }),
+                el("span", { class: "guess-flag-cloth" })
+              )
+            : null
+        ),
+        el("span", { class: "alabel" }, `Word ${no}`)
+      ),
+      word.split("").map((c) => el("span", { class: "rcell htile", "aria-hidden": "true" }, c))
     );
+  };
 
   const grid = el(
     "div",

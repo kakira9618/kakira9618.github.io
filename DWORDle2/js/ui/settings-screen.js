@@ -9,10 +9,10 @@ import { exportJSON } from "../core/records.js";
 import { removeKey } from "../core/store.js";
 import { getUnlocked } from "../core/achievements.js?v=20260721-runtime";
 import { BGM_TRACKS, playSfx } from "../audio/sound.js";
-import { toast } from "./toast.js";
+import { toast } from "./toast.js?v=20260721-unlock-dialog";
 import { showModal, confirmModal } from "./modal.js";
 import { icon } from "./icons.js";
-import { finishHistoryImport } from "./history-import.js";
+import { finishHistoryImport } from "./history-import.js?v=20260721-unlock-dialog";
 import { APP_VERSION } from "../config.js";
 import { currentLanguage, isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js";
 
