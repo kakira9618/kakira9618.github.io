@@ -73,7 +73,7 @@ const ACHIEVEMENT_EN = {
   "daily-30": ["Daily Regular", "Clear 30 Daily puzzles total"],
   "plays-300": ["Board Resident", "Finish 300 games total"],
   "guesses-1000": ["A Thousand Words", "Make 1,000 Guesses total"],
-  "uso-20": ["Lie Buster", "Win 20 DWORDlie games"],
+  "uso-20": ["Lie Detector", "Win 20 DWORDlie games"],
   analyst: ["Analyst", "Use Analysis mode"],
   migrator: ["Move Complete", "Import play history from the original games"],
   collector: ["Achievement Hunter", "Unlock 15 achievements"],

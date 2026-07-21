@@ -238,7 +238,7 @@ assert.equal(
     clearRecord({ mode: "uso", pid: index + 1, startTime: 1_700_000_000 + index * 100 })
   );
   const ids = achievementIdsFromHistory(usoWins);
-  assert(ids.has("uso-20"), "20 DWORDlie wins should restore Lie Buster");
+  assert(ids.has("uso-20"), "20 DWORDlie wins should restore Lie Detector");
   assert(!achievementIdsFromHistory(usoWins.slice(0, 19)).has("uso-20"));
 }
 
