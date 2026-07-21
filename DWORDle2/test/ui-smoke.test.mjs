@@ -871,6 +871,47 @@ try {
     await usoUnlockContext.close();
   }
 
+  // 履歴インポートは機能の鍵（メニュー段階解放）に影響しない。
+  // 「実績も解除する」チェックが ON のままでも、鍵は実プレイ回数のみで開く。
+  const importLockContext = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
+  const importLockPage = await importLockContext.newPage();
+  try {
+    await importLockPage.addInitScript(() => {
+      localStorage.setItem("dwordle2.tutorialSeen", "true");
+      localStorage.setItem("tonyu-legacy-history", JSON.stringify({
+        version: 1,
+        1700000100: { startTime: 1700000100, endTime: 1700000130, gameMode: "normal", problemID: 2, guessWord: ["point"], complete: true },
+        1700000200: { startTime: 1700000200, endTime: 1700000230, gameMode: "normal", problemID: 3, guessWord: ["about"], complete: true },
+      }));
+    });
+    await importLockPage.goto(baseUrl, { waitUntil: "networkidle" });
+    const importLockDialog = importLockPage.getByRole("dialog", { name: "旧作のプレイ履歴が見つかりました" });
+    await importLockDialog.waitFor();
+    assert.equal(
+      await importLockDialog.getByRole("checkbox").isChecked(),
+      true,
+      "the achievements checkbox should default to ON"
+    );
+    await importLockDialog.getByRole("button", { name: "インポート" }).click();
+    await importLockPage.locator("#toast-layer .toast").filter({ hasText: "件のプレイ履歴をマージしました" }).waitFor();
+
+    // 2 件インポートしても、メニューの鍵は 1 つも開かない
+    await importLockPage.getByRole("button", { name: "ランダム（難しさを選択）（あと1回プレイで解放）", exact: true }).waitFor();
+    await importLockPage.getByRole("button", { name: "裏モード（あと2回プレイで解放）", exact: true }).waitFor();
+    assert.equal(
+      await importLockPage.getByRole("dialog", { name: "裏モード解放！" }).count(),
+      0,
+      "importing history must not open the DWORDlie unlock modal"
+    );
+    assert.equal(
+      await importLockPage.evaluate(() => JSON.parse(localStorage.getItem("dwordle2.playCount") ?? "null")),
+      0,
+      "imported records must not increase the menu unlock play count"
+    );
+  } finally {
+    await importLockContext.close();
+  }
+
   console.log("UIスモーク + a11yテスト: OK");
 } finally {
   await browser.close();
