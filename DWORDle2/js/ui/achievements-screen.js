@@ -2,11 +2,11 @@
 // ルート: #/achievements
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260722-review-fixes";
-import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, getUnlocked } from "../core/achievements.js?v=20260722-review-fixes";
-import { playSfx } from "../audio/sound.js?v=20260722-review-fixes";
+import { registerScreen, navigate } from "./app.js?v=20260722-classic-baroque";
+import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, getUnlocked } from "../core/achievements.js?v=20260722-classic-baroque";
+import { playSfx } from "../audio/sound.js?v=20260722-classic-baroque";
 import { icon } from "./icons.js";
-import { localizedAchievement, tr } from "../core/i18n.js?v=20260722-review-fixes";
+import { localizedAchievement, tr } from "../core/i18n.js?v=20260722-classic-baroque";
 
 let root = null;
 
@@ -72,6 +72,14 @@ function render() {
         el("div", { class: "bar-fill", style: { width: `${(100 * count) / ACHIEVEMENTS.length}%` } })
       ),
       el("span", { class: "bar-value" }, `${Math.round((100 * count) / ACHIEVEMENTS.length)}%`)
+    ),
+    el(
+      "p",
+      { class: "card hint achievement-count-note" },
+      tr(
+        "カウント系実績では、同じ日に同じ問題 No. を複数回プレイした場合、モードを問わず最初の 1 回だけを数えます。同日の別問題と、別日の同じ問題はそれぞれ数えます。",
+        "For count-based achievements, only the first play of the same puzzle number on the same day counts, regardless of mode. A different puzzle on that day or the same puzzle on another day counts separately."
+      )
     )
   );
   // 通常実績はカテゴリごとに見出し + 解放数を付けて並べる

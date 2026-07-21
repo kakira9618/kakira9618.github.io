@@ -19,7 +19,7 @@
 
 import { loadJSON, saveJSON, onExternalChange } from "./store.js";
 import { isDailyPID, PID } from "./problems.js";
-import { totalWins, totalPlays, currentWinStreak, dailyClearStreak, getHistory } from "./records.js";
+import { getHistory } from "./records.js";
 import { CELL, Logic } from "./logic.js";
 import { isDebugMode } from "./debug.js";
 
@@ -248,6 +248,54 @@ function completedAtSec(record) {
   return Number.isFinite(startTime) && startTime > 0 ? startTime : null;
 }
 
+function localDayKey(record) {
+  const at = completedAtSec(record);
+  if (at === null) return null;
+  const date = new Date(at * 1000);
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
+// カウント系実績では、同じローカル日付・問題 No. の再プレイをモードを問わず除外する。
+// 日付や問題 No. を判定できない移行レコードは、誤ってまとめないよう個別に数える。
+export function achievementCountableRecords(records) {
+  const seen = new Set();
+  return records
+    .filter((record) => Array.isArray(record?.guessWord) && record.guessWord.length > 0)
+    .slice()
+    .sort((a, b) => Number(a.startTime) - Number(b.startTime))
+    .filter((record) => {
+      const day = localDayKey(record);
+      const pid = record.problemID;
+      if (day === null || pid === null || pid === undefined || pid === "") return true;
+      const key = `${day}:${pid}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+function countedWins(records, mode = null) {
+  return achievementCountableRecords(records)
+    .filter((record) => (!mode || record.gameMode === mode) && record.clear)
+    .length;
+}
+
+function countedCurrentWinStreak(records, mode) {
+  let streak = 0;
+  const games = achievementCountableRecords(records)
+    .filter((record) => record.gameMode === mode)
+    .reverse();
+  for (const game of games) {
+    if (!game.clear) break;
+    streak++;
+  }
+  return streak;
+}
+
 // 日付・カレンダー系と通算回数系の実績をまとめて判定する。
 // ゲーム終了時（履歴に現在のレコードを追加した後）と履歴復元の両方から使う。
 function calendarAndCountIds(records) {
@@ -260,7 +308,22 @@ function calendarAndCountIds(records) {
   let wins = 0;
   let guessTotal = 0;
   let usoWins = 0;
+
+  // 日時そのものが条件の実績は、カウント対象外の再プレイでも判定する。
   for (const record of records) {
+    if (!record?.clear || !Array.isArray(record.guessWord) || record.guessWord.length === 0) continue;
+    const at = completedAtSec(record);
+    if (at === null) continue;
+    const date = new Date(at * 1000);
+    clearedWeekdays.add(date.getDay());
+    const hour = date.getHours();
+    if (hour >= 5 && hour < 8) ids.add("early-bird");
+    if (date.getMonth() === 0 && date.getDate() === 1) ids.add("new-year");
+    if (date.getMonth() === 11 && date.getDate() === 25) ids.add("christmas");
+  }
+
+  const countableRecords = achievementCountableRecords(records);
+  for (const record of countableRecords) {
     if (!Array.isArray(record?.guessWord) || record.guessWord.length === 0) continue;
     games++;
     guessTotal += record.guessWord.length;
@@ -273,11 +336,6 @@ function calendarAndCountIds(records) {
     if (isDailyPID(record.problemID)) dailyClearPids.push(record.problemID);
     if (!date) continue;
     winsPerDay.set(date.toDateString(), (winsPerDay.get(date.toDateString()) ?? 0) + 1);
-    clearedWeekdays.add(date.getDay());
-    const hour = date.getHours();
-    if (hour >= 5 && hour < 8) ids.add("early-bird");
-    if (date.getMonth() === 0 && date.getDate() === 1) ids.add("new-year");
-    if (date.getMonth() === 11 && date.getDate() === 25) ids.add("christmas");
   }
   if (clearedWeekdays.has(0) && clearedWeekdays.has(6)) ids.add("weekend");
   if ([...winsPerDay.values()].some((dayWins) => dayWins >= 5)) ids.add("same-day-5");
@@ -314,10 +372,12 @@ export function achievementIdsFromHistory(records) {
     .sort((a, b) => a.startTime - b.startTime);
   const ids = new Set();
   if (games.length === 0) return ids;
+  const countableGames = achievementCountableRecords(games);
+  const countableGameSet = new Set(countableGames);
 
   ids.add("first-play");
   if (games.some((record) => record.imported)) ids.add("migrator");
-  if (games.length >= 100) ids.add("plays-100");
+  if (countableGames.length >= 100) ids.add("plays-100");
 
   const words = new Set();
   const dailyClears = [];
@@ -331,9 +391,10 @@ export function achievementIdsFromHistory(records) {
     const pid = record.problemID;
     const guesses = record.guessWord.length;
     const cleared = Boolean(record.clear);
+    const countable = countableGameSet.has(record);
     const problemKey = `${mode}:${pid}`;
     const lettersUsed = new Set(record.guessWord.join(""));
-    record.guessWord.forEach((word) => words.add(word));
+    if (countable) record.guessWord.forEach((word) => words.add(word));
 
     let logic = null;
     let results = [];
@@ -371,19 +432,19 @@ export function achievementIdsFromHistory(records) {
 
     if (!cleared) {
       lostProblems.add(problemKey);
-      winStreak[mode] = 0;
+      if (countable) winStreak[mode] = 0;
       continue;
     }
 
     ids.add("first-clear");
-    wins++;
+    if (countable) wins++;
     if (mode === "uso") {
-      usoWins++;
+      if (countable) usoWins++;
       ids.add("uso-clear");
     }
     if (isDailyPID(pid)) {
       ids.add("daily-clear");
-      dailyClears.push(pid);
+      if (countable) dailyClears.push(pid);
     }
     if (mode === "normal" && pid >= PID.HARD_MIN && pid <= PID.HARD_MAX) {
       ids.add("extreme-clear");
@@ -422,10 +483,12 @@ export function achievementIdsFromHistory(records) {
     if (isGuessWordChain(record.guessWord)) ids.add("h-alphabet");
     if (guesses >= 3 && lettersUsed.size === guesses * 5) ids.add("h-noreuse");
 
-    winStreak[mode]++;
-    if (winStreak[mode] >= 3) ids.add("streak-3");
-    if (winStreak[mode] >= 5) ids.add("streak-5");
-    if (winStreak[mode] >= 10) ids.add("streak-10");
+    if (countable) {
+      winStreak[mode]++;
+      if (winStreak[mode] >= 3) ids.add("streak-3");
+      if (winStreak[mode] >= 5) ids.add("streak-5");
+      if (winStreak[mode] >= 10) ids.add("streak-10");
+    }
   }
 
   if (wins >= 10) ids.add("wins-10");
@@ -433,7 +496,7 @@ export function achievementIdsFromHistory(records) {
   if (wins >= 100) ids.add("wins-100");
   if (usoWins >= 5) ids.add("uso-5");
   if (words.size >= 1000) ids.add("h-lexicon");
-  if (clearedZoromeCount(games) >= 10) ids.add("h-zorome");
+  if (clearedZoromeCount(countableGames) >= 10) ids.add("h-zorome");
   if (maxHistoricalDailyStreak(dailyClears) >= 7) ids.add("daily-7");
   for (const id of calendarAndCountIds(games)) ids.add(id);
   return ids;
@@ -463,9 +526,11 @@ export function checkOnGameFinish(ctx) {
   const isUso = record.gameMode === "uso";
   const guesses = record.guessWord.length;
   const logic = new Logic(pid);
+  const history = getHistory();
+  const countableHistory = achievementCountableRecords(history);
 
   unlock("first-play", newly);
-  if (totalPlays() >= 100) unlock("plays-100", newly);
+  if (countableHistory.length >= 100) unlock("plays-100", newly);
 
   // 盤面の模様（勝敗に関係なく判定）
   for (let t = 0; t < results.length; t++) {
@@ -496,7 +561,7 @@ export function checkOnGameFinish(ctx) {
   // 隠し: 通算 1000 種類の単語（全モード・移行分も含む）
   {
     const words = new Set();
-    for (const g of getHistory()) for (const w of g.guessWord) words.add(w);
+    for (const g of countableHistory) for (const w of g.guessWord) words.add(w);
     if (words.size >= 1000) unlock("h-lexicon", newly);
   }
 
@@ -507,7 +572,7 @@ export function checkOnGameFinish(ctx) {
     if (!isUso && pid >= PID.LEVEL_MIN && pid <= PID.LEVEL_MAX) unlock("level-clear", newly);
     if (isUso) {
       unlock("uso-clear", newly);
-      if (totalWins("uso") >= 5) unlock("uso-5", newly);
+      if (countedWins(history, "uso") >= 5) unlock("uso-5", newly);
     }
 
     if (guesses === 1) unlock("one-shot", newly);
@@ -524,20 +589,23 @@ export function checkOnGameFinish(ctx) {
     if (durationSec >= 600) unlock("slow-10", newly);
     const h = endDate.getHours();
     if (h >= 0 && h < 4) unlock("night-owl", newly);
-    if (dailyClearStreak() >= 7) unlock("daily-7", newly);
+    const dailyClearPids = countableHistory
+      .filter((game) => game.clear && isDailyPID(game.problemID))
+      .map((game) => game.problemID);
+    if (maxHistoricalDailyStreak(dailyClearPids) >= 7) unlock("daily-7", newly);
 
-    const streak = currentWinStreak(record.gameMode);
+    const streak = countedCurrentWinStreak(history, record.gameMode);
     if (streak >= 3) unlock("streak-3", newly);
     if (streak >= 5) unlock("streak-5", newly);
     if (streak >= 10) unlock("streak-10", newly);
 
-    const wins = totalWins();
+    const wins = countedWins(history);
     if (wins >= 10) unlock("wins-10", newly);
     if (wins >= 50) unlock("wins-50", newly);
     if (wins >= 100) unlock("wins-100", newly);
 
     // 隠し（クリア時のみ）
-    if (clearedZoromeCount(getHistory()) >= 10) unlock("h-zorome", newly);
+    if (clearedZoromeCount(countableHistory) >= 10) unlock("h-zorome", newly);
     if (isGuessWordChain(record.guessWord)) unlock("h-alphabet", newly);
     if (!isUso && pid >= PID.HARD_MIN && pid <= PID.HARD_MAX && guesses <= 4) unlock("h-abyss", newly);
     if (guesses >= 3 && durationSec <= 10) unlock("h-lightning", newly);

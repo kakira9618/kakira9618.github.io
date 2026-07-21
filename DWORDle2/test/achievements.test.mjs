@@ -1,5 +1,10 @@
 import assert from "node:assert/strict";
-import { ACHIEVEMENTS, COLLECTOR_REQUIREMENT, achievementIdsFromHistory } from "../js/core/achievements.js";
+import {
+  ACHIEVEMENTS,
+  COLLECTOR_REQUIREMENT,
+  achievementCountableRecords,
+  achievementIdsFromHistory,
+} from "../js/core/achievements.js";
 import { Logic, queryWordPair } from "../js/core/logic.js";
 
 function clearRecord({
@@ -123,7 +128,7 @@ assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "h-play-days-
 
 {
   const games = Array.from({ length: 5 }, (_, index) =>
-    clearRecord({ mode: "uso", startTime: 1_700_000_000 + index * 100 })
+    clearRecord({ mode: "uso", pid: index + 1, startTime: 1_700_000_000 + index * 100 })
   );
   const ids = achievementIdsFromHistory(games);
   assert(ids.has("uso-clear"));
@@ -190,6 +195,64 @@ assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "h-play-days-
   );
   assert(achievementIdsFromHistory(sameDayWins).has("same-day-5"), "5 wins in one day should restore On Fire Today");
   assert(!achievementIdsFromHistory(sameDayWins.slice(0, 4)).has("same-day-5"));
+}
+
+{
+  const base = Math.floor(new Date(2026, 6, 20, 12, 0, 0).getTime() / 1000);
+  const records = [
+    clearRecord({ pid: 1, mode: "normal", startTime: base }),
+    clearRecord({ pid: 1, mode: "normal", startTime: base + 600 }), // 同日・同問題の再プレイ
+    clearRecord({ pid: 2, mode: "normal", startTime: base + 1200 }), // 同日の別問題
+    clearRecord({ pid: 1, mode: "uso", startTime: base + 1800 }), // 同日・同 No. の別モードも再プレイ
+    clearRecord({ pid: 1, mode: "normal", startTime: base + 86400 }), // 別日の同問題
+  ];
+  assert.deepEqual(
+    achievementCountableRecords(records),
+    [records[0], records[2], records[4]],
+    "replays of the same puzzle number on the same local day should be excluded regardless of mode"
+  );
+}
+
+{
+  const base = Math.floor(new Date(2026, 6, 20, 12, 0, 0).getTime() / 1000);
+  const samePuzzleWins = Array.from({ length: 5 }, (_, index) =>
+    clearRecord({ pid: 1, startTime: base + index * 600 })
+  );
+  const ids = achievementIdsFromHistory(samePuzzleWins);
+  assert(!ids.has("same-day-5"), "replaying one puzzle five times in a day must not restore On Fire Today");
+  assert(!ids.has("streak-3"), "same-day replays of one puzzle must not build a win streak");
+}
+
+{
+  const base = Math.floor(new Date(2026, 6, 20, 12, 0, 0).getTime() / 1000);
+  const uniqueGames = Array.from({ length: 29 }, (_, index) =>
+    clearRecord({ pid: index + 1, guesses: 10, startTime: base + index * 60 })
+  );
+  const duplicate = clearRecord({ pid: 1, guesses: 10, startTime: base + 3600 });
+  const idsWithDuplicate = achievementIdsFromHistory([...uniqueGames, duplicate]);
+  assert(!idsWithDuplicate.has("plays-30"), "a same-day replay must not reach the 30-play achievement");
+
+  const nextDay = clearRecord({ pid: 1, guesses: 10, startTime: base + 86400 });
+  assert(
+    achievementIdsFromHistory([...uniqueGames, duplicate, nextDay]).has("plays-30"),
+    "the same puzzle on another day should count toward cumulative achievements"
+  );
+}
+
+{
+  const base = Math.floor(new Date(2026, 6, 20, 12, 0, 0).getTime() / 1000);
+  const uniqueGames = Array.from({ length: 99 }, (_, index) =>
+    clearRecord({ pid: index + 1, guesses: 10, startTime: base + index * 60 })
+  );
+  const duplicate = clearRecord({ pid: 1, guesses: 10, startTime: base + 7200 });
+  const duplicateIds = achievementIdsFromHistory([...uniqueGames, duplicate]);
+  assert(!duplicateIds.has("plays-100"), "an excluded replay must not count as the 100th play");
+  assert(!duplicateIds.has("guesses-1000"), "Guesses from an excluded replay must not reach the 1000-Guess achievement");
+
+  const nextDay = clearRecord({ pid: 1, guesses: 10, startTime: base + 86400 });
+  const nextDayIds = achievementIdsFromHistory([...uniqueGames, duplicate, nextDay]);
+  assert(nextDayIds.has("plays-100"));
+  assert(nextDayIds.has("guesses-1000"));
 }
 
 {
@@ -268,9 +331,9 @@ assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "h-play-days-
 }
 
 {
-  // 通算プレイ回数の隠し実績（同日に集中していても回数は積み上がる）
+  // 通算プレイ回数の隠し実績（同日でも別問題なら回数は積み上がる）
   const marathon = Array.from({ length: 5000 }, (_, index) =>
-    clearRecord({ pid: (index % 5) + 1, guesses: 1, startTime: 1_700_000_000 + index * 3600 })
+    clearRecord({ pid: index + 1, guesses: 1, startTime: 1_700_000_000 + index * 30 })
   );
   const ids = achievementIdsFromHistory(marathon);
   assert(ids.has("h-plays-5000"), "5000 games should restore Endless Pursuit");
@@ -304,7 +367,7 @@ assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "h-play-days-
 
 {
   const usoMarathon = Array.from({ length: 800 }, (_, index) =>
-    clearRecord({ mode: "uso", pid: (index % 5) + 1, guesses: 1, startTime: 1_700_000_000 + index * 3600 })
+    clearRecord({ mode: "uso", pid: index + 1, guesses: 1, startTime: 1_700_000_000 + index * 30 })
   );
   const ids = achievementIdsFromHistory(usoMarathon);
   assert(ids.has("h-uso-800"), "800 DWORDlie wins should restore Eight Hundred Lies");
@@ -314,7 +377,7 @@ assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "h-play-days-
 {
   // 10 手 × 100 ゲームで 1000 Guess
   const grind = Array.from({ length: 100 }, (_, index) =>
-    clearRecord({ pid: (index % 5) + 1, guesses: 10, startTime: 1_700_000_000 + index * 3600 })
+    clearRecord({ pid: index + 1, guesses: 10, startTime: 1_700_000_000 + index * 60 })
   );
   const ids = achievementIdsFromHistory(grind);
   assert(ids.has("guesses-1000"), "1000 total Guesses should restore A Thousand Words");
@@ -328,7 +391,7 @@ assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "h-play-days-
 {
   // 10 手 × 300 ゲームで 3000 Guess
   const bigGrind = Array.from({ length: 300 }, (_, index) =>
-    clearRecord({ pid: (index % 5) + 1, guesses: 10, startTime: 1_700_000_000 + index * 3600 })
+    clearRecord({ pid: index + 1, guesses: 10, startTime: 1_700_000_000 + index * 60 })
   );
   const ids = achievementIdsFromHistory(bigGrind);
   assert(ids.has("plays-300"));

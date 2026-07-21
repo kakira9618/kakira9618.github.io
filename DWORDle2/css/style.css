@@ -469,6 +469,17 @@ body.mode-uso .uso-banner {
   gap: 10px;
   width: min(320px, 82vw);
 }
+.continue-label {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.3;
+}
+.continue-label-detail {
+  font-size: 0.82em;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
 .title-nav {
   display: grid;
   grid-template-columns: 1fr 1fr;

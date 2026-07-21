@@ -175,6 +175,47 @@ function rainbowWord(logic) {
   assert.ok(!ids.has("streak-5"), "3 連勝で streak-5 は解放されないはず");
 }
 
+// ---- 同日・同問題の再プレイはカウント系実績から除外 ----
+{
+  const base = Math.floor(new Date(2026, 6, 20, 12, 0, 0).getTime() / 1000);
+  const prior = [1, 2, 3, 4].map((pid, index) =>
+    finishGameCtx({
+      pid,
+      mode: "uso",
+      guessWords: [new Logic(pid).ans1],
+      startTime: base + index * 600,
+    }).record
+  );
+  const replay = finishGameCtx({
+    pid: 1,
+    mode: "uso",
+    guessWords: [new Logic(1).ans1],
+    startTime: base + 3600,
+  });
+  const replayIds = idsOf((await scenario([...prior, replay.record]))(replay));
+  assert.ok(replayIds.has("uso-clear"), "a per-game achievement should still be checked on a replay");
+  assert.ok(!replayIds.has("uso-5"), "a same-day replay must not count as the fifth DWORDlie win");
+
+  const nextDay = finishGameCtx({
+    pid: 1,
+    mode: "uso",
+    guessWords: [new Logic(1).ans1],
+    startTime: base + 86400,
+  });
+  const nextDayIds = idsOf((await scenario([...prior, nextDay.record]))(nextDay));
+  assert.ok(nextDayIds.has("uso-5"), "the same puzzle on another day should count as the fifth DWORDlie win");
+}
+
+{
+  const base = Math.floor(new Date(2026, 6, 20, 12, 0, 0).getTime() / 1000);
+  const prior = [1, 2].map((pid, index) =>
+    finishGameCtx({ pid, guessWords: [new Logic(pid).ans1], startTime: base + index * 600 }).record
+  );
+  const replay = finishGameCtx({ pid: 1, guessWords: [new Logic(1).ans1], startTime: base + 1800 });
+  const ids = idsOf((await scenario([...prior, replay.record]))(replay));
+  assert.ok(!ids.has("streak-3"), "a same-day replay must not extend the counted win streak");
+}
+
 // ---- デイリー問題のクリア ----
 {
   const pid = 20260720;

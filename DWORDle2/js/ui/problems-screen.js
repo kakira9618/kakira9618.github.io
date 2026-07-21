@@ -4,15 +4,15 @@
 // ルート: #/problems
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate, getAppMode } from "./app.js?v=20260722-review-fixes";
+import { registerScreen, navigate, getAppMode } from "./app.js?v=20260722-classic-baroque";
 import { buildProblemStatus, MODES } from "../core/records.js";
 import { LEVELS, isValidPID, pidLabel } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260722-review-fixes";
-import { showModal } from "./modal.js?v=20260722-review-fixes";
-import { confirmAndStart } from "./game-screen.js?v=20260722-review-fixes";
-import { toast } from "./toast.js?v=20260722-review-fixes";
+import { playSfx } from "../audio/sound.js?v=20260722-classic-baroque";
+import { showModal } from "./modal.js?v=20260722-classic-baroque";
+import { confirmAndStart } from "./game-screen.js?v=20260722-classic-baroque";
+import { toast } from "./toast.js?v=20260722-classic-baroque";
 import { icon } from "./icons.js";
-import { localizedLevel, tr } from "../core/i18n.js?v=20260722-review-fixes";
+import { localizedLevel, tr } from "../core/i18n.js?v=20260722-classic-baroque";
 
 const BLOCK_SIZE = 100;
 

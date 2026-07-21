@@ -1,6 +1,6 @@
 // UI language helpers. The stored setting is the single source of truth.
 
-import { getSettings } from "./settings.js?v=20260722-review-fixes";
+import { getSettings } from "./settings.js?v=20260722-classic-baroque";
 
 export function currentLanguage() {
   return getSettings().language === "en" ? "en" : "ja";

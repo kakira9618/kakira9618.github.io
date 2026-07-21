@@ -147,6 +147,25 @@ try {
   assert.equal(publicEntry.manifest, "manifest.webmanifest");
   assert.deepEqual(publicEntry.statuses, [200, 200, 200], "Public metadata assets should be served");
 
+  await page.evaluate(() => {
+    localStorage.setItem("dwordle2.current.normal", JSON.stringify({
+      startTime: 1_700_000_000,
+      gameMode: "normal",
+      problemID: 20260722,
+      guessWord: ["about", "other", "pouch"],
+    }));
+  });
+  await page.reload({ waitUntil: "networkidle" });
+  const continueButton = page.getByRole("button", { name: /つづきから.*Daily 2026-07-22・3手/ });
+  await continueButton.waitFor();
+  assert.deepEqual(
+    await continueButton.locator(".continue-label > span").allTextContents(),
+    ["つづきから", "（Daily 2026-07-22・3手）"],
+    "the Continue label and progress details should render on separate lines"
+  );
+  await page.evaluate(() => localStorage.removeItem("dwordle2.current.normal"));
+  await page.reload({ waitUntil: "networkidle" });
+
   await page.getByRole("button", { name: "設定" }).click();
   await page.waitForURL(/#\/settings$/);
   const switches = page.getByRole("switch");
@@ -186,7 +205,7 @@ try {
   assert.equal(normalPopVisuals.choiceColor, "rgb(74, 53, 80)");
 
   await page.evaluate(async () => {
-    const { setAppMode } = await import("./js/ui/app.js?v=20260722-review-fixes");
+    const { setAppMode } = await import("./js/ui/app.js?v=20260722-classic-baroque");
     setAppMode("uso");
   });
   await page.locator("body.theme-pop.mode-uso").waitFor();
@@ -223,12 +242,12 @@ try {
   await page.waitForURL(/#\/settings$/);
 
   await page.evaluate(async () => {
-    const { setAppMode } = await import("./js/ui/app.js?v=20260722-review-fixes");
+    const { setAppMode } = await import("./js/ui/app.js?v=20260722-classic-baroque");
     setAppMode("normal");
   });
   await page.locator("body.theme-pop.mode-normal").waitFor();
   await page.evaluate(async () => {
-    const { showHelpModal } = await import("./js/ui/help.js?v=20260722-review-fixes");
+    const { showHelpModal } = await import("./js/ui/help.js?v=20260722-classic-baroque");
     showHelpModal("normal");
   });
   const popHelp = page.getByRole("dialog", { name: "DWORDle 遊び方" });
@@ -361,6 +380,7 @@ try {
   await page.evaluate(() => { location.hash = "#/achievements"; });
   await page.waitForURL(/#\/achievements$/);
   await page.getByRole("heading", { name: "実績" }).waitFor();
+  await page.getByText("同じ日に同じ問題 No. を複数回プレイした場合、モードを問わず最初の 1 回だけを数えます", { exact: false }).waitFor();
   await assertNoSeriousA11yViolations("Achievements screen");
 
   await page.goto(resultUrl, { waitUntil: "networkidle" });
@@ -426,13 +446,13 @@ try {
   );
   await shortPage.waitForTimeout(50);
   const flightsBeforeLeave = await shortPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260722-review-fixes")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260722-classic-baroque")).activeTileFlightCount()
   );
   assert.ok(flightsBeforeLeave > 0, "Tile gather animation should be active before leaving the game");
   await shortPage.getByRole("button", { name: "タイトルへ戻る" }).click();
   await shortPage.waitForURL(/#\/$/);
   const flightsAfterLeave = await shortPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260722-review-fixes")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260722-classic-baroque")).activeTileFlightCount()
   );
   assert.equal(flightsAfterLeave, 0, "Tile gather animation should be removed when leaving the game");
   await shortPage.close();
@@ -474,13 +494,13 @@ try {
   await reducedDialog.getByRole("button", { name: "スタート" }).click();
   await reducedPage.locator("#screen-game.active .row").last().waitFor();
   const reducedFlights = await reducedPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260722-review-fixes")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260722-classic-baroque")).activeTileFlightCount()
   );
   assert.equal(reducedFlights, 0, "Reduced motion should suppress tile gather flights");
   await reducedContext.close();
 
   await page.evaluate(async () => {
-    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260722-review-fixes");
+    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260722-classic-baroque");
     bgmUnlockCelebration([
       { id: "queue-test-a", name: "Queue Test A", desc: "First unlock" },
       { id: "queue-test-b", name: "Queue Test B", desc: "Second unlock" },
@@ -513,7 +533,7 @@ try {
 
   // 実績解放セレブレーション: 単発は大型カード、3 個以上は 1 枚にまとめる
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-review-fixes");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-classic-baroque");
     achievementCelebration([
       { id: "smoke-single", icon: "trophy", color: "#ffd166", name: "スモーク実績", desc: "テスト用の実績です" },
     ]);
@@ -531,7 +551,7 @@ try {
   await page.locator(".ach-unlock").waitFor({ state: "detached" });
 
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-review-fixes");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-classic-baroque");
     achievementCelebration([
       { id: "smoke-a", icon: "star", color: "#ffd166", name: "実績A", desc: "" },
       { id: "smoke-b", icon: "gem", color: "#7ee8ff", name: "実績B", desc: "" },
@@ -553,7 +573,7 @@ try {
 
   // リストが溢れるときは下端フェードで続きを示し、最下部まで送るとフェードが消える
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-review-fixes");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-classic-baroque");
     achievementCelebration(
       Array.from({ length: 9 }, (_, i) => ({ id: `smoke-many-${i}`, icon: "star", color: "#ffd166", name: `実績${i + 1}`, desc: "" }))
     );
@@ -590,7 +610,7 @@ try {
   // 判定オープン中の先行入力: 次の 1 行分をバッファし、オープン完了後に自動で確定する
   await page.getByRole("dialog", { name: "基本ルール | DWORDle" }).getByRole("button", { name: "わかった" }).click();
   await page.evaluate(async () => {
-    const { setSetting } = await import("./js/core/settings.js?v=20260722-review-fixes");
+    const { setSetting } = await import("./js/core/settings.js?v=20260722-classic-baroque");
     setSetting("theme", "classic");
     setSetting("sfx", false);
     setSetting("bgm", false);
@@ -691,6 +711,7 @@ try {
     await freshPage.evaluate(() => { location.hash = "#/achievements"; });
     await freshPage.waitForURL(/#\/achievements$/);
     await freshPage.locator("#screen-achievements .header .sub").filter({ hasText: `${ACHIEVEMENTS.length} / ${ACHIEVEMENTS.length}` }).waitFor();
+    await freshPage.getByText("only the first play of the same puzzle number on the same day counts, regardless of mode", { exact: false }).waitFor();
 
     await freshPage.reload({ waitUntil: "networkidle" });
     await freshPage.locator("#screen-achievements .header .sub").filter({ hasText: `0 / ${ACHIEVEMENTS.length}` }).waitFor();

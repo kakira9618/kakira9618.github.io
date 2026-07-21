@@ -6,9 +6,9 @@
 // classic テーマでは canvas ごと非表示になり、描画ループも止める。
 
 import * as THREE from "three";
-import { FX } from "../config.js?v=20260722-review-fixes";
-import { getSettings, onSettingsChange } from "../core/settings.js?v=20260722-review-fixes";
-import { onMotionPreferenceChange, shouldReduceMotion } from "../core/motion.js?v=20260722-review-fixes";
+import { FX } from "../config.js?v=20260722-classic-baroque";
+import { getSettings, onSettingsChange } from "../core/settings.js?v=20260722-classic-baroque";
+import { onMotionPreferenceChange, shouldReduceMotion } from "../core/motion.js?v=20260722-classic-baroque";
 
 let renderer = null;
 let scene = null;
@@ -24,20 +24,30 @@ let uso = false;
 let t = 0;
 let failureHandler = () => {};
 
-// 柔らかい円形グラデーションのスプライトテクスチャ
-function makeGlowTexture(size = 128, inner = 0.0) {
-  const cv = document.createElement("canvas");
-  cv.width = cv.height = size;
-  const g = cv.getContext("2d");
-  const grad = g.createRadialGradient(size / 2, size / 2, size * inner, size / 2, size / 2, size / 2);
-  grad.addColorStop(0, "rgba(255,255,255,1)");
-  grad.addColorStop(0.25, "rgba(255,255,255,0.55)");
-  grad.addColorStop(0.6, "rgba(255,255,255,0.12)");
-  grad.addColorStop(1, "rgba(255,255,255,0)");
-  g.fillStyle = grad;
-  g.fillRect(0, 0, size, size);
-  const tex = new THREE.CanvasTexture(cv);
-  tex.colorSpace = THREE.SRGBColorSpace;
+// 柔らかい円形グラデーションのスプライトテクスチャ。
+// canvas の放射グラデーションは 8bit かつ少数ストップの直線補間なので、
+// ストップ位置で減衰の傾きが折れ、α が尽きる半径に段差が出て、
+// 光の届く境界が円としてくっきり見えてしまう（マッハバンド）。
+// half float の DataTexture に (1-r^2)^n を直接書き込み、量子化の段差なく
+// 値も傾きも滑らかに 0 へ落とす（描画後の刻みは実測で最大 1 階調 = 8bit の下限）。
+function makeGlowTexture(size = 128) {
+  const falloffExp = 4; // 大きいほど光の裾が早く消える。4 で裾は半径の 8 割あたりに収まる
+  const data = new Uint16Array(size * size * 4);
+  const one = THREE.DataUtils.toHalfFloat(1);
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const dx = ((x + 0.5) / size) * 2 - 1;
+      const dy = ((y + 0.5) / size) * 2 - 1;
+      const falloff = Math.max(0, 1 - (dx * dx + dy * dy));
+      const i = (y * size + x) * 4;
+      data[i] = data[i + 1] = data[i + 2] = one;
+      data[i + 3] = THREE.DataUtils.toHalfFloat(Math.pow(falloff, falloffExp));
+    }
+  }
+  const tex = new THREE.DataTexture(data, size, size, THREE.RGBAFormat, THREE.HalfFloatType);
+  tex.magFilter = THREE.LinearFilter;
+  tex.minFilter = THREE.LinearFilter;
+  tex.needsUpdate = true;
   return tex;
 }
 

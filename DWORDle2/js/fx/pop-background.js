@@ -8,9 +8,9 @@
 // pop 以外のテーマでは canvas を空にして描画ループも止める。
 // 「演出を軽くする」時はアニメーションを止め、判定済みの静止したラインを 1 回だけ描く。
 
-import { FX } from "../config.js?v=20260722-review-fixes";
-import { getSettings, onSettingsChange } from "../core/settings.js?v=20260722-review-fixes";
-import { onMotionPreferenceChange, shouldReduceMotion } from "../core/motion.js?v=20260722-review-fixes";
+import { FX } from "../config.js?v=20260722-classic-baroque";
+import { getSettings, onSettingsChange } from "../core/settings.js?v=20260722-classic-baroque";
+import { onMotionPreferenceChange, shouldReduceMotion } from "../core/motion.js?v=20260722-classic-baroque";
 
 let canvas = null;
 let ctx = null;
