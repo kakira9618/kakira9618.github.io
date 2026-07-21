@@ -2,18 +2,18 @@
 // 右上のマスクボタンで DWORDlie（裏モード）に切り替わる。
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260722-pop-lines";
+import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260722-habit-ui";
 import { getCurrentGame, getHistory, isAlreadyPlayed } from "../core/records.js";
 import { LEVELS, todayPID, isValidPID, pidLabel, PID } from "../core/problems.js";
 import { getSettings, setSetting } from "../core/settings.js";
 import { loadJSON, saveJSON } from "../core/store.js";
 import { importFromLocalStorage, scanLegacyHistory } from "../core/migrate.js";
 import { playSfx } from "../audio/sound.js";
-import { toast } from "./toast.js?v=20260722-pop-lines";
+import { toast } from "./toast.js?v=20260722-habit-ui";
 import { showModal } from "./modal.js";
-import { finishHistoryImport } from "./history-import.js?v=20260722-pop-lines";
-import { showFirstTutorial, showHelpModal } from "./help.js?v=20260722-pop-lines";
-import { confirmAndStart } from "./game-screen.js?v=20260722-pop-lines";
+import { finishHistoryImport } from "./history-import.js?v=20260722-habit-ui";
+import { showFirstTutorial, showHelpModal } from "./help.js?v=20260722-habit-ui";
+import { confirmAndStart } from "./game-screen.js?v=20260722-habit-ui";
 import { icon } from "./icons.js";
 import { APP_VERSION } from "../config.js";
 import { localizedLevel, tr } from "../core/i18n.js";

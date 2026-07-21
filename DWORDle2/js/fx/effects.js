@@ -29,8 +29,8 @@ function fallBackToClassic(error) {
 export function initEffects() {
   if (initPromise) return initPromise;
   initPromise = Promise.all([
-    import("./background.js?v=20260722-pop-lines"),
-    import("./bursts.js?v=20260722-pop-lines"),
+    import("./background.js?v=20260722-habit-ui"),
+    import("./bursts.js?v=20260722-habit-ui"),
   ])
     .then(([backgroundModule, burstsModule]) => {
       backgroundModule.initBackground(fallBackToClassic);

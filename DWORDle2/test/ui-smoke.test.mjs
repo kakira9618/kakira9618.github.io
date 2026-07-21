@@ -186,7 +186,7 @@ try {
   assert.equal(normalPopVisuals.choiceColor, "rgb(74, 53, 80)");
 
   await page.evaluate(async () => {
-    const { setAppMode } = await import("./js/ui/app.js?v=20260722-pop-lines");
+    const { setAppMode } = await import("./js/ui/app.js?v=20260722-habit-ui");
     setAppMode("uso");
   });
   await page.locator("body.theme-pop.mode-uso").waitFor();
@@ -213,12 +213,12 @@ try {
   await assertNoSeriousA11yViolations("Pop DWORDlie settings");
 
   await page.evaluate(async () => {
-    const { setAppMode } = await import("./js/ui/app.js?v=20260722-pop-lines");
+    const { setAppMode } = await import("./js/ui/app.js?v=20260722-habit-ui");
     setAppMode("normal");
   });
   await page.locator("body.theme-pop.mode-normal").waitFor();
   await page.evaluate(async () => {
-    const { showHelpModal } = await import("./js/ui/help.js?v=20260722-pop-lines");
+    const { showHelpModal } = await import("./js/ui/help.js?v=20260722-habit-ui");
     showHelpModal("normal");
   });
   const popHelp = page.getByRole("dialog", { name: "DWORDle 遊び方" });
@@ -449,7 +449,7 @@ try {
   await reducedContext.close();
 
   await page.evaluate(async () => {
-    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260722-pop-lines");
+    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260722-habit-ui");
     bgmUnlockCelebration([
       { id: "queue-test-a", name: "Queue Test A", desc: "First unlock" },
       { id: "queue-test-b", name: "Queue Test B", desc: "Second unlock" },
@@ -482,7 +482,7 @@ try {
 
   // 実績解放セレブレーション: 単発は大型カード、3 個以上は 1 枚にまとめる
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-pop-lines");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-habit-ui");
     achievementCelebration([
       { id: "smoke-single", icon: "trophy", color: "#ffd166", name: "スモーク実績", desc: "テスト用の実績です" },
     ]);
@@ -500,7 +500,7 @@ try {
   await page.locator(".ach-unlock").waitFor({ state: "detached" });
 
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-pop-lines");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-habit-ui");
     achievementCelebration([
       { id: "smoke-a", icon: "star", color: "#ffd166", name: "実績A", desc: "" },
       { id: "smoke-b", icon: "gem", color: "#7ee8ff", name: "実績B", desc: "" },
@@ -522,7 +522,7 @@ try {
 
   // リストが溢れるときは下端フェードで続きを示し、最下部まで送るとフェードが消える
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-pop-lines");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-habit-ui");
     achievementCelebration(
       Array.from({ length: 9 }, (_, i) => ({ id: `smoke-many-${i}`, icon: "star", color: "#ffd166", name: `実績${i + 1}`, desc: "" }))
     );
