@@ -19,7 +19,7 @@ export const DEFAULT_SETTINGS = {
 export const HIDDEN_THEMES = [
   {
     id: "pop",
-    name: "Pop",
+    name: "ポップ",
     nameEn: "Pop",
     desc: "キャンディみたいにポップで楽しいテーマ",
     descEn: "A fun, candy-bright pop theme",

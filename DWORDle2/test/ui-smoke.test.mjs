@@ -168,9 +168,8 @@ try {
   assert.ok(bgmPickerMetrics.scrollHeight > bgmPickerMetrics.clientHeight, "BGM choices should scroll inside their picker");
   assert.equal(bgmPickerMetrics.overflowY, "auto");
 
-  // 隠しテーマ Pop: 実績「三色盛り」解放済みなので選択でき、body クラスに反映される
-  // BGM 一覧の「Candy Pop」と部分一致しないよう exact 指定でテーマの Pop を選ぶ
-  await page.getByRole("radio", { name: "Pop", exact: true }).click();
+  // 隠しテーマ「ポップ」: 実績「三色盛り」解放済みなので選択でき、body クラスに反映される
+  await page.getByRole("radio", { name: "ポップ", exact: true }).click();
   await page.locator("body.theme-pop").waitFor();
   const normalPopVisuals = await page.evaluate(() => {
     const bodyStyle = getComputedStyle(document.body);
@@ -637,7 +636,7 @@ try {
     await secretDialog.getByLabel("秘密のキーワード").fill("DWORDLER");
     await secretDialog.getByRole("button", { name: "入力" }).click();
     await freshPage.getByText("DEBUG ON", { exact: true }).waitFor();
-    const debugPop = freshPage.getByRole("radiogroup", { name: "テーマ" }).getByRole("radio", { name: "Pop" });
+    const debugPop = freshPage.getByRole("radiogroup", { name: "テーマ" }).getByRole("radio", { name: "ポップ" });
     assert.equal(await debugPop.getAttribute("aria-disabled"), "false", "debug mode should unlock the hidden theme");
     assert.equal(await freshPage.getByRole("radio", { name: "Grand Finale" }).getAttribute("aria-disabled"), "false", "debug mode should unlock hidden BGM");
     await debugPop.click();
