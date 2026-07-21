@@ -320,6 +320,10 @@ body.theme-pop #bgPop {
   font-size: 20px;
   text-shadow: var(--glow);
   white-space: nowrap;
+  /* 幅が足りないときはタイトルだけを縮めて省略し、右端のボタン群をはみ出させない */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .header .spacer {
   flex: 1;
@@ -507,6 +511,25 @@ body.mode-uso .uso-banner {
   color: var(--fg-dim);
   white-space: nowrap;
 }
+/* 施錠中はホバーで光らせない（タップ可能だが実行はできないため） */
+body.theme-cyber .btn.menu-locked:hover,
+body.theme-cyber .icon-btn.menu-locked:hover {
+  box-shadow: none;
+}
+/* 施錠中の項目をタップしたときの拒否リアクション: 本体が横に震え、鍵がガチャガチャ揺れる */
+.locked-shake {
+  animation: locked-shake 0.32s ease;
+}
+.locked-shake > svg {
+  animation: unlock-lock-shake 0.38s ease-in-out;
+}
+@keyframes locked-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  45% { transform: translateX(4px); }
+  70% { transform: translateX(-3px); }
+  90% { transform: translateX(2px); }
+}
 @keyframes unlock-reveal {
   0% {
     opacity: 0;
@@ -575,7 +598,9 @@ body.mode-uso .uso-banner {
 @media (prefers-reduced-motion: reduce) {
   .unlock-reveal,
   .unlock-reveal::after,
-  .unlock-lock {
+  .unlock-lock,
+  .locked-shake,
+  .locked-shake > svg {
     animation: none;
   }
 }

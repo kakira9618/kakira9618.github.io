@@ -2,19 +2,19 @@
 // ルート: #/settings
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260722-bgm-unlock-batch";
-import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js?v=20260722-bgm-unlock-batch";
+import { registerScreen, navigate } from "./app.js?v=20260722-lockfx-pace";
+import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js?v=20260722-lockfx-pace";
 import { importFromLocalStorage, importFromText, scanLegacyHistory } from "../core/migrate.js";
 import { exportJSON } from "../core/records.js";
 import { removeKey } from "../core/store.js";
-import { getUnlocked } from "../core/achievements.js?v=20260722-bgm-unlock-batch";
-import { BGM_TRACKS, playSfx } from "../audio/sound.js?v=20260722-bgm-unlock-batch";
-import { toast } from "./toast.js?v=20260722-bgm-unlock-batch";
-import { showModal, confirmModal } from "./modal.js?v=20260722-bgm-unlock-batch";
+import { getUnlocked } from "../core/achievements.js?v=20260722-lockfx-pace";
+import { BGM_TRACKS, playSfx } from "../audio/sound.js?v=20260722-lockfx-pace";
+import { toast } from "./toast.js?v=20260722-lockfx-pace";
+import { showModal, confirmModal } from "./modal.js?v=20260722-lockfx-pace";
 import { icon } from "./icons.js";
-import { finishHistoryImport } from "./history-import.js?v=20260722-bgm-unlock-batch";
-import { APP_VERSION } from "../config.js?v=20260722-bgm-unlock-batch";
-import { currentLanguage, isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js?v=20260722-bgm-unlock-batch";
+import { finishHistoryImport } from "./history-import.js?v=20260722-lockfx-pace";
+import { APP_VERSION } from "../config.js?v=20260722-lockfx-pace";
+import { currentLanguage, isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js?v=20260722-lockfx-pace";
 import { isDebugMode, tryEnableDebugMode } from "../core/debug.js";
 
 let root = null;

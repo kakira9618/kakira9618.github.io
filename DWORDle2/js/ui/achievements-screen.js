@@ -2,12 +2,12 @@
 // ルート: #/achievements
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260722-bgm-unlock-batch";
-import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, getUnlocked } from "../core/achievements.js?v=20260722-bgm-unlock-batch";
-import { playSfx } from "../audio/sound.js?v=20260722-bgm-unlock-batch";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-bgm-unlock-batch";
+import { registerScreen, navigate } from "./app.js?v=20260722-lockfx-pace";
+import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, getUnlocked } from "../core/achievements.js?v=20260722-lockfx-pace";
+import { playSfx } from "../audio/sound.js?v=20260722-lockfx-pace";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-lockfx-pace";
 import { icon } from "./icons.js";
-import { localizedAchievement, tr } from "../core/i18n.js?v=20260722-bgm-unlock-batch";
+import { localizedAchievement, tr } from "../core/i18n.js?v=20260722-lockfx-pace";
 
 let root = null;
 

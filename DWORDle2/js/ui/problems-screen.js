@@ -4,16 +4,16 @@
 // ルート: #/problems
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate, getAppMode } from "./app.js?v=20260722-bgm-unlock-batch";
+import { registerScreen, navigate, getAppMode } from "./app.js?v=20260722-lockfx-pace";
 import { buildProblemStatus, MODES } from "../core/records.js";
 import { LEVELS, isValidPID, pidLabel } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260722-bgm-unlock-batch";
-import { showModal } from "./modal.js?v=20260722-bgm-unlock-batch";
-import { confirmAndStart } from "./game-screen.js?v=20260722-bgm-unlock-batch";
-import { toast } from "./toast.js?v=20260722-bgm-unlock-batch";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-bgm-unlock-batch";
+import { playSfx } from "../audio/sound.js?v=20260722-lockfx-pace";
+import { showModal } from "./modal.js?v=20260722-lockfx-pace";
+import { confirmAndStart } from "./game-screen.js?v=20260722-lockfx-pace";
+import { toast } from "./toast.js?v=20260722-lockfx-pace";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-lockfx-pace";
 import { icon } from "./icons.js";
-import { localizedLevel, tr } from "../core/i18n.js?v=20260722-bgm-unlock-batch";
+import { localizedLevel, tr } from "../core/i18n.js?v=20260722-lockfx-pace";
 
 const BLOCK_SIZE = 100;
 

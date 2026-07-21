@@ -2,19 +2,19 @@
 // ルート: #/result/<mode>/<startTime>
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260722-bgm-unlock-batch";
+import { registerScreen, navigate } from "./app.js?v=20260722-lockfx-pace";
 import { findGame, MODES } from "../core/records.js";
 import { Logic, CELL } from "../core/logic.js";
 import { pidLabel, isDailyPID } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260722-bgm-unlock-batch";
-import { toast } from "./toast.js?v=20260722-bgm-unlock-batch";
-import { confirmAndStart } from "./game-screen.js?v=20260722-bgm-unlock-batch";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-bgm-unlock-batch";
+import { playSfx } from "../audio/sound.js?v=20260722-lockfx-pace";
+import { toast } from "./toast.js?v=20260722-lockfx-pace";
+import { confirmAndStart } from "./game-screen.js?v=20260722-lockfx-pace";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-lockfx-pace";
 import { icon } from "./icons.js";
-import { downloadResultPNG } from "./snapshot.js?v=20260722-bgm-unlock-batch";
-import { SHARE_URL } from "../config.js?v=20260722-bgm-unlock-batch";
-import { tr } from "../core/i18n.js?v=20260722-bgm-unlock-batch";
-import { rowAriaLabel } from "./a11y.js?v=20260722-bgm-unlock-batch";
+import { downloadResultPNG } from "./snapshot.js?v=20260722-lockfx-pace";
+import { SHARE_URL } from "../config.js?v=20260722-lockfx-pace";
+import { tr } from "../core/i18n.js?v=20260722-lockfx-pace";
+import { rowAriaLabel } from "./a11y.js?v=20260722-lockfx-pace";
 
 let root = null;
 

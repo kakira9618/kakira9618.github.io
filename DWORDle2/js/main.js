@@ -1,27 +1,27 @@
 // エントリポイント。画面登録・ルータ起動・3D 背景・音声の初期化。
 
-import { startRouter, initAppMode } from "./ui/app.js?v=20260722-bgm-unlock-batch";
-import { initEffects } from "./fx/effects.js?v=20260722-bgm-unlock-batch";
-import { initPopBackground } from "./fx/pop-background.js?v=20260722-bgm-unlock-batch";
-import { audioNeedsRecovery, bgmTracksUnlockedBy, restartBgmIfReady, stopBgm, unlockAudio } from "./audio/sound.js?v=20260722-bgm-unlock-batch";
-import { getSettings, onSettingsChange } from "./core/settings.js?v=20260722-bgm-unlock-batch";
-import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js?v=20260722-bgm-unlock-batch";
-import { syncDocumentLanguage, tr } from "./core/i18n.js?v=20260722-bgm-unlock-batch";
-import { reconcileAchievementsOnce } from "./core/achievements.js?v=20260722-bgm-unlock-batch";
-import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "./ui/game-screen.js?v=20260722-bgm-unlock-batch";
+import { startRouter, initAppMode } from "./ui/app.js?v=20260722-lockfx-pace";
+import { initEffects } from "./fx/effects.js?v=20260722-lockfx-pace";
+import { initPopBackground } from "./fx/pop-background.js?v=20260722-lockfx-pace";
+import { audioNeedsRecovery, bgmTracksUnlockedBy, restartBgmIfReady, stopBgm, unlockAudio } from "./audio/sound.js?v=20260722-lockfx-pace";
+import { getSettings, onSettingsChange } from "./core/settings.js?v=20260722-lockfx-pace";
+import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js?v=20260722-lockfx-pace";
+import { syncDocumentLanguage, tr } from "./core/i18n.js?v=20260722-lockfx-pace";
+import { reconcileAchievementsOnce } from "./core/achievements.js?v=20260722-lockfx-pace";
+import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "./ui/game-screen.js?v=20260722-lockfx-pace";
 import { onSaveError } from "./core/store.js";
-import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./ui/toast.js?v=20260722-bgm-unlock-batch";
-import { hiddenThemesUnlockedBy } from "./core/settings.js?v=20260722-bgm-unlock-batch";
+import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./ui/toast.js?v=20260722-lockfx-pace";
+import { hiddenThemesUnlockedBy } from "./core/settings.js?v=20260722-lockfx-pace";
 
 // 画面モジュール（import するだけで registerScreen される）
-import "./ui/title-screen.js?v=20260722-bgm-unlock-batch";
-import "./ui/game-screen.js?v=20260722-bgm-unlock-batch";
-import "./ui/result-screen.js?v=20260722-bgm-unlock-batch";
-import "./ui/history-screen.js?v=20260722-bgm-unlock-batch";
-import "./ui/problems-screen.js?v=20260722-bgm-unlock-batch";
-import "./ui/achievements-screen.js?v=20260722-bgm-unlock-batch";
-import "./ui/analysis-screen.js?v=20260722-bgm-unlock-batch";
-import "./ui/settings-screen.js?v=20260722-debug-secret-once";
+import "./ui/title-screen.js?v=20260722-lockfx-pace";
+import "./ui/game-screen.js?v=20260722-lockfx-pace";
+import "./ui/result-screen.js?v=20260722-lockfx-pace";
+import "./ui/history-screen.js?v=20260722-lockfx-pace";
+import "./ui/problems-screen.js?v=20260722-lockfx-pace";
+import "./ui/achievements-screen.js?v=20260722-lockfx-pace";
+import "./ui/analysis-screen.js?v=20260722-lockfx-pace";
+import "./ui/settings-screen.js?v=20260722-lockfx-pace";
 
 // 古い Android Chrome は dvh に未対応のため、実際の表示領域を CSS 変数で補う。
 // 対応ブラウザでは CSS 側の 100dvh が優先される。

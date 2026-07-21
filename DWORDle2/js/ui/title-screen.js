@@ -2,25 +2,25 @@
 // 右上のマスクボタンで DWORDlie（裏モード）に切り替わる。
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260722-bgm-unlock-batch";
+import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260722-lockfx-pace";
 import { countPlays, getCurrentGame, getHistory, isAlreadyPlayed } from "../core/records.js";
 import { isDebugMode } from "../core/debug.js";
 import { LEVELS, todayPID, isValidPID, pidLabel, PID } from "../core/problems.js";
-import { getSettings, setSetting } from "../core/settings.js?v=20260722-bgm-unlock-batch";
+import { getSettings, setSetting } from "../core/settings.js?v=20260722-lockfx-pace";
 import { loadJSON, saveJSON } from "../core/store.js";
 import { importFromLocalStorage, scanLegacyHistory } from "../core/migrate.js";
-import { playSfx } from "../audio/sound.js?v=20260722-bgm-unlock-batch";
-import { toast } from "./toast.js?v=20260722-bgm-unlock-batch";
-import { showModal } from "./modal.js?v=20260722-bgm-unlock-batch";
-import { finishHistoryImport } from "./history-import.js?v=20260722-bgm-unlock-batch";
-import { showFirstTutorial, showHelpModal } from "./help.js?v=20260722-bgm-unlock-batch";
-import { confirmAndStart } from "./game-screen.js?v=20260722-bgm-unlock-batch";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-bgm-unlock-batch";
-import { burstAtElement } from "../fx/effects.js?v=20260722-bgm-unlock-batch";
-import { shouldReduceMotion } from "../core/motion.js?v=20260722-bgm-unlock-batch";
+import { playSfx } from "../audio/sound.js?v=20260722-lockfx-pace";
+import { toast } from "./toast.js?v=20260722-lockfx-pace";
+import { showModal } from "./modal.js?v=20260722-lockfx-pace";
+import { finishHistoryImport } from "./history-import.js?v=20260722-lockfx-pace";
+import { showFirstTutorial, showHelpModal } from "./help.js?v=20260722-lockfx-pace";
+import { confirmAndStart } from "./game-screen.js?v=20260722-lockfx-pace";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-lockfx-pace";
+import { burstAtElement } from "../fx/effects.js?v=20260722-lockfx-pace";
+import { shouldReduceMotion } from "../core/motion.js?v=20260722-lockfx-pace";
 import { icon } from "./icons.js";
-import { APP_VERSION } from "../config.js?v=20260722-bgm-unlock-batch";
-import { localizedLevel, tr } from "../core/i18n.js?v=20260722-bgm-unlock-batch";
+import { APP_VERSION } from "../config.js?v=20260722-lockfx-pace";
+import { localizedLevel, tr } from "../core/i18n.js?v=20260722-lockfx-pace";
 
 let root = null;
 let legacyImportCheckDone = false;
@@ -157,8 +157,9 @@ function maybeShowFirstTutorial(mode, afterClose = null) {
 }
 
 // タイトルメニューの段階解放しきい値（必要プレイ回数）。
+// 1 回プレイで DWORDlie（uso）以外をすべて解放し、2 回プレイで DWORDlie を解放する。
 // プレイ回数は countPlays()（同日・同問題の再プレイも数え、旧作インポートは数えない）。
-const MENU_UNLOCKS = { history: 1, achievements: 1, random: 2, problems: 2, number: 3, uso: 5 };
+const MENU_UNLOCKS = { history: 1, achievements: 1, random: 1, problems: 1, number: 1, uso: 2 };
 
 function render() {
   if (!root) build();
@@ -196,34 +197,51 @@ function render() {
     return button;
   };
 
+  // 施錠中の項目をタップしたときの拒否リアクション。
+  // 鍵がガチャガチャ震えて「まだ開かない」ことを音と動きで伝える
+  const lockedTapFx = (button) => {
+    playSfx("locked");
+    if (shouldReduceMotion()) return;
+    button.classList.remove("locked-shake");
+    void button.offsetWidth; // 連打時にアニメーションを最初から再生し直す
+    button.classList.add("locked-shake");
+  };
+
   const menuBtn = (iconName, label, onclick, primary = false, req = 0) => {
     if (!isUnlocked(req)) {
       const remain = req - plays;
-      return el(
+      const button = el(
         "button",
         {
           class: "btn menu-locked",
-          disabled: true,
+          "aria-disabled": "true",
           "aria-label": tr(`${label}（あと${remain}回プレイで解放）`, `${label} (play ${remain} more to unlock)`),
+          onclick: () => lockedTapFx(button),
         },
         icon("lock"),
         label,
         el("span", { class: "unlock-hint" }, tr(`あと${remain}回プレイ`, remain === 1 ? "1 more play" : `${remain} more plays`))
       );
+      return button;
     }
     return applyReveal(el("button", { class: `btn ${primary ? "btn-primary" : ""}`, onclick }, icon(iconName), label), req);
   };
 
-  // 裏モード切替は 5 回プレイで解放（裏 → 表へ戻る方向はいつでも可能）
+  // 裏モード切替は 2 回プレイで解放（裏 → 表へ戻る方向はいつでも可能）
   const usoLocked = !isUso && !isUnlocked(MENU_UNLOCKS.uso);
   const modeToggle = usoLocked
     ? el(
         "button",
         {
           class: "icon-btn menu-locked",
-          disabled: true,
+          "aria-disabled": "true",
           title: tr(`あと${MENU_UNLOCKS.uso - plays}回プレイで解放`, `Play ${MENU_UNLOCKS.uso - plays} more to unlock`),
           "aria-label": tr(`裏モード（あと${MENU_UNLOCKS.uso - plays}回プレイで解放）`, `Secret mode (play ${MENU_UNLOCKS.uso - plays} more to unlock)`),
+          onclick: () => {
+            lockedTapFx(modeToggle);
+            // アイコンだけで解放条件が見えないため、タップ時にトーストで補足する
+            toast(tr(`あと${MENU_UNLOCKS.uso - plays}回プレイで解放`, `Play ${MENU_UNLOCKS.uso - plays} more to unlock`));
+          },
         },
         icon("lock")
       )

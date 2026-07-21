@@ -2,16 +2,16 @@
 // ルート: #/history
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260722-bgm-unlock-batch";
+import { registerScreen, navigate } from "./app.js?v=20260722-lockfx-pace";
 import { getRecentGames, getStatistics, MODES } from "../core/records.js";
 import { Logic, CELL } from "../core/logic.js";
 import { pidLabel } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260722-bgm-unlock-batch";
-import { showModal } from "./modal.js?v=20260722-bgm-unlock-batch";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-bgm-unlock-batch";
+import { playSfx } from "../audio/sound.js?v=20260722-lockfx-pace";
+import { showModal } from "./modal.js?v=20260722-lockfx-pace";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-lockfx-pace";
 import { icon } from "./icons.js";
-import { currentLanguage, tr } from "../core/i18n.js?v=20260722-bgm-unlock-batch";
-import { rowAriaLabel } from "./a11y.js?v=20260722-bgm-unlock-batch";
+import { currentLanguage, tr } from "../core/i18n.js?v=20260722-lockfx-pace";
+import { rowAriaLabel } from "./a11y.js?v=20260722-lockfx-pace";
 
 let root = null;
 let filter = "all"; // "all" | "normal" | "uso"

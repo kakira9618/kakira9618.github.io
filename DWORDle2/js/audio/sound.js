@@ -5,8 +5,8 @@
 //   曲の実体は TRACKS（テンポ・コード進行・1 小節のスケジューラ）に定義する。
 //   設定やモード切替時はバスをクロスフェードしてシームレスに移行する。
 
-import { AUDIO } from "../config.js?v=20260722-bgm-unlock-batch";
-import { getSettings, onSettingsChange } from "../core/settings.js?v=20260722-bgm-unlock-batch";
+import { AUDIO } from "../config.js?v=20260722-lockfx-pace";
+import { getSettings, onSettingsChange } from "../core/settings.js?v=20260722-lockfx-pace";
 
 let ctx = null;
 let masterGain = null;
@@ -515,6 +515,13 @@ const SFX = {
   invalid: () => {
     tone({ freq: 190, type: "sawtooth", dur: 0.16, gain: 0.24 });
     tone({ freq: 150, type: "sawtooth", dur: 0.2, gain: 0.24, when: 0.09 });
+  },
+  // 施錠中メニューの拒否音: 鍵をガチャガチャ揺らすような短い金属音 2 連
+  locked: () => {
+    noise({ dur: 0.045, gain: 0.18, freq: 3400, q: 2.6 });
+    tone({ freq: 130, type: "triangle", dur: 0.07, gain: 0.2 });
+    noise({ dur: 0.05, gain: 0.14, freq: 2300, q: 2.6, when: 0.08 });
+    tone({ freq: 110, type: "triangle", dur: 0.08, gain: 0.16, when: 0.08 });
   },
   win: () => {
     const notes = [523.25, 659.25, 783.99, 1046.5, 1318.5];

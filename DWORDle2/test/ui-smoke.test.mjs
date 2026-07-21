@@ -210,7 +210,7 @@ try {
   assert.equal(normalPopVisuals.choiceColor, "rgb(74, 53, 80)");
 
   await page.evaluate(async () => {
-    const { setAppMode } = await import("./js/ui/app.js?v=20260722-bgm-unlock-batch");
+    const { setAppMode } = await import("./js/ui/app.js?v=20260722-lockfx-pace");
     setAppMode("uso");
   });
   await page.locator("body.theme-pop.mode-uso").waitFor();
@@ -270,12 +270,12 @@ try {
   await page.waitForURL(/#\/settings$/);
 
   await page.evaluate(async () => {
-    const { setAppMode } = await import("./js/ui/app.js?v=20260722-bgm-unlock-batch");
+    const { setAppMode } = await import("./js/ui/app.js?v=20260722-lockfx-pace");
     setAppMode("normal");
   });
   await page.locator("body.theme-pop.mode-normal").waitFor();
   await page.evaluate(async () => {
-    const { showHelpModal } = await import("./js/ui/help.js?v=20260722-bgm-unlock-batch");
+    const { showHelpModal } = await import("./js/ui/help.js?v=20260722-lockfx-pace");
     showHelpModal("normal");
   });
   const popHelp = page.getByRole("dialog", { name: "DWORDle 遊び方" });
@@ -488,13 +488,13 @@ try {
   );
   await shortPage.waitForTimeout(50);
   const flightsBeforeLeave = await shortPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260722-bgm-unlock-batch")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260722-lockfx-pace")).activeTileFlightCount()
   );
   assert.ok(flightsBeforeLeave > 0, "Tile gather animation should be active before leaving the game");
   await shortPage.getByRole("button", { name: "タイトルへ戻る" }).click();
   await shortPage.waitForURL(/#\/$/);
   const flightsAfterLeave = await shortPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260722-bgm-unlock-batch")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260722-lockfx-pace")).activeTileFlightCount()
   );
   assert.equal(flightsAfterLeave, 0, "Tile gather animation should be removed when leaving the game");
   await shortPage.close();
@@ -540,13 +540,13 @@ try {
   await reducedDialog.getByRole("button", { name: "スタート" }).click();
   await reducedPage.locator("#screen-game.active .row").last().waitFor();
   const reducedFlights = await reducedPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260722-bgm-unlock-batch")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260722-lockfx-pace")).activeTileFlightCount()
   );
   assert.equal(reducedFlights, 0, "Reduced motion should suppress tile gather flights");
   await reducedContext.close();
 
   await page.evaluate(async () => {
-    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260722-bgm-unlock-batch");
+    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260722-lockfx-pace");
     bgmUnlockCelebration([{ id: "queue-test-a", name: "Queue Test A", desc: "First unlock" }]);
     bgmUnlockCelebration([{ id: "queue-test-b", name: "Queue Test B", desc: "Second unlock" }]);
   });
@@ -577,7 +577,7 @@ try {
 
   // 2 曲以上の同時解放（履歴インポート等）は 1 枚のまとめカードで報告する
   await page.evaluate(async () => {
-    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260722-bgm-unlock-batch");
+    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260722-lockfx-pace");
     bgmUnlockCelebration([
       { id: "multi-a", name: "Multi Track A", desc: "" },
       { id: "multi-b", name: "Multi Track B", desc: "" },
@@ -594,7 +594,7 @@ try {
 
   // 実績解放セレブレーション: 単発は大型カード、3 個以上は 1 枚にまとめる
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-bgm-unlock-batch");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-lockfx-pace");
     achievementCelebration([
       { id: "smoke-single", icon: "trophy", color: "#ffd166", name: "スモーク実績", desc: "テスト用の実績です" },
     ]);
@@ -612,7 +612,7 @@ try {
   await page.locator(".ach-unlock").waitFor({ state: "detached" });
 
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-bgm-unlock-batch");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-lockfx-pace");
     achievementCelebration([
       { id: "smoke-a", icon: "star", color: "#ffd166", name: "実績A", desc: "" },
       { id: "smoke-b", icon: "gem", color: "#7ee8ff", name: "実績B", desc: "" },
@@ -634,7 +634,7 @@ try {
 
   // リストが溢れるときは下端フェードで続きを示し、最下部まで送るとフェードが消える
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-bgm-unlock-batch");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-lockfx-pace");
     achievementCelebration(
       Array.from({ length: 9 }, (_, i) => ({ id: `smoke-many-${i}`, icon: "star", color: "#ffd166", name: `実績${i + 1}`, desc: "" }))
     );
@@ -671,7 +671,7 @@ try {
   // 判定オープン中の先行入力: 次の 1 行分をバッファし、オープン完了後に自動で確定する
   await page.getByRole("dialog", { name: "基本ルール | DWORDle" }).getByRole("button", { name: "わかった" }).click();
   await page.evaluate(async () => {
-    const { setSetting } = await import("./js/core/settings.js?v=20260722-bgm-unlock-batch");
+    const { setSetting } = await import("./js/core/settings.js?v=20260722-lockfx-pace");
     setSetting("theme", "classic");
     setSetting("sfx", false);
     setSetting("bgm", false);
@@ -745,17 +745,27 @@ try {
 
     // タイトルメニューの段階解放: 0 プレイでは基本項目以外がロックされている
     await freshPage.getByRole("button", { name: "本日の問題", exact: true }).waitFor();
-    await freshPage.getByRole("button", { name: "ランダム（難しさを選択）（あと2回プレイで解放）", exact: true }).waitFor();
+    const lockedRandom = freshPage.getByRole("button", { name: "ランダム（難しさを選択）（あと1回プレイで解放）", exact: true });
+    await lockedRandom.waitFor();
     assert.equal(
       await freshPage.getByRole("button", { name: "ランダム（難しさを選択）", exact: true }).count(),
       0,
       "Random play must be locked before any play"
     );
-    await freshPage.getByRole("button", { name: "裏モード（あと5回プレイで解放）", exact: true }).waitFor();
+    // 施錠中の項目は aria-disabled で、タップしても拒否リアクションだけで実行されない
+    // （aria-disabled は Playwright の actionability 待ちに掛かるため force で実クリックする）
+    assert.equal(await lockedRandom.getAttribute("aria-disabled"), "true");
+    await lockedRandom.click({ force: true });
+    assert.equal(
+      await freshPage.getByRole("dialog", { name: "ランダムにプレイ（難しさを選択）" }).count(),
+      0,
+      "a locked menu item must not run its action when tapped"
+    );
+    await freshPage.getByRole("button", { name: "裏モード（あと2回プレイで解放）", exact: true }).waitFor();
     assert.equal(
       await freshPage.getByRole("button", { name: "裏モードへ", exact: true }).count(),
       0,
-      "the DWORDlie toggle must be locked before five plays"
+      "the DWORDlie toggle must be locked before two plays"
     );
     await freshPage.getByRole("button", { name: "プレイ履歴（あと1回プレイで解放）", exact: true }).waitFor();
 
