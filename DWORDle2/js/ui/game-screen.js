@@ -8,13 +8,13 @@ import { APP_VERSION, UI, FX } from "../config.js";
 import { Logic, CELL, usoConvert } from "../core/logic.js";
 import { MODES, saveCurrentGame, clearCurrentGame, getCurrentGame, addFinishedGame, isAlreadyPlayed, getHistory } from "../core/records.js";
 import { pidLabel } from "../core/problems.js";
-import { checkOnGameFinish } from "../core/achievements.js?v=20260721-pop-achievements";
-import { registerScreen, navigate, getAppMode, currentScreenName, rememberPlayedMode } from "./app.js?v=20260721-pop-achievements";
-import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./toast.js?v=20260721-pop-achievements";
+import { checkOnGameFinish } from "../core/achievements.js?v=20260722-pop-lines";
+import { registerScreen, navigate, getAppMode, currentScreenName, rememberPlayedMode } from "./app.js?v=20260722-pop-lines";
+import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./toast.js?v=20260722-pop-lines";
 import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js";
 import { hiddenThemesUnlockedBy } from "../core/settings.js";
 import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/effects.js";
-import { showHelpModal } from "./help.js?v=20260721-ux-input";
+import { showHelpModal } from "./help.js?v=20260722-pop-lines";
 import { icon } from "./icons.js";
 import { tr } from "../core/i18n.js";
 import { getSettings } from "../core/settings.js";
@@ -49,6 +49,7 @@ let keyEls = {};
 let seedHidden = false;
 let finishedRecord = null; // 終了後に結果画面へ渡す
 let gatherSession = 0;
+let pendingKeys = []; // 判定オープン中の先行入力（次の 1 行分だけ保持）
 
 function build() {
   root = document.getElementById("screen-game");
@@ -208,6 +209,7 @@ function render() {
   logic = new Logic(game.problemID);
   state = "guess";
   inputBuffer = "";
+  pendingKeys = [];
   finishedRecord = null;
   resultFab.style.display = "none";
   rows = [];
@@ -336,6 +338,7 @@ function scrollToBottom() {
 // ---- 入力処理 ----
 
 function handleKey(k) {
+  if (state === "checking") return queuePendingKey(k);
   if (state !== "guess") return;
   if (k === "enter") return submitGuess();
   if (k === "backspace") {
@@ -362,6 +365,33 @@ function currentRow() {
   return rows[rows.length - 1];
 }
 
+// ---- 先行入力（判定オープン中のキーバッファ）----
+
+function pendingBufferLength() {
+  let length = 0;
+  for (const k of pendingKeys) length += k === "backspace" ? -1 : 1;
+  return length;
+}
+
+// Enter で確定した次の行より先は、判定を見てから打つべきなので受け付けない
+function queuePendingKey(k) {
+  if (pendingKeys.includes("enter")) return;
+  const length = pendingBufferLength();
+  if (k === "enter") {
+    if (length === 5) pendingKeys.push(k);
+  } else if (k === "backspace") {
+    if (length > 0) pendingKeys.push(k);
+  } else if (length < 5) {
+    pendingKeys.push(k);
+  }
+}
+
+function flushPendingKeys() {
+  const keys = pendingKeys;
+  pendingKeys = [];
+  for (const k of keys) handleKey(k);
+}
+
 function physicalGameKey(e) {
   const key = e.key.toLowerCase();
   if (key === "enter" || key === "backspace" || /^[a-z]$/.test(key)) return key;
@@ -369,7 +399,7 @@ function physicalGameKey(e) {
 }
 
 export function handlePhysicalKey(e) {
-  if (currentScreenName() !== "game" || state !== "guess") return;
+  if (currentScreenName() !== "game" || (state !== "guess" && state !== "checking")) return;
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   const key = physicalGameKey(e);
   if (!key) return;
@@ -414,6 +444,7 @@ function submitGuess() {
       inputBuffer = "";
       addRow(true);
       updateHeader();
+      flushPendingKeys();
     }
   });
 }
@@ -493,6 +524,7 @@ function applyAllKeyStyles() {
 
 function finishGame(justFinished) {
   state = "finish";
+  pendingKeys = []; // 決着後に持ち越された先行入力は捨てる
   updateHeader();
 
   const lastWord = game.guessWord[game.guessWord.length - 1];
@@ -597,6 +629,7 @@ registerScreen("game", {
   render,
   onLeave() {
     gatherSession++;
+    pendingKeys = [];
     cancelTileFlights();
     rows.forEach((row) => {
       row.tiles.forEach((tile) => (tile.style.opacity = ""));

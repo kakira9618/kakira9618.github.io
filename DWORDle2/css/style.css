@@ -37,6 +37,10 @@
   --border: #444;
   --glow: none;
   --font-display: "Avenir Next", "Helvetica Neue", "Segoe UI", sans-serif;
+
+  /* 統計・分析のバーが伸びるアニメーション（.bar-grow） */
+  --bar-grow-dur: 0.7s;
+  --bar-grow-stagger: 70ms;
 }
 
 body.theme-cyber {
@@ -976,6 +980,10 @@ body.theme-cyber .toast {
   font-size: 12.5px;
   line-height: 1.6;
 }
+.ach-unlock-grid-wrap {
+  position: relative;
+  margin: 14px 4px 16px;
+}
 .ach-unlock-grid {
   position: relative;
   display: flex;
@@ -983,8 +991,23 @@ body.theme-cyber .toast {
   gap: 6px;
   max-height: min(38dvh, 280px);
   overflow-y: auto;
-  margin: 14px 4px 16px;
+  margin: 0;
   text-align: left;
+}
+/* リストが溢れているときだけ表示するスクロールの手掛かり（カード地色へ溶け込むフェード） */
+.ach-unlock-grid-fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 46px;
+  background: linear-gradient(rgba(17, 24, 39, 0), #111827 86%);
+  opacity: 0;
+  transition: opacity 0.25s;
+  pointer-events: none;
+}
+.ach-unlock-grid-wrap.scrollable:not(.at-end) .ach-unlock-grid-fade {
+  opacity: 1;
 }
 .ach-unlock-mini {
   display: flex;
@@ -1512,6 +1535,23 @@ body.theme-cyber .rcell.correct { color: #04120b; }
   text-align: right;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+}
+/* 統計・分析のバーは幅 0 から時差つきイーズアウトで伸びる（--bar-index が遅延の刻み） */
+.bar-grow {
+  animation: barGrowIn var(--bar-grow-dur) cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation-delay: calc(var(--bar-index, 0) * var(--bar-grow-stagger));
+}
+@keyframes barGrowIn {
+  from { width: 0; }
+}
+/* 演出を軽くする時は時差もなくす（duration 短縮だけだと段々表示になってしまう） */
+body.reduce-motion .bar-grow {
+  animation-delay: 0s !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bar-grow {
+    animation-delay: 0s !important;
+  }
 }
 .suggest-list {
   display: flex;

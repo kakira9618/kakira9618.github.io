@@ -4,13 +4,13 @@
 // ルート: #/analysis/<mode>/<startTime>
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260721-pop-achievements";
+import { registerScreen, navigate } from "./app.js?v=20260722-pop-lines";
 import { findGame, MODES } from "../core/records.js";
 import { Logic } from "../core/logic.js";
 import { pidLabel } from "../core/problems.js";
-import { computeTruePatternIds, resultToPatternId, patternIdToStates } from "../core/analysis-core.js?v=20260721-pop-achievements";
-import { checkOnEvent } from "../core/achievements.js?v=20260721-pop-achievements";
-import { achievementCelebration } from "./toast.js?v=20260721-pop-achievements";
+import { computeTruePatternIds, resultToPatternId, patternIdToStates } from "../core/analysis-core.js?v=20260722-pop-lines";
+import { checkOnEvent } from "../core/achievements.js?v=20260722-pop-lines";
+import { achievementCelebration } from "./toast.js?v=20260722-pop-lines";
 import { playSfx } from "../audio/sound.js";
 import { icon } from "./icons.js";
 import { currentLanguage, isEnglish, tr } from "../core/i18n.js";
@@ -123,7 +123,7 @@ function render(args) {
     record.gameMode === "uso" ? record.usoResults.map((r) => resultToPatternId(r)) : truePatternIds;
 
   if (worker) worker.terminate();
-  worker = new Worker(new URL("../core/analysis.worker.js?v=20260721-pop-achievements", import.meta.url), { type: "module" });
+  worker = new Worker(new URL("../core/analysis.worker.js?v=20260722-pop-lines", import.meta.url), { type: "module" });
   worker.onmessage = (e) => {
     if (token !== renderToken) return; // 画面遷移後の古い結果
     const msg = e.data;
@@ -215,8 +215,8 @@ function renderResult(body, record, logic, res) {
           "div",
           { class: "bar-track" },
           el("div", {
-            class: "bar-fill",
-            style: { width: `${Math.max(2, (100 * Math.log2(Math.max(2, turn.after))) / maxLogInitial)}%` },
+            class: "bar-fill bar-grow",
+            style: { width: `${Math.max(2, (100 * Math.log2(Math.max(2, turn.after))) / maxLogInitial)}%`, "--bar-index": t * 3 },
           })
         ),
         el("div", { class: "bar-value" }, tr(`${fmtCount(turn.after)} 組`, `${fmtCount(turn.after)} pairs`))
@@ -237,7 +237,10 @@ function renderResult(body, record, logic, res) {
         el(
           "div",
           { class: "bar-track" },
-          el("div", { class: "bar-fill", style: { width: `${Math.min(100, (100 * turn.bitsGained) / Math.max(0.01, turn.maxBits))}%` } })
+          el("div", {
+            class: "bar-fill bar-grow",
+            style: { width: `${Math.min(100, (100 * turn.bitsGained) / Math.max(0.01, turn.maxBits))}%`, "--bar-index": t * 3 + 1 },
+          })
         ),
         el("div", { class: "bar-value" }, fmtBits(turn.bitsGained))
       ),
@@ -248,7 +251,10 @@ function renderResult(body, record, logic, res) {
         el(
           "div",
           { class: "bar-track" },
-          el("div", { class: "bar-fill", style: { width: `${Math.min(100, (100 * turn.expectedBits) / Math.max(0.01, turn.maxBits))}%`, opacity: 0.65 } })
+          el("div", {
+            class: "bar-fill bar-grow",
+            style: { width: `${Math.min(100, (100 * turn.expectedBits) / Math.max(0.01, turn.maxBits))}%`, opacity: 0.65, "--bar-index": t * 3 + 2 },
+          })
         ),
         el("div", { class: "bar-value" }, fmtBits(turn.expectedBits))
       )

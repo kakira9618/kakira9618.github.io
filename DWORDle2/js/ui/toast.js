@@ -145,6 +145,26 @@ function confettiPieces(count, colors) {
 
 const CONFETTI_COLORS = ["#ffd166", "#ff5fa2", "#66e0ff", "#7bd88f", "#c9a0ff", "#ff9a5c"];
 
+// まとめ表示のリストが縦に溢れるとき、下端フェードで「まだ下にある」ことを示す。
+// 最下部までスクロールしたらフェードを消す（.scrollable / .at-end は CSS が参照）。
+function scrollableUnlockGrid(grid) {
+  const wrap = el(
+    "div",
+    { class: "ach-unlock-grid-wrap" },
+    grid,
+    el("div", { class: "ach-unlock-grid-fade", "aria-hidden": "true" })
+  );
+  const sync = () => {
+    const scrollable = grid.scrollHeight > grid.clientHeight + 1;
+    const atEnd = grid.scrollTop + grid.clientHeight >= grid.scrollHeight - 4;
+    wrap.classList.toggle("scrollable", scrollable);
+    wrap.classList.toggle("at-end", !scrollable || atEnd);
+  };
+  grid.addEventListener("scroll", sync, { passive: true });
+  requestAnimationFrame(sync);
+  return wrap;
+}
+
 function hexToInt(hex) {
   const parsed = Number.parseInt(String(hex ?? "").replace("#", ""), 16);
   return Number.isFinite(parsed) ? parsed : 0xffd166;
@@ -196,18 +216,20 @@ function showAchievementUnlockDialog(achievements) {
         multiple
           ? [
               el("div", { class: "ach-unlock-title", id: titleId }, tr(`実績を ${achievements.length} 個解放！`, `${achievements.length} achievements unlocked!`)),
-              el(
-                "div",
-                { class: "ach-unlock-grid", id: descId },
-                achievements.map((achievement, index) => {
-                  const localized = localizedAchievement(achievement);
-                  return el(
-                    "div",
-                    { class: "ach-unlock-mini", style: `animation-delay:${Math.min(index, 12) * 60}ms;` },
-                    el("span", { class: "ach-unlock-mini-icon", style: `color:${achievement.color};` }, icon(achievement.icon, 20)),
-                    el("span", { class: "ach-unlock-mini-name" }, localized.name)
-                  );
-                })
+              scrollableUnlockGrid(
+                el(
+                  "div",
+                  { class: "ach-unlock-grid", id: descId },
+                  achievements.map((achievement, index) => {
+                    const localized = localizedAchievement(achievement);
+                    return el(
+                      "div",
+                      { class: "ach-unlock-mini", style: `animation-delay:${Math.min(index, 12) * 60}ms;` },
+                      el("span", { class: "ach-unlock-mini-icon", style: `color:${achievement.color};` }, icon(achievement.icon, 20)),
+                      el("span", { class: "ach-unlock-mini-name" }, localized.name)
+                    );
+                  })
+                )
               ),
             ]
           : [

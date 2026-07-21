@@ -187,7 +187,7 @@ try {
   assert.equal(normalPopVisuals.choiceColor, "rgb(74, 53, 80)");
 
   await page.evaluate(async () => {
-    const { setAppMode } = await import("./js/ui/app.js?v=20260721-pop-achievements");
+    const { setAppMode } = await import("./js/ui/app.js?v=20260722-pop-lines");
     setAppMode("uso");
   });
   await page.locator("body.theme-pop.mode-uso").waitFor();
@@ -214,12 +214,12 @@ try {
   await assertNoSeriousA11yViolations("Pop DWORDlie settings");
 
   await page.evaluate(async () => {
-    const { setAppMode } = await import("./js/ui/app.js?v=20260721-pop-achievements");
+    const { setAppMode } = await import("./js/ui/app.js?v=20260722-pop-lines");
     setAppMode("normal");
   });
   await page.locator("body.theme-pop.mode-normal").waitFor();
   await page.evaluate(async () => {
-    const { showHelpModal } = await import("./js/ui/help.js?v=20260721-ux-input");
+    const { showHelpModal } = await import("./js/ui/help.js?v=20260722-pop-lines");
     showHelpModal("normal");
   });
   const popHelp = page.getByRole("dialog", { name: "DWORDle 遊び方" });
@@ -288,7 +288,8 @@ try {
   await page.getByRole("button", { name: "番号を指定" }).click();
   const puzzleDialog = page.getByRole("dialog", { name: "番号を指定してプレイ" });
   await puzzleDialog.locator('input[type="number"]').fill("1");
-  await puzzleDialog.getByRole("button", { name: "スタート" }).click();
+  // 入力欄の Enter で primary アクション（スタート）が確定する
+  await page.keyboard.press("Enter");
   await page.waitForURL(/#\/game$/);
   await page.locator("#screen-game.active .row").last().waitFor();
 
@@ -442,7 +443,7 @@ try {
   await reducedContext.close();
 
   await page.evaluate(async () => {
-    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260721-pop-achievements");
+    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260722-pop-lines");
     bgmUnlockCelebration([
       { id: "queue-test-a", name: "Queue Test A", desc: "First unlock" },
       { id: "queue-test-b", name: "Queue Test B", desc: "Second unlock" },
@@ -475,7 +476,7 @@ try {
 
   // 実績解放セレブレーション: 単発は大型カード、3 個以上は 1 枚にまとめる
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260721-pop-achievements");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-pop-lines");
     achievementCelebration([
       { id: "smoke-single", icon: "trophy", color: "#ffd166", name: "スモーク実績", desc: "テスト用の実績です" },
     ]);
@@ -493,7 +494,7 @@ try {
   await page.locator(".ach-unlock").waitFor({ state: "detached" });
 
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260721-pop-achievements");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-pop-lines");
     achievementCelebration([
       { id: "smoke-a", icon: "star", color: "#ffd166", name: "実績A", desc: "" },
       { id: "smoke-b", icon: "gem", color: "#7ee8ff", name: "実績B", desc: "" },
@@ -503,7 +504,38 @@ try {
   const multiUnlock = page.getByRole("dialog", { name: /実績を 3 個解放/ });
   await multiUnlock.waitFor({ timeout: 1600 });
   assert.equal(await multiUnlock.locator(".ach-unlock-mini").count(), 3, "The combined celebration should list all achievements");
+  // リストが収まっているときはスクロールの手掛かり（下端フェード）を出さない
+  await page.waitForFunction(() => document.querySelector(".ach-unlock-grid-wrap")?.classList.contains("at-end"));
+  assert.equal(
+    await multiUnlock.locator(".ach-unlock-grid-wrap").evaluate((node) => node.classList.contains("scrollable")),
+    false,
+    "A short celebration list must not be marked scrollable"
+  );
   await multiUnlock.getByRole("button", { name: "OK" }).click();
+  await page.locator(".ach-unlock").waitFor({ state: "detached" });
+
+  // リストが溢れるときは下端フェードで続きを示し、最下部まで送るとフェードが消える
+  await page.evaluate(async () => {
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-pop-lines");
+    achievementCelebration(
+      Array.from({ length: 9 }, (_, i) => ({ id: `smoke-many-${i}`, icon: "star", color: "#ffd166", name: `実績${i + 1}`, desc: "" }))
+    );
+  });
+  const manyUnlock = page.getByRole("dialog", { name: /実績を 9 個解放/ });
+  await manyUnlock.waitFor({ timeout: 1600 });
+  await page.waitForFunction(() => {
+    const wrap = document.querySelector(".ach-unlock-grid-wrap");
+    return wrap?.classList.contains("scrollable") && !wrap.classList.contains("at-end");
+  });
+  await page.waitForFunction(
+    () => getComputedStyle(document.querySelector(".ach-unlock-grid-fade")).opacity === "1"
+  );
+  await manyUnlock.locator(".ach-unlock-grid").evaluate((node) => { node.scrollTop = node.scrollHeight; });
+  await page.waitForFunction(() => document.querySelector(".ach-unlock-grid-wrap")?.classList.contains("at-end"));
+  await page.waitForFunction(
+    () => getComputedStyle(document.querySelector(".ach-unlock-grid-fade")).opacity === "0"
+  );
+  await manyUnlock.getByRole("button", { name: "OK" }).click();
   await page.locator(".ach-unlock").waitFor({ state: "detached" });
 
   await page.evaluate(() => { location.hash = "#/settings"; });
@@ -517,6 +549,39 @@ try {
   ]);
   assert.match(page.url(), /#\/$/, "Deleting all data should reload at the title route");
   await page.locator("#screen-title.active").waitFor();
+
+  // 判定オープン中の先行入力: 次の 1 行分をバッファし、オープン完了後に自動で確定する
+  await page.getByRole("dialog", { name: "基本ルール | DWORDle" }).getByRole("button", { name: "わかった" }).click();
+  await page.evaluate(async () => {
+    const { setSetting } = await import("./js/core/settings.js");
+    setSetting("theme", "classic");
+    setSetting("sfx", false);
+    setSetting("bgm", false);
+  });
+  await page.getByRole("button", { name: "番号を指定" }).click();
+  const bufferDialog = page.getByRole("dialog", { name: "番号を指定してプレイ" });
+  await bufferDialog.locator('input[type="number"]').fill("2");
+  await page.keyboard.press("Enter");
+  await page.waitForURL(/#\/game$/);
+  await page.locator("#screen-game.active .row").last().waitFor();
+  const bufferLogic = new Logic(2);
+  const bufferWords = ["about", "cigar", "point"].filter((word) => !bufferLogic.isGameClear(word)).slice(0, 2);
+  await page.keyboard.type(bufferWords[0]);
+  await page.keyboard.press("Enter");
+  // 1 行目の判定オープン中に、2 行目を先行入力する
+  await page.keyboard.type(bufferWords[1]);
+  await page.keyboard.press("Enter");
+  await page.waitForFunction(
+    () => document.querySelectorAll('#board .tile[class*="state-"]').length === 10,
+    { timeout: 15000 }
+  );
+  assert.match(
+    await page.locator("#screen-game .header .sub").first().textContent(),
+    /3 \/ 10/,
+    "Buffered keys should submit the second Guess automatically"
+  );
+  await page.getByRole("button", { name: "タイトルへ戻る" }).click();
+  await page.waitForURL(/#\/$/);
 
   // 初回案内は基本ルールを先に表示し、閉じた後で旧作の移行を提案する。
   const freshContext = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });

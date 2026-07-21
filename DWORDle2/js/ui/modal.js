@@ -67,6 +67,15 @@ export function showModal({ title, body, actions = [], onClose = null }) {
       close();
       return;
     }
+    // 入力欄での Enter は primary アクションで確定する（番号入力→Enter の定番操作）
+    if (event.key === "Enter" && event.target.matches?.("input")) {
+      const primary = modal.querySelector(".modal-actions .btn-primary");
+      if (primary) {
+        event.preventDefault();
+        primary.click();
+      }
+      return;
+    }
     if (event.key !== "Tab") return;
     const focusable = [...modal.querySelectorAll(FOCUSABLE)].filter((node) => node.offsetParent !== null);
     if (focusable.length === 0) {

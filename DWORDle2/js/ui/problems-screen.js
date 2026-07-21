@@ -4,13 +4,13 @@
 // ルート: #/problems
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate, getAppMode } from "./app.js?v=20260721-pop-achievements";
+import { registerScreen, navigate, getAppMode } from "./app.js?v=20260722-pop-lines";
 import { buildProblemStatus, MODES } from "../core/records.js";
 import { LEVELS, isValidPID, pidLabel } from "../core/problems.js";
 import { playSfx } from "../audio/sound.js";
 import { showModal } from "./modal.js";
-import { confirmAndStart } from "./game-screen.js?v=20260721-pop-achievements";
-import { toast } from "./toast.js?v=20260721-pop-achievements";
+import { confirmAndStart } from "./game-screen.js?v=20260722-pop-lines";
+import { toast } from "./toast.js?v=20260722-pop-lines";
 import { icon } from "./icons.js";
 import { localizedLevel, tr } from "../core/i18n.js";
 

@@ -12,7 +12,11 @@ export function el(tag, attrs = {}, ...children) {
     } else if (k === "dataset") {
       Object.assign(node.dataset, v);
     } else if (k === "style" && typeof v === "object") {
-      Object.assign(node.style, v);
+      for (const [prop, val] of Object.entries(v)) {
+        // CSS カスタムプロパティ（--foo）は Object.assign では反映されない
+        if (prop.startsWith("--")) node.style.setProperty(prop, val);
+        else node.style[prop] = val;
+      }
     } else {
       node.setAttribute(k, v === true ? "" : v);
     }

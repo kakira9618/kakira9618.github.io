@@ -2,7 +2,7 @@
 // ルート: #/history
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260721-pop-achievements";
+import { registerScreen, navigate } from "./app.js?v=20260722-pop-lines";
 import { getRecentGames, getStatistics, MODES } from "../core/records.js";
 import { Logic, CELL } from "../core/logic.js";
 import { pidLabel } from "../core/problems.js";
@@ -48,7 +48,8 @@ function miniGrid(record) {
 }
 
 function showStats() {
-  const statBlock = (mode) => {
+  // barBase: バーの時差アニメの通し番号の起点（表→裏へと連続して波打たせる）
+  const statBlock = (mode, barBase) => {
     const s = getStatistics(mode);
     const winPct = s.count ? Math.round((100 * s.win) / s.count) : 0;
     const maxGuess = MODES[mode].maxGuess;
@@ -75,11 +76,13 @@ function showStats() {
             { style: { display: "flex", alignItems: "center", gap: "6px", fontSize: "11px" } },
             el("span", { style: { width: "18px", textAlign: "right", color: "var(--fg-dim)" } }, i + 1),
             el("div", {
+              class: "bar-grow",
               style: {
                 height: "10px",
                 width: `${Math.max(3, (100 * n) / maxFreq)}%`,
                 background: "var(--tile-correct)",
                 borderRadius: "3px",
+                "--bar-index": barBase + i,
               },
             }),
             el("span", { class: "hint" }, n)
@@ -90,7 +93,7 @@ function showStats() {
   };
   showModal({
     title: tr("統計", "Statistics"),
-    body: [statBlock("normal"), statBlock("uso")],
+    body: [statBlock("normal", 0), statBlock("uso", MODES.normal.maxGuess)],
     actions: [{ label: tr("閉じる", "Close"), primary: true, onClick: () => {} }],
   });
 }
