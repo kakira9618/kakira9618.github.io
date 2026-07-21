@@ -2,17 +2,17 @@
 // ルート: #/settings
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260721-debug";
+import { registerScreen, navigate } from "./app.js?v=20260721-pop-achievements";
 import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js";
 import { importFromLocalStorage, importFromText, scanLegacyHistory } from "../core/migrate.js";
 import { exportJSON } from "../core/records.js";
 import { removeKey } from "../core/store.js";
-import { getUnlocked } from "../core/achievements.js?v=20260721-debug";
+import { getUnlocked } from "../core/achievements.js?v=20260721-pop-achievements";
 import { BGM_TRACKS, playSfx } from "../audio/sound.js";
-import { toast } from "./toast.js?v=20260721-debug";
+import { toast } from "./toast.js?v=20260721-pop-achievements";
 import { showModal, confirmModal } from "./modal.js";
 import { icon } from "./icons.js";
-import { finishHistoryImport } from "./history-import.js?v=20260721-debug";
+import { finishHistoryImport } from "./history-import.js?v=20260721-pop-achievements";
 import { APP_VERSION } from "../config.js";
 import { currentLanguage, isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js";
 import { isDebugMode, tryEnableDebugMode } from "../core/debug.js";
@@ -321,12 +321,10 @@ function render() {
       "div",
       { class: "card" },
       el("div", { style: { fontWeight: "800", marginBottom: "4px" } }, tr("表示", "Display")),
-      settingRow(tr("言語", "Language"), tr("UIと「遊び方」の言語", "Language used by the UI and Guide"), languageSeg),
+      settingRow(tr("言語", "Language"), tr("UIの言語を設定", "Set the UI language"), languageSeg),
       settingRow(
         tr("テーマ", "Theme"),
-        hiddenThemeUnlocked
-          ? tr("サイバー: ネオン3D / クラシック: 原作風 / Pop: キャンディポップ", "Cyber: neon 3D / Classic: original-style / Pop: candy-bright")
-          : tr("サイバー: ネオン + 3D エフェクト / クラシック: 原作風", "Cyber: neon + 3D effects / Classic: original-style"),
+        tr("UIや背景のテーマを設定", "Set the UI and background theme"),
         themeSeg
       ),
       settingRow(
@@ -336,7 +334,7 @@ function render() {
       ),
       settingRow(
         tr("演出を軽くする", "Reduce effects"),
-        tr("パーティクルを完全にオフにします（低スペック端末向け）", "Disable particles completely for lower-powered devices"),
+        tr("パーティクルを完全にオフにします", "Disable particles completely"),
         toggle("reduceFx", tr("演出を軽くする", "Reduce effects"))
       )
     ),

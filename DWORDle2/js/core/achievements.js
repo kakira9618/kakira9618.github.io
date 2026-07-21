@@ -23,7 +23,8 @@ import { totalWins, totalPlays, currentWinStreak, dailyClearStreak, getHistory }
 import { CELL, Logic } from "./logic.js";
 import { isDebugMode } from "./debug.js";
 
-const RECONCILE_VERSION = 3;
+const RECONCILE_VERSION = 4;
+export const COLLECTOR_REQUIREMENT = 30;
 
 // 実績画面の見出しに使うカテゴリ。ACHIEVEMENTS はこの順に並べる
 export const ACHIEVEMENT_CATEGORIES = [
@@ -97,7 +98,7 @@ export const ACHIEVEMENTS = [
   // --- その他 ---
   { id: "analyst", cat: "misc", icon: "flask", color: "#66ffc2", name: "アナリスト", desc: "分析モードを使う" },
   { id: "migrator", cat: "misc", icon: "box", color: "#d0a878", name: "引っ越し完了", desc: "旧作からプレイ履歴を移行する" },
-  { id: "collector", cat: "misc", icon: "medal", color: "#ffcf5c", name: "実績ハンター", desc: "実績を 15 個解放する" },
+  { id: "collector", cat: "misc", icon: "medal", color: "#ffcf5c", name: "実績ハンター", desc: "実績を 30 個解放する" },
 
   // --- 隠し実績（解放するまで内容非公開）---
   { id: "h-mirror", hidden: true, icon: "mirror", color: "#c0e8ff", name: "鏡の言葉", desc: "回文になっている単語を Guess する" },
@@ -105,11 +106,11 @@ export const ACHIEVEMENTS = [
   { id: "h-anagram", hidden: true, icon: "shuffle", color: "#ffd8a0", name: "並べ替えの妙", desc: "直前の Guess のアナグラム（同じ文字構成の別単語）を Guess する" },
   { id: "h-alphabet", hidden: true, icon: "type", color: "#a0c8ff", name: "アルファベットマラソン", desc: "すべての Guess をしりとりでつなぎ、5 手以上でクリアする" },
   { id: "h-noreuse", hidden: true, icon: "ban", color: "#e8c0ff", name: "潔癖症", desc: "3 手以上のクリアで、全 Guess を通して同じ文字を 2 度使わない" },
-  { id: "h-zorome", hidden: true, icon: "dice", color: "#ffe8a0", name: "ゾロ目コレクター", desc: "ゾロ目の No.（111, 7777, 22222 など）をクリアする" },
+  { id: "h-zorome", hidden: true, icon: "dice", color: "#ffe8a0", name: "ゾロ目コレクター", desc: "3 桁以上のゾロ目 No. を 10 種類クリアする" },
   { id: "h-uso-green", hidden: true, icon: "sparkle", color: "#8fffd0", name: "全緑の嘘", desc: "DWORDlie で表示が 5 つとも緑になる Guess を出す" },
   { id: "h-abyss", hidden: true, icon: "skull", color: "#ff9090", name: "深淵を一撃", desc: "極 (No.10000-19999) を 4 手以内にクリアする" },
   { id: "h-lightning", hidden: true, icon: "bolt", color: "#fff0a0", name: "電光石火", desc: "3 手以上で、開始から 10 秒以内にクリアする" },
-  { id: "h-lexicon", hidden: true, icon: "book", color: "#c0ffd8", name: "語彙の泉", desc: "通算 100 種類の異なる単語を Guess する" },
+  { id: "h-lexicon", hidden: true, icon: "book", color: "#c0ffd8", name: "語彙の泉", desc: "通算 1000 種類の異なる単語を Guess する" },
   { id: "h-plays-5000", hidden: true, icon: "layers", color: "#d8b8ff", name: "無限の探求", desc: "通算 5000 回プレイする" },
   { id: "h-uso-800", hidden: true, icon: "mask", color: "#ff6f9f", name: "嘘八百", desc: "裏モード DWORDlie で通算 800 勝する" },
   { id: "h-play-days-365", hidden: true, icon: "footprints", color: "#c0ffe0", name: "365 日の足跡", desc: "通算 365 日プレイする" },
@@ -141,7 +142,7 @@ function unlock(id, newly) {
 
 // collector（メタ実績）を最後に判定して保存する
 function finalize(newly) {
-  if (Object.keys(unlocked).length >= 15) unlock("collector", newly);
+  if (Object.keys(unlocked).length >= COLLECTOR_REQUIREMENT) unlock("collector", newly);
   if (newly.length > 0) saveJSON("achievements", unlocked);
   return newly;
 }
@@ -169,6 +170,14 @@ function isGuessWordChain(words) {
 function isZorome(pid) {
   const s = String(pid);
   return s.length >= 3 && [...s].every((c) => c === s[0]);
+}
+
+function clearedZoromeCount(records) {
+  return new Set(
+    records
+      .filter((record) => record?.clear && isZorome(record.problemID))
+      .map((record) => String(record.problemID))
+  ).size;
 }
 
 function maxHistoricalDailyStreak(dailyPids) {
@@ -391,7 +400,6 @@ export function achievementIdsFromHistory(records) {
       if (hour >= 0 && hour < 4) ids.add("night-owl");
     }
 
-    if (isZorome(pid)) ids.add("h-zorome");
     if (isGuessWordChain(record.guessWord)) ids.add("h-alphabet");
     if (guesses >= 3 && lettersUsed.size === guesses * 5) ids.add("h-noreuse");
 
@@ -405,7 +413,8 @@ export function achievementIdsFromHistory(records) {
   if (wins >= 50) ids.add("wins-50");
   if (wins >= 100) ids.add("wins-100");
   if (usoWins >= 5) ids.add("uso-5");
-  if (words.size >= 100) ids.add("h-lexicon");
+  if (words.size >= 1000) ids.add("h-lexicon");
+  if (clearedZoromeCount(games) >= 10) ids.add("h-zorome");
   if (maxHistoricalDailyStreak(dailyClears) >= 7) ids.add("daily-7");
   for (const id of calendarAndCountIds(games)) ids.add(id);
   return ids;
@@ -465,11 +474,11 @@ export function checkOnGameFinish(ctx) {
       unlock("h-uso-green", newly);
     }
   }
-  // 隠し: 通算 100 種類の単語（全モード・移行分も含む）
+  // 隠し: 通算 1000 種類の単語（全モード・移行分も含む）
   {
     const words = new Set();
     for (const g of getHistory()) for (const w of g.guessWord) words.add(w);
-    if (words.size >= 100) unlock("h-lexicon", newly);
+    if (words.size >= 1000) unlock("h-lexicon", newly);
   }
 
   if (record.clear) {
@@ -509,7 +518,7 @@ export function checkOnGameFinish(ctx) {
     if (wins >= 100) unlock("wins-100", newly);
 
     // 隠し（クリア時のみ）
-    if (isZorome(pid)) unlock("h-zorome", newly);
+    if (clearedZoromeCount(getHistory()) >= 10) unlock("h-zorome", newly);
     if (isGuessWordChain(record.guessWord)) unlock("h-alphabet", newly);
     if (!isUso && pid >= PID.HARD_MIN && pid <= PID.HARD_MAX && guesses <= 4) unlock("h-abyss", newly);
     if (guesses >= 3 && durationSec <= 10) unlock("h-lightning", newly);

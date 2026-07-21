@@ -1,10 +1,10 @@
 // 履歴インポート後のキャッシュ更新・実績復元・通知を各画面で共通化する。
 
 import { _reload } from "../core/records.js";
-import { checkOnEvent, reconcileAchievementsFromHistory } from "../core/achievements.js?v=20260721-debug";
+import { checkOnEvent, reconcileAchievementsFromHistory } from "../core/achievements.js?v=20260721-pop-achievements";
 import { bgmTracksUnlockedBy } from "../audio/sound.js";
 import { hiddenThemesUnlockedBy } from "../core/settings.js";
-import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./toast.js?v=20260721-debug";
+import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./toast.js?v=20260721-pop-achievements";
 import { tr } from "../core/i18n.js";
 
 export function finishHistoryImport(added) {

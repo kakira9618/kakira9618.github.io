@@ -142,6 +142,10 @@ try {
   for (const label of ["キーボードヒント", "演出を軽くする", "効果音", "BGM"]) {
     await page.getByRole("switch", { name: label }).waitFor();
   }
+  for (const copy of ["UIの言語を設定", "UIや背景のテーマを設定", "パーティクルを完全にオフにします"]) {
+    await page.getByText(copy, { exact: true }).waitFor();
+  }
+  assert.equal(await page.getByText("低スペック端末向け", { exact: false }).count(), 0);
   const bgmPickerMetrics = await page.locator(".bgm-picker").evaluate((node) => ({
     clientHeight: node.clientHeight,
     scrollHeight: node.scrollHeight,
@@ -155,6 +159,52 @@ try {
   // BGM 一覧の「Candy Pop」と部分一致しないよう exact 指定でテーマの Pop を選ぶ
   await page.getByRole("radio", { name: "Pop", exact: true }).click();
   await page.locator("body.theme-pop").waitFor();
+  const normalPopVisuals = await page.evaluate(() => {
+    const bodyStyle = getComputedStyle(document.body);
+    const choice = document.querySelector(".bgm-choice:not(.locked):not(.active)");
+    const choiceStyle = getComputedStyle(choice);
+    return {
+      pageBackground: bodyStyle.backgroundColor,
+      choiceBackground: choiceStyle.backgroundImage,
+      choiceColor: choiceStyle.color,
+    };
+  });
+  assert.equal(normalPopVisuals.pageBackground, "rgb(255, 244, 248)");
+  assert.match(normalPopVisuals.choiceBackground, /linear-gradient/, "Selectable Pop BGM rows should look like cards");
+  assert.equal(normalPopVisuals.choiceColor, "rgb(74, 53, 80)");
+
+  await page.evaluate(async () => {
+    const { setAppMode } = await import("./js/ui/app.js?v=20260721-pop-achievements");
+    setAppMode("uso");
+  });
+  await page.locator("body.theme-pop.mode-uso").waitFor();
+  await page.waitForFunction(() => {
+    const choice = document.querySelector(".bgm-choice:not(.locked):not(.active)");
+    return choice && getComputedStyle(choice).color === "rgb(255, 247, 252)";
+  });
+  const usoPopVisuals = await page.evaluate(() => {
+    const bodyStyle = getComputedStyle(document.body);
+    const choice = document.querySelector(".bgm-choice:not(.locked):not(.active)");
+    const choiceStyle = getComputedStyle(choice);
+    return {
+      pageBackground: bodyStyle.backgroundColor,
+      panelBackground: bodyStyle.getPropertyValue("--bg-panel-2").trim(),
+      choiceBackground: choiceStyle.backgroundImage,
+      choiceColor: choiceStyle.color,
+    };
+  });
+  assert.equal(usoPopVisuals.pageBackground, "rgb(20, 8, 31)", "DWORDlie Pop should use a distinct dark palette");
+  assert.equal(usoPopVisuals.panelBackground, "#2b1239");
+  assert.match(usoPopVisuals.choiceBackground, /linear-gradient/);
+  assert.equal(usoPopVisuals.choiceColor, "rgb(255, 247, 252)");
+  assert.notEqual(usoPopVisuals.pageBackground, normalPopVisuals.pageBackground);
+  await assertNoSeriousA11yViolations("Pop DWORDlie settings");
+
+  await page.evaluate(async () => {
+    const { setAppMode } = await import("./js/ui/app.js?v=20260721-pop-achievements");
+    setAppMode("normal");
+  });
+  await page.locator("body.theme-pop.mode-normal").waitFor();
   await page.evaluate(async () => {
     const { showHelpModal } = await import("./js/ui/help.js?v=20260721-pop-help");
     showHelpModal("normal");
@@ -180,7 +230,9 @@ try {
   // クラス切替直後は数フレームだけ旧テーマの文字色が残る（transition の過渡状態）。
   // axe が過渡状態を拾わないよう、見出し文字の実際の色が classic に戻るまで待つ。
   await page.waitForFunction(() => {
-    const targets = document.querySelectorAll("#screen-settings .header .title, #screen-settings .label .l1");
+    const targets = document.querySelectorAll(
+      "#screen-settings .header .title, #screen-settings .label .l1, #bgm-picker-label"
+    );
     return targets.length > 0 &&
       [...targets].every((node) => getComputedStyle(node).color === "rgb(242, 242, 242)");
   });
@@ -345,7 +397,7 @@ try {
   await reducedContext.close();
 
   await page.evaluate(async () => {
-    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260721-debug");
+    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260721-pop-achievements");
     bgmUnlockCelebration([
       { id: "queue-test-a", name: "Queue Test A", desc: "First unlock" },
       { id: "queue-test-b", name: "Queue Test B", desc: "Second unlock" },
@@ -378,7 +430,7 @@ try {
 
   // 実績解放セレブレーション: 単発は大型カード、3 個以上は 1 枚にまとめる
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260721-debug");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260721-pop-achievements");
     achievementCelebration([
       { id: "smoke-single", icon: "trophy", color: "#ffd166", name: "スモーク実績", desc: "テスト用の実績です" },
     ]);
@@ -396,7 +448,7 @@ try {
   await page.locator(".ach-unlock").waitFor({ state: "detached" });
 
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260721-debug");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260721-pop-achievements");
     achievementCelebration([
       { id: "smoke-a", icon: "star", color: "#ffd166", name: "実績A", desc: "" },
       { id: "smoke-b", icon: "gem", color: "#7ee8ff", name: "実績B", desc: "" },

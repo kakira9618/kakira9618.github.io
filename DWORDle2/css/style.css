@@ -95,10 +95,23 @@ body.theme-pop {
   /* 水玉模様は #bgPop の 2D canvas が描く（半径がウェーブ状に伸縮する） */
 }
 body.theme-pop.mode-uso {
-  --bg: #fff1ea;
-  --accent: #e0426a;
-  --accent-2: #ff8800;
-  --border: rgba(224, 66, 106, 0.42);
+  --tile-unused: #76637e;
+  --bg: #14081f;
+  --bg-panel: rgba(34, 13, 45, 0.9);
+  --bg-panel-2: #2b1239;
+  --fg: #fff2fb;
+  --fg-dim: #d2a7c7;
+  --accent: #ff4d8d;
+  --accent-2: #9c5cff;
+  --danger: #ff5d6c;
+  --key-bg: #32173f;
+  --key-fg: #fff7fc;
+  --key-border: rgba(255, 90, 156, 0.42);
+  --key-unused-bg: #21132b;
+  --key-unused-fg: #b99bb7;
+  --key-unused-border: rgba(211, 155, 202, 0.2);
+  --border: rgba(255, 77, 141, 0.5);
+  --glow: 0 0 10px rgba(255, 55, 129, 0.42);
 }
 /* ふわふわ漂うパステルの光の玉（3D 背景の代わりの軽量な演出） */
 body.theme-pop::before {
@@ -118,13 +131,13 @@ body.theme-pop::before {
   from { transform: translate(-2%, -1%) rotate(-2deg) scale(1); }
   to { transform: translate(2%, 2%) rotate(2deg) scale(1.07); }
 }
-/* 裏（DWORDlie）ではパステルの光の玉を毒っ気のある暖色系に切り替える */
+/* 裏（DWORDlie）は深い夜色とネオンの光に切り替え、通常 Pop と明確に区別する */
 body.theme-pop.mode-uso::before {
   background:
-    radial-gradient(34% 34% at 20% 26%, rgba(255, 122, 152, 0.6), transparent 70%),
-    radial-gradient(38% 38% at 82% 18%, rgba(255, 168, 92, 0.58), transparent 70%),
-    radial-gradient(44% 44% at 72% 82%, rgba(255, 120, 96, 0.5), transparent 70%),
-    radial-gradient(30% 30% at 24% 76%, rgba(208, 128, 255, 0.52), transparent 70%);
+    radial-gradient(34% 34% at 20% 26%, rgba(255, 24, 102, 0.46), transparent 70%),
+    radial-gradient(38% 38% at 82% 18%, rgba(148, 52, 255, 0.5), transparent 70%),
+    radial-gradient(44% 44% at 72% 82%, rgba(19, 183, 205, 0.3), transparent 70%),
+    radial-gradient(30% 30% at 24% 76%, rgba(255, 107, 48, 0.38), transparent 70%);
 }
 body.theme-pop #bg3d {
   display: none;
@@ -135,6 +148,13 @@ body.theme-pop .logo {
   background-clip: text;
   color: transparent;
   filter: drop-shadow(0 3px 0 rgba(255, 255, 255, 0.85));
+}
+body.theme-pop.mode-uso .logo {
+  background: linear-gradient(135deg, #ff4d8d 8%, #ff773d 36%, #b45cff 68%, #55d8e8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 3px 0 rgba(37, 5, 46, 0.86));
 }
 body.theme-pop .tile {
   background: #ffffff;
@@ -1647,6 +1667,48 @@ body.theme-cyber .rcell.correct { color: #04120b; }
 }
 .bgm-choice.locked {
   opacity: 0.58;
+}
+body.theme-pop .bgm-choice:not(.locked) {
+  border-color: rgba(255, 79, 158, 0.52);
+  background: linear-gradient(135deg, #ffffff, #fff2f8);
+  color: #4a3550;
+  box-shadow: 0 2px 0 rgba(233, 148, 190, 0.28);
+}
+body.theme-pop .bgm-choice:not(.locked):hover {
+  border-color: var(--accent);
+  background: #ffe8f3;
+}
+body.theme-pop .bgm-choice.active:not(.locked) {
+  border-color: #ff4f9e;
+  background: linear-gradient(135deg, #ffdceb, #eee5ff);
+  box-shadow: 0 0 0 2px rgba(255, 79, 158, 0.18), 0 3px 0 rgba(233, 148, 190, 0.32);
+}
+body.theme-pop .bgm-choice.locked {
+  border-color: rgba(120, 101, 127, 0.26);
+  background: rgba(128, 112, 134, 0.12);
+  color: var(--fg-dim);
+  opacity: 0.58;
+}
+body.theme-pop.mode-uso .bgm-choice:not(.locked) {
+  border-color: rgba(255, 92, 153, 0.62);
+  background: linear-gradient(135deg, #3e1b4f, #281537);
+  color: #fff7fc;
+  box-shadow: 0 2px 0 rgba(14, 4, 23, 0.72);
+}
+body.theme-pop.mode-uso .bgm-choice:not(.locked):hover {
+  border-color: #ff78aa;
+  background: #54215f;
+}
+body.theme-pop.mode-uso .bgm-choice.active:not(.locked) {
+  border-color: #ff78aa;
+  background: linear-gradient(135deg, #8b2359, #542979);
+  box-shadow: 0 0 0 2px rgba(255, 86, 148, 0.2), var(--glow);
+}
+body.theme-pop.mode-uso .bgm-choice.locked {
+  border-color: rgba(211, 155, 202, 0.18);
+  background: rgba(18, 8, 25, 0.48);
+  color: #a98ca7;
+  opacity: 0.62;
 }
 .bgm-mark {
   width: 28px;

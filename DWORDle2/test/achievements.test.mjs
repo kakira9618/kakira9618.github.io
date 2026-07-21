@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { ACHIEVEMENTS, achievementIdsFromHistory } from "../js/core/achievements.js";
+import { ACHIEVEMENTS, COLLECTOR_REQUIREMENT, achievementIdsFromHistory } from "../js/core/achievements.js";
 import { Logic, queryWordPair } from "../js/core/logic.js";
 
 function clearRecord({
@@ -24,6 +24,19 @@ function clearRecord({
 }
 
 assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "new-year")?.name, "初日の出DWORDler");
+assert.equal(COLLECTOR_REQUIREMENT, 30, "Achievement Hunter should require 30 unlocked achievements");
+assert.equal(
+  ACHIEVEMENTS.find((achievement) => achievement.id === "collector")?.desc,
+  "実績を 30 個解放する"
+);
+assert.equal(
+  ACHIEVEMENTS.find((achievement) => achievement.id === "h-lexicon")?.desc,
+  "通算 1000 種類の異なる単語を Guess する"
+);
+assert.equal(
+  ACHIEVEMENTS.find((achievement) => achievement.id === "h-zorome")?.desc,
+  "3 桁以上のゾロ目 No. を 10 種類クリアする"
+);
 assert.equal(
   ACHIEVEMENTS.some((achievement) => achievement.name.includes("ワードラー") || achievement.name === "初日の出ワードル"),
   false,
@@ -47,6 +60,37 @@ assert.equal(
 {
   const ids = achievementIdsFromHistory([clearRecord({ guesses: 3, duration: 11 })]);
   assert(!ids.has("h-lightning"), "more than 10 seconds must not restore Lightning Fast");
+}
+
+{
+  const words = Array.from({ length: 1000 }, (_, index) => `w${String(index).padStart(4, "0")}`);
+  const lexicon = clearRecord();
+  lexicon.clear = false;
+  lexicon.guessWord = words;
+  assert(achievementIdsFromHistory([lexicon]).has("h-lexicon"), "1000 distinct Guesses should restore Well of Words");
+
+  const shortLexicon = { ...lexicon, guessWord: words.slice(0, 999) };
+  assert(!achievementIdsFromHistory([shortLexicon]).has("h-lexicon"), "999 distinct Guesses must not restore Well of Words");
+}
+
+{
+  const zoromePids = [111, 222, 333, 444, 555, 666, 777, 888, 999, 1111];
+  const clears = zoromePids.map((pid, index) =>
+    clearRecord({ pid, startTime: 1_700_000_000 + index * 100 })
+  );
+  assert(achievementIdsFromHistory(clears).has("h-zorome"), "10 distinct repdigit puzzle clears should restore Repdigit Collector");
+  assert(!achievementIdsFromHistory(clears.slice(0, 9)).has("h-zorome"), "9 repdigit puzzle clears must not restore Repdigit Collector");
+
+  const twoDigitAndDuplicates = [
+    ...clears.slice(0, 9),
+    clearRecord({ pid: 11, startTime: 1_700_002_000 }),
+    clearRecord({ pid: 22, startTime: 1_700_002_100 }),
+    clearRecord({ pid: 111, startTime: 1_700_002_200 }),
+  ];
+  assert(
+    !achievementIdsFromHistory(twoDigitAndDuplicates).has("h-zorome"),
+    "two-digit numbers and duplicate puzzle clears must not count toward the 10 repdigits"
+  );
 }
 
 {
