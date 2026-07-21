@@ -2,21 +2,21 @@
 // 右上のマスクボタンで DWORDlie（裏モード）に切り替わる。
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260722-unlock-analysis";
+import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260722-review-fixes";
 import { getCurrentGame, getHistory, isAlreadyPlayed } from "../core/records.js";
 import { LEVELS, todayPID, isValidPID, pidLabel, PID } from "../core/problems.js";
-import { getSettings, setSetting } from "../core/settings.js?v=20260722-unlock-analysis";
+import { getSettings, setSetting } from "../core/settings.js?v=20260722-review-fixes";
 import { loadJSON, saveJSON } from "../core/store.js";
 import { importFromLocalStorage, scanLegacyHistory } from "../core/migrate.js";
-import { playSfx } from "../audio/sound.js?v=20260722-unlock-analysis";
-import { toast } from "./toast.js?v=20260722-unlock-analysis";
-import { showModal } from "./modal.js?v=20260722-unlock-analysis";
-import { finishHistoryImport } from "./history-import.js?v=20260722-unlock-analysis";
-import { showFirstTutorial, showHelpModal } from "./help.js?v=20260722-unlock-analysis";
-import { confirmAndStart } from "./game-screen.js?v=20260722-unlock-analysis";
+import { playSfx } from "../audio/sound.js?v=20260722-review-fixes";
+import { toast } from "./toast.js?v=20260722-review-fixes";
+import { showModal } from "./modal.js?v=20260722-review-fixes";
+import { finishHistoryImport } from "./history-import.js?v=20260722-review-fixes";
+import { showFirstTutorial, showHelpModal } from "./help.js?v=20260722-review-fixes";
+import { confirmAndStart } from "./game-screen.js?v=20260722-review-fixes";
 import { icon } from "./icons.js";
-import { APP_VERSION } from "../config.js?v=20260722-unlock-analysis";
-import { localizedLevel, tr } from "../core/i18n.js?v=20260722-unlock-analysis";
+import { APP_VERSION } from "../config.js?v=20260722-review-fixes";
+import { localizedLevel, tr } from "../core/i18n.js?v=20260722-review-fixes";
 
 let root = null;
 let legacyImportCheckDone = false;

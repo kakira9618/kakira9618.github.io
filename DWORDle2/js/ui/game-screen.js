@@ -4,22 +4,22 @@
 // 原作と同じく、Guess は確定するたびに保存され、リロードしても再開できる。
 
 import { el, clear } from "./dom.js";
-import { APP_VERSION, UI, FX } from "../config.js?v=20260722-unlock-analysis";
+import { APP_VERSION, UI, FX } from "../config.js?v=20260722-review-fixes";
 import { Logic, CELL, usoConvert } from "../core/logic.js";
 import { MODES, saveCurrentGame, clearCurrentGame, getCurrentGame, addFinishedGame, isAlreadyPlayed, getHistory } from "../core/records.js";
 import { pidLabel } from "../core/problems.js";
-import { checkOnGameFinish } from "../core/achievements.js?v=20260722-unlock-analysis";
-import { registerScreen, navigate, getAppMode, currentScreenName, rememberPlayedMode } from "./app.js?v=20260722-unlock-analysis";
-import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./toast.js?v=20260722-unlock-analysis";
-import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js?v=20260722-unlock-analysis";
-import { hiddenThemesUnlockedBy } from "../core/settings.js?v=20260722-unlock-analysis";
-import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/effects.js?v=20260722-unlock-analysis";
-import { showHelpModal } from "./help.js?v=20260722-unlock-analysis";
+import { checkOnGameFinish } from "../core/achievements.js?v=20260722-review-fixes";
+import { registerScreen, navigate, getAppMode, currentScreenName, rememberPlayedMode } from "./app.js?v=20260722-review-fixes";
+import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./toast.js?v=20260722-review-fixes";
+import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js?v=20260722-review-fixes";
+import { hiddenThemesUnlockedBy } from "../core/settings.js?v=20260722-review-fixes";
+import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/effects.js?v=20260722-review-fixes";
+import { showHelpModal } from "./help.js?v=20260722-review-fixes";
 import { icon } from "./icons.js";
-import { tr } from "../core/i18n.js?v=20260722-unlock-analysis";
-import { getSettings } from "../core/settings.js?v=20260722-unlock-analysis";
-import { shouldReduceMotion } from "../core/motion.js?v=20260722-unlock-analysis";
-import { feedbackName, tileAriaLabel } from "./a11y.js?v=20260722-unlock-analysis";
+import { tr } from "../core/i18n.js?v=20260722-review-fixes";
+import { getSettings } from "../core/settings.js?v=20260722-review-fixes";
+import { shouldReduceMotion } from "../core/motion.js?v=20260722-review-fixes";
+import { feedbackName, tileAriaLabel } from "./a11y.js?v=20260722-review-fixes";
 
 const KEY_ROWS = [
   [..."qwertyuiop".split(""), "backspace"],
@@ -398,9 +398,18 @@ function physicalGameKey(e) {
   return null;
 }
 
+// モーダル・解放ダイアログが開いている間は、背面のゲームへ物理キー入力を流さない
+function overlayBlocksInput() {
+  return (
+    document.getElementById("modal-layer")?.childElementCount > 0 ||
+    document.getElementById("unlock-layer")?.classList.contains("is-active")
+  );
+}
+
 export function handlePhysicalKey(e) {
   if (currentScreenName() !== "game" || (state !== "guess" && state !== "checking")) return;
   if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (overlayBlocksInput()) return;
   const key = physicalGameKey(e);
   if (!key) return;
   e.preventDefault();
@@ -458,8 +467,11 @@ function rejectGuess(message) {
   row.classList.add("shake");
 }
 
-// タイルを 1 枚ずつフリップして判定を開く
+// タイルを 1 枚ずつフリップして判定を開く。
+// 画面離脱・再描画で gatherSession が進んだら、残っているタイマは何もしない
+// （古い done が新しい盤面へ作用したり、離脱後に音や演出が鳴るのを防ぐ）。
 function revealRow(row, word, result, done) {
+  const session = gatherSession;
   if (shouldReduceMotion()) {
     result.forEach((stateName, i) => {
       const tile = row.tiles[i];
@@ -469,14 +481,18 @@ function revealRow(row, word, result, done) {
       if (game.gameMode === "normal") applyKeyStyle(word[i]);
     });
     playSfx(result.includes(CELL.CORRECT) ? "revealCorrect" : result.includes(CELL.USED) ? "revealUsed" : "revealUnused");
-    setTimeout(done, 0);
+    setTimeout(() => {
+      if (session === gatherSession) done();
+    }, 0);
     return;
   }
   result.forEach((stateName, i) => {
     setTimeout(() => {
+      if (session !== gatherSession) return;
       const tile = row.tiles[i];
       tile.classList.add("reveal");
       setTimeout(() => {
+        if (session !== gatherSession) return;
         tile.classList.add(`state-${stateName}`);
         tile.setAttribute("aria-label", tileAriaLabel(word[i], stateName));
         playSfx(stateName === CELL.CORRECT ? "revealCorrect" : stateName === CELL.USED ? "revealUsed" : "revealUnused");
@@ -490,7 +506,9 @@ function revealRow(row, word, result, done) {
       }, UI.revealFlipMs + 20);
     }, i * UI.revealIntervalMs);
   });
-  setTimeout(done, 5 * UI.revealIntervalMs + UI.revealFlipMs / 2 + UI.afterRevealPauseMs);
+  setTimeout(() => {
+    if (session === gatherSession) done();
+  }, 5 * UI.revealIntervalMs + UI.revealFlipMs / 2 + UI.afterRevealPauseMs);
 }
 
 // ---- キーボード色 ----
@@ -566,8 +584,11 @@ function finishGame(justFinished) {
     }
 
     // 演出の後にまず結果画面へ進み、その上で解放通知を表示する。
+    // 待機中にユーザーが別画面へ移動していたら（gatherSession が進む）、
+    // その操作を上書きしないよう強制遷移はやめ、解放通知だけを表示する。
+    const session = gatherSession;
     setTimeout(() => {
-      navigate(`/result/${record.gameMode}/${record.startTime}`);
+      if (session === gatherSession) navigate(`/result/${record.gameMode}/${record.startTime}`);
       if (newly.length > 0) {
         achievementCelebration(newly);
         const bgmUnlocks = bgmTracksUnlockedBy(newly);

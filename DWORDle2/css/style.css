@@ -97,7 +97,7 @@ body.theme-pop {
   --key-fg: #4a3550;
   --key-border: rgba(255, 79, 158, 0.26);
   --key-unused-bg: #b9c0cb;
-  --key-unused-fg: #ffffff;
+  --key-unused-fg: #2a3140;
   --key-unused-border: #b9c0cb;
   --border: rgba(255, 79, 158, 0.32);
   --glow: none;
@@ -570,6 +570,13 @@ body.theme-cyber .tile.state-unused {
   box-shadow: none;
   color: #e6ecf5;
 }
+/* Pop（明背景）: ビビッドな判定色に白文字ではコントラスト不足（1.8〜2.4:1）のため、
+   cyber と同様に暗色文字へ上書きする */
+body.theme-pop .tile.state-unused { color: #1c222b; }
+body.theme-pop .tile.state-used { color: #201700; }
+body.theme-pop .tile.state-correct { color: #06281a; }
+/* 裏モードの unused (#76637e) は暗色地なので白文字のままにする */
+body.theme-pop.mode-uso .tile.state-unused { color: #fff; }
 .row.shake {
   animation: shake var(--shake-ms, 500ms) ease;
 }
@@ -675,6 +682,9 @@ body.theme-cyber .key:not(.state-unused):not(.state-used):not(.state-correct) {
 }
 body.theme-cyber .key.state-correct { color: #04120b; box-shadow: 0 0 10px color-mix(in srgb, var(--tile-correct) 45%, transparent); }
 body.theme-cyber .key.state-used { color: #1a1200; }
+/* Pop: 判定色キーもタイルと同じ理由で暗色文字にする（used/correct の背景は裏モードでも同色） */
+body.theme-pop .key.state-used { color: #201700; }
+body.theme-pop .key.state-correct { color: #06281a; }
 
 /* ---- モーダル ---- */
 .modal-backdrop {

@@ -5,14 +5,15 @@
 //   曲の実体は TRACKS（テンポ・コード進行・1 小節のスケジューラ）に定義する。
 //   設定やモード切替時はバスをクロスフェードしてシームレスに移行する。
 
-import { AUDIO } from "../config.js?v=20260722-unlock-analysis";
-import { getSettings, onSettingsChange } from "../core/settings.js?v=20260722-unlock-analysis";
+import { AUDIO } from "../config.js?v=20260722-review-fixes";
+import { getSettings, onSettingsChange } from "../core/settings.js?v=20260722-review-fixes";
 
 let ctx = null;
 let masterGain = null;
 let sfxGain = null;
 let bgmGain = null;
 let buses = new Map(); // trackId -> GainNode（遅延生成）
+let usoEcho = null; // uso 曲のフィードバックディレイ。バスごとに 1 つだけ作って全ノートで共有する
 let bgmRunning = false;
 let bgmTimer = null;
 let usoMood = false;
@@ -263,9 +264,23 @@ function busFor(trackId) {
   return bus;
 }
 
+// フィードバック循環 (delay <-> fb) は互いの接続参照で生き続け GC されないため、
+// バスを捨てるときに明示的に切って音声グラフから確実に消す。
+function disposeUsoEcho() {
+  if (!usoEcho) return;
+  try {
+    usoEcho.fb.disconnect();
+    usoEcho.delay.disconnect();
+  } catch {
+    // 切断済みでも残りの状態は初期化する。
+  }
+  usoEcho = null;
+}
+
 // 予約済みの音源は接続先の旧バスごと切り離し、次の小節だけを新しいバスへ予約する。
 // 高速なモード切替や BGM の再開で、過去と現在の小節が重なり続けるのを防ぐ。
 function resetBgmBuses() {
+  disposeUsoEcho();
   for (const bus of buses.values()) {
     bus.disconnect();
   }
@@ -276,12 +291,20 @@ function clearAudioContextReferences() {
   if (bgmTimer) clearTimeout(bgmTimer);
   bgmTimer = null;
   bgmRunning = false;
+  disposeUsoEcho();
   for (const node of [...buses.values(), bgmGain, sfxGain, masterGain]) {
     try {
       node?.disconnect();
     } catch {
       // Safari がすでに切断済みのノードを返しても、残りの状態は初期化する。
     }
+  }
+  // iOS Safari は同時 AudioContext 数に厳しい上限があるため、
+  // 参照を捨てる前に閉じて枠をブラウザへ返す（生成途中で失敗した場合など）。
+  try {
+    if (ctx && ctx.state !== "closed") ctx.close?.()?.catch(() => {});
+  } catch {
+    // close に失敗しても参照の初期化は続行する。
   }
   ctx = null;
   masterGain = null;
@@ -702,6 +725,18 @@ function scheduleBarUso(t0, chord, bar, bus) {
     osc.stop(t0 + beat * 4 + 0.1);
   }
   // 下降アルペジオ（8 分・まばら・長いディレイ）
+  // ディレイはノートごとに作らず、バスごとの共有フィードバックエコー 1 本に流す
+  // （線形なので音は同じ。ノート数ぶんの delay/fb 循環がグラフに残留しない）。
+  if (!usoEcho || usoEcho.bus !== bus) {
+    disposeUsoEcho();
+    const delay = ctx.createDelay(2);
+    delay.delayTime.value = beat * 1.5;
+    const fb = ctx.createGain();
+    fb.gain.value = 0.38;
+    delay.connect(fb).connect(bus);
+    fb.connect(delay);
+    usoEcho = { bus, delay, fb };
+  }
   const pattern = [2, -1, 1, 0, 2, -1, 0, 1]; // -1 = 休符
   for (let i = 0; i < 8; i++) {
     if (pattern[i] < 0) continue;
@@ -714,15 +749,9 @@ function scheduleBarUso(t0, chord, bar, bus) {
     g.gain.setValueAtTime(0, ti);
     g.gain.linearRampToValueAtTime(0.055, ti + 0.02);
     g.gain.exponentialRampToValueAtTime(0.0001, ti + beat * 0.9);
-    const delay = ctx.createDelay(2);
-    delay.delayTime.value = beat * 1.5;
-    const fb = ctx.createGain();
-    fb.gain.value = 0.38;
     osc.connect(g);
     g.connect(bus);
-    g.connect(delay);
-    delay.connect(fb).connect(bus);
-    fb.connect(delay);
+    g.connect(usoEcho.delay);
     osc.start(ti);
     osc.stop(ti + 1.2);
   }

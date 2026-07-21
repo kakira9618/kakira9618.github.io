@@ -4,17 +4,17 @@
 // ルート: #/analysis/<mode>/<startTime>
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260722-unlock-analysis";
+import { registerScreen, navigate } from "./app.js?v=20260722-review-fixes";
 import { findGame, MODES } from "../core/records.js";
 import { Logic } from "../core/logic.js";
 import { pidLabel } from "../core/problems.js";
-import { computeTruePatternIds, resultToPatternId, patternIdToStates } from "../core/analysis-core.js?v=20260722-unlock-analysis";
-import { checkOnEvent } from "../core/achievements.js?v=20260722-unlock-analysis";
-import { achievementCelebration } from "./toast.js?v=20260722-unlock-analysis";
-import { playSfx } from "../audio/sound.js?v=20260722-unlock-analysis";
+import { computeTruePatternIds, resultToPatternId, patternIdToStates } from "../core/analysis-core.js?v=20260722-review-fixes";
+import { checkOnEvent } from "../core/achievements.js?v=20260722-review-fixes";
+import { achievementCelebration } from "./toast.js?v=20260722-review-fixes";
+import { playSfx } from "../audio/sound.js?v=20260722-review-fixes";
 import { icon } from "./icons.js";
-import { currentLanguage, isEnglish, tr } from "../core/i18n.js?v=20260722-unlock-analysis";
-import { rowAriaLabel } from "./a11y.js?v=20260722-unlock-analysis";
+import { currentLanguage, isEnglish, tr } from "../core/i18n.js?v=20260722-review-fixes";
+import { rowAriaLabel } from "./a11y.js?v=20260722-review-fixes";
 
 let root = null;
 let worker = null;
@@ -145,7 +145,7 @@ function render(args) {
     record.gameMode === "uso" ? record.usoResults.map((r) => resultToPatternId(r)) : truePatternIds;
 
   if (worker) worker.terminate();
-  worker = new Worker(new URL("../core/analysis.worker.js?v=20260722-unlock-analysis", import.meta.url), { type: "module" });
+  worker = new Worker(new URL("../core/analysis.worker.js?v=20260722-review-fixes", import.meta.url), { type: "module" });
   worker.onmessage = (e) => {
     if (token !== renderToken) return; // 画面遷移後の古い結果
     const msg = e.data;

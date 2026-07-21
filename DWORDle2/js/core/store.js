@@ -4,6 +4,14 @@ import { isDebugMode } from "./debug.js";
 
 const PREFIX = "dwordle2.";
 
+// 保存失敗（容量超過・プライベートモード等）はデータ消失に直結するため、
+// UI 側（main.js）が登録するハンドラで必ずユーザーへ知らせる。
+let saveErrorHandler = null;
+
+export function onSaveError(handler) {
+  saveErrorHandler = handler;
+}
+
 export function loadJSON(key, fallback) {
   try {
     const raw = localStorage.getItem(PREFIX + key);
@@ -21,6 +29,7 @@ export function saveJSON(key, value) {
     return true;
   } catch (e) {
     console.warn("saveJSON failed:", key, e);
+    saveErrorHandler?.(key, e);
     return false;
   }
 }

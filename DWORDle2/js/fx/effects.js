@@ -1,8 +1,8 @@
 // Three.js を遅延ロードするエフェクト窓口。
 // WebGL / Three.js が利用できない環境でも、ゲーム本体はクラシック表示で続行する。
 
-import { UI } from "../config.js?v=20260722-unlock-analysis";
-import { getSettings, setSetting } from "../core/settings.js?v=20260722-unlock-analysis";
+import { UI } from "../config.js?v=20260722-review-fixes";
+import { getSettings, setSetting } from "../core/settings.js?v=20260722-review-fixes";
 
 let background = null;
 let bursts = null;
@@ -29,8 +29,8 @@ function fallBackToClassic(error) {
 export function initEffects() {
   if (initPromise) return initPromise;
   initPromise = Promise.all([
-    import("./background.js?v=20260722-unlock-analysis"),
-    import("./bursts.js?v=20260722-unlock-analysis"),
+    import("./background.js?v=20260722-review-fixes"),
+    import("./bursts.js?v=20260722-review-fixes"),
   ])
     .then(([backgroundModule, burstsModule]) => {
       backgroundModule.initBackground(fallBackToClassic);

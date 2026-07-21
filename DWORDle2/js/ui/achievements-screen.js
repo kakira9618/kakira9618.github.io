@@ -2,11 +2,11 @@
 // ルート: #/achievements
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260722-unlock-analysis";
-import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, getUnlocked } from "../core/achievements.js?v=20260722-unlock-analysis";
-import { playSfx } from "../audio/sound.js?v=20260722-unlock-analysis";
+import { registerScreen, navigate } from "./app.js?v=20260722-review-fixes";
+import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, getUnlocked } from "../core/achievements.js?v=20260722-review-fixes";
+import { playSfx } from "../audio/sound.js?v=20260722-review-fixes";
 import { icon } from "./icons.js";
-import { localizedAchievement, tr } from "../core/i18n.js?v=20260722-unlock-analysis";
+import { localizedAchievement, tr } from "../core/i18n.js?v=20260722-review-fixes";
 
 let root = null;
 

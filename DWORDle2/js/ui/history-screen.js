@@ -2,15 +2,15 @@
 // ルート: #/history
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260722-unlock-analysis";
+import { registerScreen, navigate } from "./app.js?v=20260722-review-fixes";
 import { getRecentGames, getStatistics, MODES } from "../core/records.js";
 import { Logic, CELL } from "../core/logic.js";
 import { pidLabel } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260722-unlock-analysis";
-import { showModal } from "./modal.js?v=20260722-unlock-analysis";
+import { playSfx } from "../audio/sound.js?v=20260722-review-fixes";
+import { showModal } from "./modal.js?v=20260722-review-fixes";
 import { icon } from "./icons.js";
-import { currentLanguage, tr } from "../core/i18n.js?v=20260722-unlock-analysis";
-import { rowAriaLabel } from "./a11y.js?v=20260722-unlock-analysis";
+import { currentLanguage, tr } from "../core/i18n.js?v=20260722-review-fixes";
+import { rowAriaLabel } from "./a11y.js?v=20260722-review-fixes";
 
 let root = null;
 let filter = "all"; // "all" | "normal" | "uso"
