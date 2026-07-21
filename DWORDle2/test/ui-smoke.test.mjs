@@ -233,6 +233,29 @@ try {
   assert.notEqual(usoPopVisuals.pageBackground, normalPopVisuals.pageBackground);
   await assertNoSeriousA11yViolations("Pop DWORDlie settings");
   await page.getByRole("button", { name: "タイトルへ戻る" }).click();
+  await page.getByRole("button", { name: "遊び方" }).click();
+  const usoPopHelp = page.getByRole("dialog", { name: "DWORDlie 遊び方" });
+  await usoPopHelp.waitFor();
+  const usoPopHelpTileColors = await usoPopHelp.evaluate((dialog) => {
+    const styleOf = (selector) => {
+      const style = getComputedStyle(dialog.querySelector(selector));
+      return { background: style.backgroundColor, color: style.color };
+    };
+    return {
+      answer: styleOf(".help-answers .htile"),
+      correct: styleOf(".help-note .rcell.correct"),
+      used: styleOf(".help-note .rcell.used"),
+      unused: styleOf(".help-note .rcell.unused"),
+    };
+  });
+  assert.deepEqual(usoPopHelpTileColors.answer, {
+    background: "rgb(255, 255, 255)",
+    color: "rgb(74, 53, 80)",
+  }, "DWORDlie Pop help answer tiles should use dark text on white");
+  assert.equal(usoPopHelpTileColors.correct.color, "rgb(6, 40, 26)");
+  assert.equal(usoPopHelpTileColors.used.color, "rgb(32, 23, 0)");
+  assert.equal(usoPopHelpTileColors.unused.color, "rgb(255, 255, 255)");
+  await usoPopHelp.getByRole("button", { name: "閉じる" }).click();
   await page.getByRole("button", { name: "番号を指定" }).click();
   const usoPopPuzzleDialog = page.getByRole("dialog", { name: "番号を指定してプレイ" });
   const usoPopPuzzleInputBackground = await usoPopPuzzleDialog.locator('input[type="number"]').evaluate(

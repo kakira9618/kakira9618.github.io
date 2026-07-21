@@ -1526,6 +1526,12 @@ body.theme-cyber .result-title.clear {
 .rcell.used { background: var(--tile-used); }
 .rcell.correct { background: var(--tile-correct); }
 body.theme-cyber .rcell.correct { color: #04120b; }
+/* Pop の明るい判定色では、結果・分析・遊び方の小タイルも暗色文字にする。 */
+body.theme-pop .rcell.unused { color: #1c222b; }
+body.theme-pop .rcell.used { color: #201700; }
+body.theme-pop .rcell.correct { color: #06281a; }
+/* DWORDlie Pop の unused は暗い紫なので白文字を維持する。 */
+body.theme-pop.mode-uso .rcell.unused { color: #fff; }
 /* 分析画面のターン見出し内は小さめ */
 .turn-head .rcell {
   width: 20px;
@@ -1971,6 +1977,7 @@ body.theme-pop.mode-uso .bgm-choice.locked {
 /* Pop の未判定タイルはゲーム盤面と同じ白地にする */
 body.theme-pop .htile:not(.unused):not(.used):not(.correct) {
   background: #ffffff;
+  color: #4a3550;
 }
 .htile.typed {
   animation: pop 120ms ease;
