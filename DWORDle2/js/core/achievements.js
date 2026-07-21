@@ -1,4 +1,4 @@
-// 実績システム。通常 30 種 + 隠し 10 種。
+// 実績システム。通常 40 種 + 隠し 10 種。
 //
 // 解放判定はイベント駆動:
 //   - checkOnGameFinish(ctx): ゲーム終了時（ctx はこのファイル冒頭のコメント参照）
@@ -58,6 +58,18 @@ export const ACHIEVEMENTS = [
   { id: "slow-10", icon: "clock", color: "#c8b8a0", name: "熟考の人", desc: "10 分以上かけてクリアする" },
   { id: "night-owl", icon: "nightMoon", color: "#9a8fff", name: "真夜中のワードラー", desc: "深夜 0 時〜4 時にクリアする" },
   { id: "daily-7", icon: "flag", color: "#8fd88f", name: "週間皆勤", desc: "デイリー問題を 7 日連続でクリアする" },
+  // --- 日付・カレンダー ---
+  { id: "early-bird", icon: "sun", color: "#ffd280", name: "早起きワードラー", desc: "朝 5 時〜8 時にクリアする" },
+  { id: "new-year", icon: "sunrise", color: "#ffb3a0", name: "初日の出ワードル", desc: "1 月 1 日にクリアする" },
+  { id: "christmas", icon: "gift", color: "#ff8f8f", name: "聖夜の贈り物", desc: "12 月 25 日にクリアする" },
+  { id: "weekend", icon: "calendar", color: "#a0d8ff", name: "週末ワードラー", desc: "土曜日と日曜日の両方でクリアする（別の週でもOK）" },
+  { id: "same-day-5", icon: "layers", color: "#ffcf80", name: "今日は絶好調", desc: "同じ日に 5 回クリアする" },
+  { id: "play-days-30", icon: "footprints", color: "#c8ffb0", name: "継続は力なり", desc: "通算 30 日プレイする" },
+  // --- 回数 ---
+  { id: "daily-30", icon: "flag", color: "#7bd88f", name: "デイリー常連", desc: "デイリー問題を通算 30 回クリアする" },
+  { id: "plays-300", icon: "book", color: "#d8c8a8", name: "盤上の住人", desc: "通算 300 回プレイする" },
+  { id: "guesses-1000", icon: "type", color: "#b8d8ff", name: "千語の探求者", desc: "通算 1000 回 Guess する" },
+  { id: "uso-20", icon: "mask", color: "#ff9ab8", name: "嘘八百も見抜く", desc: "裏モード DWORDlie で通算 20 勝する" },
   // --- その他 ---
   { id: "analyst", icon: "flask", color: "#66ffc2", name: "アナリスト", desc: "分析モードを使う" },
   { id: "migrator", icon: "box", color: "#d0a878", name: "引っ越し完了", desc: "旧作からプレイ履歴を移行する" },
@@ -149,6 +161,53 @@ function maxHistoricalDailyStreak(dailyPids) {
     previous = day;
   }
   return best;
+}
+
+// 完了時刻（秒）。endTime が無い移行レコードは startTime を使う。
+function completedAtSec(record) {
+  const endTime = Number(record.endTime);
+  if (Number.isFinite(endTime) && endTime > 0) return endTime;
+  const startTime = Number(record.startTime);
+  return Number.isFinite(startTime) && startTime > 0 ? startTime : null;
+}
+
+// 日付・カレンダー系と通算回数系の実績をまとめて判定する。
+// ゲーム終了時（履歴に現在のレコードを追加した後）と履歴復元の両方から使う。
+function calendarAndCountIds(records) {
+  const ids = new Set();
+  const playDays = new Set();
+  const winsPerDay = new Map();
+  const clearedWeekdays = new Set();
+  let games = 0;
+  let dailyClears = 0;
+  let guessTotal = 0;
+  let usoWins = 0;
+  for (const record of records) {
+    if (!Array.isArray(record?.guessWord) || record.guessWord.length === 0) continue;
+    games++;
+    guessTotal += record.guessWord.length;
+    const at = completedAtSec(record);
+    const date = at === null ? null : new Date(at * 1000);
+    if (date) playDays.add(date.toDateString());
+    if (!record.clear) continue;
+    if (record.gameMode === "uso") usoWins++;
+    if (isDailyPID(record.problemID)) dailyClears++;
+    if (!date) continue;
+    winsPerDay.set(date.toDateString(), (winsPerDay.get(date.toDateString()) ?? 0) + 1);
+    clearedWeekdays.add(date.getDay());
+    const hour = date.getHours();
+    if (hour >= 5 && hour < 8) ids.add("early-bird");
+    if (date.getMonth() === 0 && date.getDate() === 1) ids.add("new-year");
+    if (date.getMonth() === 11 && date.getDate() === 25) ids.add("christmas");
+  }
+  if (clearedWeekdays.has(0) && clearedWeekdays.has(6)) ids.add("weekend");
+  if ([...winsPerDay.values()].some((wins) => wins >= 5)) ids.add("same-day-5");
+  if (playDays.size >= 30) ids.add("play-days-30");
+  if (dailyClears >= 30) ids.add("daily-30");
+  if (games >= 300) ids.add("plays-300");
+  if (guessTotal >= 1000) ids.add("guesses-1000");
+  if (usoWins >= 20) ids.add("uso-20");
+  return ids;
 }
 
 // 保存済み履歴だけから判定可能な実績 ID を復元する。
@@ -280,6 +339,7 @@ export function achievementIdsFromHistory(records) {
   if (usoWins >= 5) ids.add("uso-5");
   if (words.size >= 100) ids.add("h-lexicon");
   if (maxHistoricalDailyStreak(dailyClears) >= 7) ids.add("daily-7");
+  for (const id of calendarAndCountIds(games)) ids.add(id);
   return ids;
 }
 
@@ -386,6 +446,9 @@ export function checkOnGameFinish(ctx) {
     if (guesses >= 3 && durationSec <= 20) unlock("h-lightning", newly);
     if (guesses >= 3 && lettersUsed.size === guesses * 5) unlock("h-noreuse", newly);
   }
+
+  // 日付・回数系（record は履歴に保存済みなので、現在のゲームも集計に含まれる）
+  for (const id of calendarAndCountIds(getHistory())) unlock(id, newly);
 
   return finalize(newly);
 }

@@ -94,6 +94,78 @@ function clearRecord({
 }
 
 {
+  // 2026-01-01 09:00 JST 前後（ローカル時刻依存を避けるため正午 UTC ベースで組む）
+  const newYearNoon = Math.floor(Date.UTC(2026, 0, 1, 3, 0, 0) / 1000);
+  const ids = achievementIdsFromHistory([clearRecord({ startTime: newYearNoon })]);
+  assert(ids.has("new-year"), "a clear on January 1 should restore First Sunrise");
+  assert(!ids.has("christmas"));
+}
+
+{
+  const earlyMorning = new Date(2026, 6, 20, 6, 30, 0); // ローカル 6:30
+  const ids = achievementIdsFromHistory([
+    clearRecord({ startTime: Math.floor(earlyMorning.getTime() / 1000) }),
+  ]);
+  assert(ids.has("early-bird"), "a clear between 5 and 8 a.m. should restore Early Bird");
+}
+
+{
+  const saturday = new Date(2026, 6, 18, 12, 0, 0); // 2026-07-18 (土)
+  const sunday = new Date(2026, 6, 19, 12, 0, 0); // 2026-07-19 (日)
+  const both = [
+    clearRecord({ pid: 1, startTime: Math.floor(saturday.getTime() / 1000) }),
+    clearRecord({ pid: 2, startTime: Math.floor(sunday.getTime() / 1000) }),
+  ];
+  assert(achievementIdsFromHistory(both).has("weekend"), "Saturday + Sunday clears should restore Weekend Wordler");
+  assert(!achievementIdsFromHistory(both.slice(0, 1)).has("weekend"), "Saturday alone must not restore Weekend Wordler");
+}
+
+{
+  const base = new Date(2026, 6, 20, 12, 0, 0);
+  const sameDayWins = Array.from({ length: 5 }, (_, index) =>
+    clearRecord({ pid: index + 1, startTime: Math.floor(base.getTime() / 1000) + index * 600 })
+  );
+  assert(achievementIdsFromHistory(sameDayWins).has("same-day-5"), "5 wins in one day should restore On Fire Today");
+  assert(!achievementIdsFromHistory(sameDayWins.slice(0, 4)).has("same-day-5"));
+}
+
+{
+  const manyDays = Array.from({ length: 30 }, (_, index) =>
+    clearRecord({ pid: index + 1, startTime: 1_700_000_000 + index * 86400 })
+  );
+  const ids = achievementIdsFromHistory(manyDays);
+  assert(ids.has("play-days-30"), "playing on 30 days should restore Consistency Pays");
+  assert(!achievementIdsFromHistory(manyDays.slice(0, 29)).has("play-days-30"));
+}
+
+{
+  const dailyRegular = Array.from({ length: 30 }, (_, index) =>
+    clearRecord({ pid: 20260601 + index, startTime: 1_700_000_000 + index * 86400 })
+  );
+  assert(achievementIdsFromHistory(dailyRegular).has("daily-30"), "30 Daily clears should restore Daily Regular");
+}
+
+{
+  const usoWins = Array.from({ length: 20 }, (_, index) =>
+    clearRecord({ mode: "uso", pid: index + 1, startTime: 1_700_000_000 + index * 100 })
+  );
+  const ids = achievementIdsFromHistory(usoWins);
+  assert(ids.has("uso-20"), "20 DWORDlie wins should restore Lie Buster");
+  assert(!achievementIdsFromHistory(usoWins.slice(0, 19)).has("uso-20"));
+}
+
+{
+  // 10 手 × 100 ゲームで 1000 Guess
+  const grind = Array.from({ length: 100 }, (_, index) =>
+    clearRecord({ pid: (index % 5) + 1, guesses: 10, startTime: 1_700_000_000 + index * 3600 })
+  );
+  const ids = achievementIdsFromHistory(grind);
+  assert(ids.has("guesses-1000"), "1000 total Guesses should restore A Thousand Words");
+  assert(ids.has("plays-100"));
+  assert(!ids.has("plays-300"));
+}
+
+{
   const feedback = queryWordPair("block", "about", "black");
   assert(feedback.every((state) => state === "correct"));
   assert.notEqual("block", "about");
