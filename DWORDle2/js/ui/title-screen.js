@@ -69,12 +69,12 @@ function numberPrompt(mode) {
   setTimeout(() => input.select(), 60);
 }
 
-// ランダムプレイ。難易度（レベル）を選んでスタートする。
+// ランダムプレイ。難しさ（レベル）を選んでスタートする。
 // 前回選んだレベルを覚えておく。
 function randomPrompt(mode) {
   const lastLevel = getSettings().randomLevel;
   showModal({
-    title: tr("ランダムにプレイ（難易度を選択）", "Random puzzle — Choose difficulty"),
+    title: tr("ランダムにプレイ（難しさを選択）", "Random puzzle — Choose difficulty"),
     body: LEVELS.map((lv) => {
       const localized = localizedLevel(lv);
       return el(
@@ -219,7 +219,7 @@ function render() {
           )
         : null,
       menuBtn("calendar", tr("デイリー問題", "Daily puzzle"), () => { playSfx("ui"); confirmAndStart(todayPID(), mode); }, !hasOngoing),
-      menuBtn("dice", tr("ランダム（難易度を選ぶ）", "Random (choose difficulty)"), () => { playSfx("ui"); randomPrompt(mode); }),
+      menuBtn("dice", tr("ランダム（難しさを選択）", "Random (choose difficulty)"), () => { playSfx("ui"); randomPrompt(mode); }),
       menuBtn("hash", tr("番号を指定", "Choose puzzle number"), () => { playSfx("ui"); numberPrompt(mode); })
     ),
     el(

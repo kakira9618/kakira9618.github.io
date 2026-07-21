@@ -13,7 +13,7 @@ import { achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } 
 import { hiddenThemesUnlockedBy } from "./core/settings.js";
 
 // 画面モジュール（import するだけで registerScreen される）
-import "./ui/title-screen.js?v=20260721-pop-achievements";
+import "./ui/title-screen.js?v=20260721-difficulty-copy";
 import "./ui/game-screen.js?v=20260721-pop-achievements";
 import "./ui/result-screen.js?v=20260721-pop-achievements";
 import "./ui/history-screen.js?v=20260721-pop-achievements";

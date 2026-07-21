@@ -114,6 +114,14 @@ try {
     `DWORDlie banner should sit immediately above the logo: ${JSON.stringify({ usoBannerBox, usoLogoBox })}`
   );
   await page.getByRole("button", { name: "表モードへ" }).click();
+  const randomButton = page.getByRole("button", { name: "ランダム（難しさを選択）", exact: true });
+  await randomButton.waitFor();
+  await randomButton.click();
+  const randomDialog = page.getByRole("dialog", { name: "ランダムにプレイ（難しさを選択）" });
+  await randomDialog.waitFor();
+  assert.equal(await page.getByText("難易度を選ぶ", { exact: false }).count(), 0);
+  assert.equal(await page.getByText("難易度を選択", { exact: false }).count(), 0);
+  await randomDialog.getByRole("button", { name: "閉じる" }).click();
   await assertNoSeriousA11yViolations("Title screen");
   const publicEntry = await page.evaluate(async () => {
     const assetPaths = ["/favicon.png", "/og.png", "/manifest.webmanifest"];
