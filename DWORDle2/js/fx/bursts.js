@@ -24,6 +24,9 @@ export function initBursts(onFailure = () => {}) {
   failureHandler = onFailure;
   const canvas = document.getElementById("fx3d");
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  // WebGL の初期クリア色は不透明黒。一度も render せずに clear() すると
+  // 全画面が黒く塗られるため（pop テーマ → 戻る で発生）、透明を明示する。
+  renderer.setClearColor(0x000000, 0);
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   scene = new THREE.Scene();
   resize();
