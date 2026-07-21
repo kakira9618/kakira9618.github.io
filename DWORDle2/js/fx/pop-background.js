@@ -2,9 +2,11 @@
 // 格子状に並んだドットの半径が、画面をゆっくり横切る 2 つの波の合成に合わせて
 // 伸び縮みする。その上を、盤面タイル風の 1x5 ラインが 5 本ほど、ゆっくり回転しながら
 // 画面上から下へエンドレスに流れ落ちる（画面下へ抜けたら上から降り直す）。
+// ラインは全て白（未判定）で現れ、バラバラの時差で 1 枚ずつ判定色にフリップし、
+// その瞬間に控えめなパーティクルが散る。あくまで背景なので全体に薄く描く。
 // 裏モード（DWORDlie）では配色を毒っ気のあるキャンディカラーに切り替える。
 // pop 以外のテーマでは canvas を空にして描画ループも止める。
-// 「演出を軽くする」時はアニメーションを止め、静止した水玉とラインを 1 回だけ描く。
+// 「演出を軽くする」時はアニメーションを止め、判定済みの静止したラインを 1 回だけ描く。
 
 import { FX } from "../config.js";
 import { getSettings, onSettingsChange } from "../core/settings.js";
@@ -72,8 +74,13 @@ function applyTheme(theme) {
   } else if (!animate) {
     running = false;
     if (!ctx) return;
-    if (active) draw();
-    else ctx.clearRect(0, 0, innerWidth, innerHeight);
+    if (active) {
+      // 静止画では反転途中の姿やパーティクルを残さず、判定済みの状態で描く
+      snapReveals();
+      draw();
+    } else {
+      ctx.clearRect(0, 0, innerWidth, innerHeight);
+    }
   }
 }
 
@@ -132,6 +139,8 @@ function draw() {
 
 const rand = (min, max) => min + Math.random() * (max - min);
 
+let particles = [];
+
 // ラインが完全に画面外へ出たと見なせる余白（回転を考慮したラインの半径ぶん）
 function lineMargin() {
   const cfg = FX.popBg.tiles;
@@ -144,37 +153,141 @@ function bandX(band) {
   return ((band + rand(0.15, 0.85)) / n) * innerWidth;
 }
 
-function makeLine(band, y) {
+// onScreen=false のラインは画面上端の外から降ってくるので、
+// 判定（色付け）の開始は「画面に入ってから」を起点に数える
+function makeLine(band, y, onScreen) {
   const cfg = FX.popBg.tiles;
-  return {
+  const vy = rand(cfg.fallSpeedPx[0], cfg.fallSpeedPx[1]);
+  const enterDelay = onScreen ? 0 : lineMargin() / vy;
+  const line = {
     band,
     x: bandX(band),
     y,
     angle: rand(0, Math.PI * 2),
     spin: rand(cfg.spinDegPerSec[0], cfg.spinDegPerSec[1]) * (Math.PI / 180) * (Math.random() < 0.5 ? -1 : 1),
-    vy: rand(cfg.fallSpeedPx[0], cfg.fallSpeedPx[1]),
-    colors: Array.from({ length: cfg.tilesPerLine }, () => (Math.random() * 4) | 0),
+    vy,
+    // dir=+1: 白 → 判定色 / dir=-1: 判定色 → 白。flipAt を過ぎるとフリップが走る
+    tiles: Array.from({ length: cfg.tilesPerLine }, () => ({ color: 1, flipAt: Infinity, dir: 1, burst: true })),
+    mode: "toColor",
+    nextPhaseAt: Infinity,
   };
+  scheduleReveal(line, enterDelay + rand(cfg.revealStartSec[0], cfg.revealStartSec[1]));
+  return line;
+}
+
+// 端から順番に、1 枚ずつ不揃いな時差をつけて判定していく（始まる端はラインごとにランダム）
+function scheduleReveal(line, delay) {
+  const cfg = FX.popBg.tiles;
+  const order = Array.from({ length: cfg.tilesPerLine }, (_, k) => k);
+  if (Math.random() < 0.5) order.reverse();
+  let at = t + delay;
+  for (const k of order) {
+    const tile = line.tiles[k];
+    tile.color = 1 + ((Math.random() * 3) | 0);
+    tile.flipAt = at;
+    tile.dir = 1;
+    tile.burst = false;
+    at += rand(cfg.revealGapSec[0], cfg.revealGapSec[1]);
+  }
+  line.mode = "toColor";
+  line.nextPhaseAt = Math.max(...line.tiles.map((tile) => tile.flipAt)) + cfg.revealFlipSec;
+}
+
+// 判定色 → 白へ戻す。発火タイミングはラインごとにランダムだが、
+// 戻り自体は 1 ライン全タイルほぼ同時（1 枚ずつの判定と対比をつける）
+function scheduleRevert(line) {
+  const cfg = FX.popBg.tiles;
+  const at = t + rand(cfg.revertDelaySec[0], cfg.revertDelaySec[1]);
+  for (const tile of line.tiles) {
+    tile.flipAt = at + rand(0, 0.08); // ごくわずかに揺らすと機械的に見えない
+    tile.dir = -1;
+    tile.burst = true; // 白に戻るときはパーティクルなし（背景なので控えめに）
+  }
+  line.mode = "toWhite";
+  line.nextPhaseAt = Math.max(...line.tiles.map((tile) => tile.flipAt)) + cfg.revealFlipSec;
 }
 
 function initLines() {
   const cfg = FX.popBg.tiles;
   // 最初から画面全体に散らばった状態で開始する（上から順に降ってくるのを待たせない）
   lines = Array.from({ length: cfg.lineCount }, (_, i) =>
-    makeLine(i, ((i + 0.5) / cfg.lineCount) * innerHeight + rand(-40, 40))
+    makeLine(i, ((i + 0.5) / cfg.lineCount) * innerHeight + rand(-40, 40), true)
   );
 }
 
+// 反転アニメの進行度（0 = 反転前、0.5 = 縮み切って色が切り替わる、1 = 反転後で全開）
+function flipProgress(tile) {
+  const dur = FX.popBg.tiles.revealFlipSec;
+  return Math.min(Math.max((t - tile.flipAt) / dur, 0), 1);
+}
+
+function snapReveals() {
+  for (const line of lines) {
+    for (const tile of line.tiles) {
+      tile.flipAt = -Infinity;
+      tile.dir = 1;
+      tile.burst = true;
+    }
+  }
+  particles = [];
+}
+
 function stepLines(dt) {
+  const cfg = FX.popBg.tiles;
   const margin = lineMargin();
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     line.y += line.vy * dt;
     line.angle += line.spin * dt;
-    // 画面下へ抜けたら、同じ band の新しいラインとして上から降り直す（エンドレス）
+    // 画面下へ抜けたら、同じ band の新しいライン（白）として上から降り直す（エンドレス）
     if (line.y > innerHeight + margin) {
-      lines[i] = makeLine(line.band, -margin);
+      lines[i] = makeLine(line.band, -margin, false);
+      continue;
     }
+    // 判定 → 白戻し → また判定、を落ちている間ずっと繰り返す
+    if (t >= line.nextPhaseAt) {
+      if (line.mode === "toColor") scheduleRevert(line);
+      else scheduleReveal(line, rand(cfg.revealStartSec[0], cfg.revealStartSec[1]));
+    }
+    // 判定色に切り替わる瞬間（フリップの折り返し）にパーティクルを 1 回だけ散らす
+    line.tiles.forEach((tile, k) => {
+      if (tile.burst || tile.dir !== 1 || t < tile.flipAt + cfg.revealFlipSec / 2) return;
+      tile.burst = true;
+      const off = (k - (cfg.tilesPerLine - 1) / 2) * cfg.pitchPx;
+      spawnParticles(line.x + Math.cos(line.angle) * off, line.y + Math.sin(line.angle) * off, tile.color, line.vy);
+    });
+  }
+  stepParticles(dt);
+}
+
+function spawnParticles(x, y, colorIdx, inheritVy) {
+  const p = FX.popBg.tiles.particle;
+  for (let i = 0; i < p.count; i++) {
+    const a = rand(0, Math.PI * 2);
+    const speed = rand(p.speedPx[0], p.speedPx[1]);
+    particles.push({
+      x,
+      y,
+      vx: Math.cos(a) * speed,
+      vy: Math.sin(a) * speed + inheritVy * 0.5,
+      life: p.lifeSec,
+      colorIdx,
+    });
+  }
+}
+
+function stepParticles(dt) {
+  const p = FX.popBg.tiles.particle;
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const pt = particles[i];
+    pt.life -= dt;
+    if (pt.life <= 0) {
+      particles.splice(i, 1);
+      continue;
+    }
+    pt.x += pt.vx * dt;
+    pt.y += pt.vy * dt;
+    pt.vy += p.gravityPx * dt;
   }
 }
 
@@ -187,10 +300,16 @@ function drawLines() {
     ctx.translate(line.x, line.y);
     ctx.rotate(line.angle);
     for (let k = 0; k < cfg.tilesPerLine; k++) {
+      const tile = line.tiles[k];
       const x = (k - (cfg.tilesPerLine - 1) / 2) * cfg.pitchPx;
-      const c = colors[line.colors[k] % colors.length];
+      const p = flipProgress(tile);
+      // タイルの短辺を縮めて戻す疑似フリップ。折り返し（p=0.5）で色を切り替える
+      const sy = Math.abs(Math.cos(Math.PI * p));
+      if (sy < 0.02) continue;
+      const colored = tile.dir === 1 ? p >= 0.5 : p < 0.5;
+      const c = colors[(colored ? tile.color : 0) % colors.length];
       ctx.beginPath();
-      ctx.roundRect(x - cfg.sizePx / 2, -cfg.sizePx / 2, cfg.sizePx, cfg.sizePx, cfg.cornerPx);
+      ctx.roundRect(x - cfg.sizePx / 2, (-cfg.sizePx / 2) * sy, cfg.sizePx, cfg.sizePx * sy, cfg.cornerPx * sy);
       ctx.fillStyle = c.fill;
       ctx.fill();
       ctx.strokeStyle = c.stroke;
@@ -198,4 +317,15 @@ function drawLines() {
     }
     ctx.restore();
   }
+  drawParticles(colors);
+}
+
+function drawParticles(colors) {
+  const p = FX.popBg.tiles.particle;
+  for (const pt of particles) {
+    ctx.globalAlpha = (pt.life / p.lifeSec) * p.alpha;
+    ctx.fillStyle = colors[pt.colorIdx % colors.length].stroke;
+    ctx.fillRect(pt.x - p.sizePx / 2, pt.y - p.sizePx / 2, p.sizePx, p.sizePx);
+  }
+  ctx.globalAlpha = 1;
 }

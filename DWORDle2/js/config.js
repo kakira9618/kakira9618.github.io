@@ -87,7 +87,13 @@ export const FX = {
       strokeWidthPx: 2, // 輪郭線の太さ
       fallSpeedPx: [14, 24], // 落下速度 px/s の [最小, 最大]（ラインごとにランダム）
       spinDegPerSec: [2.5, 7], // 回転の速さ deg/s の [最小, 最大]（向きはランダム）
-      // 白・緑・黄・灰の 4 色。fill はごく薄く、stroke で輪郭をわずかに立たせる
+      revealStartSec: [2, 8], // 画面に入って（または白に戻って）から判定が始まるまでの秒数 [最小, 最大]
+      revealGapSec: [0.3, 0.9], // タイル 1 枚ごとの判定の時差 [最小, 最大]（端から順番）
+      revealFlipSec: 0.55, // タイル 1 枚の反転アニメの時間
+      revertDelaySec: [4, 12], // 全タイル判定後、ラインが白に戻るまでの秒数 [最小, 最大]（ラインごとランダム・全タイルほぼ同時）
+      // 判定の瞬間に飛び散る小さなパーティクル（色は控えめのまま、広めに飛ばす）
+      particle: { count: 10, speedPx: [60, 170], lifeSec: 0.9, sizePx: 3.5, gravityPx: 70, alpha: 0.8 },
+      // 先頭が白（未判定）、続いて緑・黄・灰（判定色）。fill はごく薄く、stroke で輪郭を立たせる
       colorsTile: [
         { fill: "rgba(255, 255, 255, 0.5)", stroke: "rgba(168, 177, 189, 0.32)" },
         { fill: "rgba(45, 189, 110, 0.13)", stroke: "rgba(45, 189, 110, 0.3)" },
