@@ -114,7 +114,7 @@ FakeAudioContext.holdNextResume = false;
 globalThis.window = { AudioContext: FakeAudioContext };
 
 const { setSetting } = await import("../js/core/settings.js");
-const { audioNeedsRecovery, playSfx, unlockAudio, setUsoMood, stopBgm } = await import("../js/audio/sound.js");
+const { audioNeedsRecovery, playSfx, unlockAudio, setUsoMood, stopBgm, BGM_TRACKS } = await import("../js/audio/sound.js");
 
 setSetting("bgm", false);
 playSfx("ui");
@@ -132,15 +132,15 @@ const bgmGain = outputGains.find((gain) => Math.abs(gain.gain.value - 0.16) < 1e
 const sfxGain = outputGains.find((gain) => gain !== bgmGain);
 const currentBuses = context.gains.filter((gain) => gain.connections.includes(bgmGain));
 
-assert.equal(currentBuses.length, 4, "only the current four BGM buses should remain connected");
-assert(context.gains.filter((gain) => gain.disconnected).length >= 4, "old BGM buses should be disconnected");
+assert.equal(currentBuses.length, 1, "only the bus for the active track should remain connected");
+assert(context.gains.filter((gain) => gain.disconnected).length >= 12, "old BGM buses should be disconnected");
 
 const disconnectedBeforeReloadRestart = context.gains.filter((gain) => gain.disconnected).length;
 await unlockAudio({ restartBgm: true });
 await Promise.resolve();
 assert(
-  context.gains.filter((gain) => gain.disconnected).length >= disconnectedBeforeReloadRestart + 4,
-  "reload recovery should rebuild the four BGM buses"
+  context.gains.filter((gain) => gain.disconnected).length >= disconnectedBeforeReloadRestart + 1,
+  "reload recovery should rebuild the active BGM bus"
 );
 
 setSetting("bgmVolume", 50);
@@ -172,6 +172,21 @@ assert(
 const resumeCallsAfterStall = rebuiltContext.resumeCalls;
 assert.equal(await unlockAudio(), true, "a new user operation should bypass a stalled Safari resume promise");
 assert.equal(rebuiltContext.resumeCalls, resumeCallsAfterStall + 1);
+
+// すべての BGM トラック（隠し曲を含む）が選択でき、エラーなく音源を予約できること
+assert(
+  BGM_TRACKS.filter((track) => track.unlockAchievement).length >= 12,
+  "there should be at least 12 unlockable hidden BGM tracks"
+);
+let previousStarts = rebuiltContext.startedOscillators;
+for (const track of BGM_TRACKS.filter((track) => track.id !== "auto")) {
+  setSetting("bgmTrack", track.id);
+  assert(
+    rebuiltContext.startedOscillators > previousStarts,
+    `track "${track.id}" should schedule at least one oscillator`
+  );
+  previousStarts = rebuiltContext.startedOscillators;
+}
 
 stopBgm();
 console.log("音声テスト: OK");
