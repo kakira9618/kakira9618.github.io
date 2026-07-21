@@ -27,12 +27,13 @@
   --accent: #6aaa64;
   --accent-2: #c9b458;
   --danger: #d84343;
-  --key-bg: #d3d6da;
-  --key-fg: #111;
+  /* 原作 Styles.tonyu の配色: guessing = 白地に黒文字 / unused = #787c7e */
+  --key-bg: #ffffff;
+  --key-fg: #000000;
   --key-border: rgba(255, 255, 255, 0.12);
-  --key-unused-bg: #505457;
-  --key-unused-fg: #f3f4f5;
-  --key-unused-border: #505457;
+  --key-unused-bg: #787c7e;
+  --key-unused-fg: #ffffff;
+  --key-unused-border: #787c7e;
   --border: #444;
   --glow: none;
   --font-display: "Avenir Next", "Helvetica Neue", "Segoe UI", sans-serif;
@@ -520,6 +521,32 @@ body.theme-cyber .tile.state-unused {
 }
 .row.shake {
   animation: shake var(--shake-ms, 500ms) ease;
+}
+
+/* ---- クラシックテーマ: 原作 (Tonyu 版) の表現に寄せる ---- */
+/* 判定前のタイルは原作 Cell と同じ白地・黒文字 */
+body.theme-classic .tile:not(.state-unused):not(.state-used):not(.state-correct) {
+  background: #ffffff;
+  border-color: #ffffff;
+  color: #000000;
+}
+/* 文字入力: scaleX 1.2 + 10 度回転から戻る（原作 changeChar） */
+body.theme-classic .tile.filled {
+  animation: classicPop var(--pop-ms, 110ms) ease;
+}
+/* 判定オープン: x 軸フリップではなく、原作 changeState と同じ
+   z 軸スピン（-720度から減速）+ 横反転で開く */
+body.theme-classic .tile.reveal {
+  animation: classicSpin var(--flip-ms, 420ms) cubic-bezier(0.22, 0.68, 0.3, 1) forwards;
+  backface-visibility: visible;
+}
+@keyframes classicPop {
+  from { transform: scaleX(1.2) rotate(10deg); }
+  to { transform: scaleX(1) rotate(0); }
+}
+@keyframes classicSpin {
+  from { transform: rotate(-720deg) scaleX(-1); }
+  to { transform: rotate(0deg) scaleX(1); }
 }
 @keyframes shake {
   10%, 90% { transform: translateX(-2px); }

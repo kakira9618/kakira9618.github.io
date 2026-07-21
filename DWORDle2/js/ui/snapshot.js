@@ -89,9 +89,56 @@ function drawGuessFlag(ctx, x, y, r, color) {
   ctx.restore();
 }
 
+// クラシックテーマ: 原作 GameResult のスクリーンショットを再現する。
+// #202020 の無地背景に盤面をそのまま描き、下に "Answer: XXX, YYY" を白字で置くだけ。
+function renderClassicCanvas(record, logic, displayRows) {
+  const tileColors = UI.tileColors.classic;
+  const rows = record.guessWord.length;
+  const gridH = rows * (SS.tile + SS.tileGap);
+  const height = SS.pad + gridH + 104;
+
+  const scale = 2;
+  const cv = document.createElement("canvas");
+  cv.width = SS.width * scale;
+  cv.height = height * scale;
+  const ctx = cv.getContext("2d");
+  ctx.scale(scale, scale);
+
+  ctx.fillStyle = "#202020";
+  ctx.fillRect(0, 0, SS.width, height);
+
+  const centerX = SS.width / 2;
+  const gridW = 5 * SS.tile + 4 * SS.tileGap;
+  const gx0 = centerX - gridW / 2;
+  let y = SS.pad;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = `800 ${SS.tile * 0.5}px "Helvetica Neue", "Avenir Next", sans-serif`;
+  for (let r = 0; r < rows; r++) {
+    for (let i = 0; i < 5; i++) {
+      const s = displayRows[r][i];
+      const x = gx0 + i * (SS.tile + SS.tileGap);
+      ctx.fillStyle = s === CELL.CORRECT ? tileColors.correct : s === CELL.USED ? tileColors.used : tileColors.unused;
+      roundRect(ctx, x, y, SS.tile, SS.tile, 5);
+      ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      ctx.fillText(record.guessWord[r][i].toUpperCase(), x + SS.tile / 2, y + SS.tile / 2 + 1);
+    }
+    y += SS.tile + SS.tileGap;
+  }
+
+  y += 40;
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `700 26px "Helvetica Neue", "Avenir Next", sans-serif`;
+  ctx.fillText(`Answer: ${logic.ans1.toUpperCase()}, ${logic.ans2.toUpperCase()}`, centerX, y);
+
+  return cv;
+}
+
 // record + logic + 表示用判定から PNG canvas を作る
 export function renderResultCanvas(record, logic, displayRows) {
   const theme = getSettings().theme;
+  if (theme === "classic") return renderClassicCanvas(record, logic, displayRows);
   const st = THEME_STYLES[theme] ?? THEME_STYLES.cyber;
   const tileColors = UI.tileColors[theme] ?? UI.tileColors.cyber;
   const isUso = record.gameMode === "uso";
