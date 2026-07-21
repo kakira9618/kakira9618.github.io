@@ -329,6 +329,39 @@ try {
   await secondUnlock.getByRole("button", { name: "あとで" }).click();
   await page.locator(".bgm-unlock").waitFor({ state: "detached" });
 
+  // 実績解放セレブレーション: 単発は大型カード、3 個以上は 1 枚にまとめる
+  await page.evaluate(async () => {
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260721-unlock-dialog");
+    achievementCelebration([
+      { id: "smoke-single", icon: "trophy", color: "#ffd166", name: "スモーク実績", desc: "テスト用の実績です" },
+    ]);
+  });
+  const achUnlock = page.getByRole("dialog", { name: "スモーク実績" });
+  await achUnlock.waitFor({ timeout: 1600 });
+  assert.equal(await page.locator(".ach-unlock").count(), 1, "A single achievement should show one celebration card");
+  assert.equal(await page.locator(".ach-unlock .ach-confetti i").count() > 0, true, "The celebration should include confetti");
+  assert.equal(
+    await achUnlock.evaluate((node) => node.contains(document.activeElement)),
+    true,
+    "The achievement celebration should receive focus"
+  );
+  await achUnlock.getByRole("button", { name: "OK" }).click();
+  await page.locator(".ach-unlock").waitFor({ state: "detached" });
+
+  await page.evaluate(async () => {
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260721-unlock-dialog");
+    achievementCelebration([
+      { id: "smoke-a", icon: "star", color: "#ffd166", name: "実績A", desc: "" },
+      { id: "smoke-b", icon: "gem", color: "#7ee8ff", name: "実績B", desc: "" },
+      { id: "smoke-c", icon: "flame", color: "#ff9a5c", name: "実績C", desc: "" },
+    ]);
+  });
+  const multiUnlock = page.getByRole("dialog", { name: /実績を 3 個解放/ });
+  await multiUnlock.waitFor({ timeout: 1600 });
+  assert.equal(await multiUnlock.locator(".ach-unlock-mini").count(), 3, "The combined celebration should list all achievements");
+  await multiUnlock.getByRole("button", { name: "OK" }).click();
+  await page.locator(".ach-unlock").waitFor({ state: "detached" });
+
   await page.evaluate(() => { location.hash = "#/settings"; });
   await page.waitForURL(/#\/settings$/);
   await page.getByRole("button", { name: "全データ削除" }).click();

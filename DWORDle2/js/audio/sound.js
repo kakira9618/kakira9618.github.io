@@ -468,6 +468,18 @@ const SFX = {
       tone({ freq: f, type: "sine", dur: 0.35, gain: 0.22, when: i * 0.08 })
     );
   },
+  // 実績セレブレーション用の大きめファンファーレ（上昇アルペジオ + 和音 + シャワー）
+  achievementBig: () => {
+    [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
+      tone({ freq: f, type: "triangle", dur: 0.32, gain: 0.22, when: i * 0.09 });
+      tone({ freq: f * 2, type: "sine", dur: 0.26, gain: 0.08, when: i * 0.09 + 0.02 });
+    });
+    [1046.5, 1318.5, 1568].forEach((f, i) =>
+      tone({ freq: f, type: "sine", dur: 0.95, gain: 0.15, when: 0.4 + i * 0.02 })
+    );
+    tone({ freq: 2093, type: "sine", dur: 0.7, gain: 0.07, when: 0.46 });
+    noise({ dur: 0.9, gain: 0.05, freq: 8500, when: 0.42 });
+  },
   ui: () => tone({ freq: 880, type: "sine", dur: 0.06, gain: 0.15 }),
   swoosh: () => noise({ dur: 0.25, gain: 0.12, freq: 1200 }),
 };

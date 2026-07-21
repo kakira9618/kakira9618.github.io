@@ -3,7 +3,7 @@
 import { _reload } from "../core/records.js";
 import { checkOnEvent, reconcileAchievementsFromHistory } from "../core/achievements.js?v=20260721-runtime";
 import { bgmTracksUnlockedBy } from "../audio/sound.js";
-import { toast, achievementToast, bgmUnlockCelebration } from "./toast.js?v=20260721-unlock-dialog";
+import { toast, achievementCelebration, bgmUnlockCelebration } from "./toast.js?v=20260721-unlock-dialog";
 import { tr } from "../core/i18n.js";
 
 export function finishHistoryImport(added) {
@@ -25,7 +25,7 @@ export function finishHistoryImport(added) {
   }
 
   if (newly.length) {
-    achievementToast(newly);
+    achievementCelebration(newly);
     const bgmUnlocks = bgmTracksUnlockedBy(newly);
     if (bgmUnlocks.length) bgmUnlockCelebration(bgmUnlocks);
   }

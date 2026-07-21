@@ -10,7 +10,7 @@ import { MODES, saveCurrentGame, clearCurrentGame, getCurrentGame, addFinishedGa
 import { pidLabel } from "../core/problems.js";
 import { checkOnGameFinish } from "../core/achievements.js?v=20260721-runtime";
 import { registerScreen, navigate, getAppMode, currentScreenName, rememberPlayedMode } from "./app.js?v=20260721-runtime";
-import { toast, achievementToast, bgmUnlockCelebration } from "./toast.js?v=20260721-unlock-dialog";
+import { toast, achievementCelebration, bgmUnlockCelebration } from "./toast.js?v=20260721-unlock-dialog";
 import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js";
 import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/effects.js";
 import { showHelpModal } from "./help.js";
@@ -536,7 +536,7 @@ function finishGame(justFinished) {
     setTimeout(() => {
       navigate(`/result/${record.gameMode}/${record.startTime}`);
       if (newly.length > 0) {
-        achievementToast(newly);
+        achievementCelebration(newly);
         const bgmUnlocks = bgmTracksUnlockedBy(newly);
         if (bgmUnlocks.length > 0) {
           bgmUnlockCelebration(bgmUnlocks);

@@ -18,7 +18,6 @@ export const UI = {
   shakeMs: 500, // 無効入力時のシェイク
   popMs: 110, // 文字入力時のポップ
   toastMs: 2200, // トースト表示時間
-  achievementToastMs: 3600, // 実績解放トースト表示時間
 };
 
 export const FX = {

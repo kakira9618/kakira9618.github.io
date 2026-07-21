@@ -623,21 +623,6 @@ body.theme-cyber .toast {
   from { transform: translateY(-14px) scale(0.92); opacity: 0; }
   to { transform: none; opacity: 1; }
 }
-.toast.achievement {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border-color: color-mix(in srgb, gold 60%, transparent);
-  box-shadow: 0 0 22px rgba(255, 200, 40, 0.45);
-}
-.toast.achievement .ach-icon {
-  font-size: 22px;
-}
-.toast.achievement .ach-label {
-  font-size: 11px;
-  color: var(--fg-dim);
-}
-
 /* 解放ダイアログ共通レイヤー。単純な rgba 面にして旧 Chrome でも暗幕を保証する。 */
 #unlock-layer {
   position: fixed;
@@ -746,6 +731,163 @@ body.theme-cyber .toast {
 }
 @keyframes bgmUnlockPulse {
   50% { transform: scale(1.08); box-shadow: 0 0 36px rgba(255, 214, 92, 0.7), inset 0 0 22px rgba(255, 214, 92, 0.24); }
+}
+
+/* 実績解放セレブレーション（--ach-color は実績のアクセント色） */
+.ach-unlock {
+  position: relative;
+  z-index: 1;
+  width: min(430px, calc(100vw - 28px));
+  max-width: 100%;
+  padding: 30px 22px 20px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--ach-color, #ffd166) 75%, transparent);
+  border-radius: 20px;
+  background-color: #111827;
+  background-image:
+    radial-gradient(circle at 50% 16%, color-mix(in srgb, var(--ach-color, #ffd166) 30%, transparent), rgba(17, 24, 39, 0) 52%);
+  color: var(--fg);
+  text-align: center;
+  pointer-events: auto;
+  box-shadow: 0 0 52px color-mix(in srgb, var(--ach-color, #ffd166) 45%, transparent);
+  animation: achUnlockIn 0.85s cubic-bezier(0.16, 1.4, 0.32, 1);
+}
+.ach-unlock-rays {
+  position: absolute;
+  width: 320px;
+  height: 320px;
+  left: 50%;
+  top: -130px;
+  transform: translateX(-50%);
+  background: repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--ach-color, #ffd166) 22%, transparent) 0 9deg, transparent 9deg 22deg);
+  border-radius: 50%;
+  animation: bgmUnlockSpin 11s linear infinite;
+  pointer-events: none;
+}
+.ach-confetti {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ach-confetti i {
+  position: absolute;
+  top: -12px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: achConfettiFall 3s linear infinite;
+}
+@keyframes achConfettiFall {
+  0% { opacity: 0; transform: translate(0, 0) rotate(0) scale(1); }
+  8% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--dx, 0px), 480px) rotate(var(--spin, 480deg)) scale(0.85); }
+}
+.ach-unlock-kicker {
+  position: relative;
+  color: color-mix(in srgb, var(--ach-color, #ffd166) 78%, white);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.24em;
+}
+.ach-unlock-badge {
+  position: relative;
+  width: 92px;
+  height: 92px;
+  margin: 14px auto 10px;
+  display: grid;
+  place-items: center;
+  border: 2.5px solid var(--ach-color, #ffd166);
+  border-radius: 50%;
+  color: var(--ach-color, #ffd166);
+  background:
+    radial-gradient(circle at 50% 34%, color-mix(in srgb, var(--ach-color, #ffd166) 30%, transparent), transparent 72%),
+    rgba(255, 255, 255, 0.04);
+  box-shadow: 0 0 30px color-mix(in srgb, var(--ach-color, #ffd166) 55%, transparent), inset 0 0 22px color-mix(in srgb, var(--ach-color, #ffd166) 22%, transparent);
+  animation: achBadgePop 0.9s cubic-bezier(0.16, 1.6, 0.3, 1) both, achBadgeFloat 2.6s 0.9s ease-in-out infinite;
+}
+.ach-unlock-badge-icon svg {
+  width: 44px;
+  height: 44px;
+}
+.ach-unlock-title {
+  position: relative;
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-shadow: 0 0 16px color-mix(in srgb, var(--ach-color, #ffd166) 55%, transparent);
+}
+.ach-unlock-desc {
+  position: relative;
+  margin: 8px auto 16px;
+  color: var(--fg-dim);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.ach-unlock-grid {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: min(38dvh, 280px);
+  overflow-y: auto;
+  margin: 14px 4px 16px;
+  text-align: left;
+}
+.ach-unlock-mini {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  animation: achMiniIn 0.5s cubic-bezier(0.2, 1.2, 0.35, 1) both;
+}
+.ach-unlock-mini-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  background: color-mix(in srgb, currentColor 14%, transparent);
+}
+.ach-unlock-mini-name {
+  font-size: 13px;
+  font-weight: 800;
+}
+.ach-unlock-actions {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+.ach-unlock-actions .btn {
+  padding: 10px 34px;
+  font-size: 13px;
+}
+.ach-unlock.closing {
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 0.45s, transform 0.45s;
+}
+@keyframes achUnlockIn {
+  0% { opacity: 0; transform: translateY(6%) scale(0.6) rotateX(24deg); }
+  60% { opacity: 1; }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes achBadgePop {
+  0% { opacity: 0; transform: scale(0.2) rotate(-540deg); }
+  70% { transform: scale(1.14) rotate(8deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+@keyframes achBadgeFloat {
+  50% { transform: translateY(-4px); }
+}
+@keyframes achMiniIn {
+  from { opacity: 0; transform: translateX(-14px); }
+  to { opacity: 1; transform: none; }
 }
 
 /* ---- リスト画面共通 ---- */

@@ -10,7 +10,7 @@ import { Logic } from "../core/logic.js";
 import { pidLabel } from "../core/problems.js";
 import { computeTruePatternIds, resultToPatternId, patternIdToStates } from "../core/analysis-core.js?v=20260721-runtime";
 import { checkOnEvent } from "../core/achievements.js?v=20260721-runtime";
-import { achievementToast } from "./toast.js?v=20260721-unlock-dialog";
+import { achievementCelebration } from "./toast.js?v=20260721-unlock-dialog";
 import { playSfx } from "../audio/sound.js";
 import { icon } from "./icons.js";
 import { currentLanguage, isEnglish, tr } from "../core/i18n.js";
@@ -86,7 +86,7 @@ function render(args) {
 
   // 実績: アナリスト
   const newly = checkOnEvent("analysis");
-  if (newly.length) achievementToast(newly);
+  if (newly.length) achievementCelebration(newly);
 
   body.append(
     el(
