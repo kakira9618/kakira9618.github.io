@@ -446,7 +446,7 @@ function localizedBody(mode, language) {
   ];
 }
 
-export function showHelpModal(mode) {
+export function showHelpModal(mode, afterClose = null) {
   stopAnimation();
   const language = currentLanguage();
   const content = el("div", { class: "help-localized" });
@@ -456,11 +456,14 @@ export function showHelpModal(mode) {
     title: mode === "uso" ? (language === "en" ? "DWORDlie Guide" : "DWORDlie 遊び方") : (language === "en" ? "DWORDle Guide" : "DWORDle 遊び方"),
     body: [content],
     actions: [{ label: language === "en" ? "Close" : "閉じる", primary: true, onClick: () => {} }],
-    onClose: stopAnimation,
+    onClose: () => {
+      stopAnimation();
+      afterClose?.();
+    },
   });
 }
 
-export function showFirstTutorial(mode) {
+export function showFirstTutorial(mode, afterClose = null) {
   const point = (number, title, text) =>
     el(
       "li",
@@ -510,8 +513,9 @@ export function showFirstTutorial(mode) {
         ),
       ];
 
+  let openingFullGuide = false;
   showModal({
-    title: currentLanguage() === "en" ? "Basic Rules" : "基本ルール",
+    title: `${currentLanguage() === "en" ? "Basic Rules" : "基本ルール"} | ${mode === "uso" ? "DWORDlie" : "DWORDle"}`,
     body: [
       el(
         "ol",
@@ -522,9 +526,15 @@ export function showFirstTutorial(mode) {
     actions: [
       {
         label: currentLanguage() === "en" ? "Full Guide" : "詳しい遊び方",
-        onClick: () => setTimeout(() => showHelpModal(mode), 0),
+        onClick: () => {
+          openingFullGuide = true;
+          setTimeout(() => showHelpModal(mode, afterClose), 0);
+        },
       },
       { label: currentLanguage() === "en" ? "Got it" : "わかった", primary: true, onClick: () => {} },
     ],
+    onClose: () => {
+      if (!openingFullGuide) afterClose?.();
+    },
   });
 }

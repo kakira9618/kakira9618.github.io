@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { achievementIdsFromHistory } from "../js/core/achievements.js";
+import { ACHIEVEMENTS, achievementIdsFromHistory } from "../js/core/achievements.js";
 import { Logic, queryWordPair } from "../js/core/logic.js";
 
 function clearRecord({
@@ -23,18 +23,30 @@ function clearRecord({
   };
 }
 
+assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "new-year")?.name, "初日の出DWORDler");
+assert.equal(
+  ACHIEVEMENTS.some((achievement) => achievement.name.includes("ワードラー") || achievement.name === "初日の出ワードル"),
+  false,
+  "achievement names should consistently use DWORDler"
+);
+
 {
-  const ids = achievementIdsFromHistory([clearRecord({ pid: 10000, guesses: 3, duration: 15 })]);
+  const ids = achievementIdsFromHistory([clearRecord({ pid: 10000, guesses: 3, duration: 10 })]);
   assert(ids.has("first-play"));
   assert(ids.has("first-clear"));
   assert(ids.has("migrator"));
   assert(ids.has("extreme-clear"));
-  assert(ids.has("h-lightning"), "3 Guesses in 20 seconds should restore Lightning Fast");
+  assert(ids.has("h-lightning"), "3 Guesses in 10 seconds should restore Lightning Fast");
 }
 
 {
-  const ids = achievementIdsFromHistory([clearRecord({ guesses: 2, duration: 15 })]);
+  const ids = achievementIdsFromHistory([clearRecord({ guesses: 2, duration: 10 })]);
   assert(!ids.has("h-lightning"), "fewer than 3 Guesses must not restore Lightning Fast");
+}
+
+{
+  const ids = achievementIdsFromHistory([clearRecord({ guesses: 3, duration: 11 })]);
+  assert(!ids.has("h-lightning"), "more than 10 seconds must not restore Lightning Fast");
 }
 
 {
@@ -116,8 +128,8 @@ function clearRecord({
     clearRecord({ pid: 1, startTime: Math.floor(saturday.getTime() / 1000) }),
     clearRecord({ pid: 2, startTime: Math.floor(sunday.getTime() / 1000) }),
   ];
-  assert(achievementIdsFromHistory(both).has("weekend"), "Saturday + Sunday clears should restore Weekend Wordler");
-  assert(!achievementIdsFromHistory(both.slice(0, 1)).has("weekend"), "Saturday alone must not restore Weekend Wordler");
+  assert(achievementIdsFromHistory(both).has("weekend"), "Saturday + Sunday clears should restore Weekend DWORDler");
+  assert(!achievementIdsFromHistory(both.slice(0, 1)).has("weekend"), "Saturday alone must not restore Weekend DWORDler");
 }
 
 {

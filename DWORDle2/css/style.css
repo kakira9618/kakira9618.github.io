@@ -1595,7 +1595,17 @@ body.theme-cyber .rcell.correct { color: #04120b; }
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding-top: 10px;
+  height: 320px;
+  margin-top: 10px;
+  padding: 2px 6px 2px 2px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  border-radius: 9px;
+  outline: none;
+}
+.bgm-picker:focus-visible {
+  box-shadow: 0 0 0 2px var(--accent);
 }
 .bgm-choice {
   display: flex;
@@ -1635,6 +1645,27 @@ body.theme-cyber .rcell.correct { color: #04120b; }
   margin-top: 2px;
   color: var(--fg-dim);
   font-size: 10.5px;
+}
+.debug-status {
+  padding: 4px 8px;
+  border: 1px solid #ffcf5c;
+  border-radius: 999px;
+  color: #ffcf5c;
+  font: 800 10px/1 ui-monospace, "SFMono-Regular", Consolas, monospace;
+  letter-spacing: 0.08em;
+  box-shadow: 0 0 10px rgba(255, 207, 92, 0.25);
+}
+.debug-entry {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: default;
+}
+.debug-entry:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 .switch {
   position: relative;

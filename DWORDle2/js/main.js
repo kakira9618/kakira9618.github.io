@@ -1,25 +1,25 @@
 // エントリポイント。画面登録・ルータ起動・3D 背景・音声の初期化。
 
-import { startRouter, initAppMode } from "./ui/app.js?v=20260721-runtime";
+import { startRouter, initAppMode } from "./ui/app.js?v=20260721-debug";
 import { initEffects } from "./fx/effects.js";
 import { audioNeedsRecovery, bgmTracksUnlockedBy, restartBgmIfReady, stopBgm, unlockAudio } from "./audio/sound.js";
 import { getSettings, onSettingsChange } from "./core/settings.js";
 import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js";
 import { syncDocumentLanguage } from "./core/i18n.js";
-import { reconcileAchievementsOnce } from "./core/achievements.js?v=20260721-runtime";
-import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "./ui/game-screen.js?v=20260721-unlock-dialog";
-import { achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./ui/toast.js?v=20260721-unlock-dialog";
+import { reconcileAchievementsOnce } from "./core/achievements.js?v=20260721-debug";
+import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "./ui/game-screen.js?v=20260721-debug";
+import { achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./ui/toast.js?v=20260721-debug";
 import { hiddenThemesUnlockedBy } from "./core/settings.js";
 
 // 画面モジュール（import するだけで registerScreen される）
-import "./ui/title-screen.js?v=20260721-unlock-dialog";
-import "./ui/game-screen.js?v=20260721-unlock-dialog";
-import "./ui/result-screen.js?v=20260721-unlock-dialog";
-import "./ui/history-screen.js?v=20260721-unlock-dialog";
-import "./ui/problems-screen.js?v=20260721-unlock-dialog";
-import "./ui/achievements-screen.js?v=20260721-unlock-dialog";
-import "./ui/analysis-screen.js?v=20260721-unlock-dialog";
-import "./ui/settings-screen.js?v=20260721-unlock-dialog";
+import "./ui/title-screen.js?v=20260721-debug";
+import "./ui/game-screen.js?v=20260721-debug";
+import "./ui/result-screen.js?v=20260721-debug";
+import "./ui/history-screen.js?v=20260721-debug";
+import "./ui/problems-screen.js?v=20260721-debug";
+import "./ui/achievements-screen.js?v=20260721-debug";
+import "./ui/analysis-screen.js?v=20260721-debug";
+import "./ui/settings-screen.js?v=20260721-debug";
 
 // 古い Android Chrome は dvh に未対応のため、実際の表示領域を CSS 変数で補う。
 // 対応ブラウザでは CSS 側の 100dvh が優先される。

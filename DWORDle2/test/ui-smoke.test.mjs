@@ -86,13 +86,13 @@ async function assertNoSeriousA11yViolations(stage) {
 try {
   await page.goto(baseUrl, { waitUntil: "networkidle" });
 
-  const tutorial = page.getByRole("dialog", { name: "基本ルール" });
+  const tutorial = page.getByRole("dialog", { name: "基本ルール | DWORDle" });
   await tutorial.waitFor();
   assert.equal(await tutorial.evaluate((node) => node.contains(document.activeElement)), true, "Tutorial should receive focus");
   await page.getByRole("button", { name: "わかった" }).click();
   const normalLogoBox = await page.locator(".logo").boundingBox();
   await page.getByRole("button", { name: "裏モードへ" }).click();
-  const usoTutorial = page.getByRole("dialog", { name: "基本ルール" });
+  const usoTutorial = page.getByRole("dialog", { name: "基本ルール | DWORDlie" });
   await usoTutorial.waitFor();
   await usoTutorial.getByText("基本ルールは DWORDle と同じ").waitFor();
   await usoTutorial.getByText("判定は必ず嘘をつく").waitFor();
@@ -138,6 +138,14 @@ try {
   for (const label of ["キーボードヒント", "演出を軽くする", "効果音", "BGM"]) {
     await page.getByRole("switch", { name: label }).waitFor();
   }
+  const bgmPickerMetrics = await page.locator(".bgm-picker").evaluate((node) => ({
+    clientHeight: node.clientHeight,
+    scrollHeight: node.scrollHeight,
+    overflowY: getComputedStyle(node).overflowY,
+  }));
+  assert.equal(bgmPickerMetrics.clientHeight, 320, "BGM picker should have a fixed 320px inner viewport");
+  assert.ok(bgmPickerMetrics.scrollHeight > bgmPickerMetrics.clientHeight, "BGM choices should scroll inside their picker");
+  assert.equal(bgmPickerMetrics.overflowY, "auto");
 
   // 隠しテーマ Pop: 実績「三色盛り」解放済みなので選択でき、body クラスに反映される
   // BGM 一覧の「Candy Pop」と部分一致しないよう exact 指定でテーマの Pop を選ぶ
@@ -313,7 +321,7 @@ try {
   await reducedContext.close();
 
   await page.evaluate(async () => {
-    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260721-unlock-dialog");
+    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260721-debug");
     bgmUnlockCelebration([
       { id: "queue-test-a", name: "Queue Test A", desc: "First unlock" },
       { id: "queue-test-b", name: "Queue Test B", desc: "Second unlock" },
@@ -346,7 +354,7 @@ try {
 
   // 実績解放セレブレーション: 単発は大型カード、3 個以上は 1 枚にまとめる
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260721-unlock-dialog");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260721-debug");
     achievementCelebration([
       { id: "smoke-single", icon: "trophy", color: "#ffd166", name: "スモーク実績", desc: "テスト用の実績です" },
     ]);
@@ -364,7 +372,7 @@ try {
   await page.locator(".ach-unlock").waitFor({ state: "detached" });
 
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260721-unlock-dialog");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260721-debug");
     achievementCelebration([
       { id: "smoke-a", icon: "star", color: "#ffd166", name: "実績A", desc: "" },
       { id: "smoke-b", icon: "gem", color: "#7ee8ff", name: "実績B", desc: "" },
@@ -381,12 +389,89 @@ try {
   await page.waitForURL(/#\/settings$/);
   await page.getByRole("button", { name: "全データ削除" }).click();
   const deleteDialog = page.getByRole("dialog", { name: "全データ削除" });
+  await deleteDialog.getByText("旧作 DWORDle / DWORDlie のデータは削除されません。").waitFor();
   await Promise.all([
     page.waitForNavigation({ waitUntil: "networkidle" }),
     deleteDialog.getByRole("button", { name: "OK" }).click(),
   ]);
   assert.match(page.url(), /#\/$/, "Deleting all data should reload at the title route");
   await page.locator("#screen-title.active").waitFor();
+
+  // 初回案内は基本ルールを先に表示し、閉じた後で旧作の移行を提案する。
+  const freshContext = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
+  const freshPage = await freshContext.newPage();
+  try {
+    await freshPage.addInitScript(() => {
+      localStorage.setItem("dwordle2.settings", JSON.stringify({
+        theme: "classic",
+        sfx: false,
+        sfxVolume: 0,
+        bgm: false,
+        bgmVolume: 0,
+        bgmTrack: "auto",
+        language: "ja",
+        keyboardHints: true,
+        reduceFx: true,
+        randomLevel: 1,
+      }));
+      localStorage.setItem("tonyu-legacy-history", JSON.stringify({
+        version: 1,
+        1700000000: {
+          startTime: 1700000000,
+          endTime: 1700000010,
+          gameMode: "normal",
+          problemID: 1,
+          guessWord: ["point"],
+          complete: true,
+        },
+      }));
+    });
+    await freshPage.goto(baseUrl, { waitUntil: "networkidle" });
+    const freshTutorial = freshPage.getByRole("dialog", { name: "基本ルール | DWORDle" });
+    await freshTutorial.waitFor();
+    assert.equal(
+      await freshPage.getByRole("dialog", { name: "旧作のプレイ履歴が見つかりました" }).count(),
+      0,
+      "legacy import must wait until the first tutorial closes"
+    );
+    await freshTutorial.getByRole("button", { name: "わかった" }).click();
+    const importDialog = freshPage.getByRole("dialog", { name: "旧作のプレイ履歴が見つかりました" });
+    await importDialog.waitFor();
+    await importDialog.getByRole("button", { name: "スキップ" }).click();
+
+    await freshPage.getByRole("button", { name: "設定" }).click();
+    await freshPage.waitForURL(/#\/settings$/);
+    const lockedTheme = freshPage.getByRole("radiogroup", { name: "テーマ" }).getByRole("radio", { name: "???" });
+    assert.equal(await lockedTheme.getAttribute("aria-disabled"), "true");
+    assert.equal(await freshPage.getByRole("radio", { name: "Grand Finale" }).getAttribute("aria-disabled"), "true");
+
+    const debugEntry = freshPage.locator(".debug-entry");
+    for (let i = 0; i < 5; i++) await debugEntry.click();
+    const secretDialog = freshPage.getByRole("dialog", { name: "シークレット" });
+    await secretDialog.getByLabel("秘密のキーワード").fill("DWORDLER");
+    await secretDialog.getByRole("button", { name: "入力" }).click();
+    await freshPage.getByText("DEBUG ON", { exact: true }).waitFor();
+    const debugPop = freshPage.getByRole("radiogroup", { name: "テーマ" }).getByRole("radio", { name: "Pop" });
+    assert.equal(await debugPop.getAttribute("aria-disabled"), "false", "debug mode should unlock the hidden theme");
+    assert.equal(await freshPage.getByRole("radio", { name: "Grand Finale" }).getAttribute("aria-disabled"), "false", "debug mode should unlock hidden BGM");
+    await debugPop.click();
+    await freshPage.getByRole("radio", { name: "Grand Finale" }).click();
+
+    await freshPage.evaluate(() => { location.hash = "#/achievements"; });
+    await freshPage.waitForURL(/#\/achievements$/);
+    await freshPage.locator("#screen-achievements .header .sub").filter({ hasText: `${ACHIEVEMENTS.length} / ${ACHIEVEMENTS.length}` }).waitFor();
+
+    await freshPage.reload({ waitUntil: "networkidle" });
+    await freshPage.locator("#screen-achievements .header .sub").filter({ hasText: `0 / ${ACHIEVEMENTS.length}` }).waitFor();
+    await freshPage.evaluate(() => { location.hash = "#/settings"; });
+    await freshPage.waitForURL(/#\/settings$/);
+    assert.equal(await freshPage.locator(".debug-status").count(), 0, "reload should turn debug mode off");
+    assert.equal(await freshPage.getByRole("radiogroup", { name: "テーマ" }).getByRole("radio", { name: "???" }).getAttribute("aria-disabled"), "true");
+    assert.equal(await freshPage.locator("body.theme-classic").count(), 1, "debug-only theme selection must not persist");
+    assert.equal(await freshPage.evaluate(() => JSON.parse(localStorage.getItem("dwordle2.settings")).bgmTrack), "auto", "debug-only BGM selection must not persist");
+  } finally {
+    await freshContext.close();
+  }
 
   console.log("UIスモーク + a11yテスト: OK");
 } finally {

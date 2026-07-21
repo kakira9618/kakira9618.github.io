@@ -108,8 +108,8 @@ export const BGM_TRACKS = [
     desc: "真夜中のジャジーなスウィング",
     descEn: "A jazzy midnight swing",
     unlockAchievement: "night-owl",
-    unlockLabel: "真夜中のワードラー",
-    unlockLabelEn: "Midnight Wordler",
+    unlockLabel: "真夜中のDWORDler",
+    unlockLabelEn: "Midnight DWORDler",
   },
   {
     id: "march",
@@ -178,7 +178,7 @@ export const BGM_TRACKS = [
     desc: "朝日のようにやわらかなアンビエント",
     descEn: "A soft ambient like the morning sun",
     unlockAchievement: "early-bird",
-    unlockLabel: "早起きワードラー",
+    unlockLabel: "早起きDWORDler",
     unlockLabelEn: "Early Bird",
   },
   {

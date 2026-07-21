@@ -2,18 +2,18 @@
 // 右上のマスクボタンで DWORDlie（裏モード）に切り替わる。
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260721-runtime";
+import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260721-debug";
 import { getCurrentGame, getHistory, isAlreadyPlayed } from "../core/records.js";
 import { LEVELS, todayPID, isValidPID, pidLabel, PID } from "../core/problems.js";
 import { getSettings, setSetting } from "../core/settings.js";
 import { loadJSON, saveJSON } from "../core/store.js";
 import { importFromLocalStorage, scanLegacyHistory } from "../core/migrate.js";
 import { playSfx } from "../audio/sound.js";
-import { toast } from "./toast.js?v=20260721-unlock-dialog";
+import { toast } from "./toast.js?v=20260721-debug";
 import { showModal } from "./modal.js";
-import { finishHistoryImport } from "./history-import.js?v=20260721-unlock-dialog";
+import { finishHistoryImport } from "./history-import.js?v=20260721-debug";
 import { showFirstTutorial, showHelpModal } from "./help.js";
-import { confirmAndStart } from "./game-screen.js?v=20260721-unlock-dialog";
+import { confirmAndStart } from "./game-screen.js?v=20260721-debug";
 import { icon } from "./icons.js";
 import { APP_VERSION } from "../config.js";
 import { localizedLevel, tr } from "../core/i18n.js";
@@ -144,11 +144,12 @@ function maybeOfferLegacyImport(afterClose = null) {
   return true;
 }
 
-function maybeShowFirstTutorial(mode) {
+function maybeShowFirstTutorial(mode, afterClose = null) {
   const key = mode === "uso" ? "tutorialSeenUso" : "tutorialSeen";
-  if (loadJSON(key, false)) return;
+  if (loadJSON(key, false)) return false;
   saveJSON(key, true);
-  showFirstTutorial(mode);
+  showFirstTutorial(mode, afterClose);
+  return true;
 }
 
 function render() {
@@ -239,8 +240,12 @@ function render() {
     mode === "uso"
       ? !loadJSON("tutorialSeenUso", false)
       : noPlayData && !loadJSON("tutorialSeen", false);
-  const importShown = maybeOfferLegacyImport(shouldShowTutorial ? () => maybeShowFirstTutorial(mode) : null);
-  if (shouldShowTutorial && !importShown) maybeShowFirstTutorial(mode);
+  // 初回はルール説明を読み終えてから、旧作データの移行を案内する。
+  if (shouldShowTutorial) {
+    maybeShowFirstTutorial(mode, () => maybeOfferLegacyImport());
+  } else {
+    maybeOfferLegacyImport();
+  }
 }
 
 registerScreen("title", {

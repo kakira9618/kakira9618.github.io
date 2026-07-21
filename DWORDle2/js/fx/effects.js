@@ -29,8 +29,8 @@ function fallBackToClassic(error) {
 export function initEffects() {
   if (initPromise) return initPromise;
   initPromise = Promise.all([
-    import("./background.js?v=20260721-runtime"),
-    import("./bursts.js?v=20260721-runtime"),
+    import("./background.js?v=20260721-debug"),
+    import("./bursts.js?v=20260721-debug"),
   ])
     .then(([backgroundModule, burstsModule]) => {
       backgroundModule.initBackground(fallBackToClassic);

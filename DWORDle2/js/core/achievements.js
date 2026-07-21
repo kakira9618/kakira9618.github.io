@@ -21,6 +21,7 @@ import { loadJSON, saveJSON } from "./store.js";
 import { isDailyPID, PID } from "./problems.js";
 import { totalWins, totalPlays, currentWinStreak, dailyClearStreak, getHistory } from "./records.js";
 import { CELL, Logic } from "./logic.js";
+import { isDebugMode } from "./debug.js";
 
 const RECONCILE_VERSION = 2;
 
@@ -56,13 +57,13 @@ export const ACHIEVEMENTS = [
   // --- 時間 ---
   { id: "speed-60", icon: "gauge", color: "#7cf5ff", name: "スピードスター", desc: "開始から 60 秒以内にクリアする" },
   { id: "slow-10", icon: "clock", color: "#c8b8a0", name: "熟考の人", desc: "10 分以上かけてクリアする" },
-  { id: "night-owl", icon: "nightMoon", color: "#9a8fff", name: "真夜中のワードラー", desc: "深夜 0 時〜4 時にクリアする" },
+  { id: "night-owl", icon: "nightMoon", color: "#9a8fff", name: "真夜中のDWORDler", desc: "深夜 0 時〜4 時にクリアする" },
   { id: "daily-7", icon: "flag", color: "#8fd88f", name: "週間皆勤", desc: "デイリー問題を 7 日連続でクリアする" },
   // --- 日付・カレンダー ---
-  { id: "early-bird", icon: "sun", color: "#ffd280", name: "早起きワードラー", desc: "朝 5 時〜8 時にクリアする" },
-  { id: "new-year", icon: "sunrise", color: "#ffb3a0", name: "初日の出ワードル", desc: "1 月 1 日にクリアする" },
+  { id: "early-bird", icon: "sun", color: "#ffd280", name: "早起きDWORDler", desc: "朝 5 時〜8 時にクリアする" },
+  { id: "new-year", icon: "sunrise", color: "#ffb3a0", name: "初日の出DWORDler", desc: "1 月 1 日にクリアする" },
   { id: "christmas", icon: "gift", color: "#ff8f8f", name: "聖夜の贈り物", desc: "12 月 25 日にクリアする" },
-  { id: "weekend", icon: "calendar", color: "#a0d8ff", name: "週末ワードラー", desc: "土曜日と日曜日の両方でクリアする（別の週でもOK）" },
+  { id: "weekend", icon: "calendar", color: "#a0d8ff", name: "週末DWORDler", desc: "土曜日と日曜日の両方でクリアする（別の週でもOK）" },
   { id: "same-day-5", icon: "layers", color: "#ffcf80", name: "今日は絶好調", desc: "同じ日に 5 回クリアする" },
   { id: "play-days-30", icon: "footprints", color: "#c8ffb0", name: "継続は力なり", desc: "通算 30 日プレイする" },
   // --- 回数 ---
@@ -84,21 +85,26 @@ export const ACHIEVEMENTS = [
   { id: "h-zorome", hidden: true, icon: "dice", color: "#ffe8a0", name: "ゾロ目コレクター", desc: "ゾロ目の No.（111, 7777, 22222 など）をクリアする" },
   { id: "h-uso-green", hidden: true, icon: "sparkle", color: "#8fffd0", name: "全緑の嘘", desc: "DWORDlie で表示が 5 つとも緑になる Guess を出す" },
   { id: "h-abyss", hidden: true, icon: "skull", color: "#ff9090", name: "深淵を一撃", desc: "極 (No.10000-19999) を 4 手以内にクリアする" },
-  { id: "h-lightning", hidden: true, icon: "bolt", color: "#fff0a0", name: "電光石火", desc: "3 手以上で、開始から 20 秒以内にクリアする" },
+  { id: "h-lightning", hidden: true, icon: "bolt", color: "#fff0a0", name: "電光石火", desc: "3 手以上で、開始から 10 秒以内にクリアする" },
   { id: "h-lexicon", hidden: true, icon: "book", color: "#c0ffd8", name: "語彙の泉", desc: "通算 100 種類の異なる単語を Guess する" },
 ];
 
 let unlocked = loadJSON("achievements", {}); // { id: unlockedAt(sec) }
 
 export function getUnlocked() {
+  if (isDebugMode()) {
+    const debugUnlockedAt = Math.floor(Date.now() / 1000);
+    return Object.fromEntries(ACHIEVEMENTS.map((achievement) => [achievement.id, unlocked[achievement.id] ?? debugUnlockedAt]));
+  }
   return { ...unlocked };
 }
 
 export function isUnlocked(id) {
-  return unlocked[id] !== undefined;
+  return isDebugMode() || unlocked[id] !== undefined;
 }
 
 function unlock(id, newly) {
+  if (isDebugMode()) return;
   if (unlocked[id] !== undefined) return;
   unlocked[id] = Math.floor(Date.now() / 1000);
   newly.push(ACHIEVEMENTS.find((a) => a.id === id));
@@ -315,7 +321,7 @@ export function achievementIdsFromHistory(records) {
       const durationSec = endTime - startTime;
       if (durationSec <= 60) ids.add("speed-60");
       if (durationSec >= 600) ids.add("slow-10");
-      if (guesses >= 3 && durationSec <= 20) ids.add("h-lightning");
+      if (guesses >= 3 && durationSec <= 10) ids.add("h-lightning");
     }
     const completedAt = Number.isFinite(endTime) && endTime > 0 ? endTime : startTime;
     if (Number.isFinite(completedAt)) {
@@ -443,7 +449,7 @@ export function checkOnGameFinish(ctx) {
     if (isZorome(pid)) unlock("h-zorome", newly);
     if (isGuessWordChain(record.guessWord)) unlock("h-alphabet", newly);
     if (!isUso && pid >= PID.HARD_MIN && pid <= PID.HARD_MAX && guesses <= 4) unlock("h-abyss", newly);
-    if (guesses >= 3 && durationSec <= 20) unlock("h-lightning", newly);
+    if (guesses >= 3 && durationSec <= 10) unlock("h-lightning", newly);
     if (guesses >= 3 && lettersUsed.size === guesses * 5) unlock("h-noreuse", newly);
   }
 

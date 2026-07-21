@@ -2,21 +2,24 @@
 // ルート: #/settings
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260721-runtime";
+import { registerScreen, navigate } from "./app.js?v=20260721-debug";
 import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js";
 import { importFromLocalStorage, importFromText, scanLegacyHistory } from "../core/migrate.js";
 import { exportJSON } from "../core/records.js";
 import { removeKey } from "../core/store.js";
-import { getUnlocked } from "../core/achievements.js?v=20260721-runtime";
+import { getUnlocked } from "../core/achievements.js?v=20260721-debug";
 import { BGM_TRACKS, playSfx } from "../audio/sound.js";
-import { toast } from "./toast.js?v=20260721-unlock-dialog";
+import { toast } from "./toast.js?v=20260721-debug";
 import { showModal, confirmModal } from "./modal.js";
 import { icon } from "./icons.js";
-import { finishHistoryImport } from "./history-import.js?v=20260721-unlock-dialog";
+import { finishHistoryImport } from "./history-import.js?v=20260721-debug";
 import { APP_VERSION } from "../config.js";
 import { currentLanguage, isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js";
+import { isDebugMode, tryEnableDebugMode } from "../core/debug.js";
 
 let root = null;
+let debugEntryTaps = 0;
+let debugEntryResetTimer = null;
 
 function build() {
   root = document.getElementById("screen-settings");
@@ -89,6 +92,58 @@ function restoreScrollPosition(scroller, scrollTop) {
     restore();
     requestAnimationFrame(restore);
   });
+}
+
+function showDebugKeywordModal() {
+  if (isDebugMode()) {
+    toast("DEBUG ON");
+    return;
+  }
+  const input = el("input", {
+    type: "password",
+    autocomplete: "off",
+    spellcheck: "false",
+    placeholder: tr("キーワード", "Keyword"),
+    "aria-label": tr("秘密のキーワード", "Secret keyword"),
+  });
+  let closeModal = () => {};
+  const activate = () => {
+    if (!tryEnableDebugMode(input.value)) {
+      playSfx("invalid");
+      toast(tr("キーワードが違います", "Incorrect keyword"));
+      input.select();
+      return false;
+    }
+    render();
+    toast(tr("DEBUG ON：実績と隠し要素を一時的に全開放しました", "DEBUG ON: achievements and hidden content are temporarily unlocked"));
+    return true;
+  };
+  input.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    if (activate()) closeModal();
+  });
+  closeModal = showModal({
+    title: tr("シークレット", "Secret"),
+    body: [input],
+    actions: [
+      { label: tr("キャンセル", "Cancel"), onClick: () => {} },
+      { label: tr("入力", "Enter"), primary: true, onClick: activate },
+    ],
+  });
+}
+
+function handleDebugEntryTap() {
+  debugEntryTaps++;
+  clearTimeout(debugEntryResetTimer);
+  if (debugEntryTaps >= 5) {
+    debugEntryTaps = 0;
+    showDebugKeywordModal();
+    return;
+  }
+  debugEntryResetTimer = setTimeout(() => {
+    debugEntryTaps = 0;
+  }, 2000);
 }
 
 function showImportModal() {
@@ -194,7 +249,9 @@ function render() {
       { class: "icon-btn", "aria-label": tr("タイトルへ戻る", "Back to title"), onclick: () => { playSfx("ui"); navigate("/"); } },
       icon("arrowLeft")
     ),
-    el("div", { class: "title" }, tr("設定", "Settings"))
+    el("div", { class: "title" }, tr("設定", "Settings")),
+    el("span", { class: "spacer" }),
+    isDebugMode() ? el("span", { class: "debug-status" }, "DEBUG ON") : null
   );
 
   const s = getSettings();
@@ -317,7 +374,7 @@ function render() {
       ),
       el(
         "div",
-        { class: "bgm-picker", role: "radiogroup", "aria-labelledby": "bgm-picker-label" },
+        { class: "bgm-picker", role: "radiogroup", "aria-labelledby": "bgm-picker-label", tabindex: "0" },
         BGM_TRACKS.map((track) => {
           const isLocked = track.unlockAchievement && !unlocked[track.unlockAchievement];
           const isActive = s.bgmTrack === track.id;
@@ -380,8 +437,8 @@ function render() {
             const ok = await confirmModal(
               tr("全データ削除", "Delete all data"),
               tr(
-                "プレイ履歴・実績・設定をすべて削除します。\nこの操作は取り消せません。本当に削除しますか？",
-                "This deletes all play history, achievements, and settings.\nThis cannot be undone. Continue?"
+                "DWORDle 2 のプレイ履歴・実績・設定をすべて削除します。\n旧作 DWORDle / DWORDlie のデータは削除されません。\nこの操作は取り消せません。本当に削除しますか？",
+                "This deletes all DWORDle 2 play history, achievements, and settings.\nData from the original DWORDle / DWORDlie will not be deleted.\nThis cannot be undone. Continue?"
               )
             );
             if (!ok) return;
@@ -409,7 +466,18 @@ function render() {
     el(
       "p",
       { class: "version-note", style: { textAlign: "center" } },
-      tr(`DWORDle 2 v${APP_VERSION} ・ by `, `DWORDle 2 v${APP_VERSION} — by `),
+      el(
+        "button",
+        {
+          class: "debug-entry",
+          type: "button",
+          title: "DWORDle 2 version",
+          "aria-label": tr(`DWORDle 2 バージョン ${APP_VERSION}`, `DWORDle 2 version ${APP_VERSION}`),
+          onclick: handleDebugEntryTap,
+        },
+        `DWORDle 2 v${APP_VERSION}`
+      ),
+      tr(" ・ by ", " — by "),
       el(
         "a",
         {

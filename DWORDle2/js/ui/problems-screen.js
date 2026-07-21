@@ -4,13 +4,13 @@
 // ルート: #/problems
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate, getAppMode } from "./app.js?v=20260721-runtime";
+import { registerScreen, navigate, getAppMode } from "./app.js?v=20260721-debug";
 import { buildProblemStatus, MODES } from "../core/records.js";
 import { LEVELS, isValidPID, pidLabel } from "../core/problems.js";
 import { playSfx } from "../audio/sound.js";
 import { showModal } from "./modal.js";
-import { confirmAndStart } from "./game-screen.js?v=20260721-unlock-dialog";
-import { toast } from "./toast.js?v=20260721-unlock-dialog";
+import { confirmAndStart } from "./game-screen.js?v=20260721-debug";
+import { toast } from "./toast.js?v=20260721-debug";
 import { icon } from "./icons.js";
 import { localizedLevel, tr } from "../core/i18n.js";
 

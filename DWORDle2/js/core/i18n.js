@@ -62,12 +62,12 @@ const ACHIEVEMENT_EN = {
   revenge: ["Revenge", "Clear a puzzle you previously lost"],
   "speed-60": ["Speed Star", "Clear a game within 60 seconds"],
   "slow-10": ["Deep Thinker", "Take at least 10 minutes to clear a game"],
-  "night-owl": ["Midnight Wordler", "Clear a game between midnight and 4 a.m."],
+  "night-owl": ["Midnight DWORDler", "Clear a game between midnight and 4 a.m."],
   "daily-7": ["Perfect Week", "Clear Daily puzzles 7 days in a row"],
   "early-bird": ["Early Bird", "Clear a game between 5 a.m. and 8 a.m."],
   "new-year": ["First Sunrise", "Clear a game on January 1"],
   christmas: ["Holy Night Gift", "Clear a game on December 25"],
-  weekend: ["Weekend Wordler", "Clear games on both a Saturday and a Sunday (any weeks)"],
+  weekend: ["Weekend DWORDler", "Clear games on both a Saturday and a Sunday (any weeks)"],
   "same-day-5": ["On Fire Today", "Clear 5 games in a single day"],
   "play-days-30": ["Consistency Pays", "Play on 30 different days"],
   "daily-30": ["Daily Regular", "Clear 30 Daily puzzles total"],
@@ -85,7 +85,7 @@ const ACHIEVEMENT_EN = {
   "h-zorome": ["Repeating Digits", "Clear a puzzle with a repeating-digit No., such as 111 or 7777"],
   "h-uso-green": ["All-Green Lie", "Get five displayed green tiles in DWORDlie"],
   "h-abyss": ["One Strike into the Abyss", "Clear an Extreme puzzle within 4 Guesses"],
-  "h-lightning": ["Lightning Fast", "Clear a game in 3 or more Guesses and within 20 seconds"],
+  "h-lightning": ["Lightning Fast", "Clear a game in 3 or more Guesses and within 10 seconds"],
   "h-lexicon": ["Fountain of Words", "Use 100 different Guess words total"],
 };
 
