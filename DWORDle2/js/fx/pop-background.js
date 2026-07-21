@@ -138,6 +138,7 @@ function draw() {
 // ---- 盤面タイル風の 1x5 ライン ----
 
 const rand = (min, max) => min + Math.random() * (max - min);
+const easeInOutCubic = (p) => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2);
 
 let particles = [];
 
@@ -153,12 +154,12 @@ function bandX(band) {
   return ((band + rand(0.15, 0.85)) / n) * innerWidth;
 }
 
-// onScreen=false のラインは画面上端の外から降ってくるので、
-// 判定（色付け）の開始は「画面に入ってから」を起点に数える
-function makeLine(band, y, onScreen) {
+// 画面上端より上（y < 0）で生まれたラインは、
+// 判定（色付け）の開始を「画面に入ってから」を起点に数える
+function makeLine(band, y) {
   const cfg = FX.popBg.tiles;
   const vy = rand(cfg.fallSpeedPx[0], cfg.fallSpeedPx[1]);
-  const enterDelay = onScreen ? 0 : lineMargin() / vy;
+  const enterDelay = Math.max(0, -y / vy);
   const line = {
     band,
     x: bandX(band),
@@ -193,31 +194,39 @@ function scheduleReveal(line, delay) {
   line.nextPhaseAt = Math.max(...line.tiles.map((tile) => tile.flipAt)) + cfg.revealFlipSec;
 }
 
-// 判定色 → 白へ戻す。発火タイミングはラインごとにランダムだが、
-// 戻り自体は 1 ライン全タイルほぼ同時（1 枚ずつの判定と対比をつける）
+// 判定色 → 白へ戻す。原作 DWORDle にちなみ、回転しながら色が抜けていく。
+// 発火タイミングはラインごとにランダムで、戻りも端から順番に走る
 function scheduleRevert(line) {
   const cfg = FX.popBg.tiles;
-  const at = t + rand(cfg.revertDelaySec[0], cfg.revertDelaySec[1]);
-  for (const tile of line.tiles) {
-    tile.flipAt = at + rand(0, 0.08); // ごくわずかに揺らすと機械的に見えない
+  const order = Array.from({ length: cfg.tilesPerLine }, (_, k) => k);
+  if (Math.random() < 0.5) order.reverse();
+  let at = t + rand(cfg.revertDelaySec[0], cfg.revertDelaySec[1]);
+  for (const k of order) {
+    const tile = line.tiles[k];
+    tile.flipAt = at;
     tile.dir = -1;
     tile.burst = true; // 白に戻るときはパーティクルなし（背景なので控えめに）
+    at += rand(cfg.revertGapSec[0], cfg.revertGapSec[1]);
   }
   line.mode = "toWhite";
-  line.nextPhaseAt = Math.max(...line.tiles.map((tile) => tile.flipAt)) + cfg.revealFlipSec;
+  line.nextPhaseAt = Math.max(...line.tiles.map((tile) => tile.flipAt)) + cfg.revertSpinSec;
 }
 
 function initLines() {
   const cfg = FX.popBg.tiles;
-  // 最初から画面全体に散らばった状態で開始する（上から順に降ってくるのを待たせない）
+  const margin = lineMargin();
+  const spread = cfg.spawnSpreadY * innerHeight;
+  const loop = innerHeight + margin * 2 + spread;
+  // 初期位相を周回全体（画面外の助走域も含む）に散らして、出現タイミング・y 座標が揃わないようにする
   lines = Array.from({ length: cfg.lineCount }, (_, i) =>
-    makeLine(i, ((i + 0.5) / cfg.lineCount) * innerHeight + rand(-40, 40), true)
+    makeLine(i, -margin - spread + ((i + rand(0.15, 0.85)) / cfg.lineCount) * loop)
   );
 }
 
-// 反転アニメの進行度（0 = 反転前、0.5 = 縮み切って色が切り替わる、1 = 反転後で全開）
+// 反転アニメの進行度（0 = 反転前、1 = 反転後）。長さは判定と白戻しで別
 function flipProgress(tile) {
-  const dur = FX.popBg.tiles.revealFlipSec;
+  const cfg = FX.popBg.tiles;
+  const dur = tile.dir === 1 ? cfg.revealFlipSec : cfg.revertSpinSec;
   return Math.min(Math.max((t - tile.flipAt) / dur, 0), 1);
 }
 
@@ -239,9 +248,10 @@ function stepLines(dt) {
     const line = lines[i];
     line.y += line.vy * dt;
     line.angle += line.spin * dt;
-    // 画面下へ抜けたら、同じ band の新しいライン（白）として上から降り直す（エンドレス）
+    // 画面下へ抜けたら、同じ band の新しいライン（白）として上から降り直す（エンドレス）。
+    // 生まれ直しの位置を上方向にランダムに離して、再登場のタイミングを散らす
     if (line.y > innerHeight + margin) {
-      lines[i] = makeLine(line.band, -margin, false);
+      lines[i] = makeLine(line.band, -margin - rand(0, cfg.spawnSpreadY * innerHeight));
       continue;
     }
     // 判定 → 白戻し → また判定、を落ちている間ずっと繰り返す
@@ -303,17 +313,44 @@ function drawLines() {
       const tile = line.tiles[k];
       const x = (k - (cfg.tilesPerLine - 1) / 2) * cfg.pitchPx;
       const p = flipProgress(tile);
-      // タイルの短辺を縮めて戻す疑似フリップ。折り返し（p=0.5）で色を切り替える
-      const sy = Math.abs(Math.cos(Math.PI * p));
-      if (sy < 0.02) continue;
-      const colored = tile.dir === 1 ? p >= 0.5 : p < 0.5;
-      const c = colors[(colored ? tile.color : 0) % colors.length];
-      ctx.beginPath();
-      ctx.roundRect(x - cfg.sizePx / 2, (-cfg.sizePx / 2) * sy, cfg.sizePx, cfg.sizePx * sy, cfg.cornerPx * sy);
-      ctx.fillStyle = c.fill;
-      ctx.fill();
-      ctx.strokeStyle = c.stroke;
-      ctx.stroke();
+      if (tile.dir === 1) {
+        // 判定: タイルの短辺を縮めて戻す疑似フリップ。折り返し（p=0.5）で白 → 判定色
+        const sy = Math.abs(Math.cos(Math.PI * p));
+        if (sy < 0.02) continue;
+        const c = colors[(p >= 0.5 ? tile.color : 0) % colors.length];
+        ctx.beginPath();
+        ctx.roundRect(x - cfg.sizePx / 2, (-cfg.sizePx / 2) * sy, cfg.sizePx, cfg.sizePx * sy, cfg.cornerPx * sy);
+        ctx.fillStyle = c.fill;
+        ctx.fill();
+        ctx.strokeStyle = c.stroke;
+        ctx.stroke();
+      } else {
+        // 白戻し: 原作 DWORDle 風に、くるっと回転しながら色が抜けていく。
+        // 白と判定色を単純に重ねると普段より濃く見えるので、α を按分したクロスフェードにする
+        ctx.save();
+        ctx.translate(x, 0);
+        ctx.rotate(easeInOutCubic(p) * Math.PI * 2);
+        const path = new Path2D();
+        path.roundRect(-cfg.sizePx / 2, -cfg.sizePx / 2, cfg.sizePx, cfg.sizePx, cfg.cornerPx);
+        if (p > 0) {
+          const white = colors[0];
+          ctx.globalAlpha = p;
+          ctx.fillStyle = white.fill;
+          ctx.fill(path);
+          ctx.strokeStyle = white.stroke;
+          ctx.stroke(path);
+        }
+        if (p < 1) {
+          const c = colors[tile.color % colors.length];
+          ctx.globalAlpha = 1 - p;
+          ctx.fillStyle = c.fill;
+          ctx.fill(path);
+          ctx.strokeStyle = c.stroke;
+          ctx.stroke(path);
+        }
+        ctx.globalAlpha = 1;
+        ctx.restore();
+      }
     }
     ctx.restore();
   }
