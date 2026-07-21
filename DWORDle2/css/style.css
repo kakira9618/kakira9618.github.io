@@ -2141,10 +2141,12 @@ body.reduce-motion *::after {
   font-size: 13px;
 }
 .guess-flag-slot {
-  position: relative;
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 10px);
+  transform: translateY(-50%);
   width: 27px;
   height: 38px;
-  flex: none;
 }
 .guess-flag {
   position: absolute;
@@ -2214,6 +2216,7 @@ body.reduce-motion *::after {
     font-size: 11px;
   }
   .guess-flag-slot {
+    left: calc(100% + 8px);
     width: 25px;
   }
 }

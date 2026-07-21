@@ -93,7 +93,7 @@ function render(args) {
   );
 
   // 答えを判定グリッドと同じ寸法・位置の 2 x 5 タイルで表示。
-  // ラベルと印はタイル列の外に絶対配置し、有無で行がずれないようにする。
+  // ラベルは左、正解を示す旗は右へ絶対配置し、有無で行がずれないようにする。
   const answerRow = (no, word) => {
     const matched = cleared && lastWord === word;
     return el(
@@ -109,22 +109,22 @@ function render(args) {
       el(
         "span",
         { class: "answer-label-group", "aria-hidden": "true" },
-        el(
-          "span",
-          { class: "guess-flag-slot" },
-          matched
-            ? el(
-                "span",
-                { class: "guess-flag" },
-                el("span", { class: "guess-flag-pole" }),
-                el("span", { class: "guess-flag-base" }),
-                el("span", { class: "guess-flag-cloth" })
-              )
-            : null
-        ),
         el("span", { class: "alabel" }, `Word ${no}`)
       ),
-      word.split("").map((c) => el("span", { class: "rcell htile", "aria-hidden": "true" }, c))
+      word.split("").map((c) => el("span", { class: "rcell htile", "aria-hidden": "true" }, c)),
+      matched
+        ? el(
+            "span",
+            { class: "guess-flag-slot", "aria-hidden": "true" },
+            el(
+              "span",
+              { class: "guess-flag" },
+              el("span", { class: "guess-flag-pole" }),
+              el("span", { class: "guess-flag-base" }),
+              el("span", { class: "guess-flag-cloth" })
+            )
+          )
+        : null
     );
   };
 

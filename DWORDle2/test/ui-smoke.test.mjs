@@ -301,6 +301,13 @@ try {
   await page.getByRole("img", { name: /緑、位置一致/ }).first().waitFor();
   const guessedAnswerRow = page.locator(".answer-row:has(.guess-flag)");
   assert.equal(await guessedAnswerRow.count(), 1, "The guessed answer should have one rotating flag");
+  const guessedFlagBox = await guessedAnswerRow.locator(".guess-flag-slot").boundingBox();
+  const guessedLastTileBox = await guessedAnswerRow.locator(".rcell").last().boundingBox();
+  assert.ok(
+    guessedFlagBox && guessedLastTileBox
+      && guessedFlagBox.x >= guessedLastTileBox.x + guessedLastTileBox.width,
+    `The guessed-answer flag should sit to the right of the tile row: ${JSON.stringify({ guessedFlagBox, guessedLastTileBox })}`
+  );
   assert.match(
     await guessedAnswerRow.getAttribute("aria-label"),
     /あなたが当てた答え/,
