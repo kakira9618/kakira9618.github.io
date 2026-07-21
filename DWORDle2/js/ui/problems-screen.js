@@ -4,15 +4,15 @@
 // ルート: #/problems
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate, getAppMode } from "./app.js?v=20260722-pop-locale-scale";
+import { registerScreen, navigate, getAppMode } from "./app.js?v=20260722-unlock-analysis";
 import { buildProblemStatus, MODES } from "../core/records.js";
 import { LEVELS, isValidPID, pidLabel } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260722-pop-locale-scale";
-import { showModal } from "./modal.js?v=20260722-pop-locale-scale";
-import { confirmAndStart } from "./game-screen.js?v=20260722-pop-locale-scale";
-import { toast } from "./toast.js?v=20260722-pop-locale-scale";
+import { playSfx } from "../audio/sound.js?v=20260722-unlock-analysis";
+import { showModal } from "./modal.js?v=20260722-unlock-analysis";
+import { confirmAndStart } from "./game-screen.js?v=20260722-unlock-analysis";
+import { toast } from "./toast.js?v=20260722-unlock-analysis";
 import { icon } from "./icons.js";
-import { localizedLevel, tr } from "../core/i18n.js?v=20260722-pop-locale-scale";
+import { localizedLevel, tr } from "../core/i18n.js?v=20260722-unlock-analysis";
 
 const BLOCK_SIZE = 100;
 

@@ -11,10 +11,10 @@
 //   #/analysis/<mode>/<startTime> 分析画面
 
 import { loadJSON, saveJSON } from "../core/store.js";
-import { setUsoMood } from "../audio/sound.js?v=20260722-pop-locale-scale";
-import { setBackgroundMood } from "../fx/effects.js?v=20260722-pop-locale-scale";
-import { setPopBackgroundMood } from "../fx/pop-background.js?v=20260722-pop-locale-scale";
-import { closeAllModals } from "./modal.js?v=20260722-pop-locale-scale";
+import { setUsoMood } from "../audio/sound.js?v=20260722-unlock-analysis";
+import { setBackgroundMood } from "../fx/effects.js?v=20260722-unlock-analysis";
+import { setPopBackgroundMood } from "../fx/pop-background.js?v=20260722-unlock-analysis";
+import { closeAllModals } from "./modal.js?v=20260722-unlock-analysis";
 
 const screens = new Map(); // name -> { element, render(params) }
 let currentName = null;

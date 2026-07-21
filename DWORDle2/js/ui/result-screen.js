@@ -2,18 +2,18 @@
 // ルート: #/result/<mode>/<startTime>
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260722-pop-locale-scale";
+import { registerScreen, navigate } from "./app.js?v=20260722-unlock-analysis";
 import { findGame, MODES } from "../core/records.js";
 import { Logic, CELL } from "../core/logic.js";
 import { pidLabel, isDailyPID } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260722-pop-locale-scale";
-import { toast } from "./toast.js?v=20260722-pop-locale-scale";
-import { confirmAndStart } from "./game-screen.js?v=20260722-pop-locale-scale";
+import { playSfx } from "../audio/sound.js?v=20260722-unlock-analysis";
+import { toast } from "./toast.js?v=20260722-unlock-analysis";
+import { confirmAndStart } from "./game-screen.js?v=20260722-unlock-analysis";
 import { icon } from "./icons.js";
-import { downloadResultPNG } from "./snapshot.js?v=20260722-pop-locale-scale";
-import { SHARE_URL } from "../config.js?v=20260722-pop-locale-scale";
-import { tr } from "../core/i18n.js?v=20260722-pop-locale-scale";
-import { rowAriaLabel } from "./a11y.js?v=20260722-pop-locale-scale";
+import { downloadResultPNG } from "./snapshot.js?v=20260722-unlock-analysis";
+import { SHARE_URL } from "../config.js?v=20260722-unlock-analysis";
+import { tr } from "../core/i18n.js?v=20260722-unlock-analysis";
+import { rowAriaLabel } from "./a11y.js?v=20260722-unlock-analysis";
 
 let root = null;
 

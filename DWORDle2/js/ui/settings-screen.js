@@ -2,19 +2,19 @@
 // ルート: #/settings
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260722-pop-locale-scale";
-import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js?v=20260722-pop-locale-scale";
+import { registerScreen, navigate } from "./app.js?v=20260722-unlock-analysis";
+import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js?v=20260722-unlock-analysis";
 import { importFromLocalStorage, importFromText, scanLegacyHistory } from "../core/migrate.js";
 import { exportJSON } from "../core/records.js";
 import { removeKey } from "../core/store.js";
-import { getUnlocked } from "../core/achievements.js?v=20260722-pop-locale-scale";
-import { BGM_TRACKS, playSfx } from "../audio/sound.js?v=20260722-pop-locale-scale";
-import { toast } from "./toast.js?v=20260722-pop-locale-scale";
-import { showModal, confirmModal } from "./modal.js?v=20260722-pop-locale-scale";
+import { getUnlocked } from "../core/achievements.js?v=20260722-unlock-analysis";
+import { BGM_TRACKS, playSfx } from "../audio/sound.js?v=20260722-unlock-analysis";
+import { toast } from "./toast.js?v=20260722-unlock-analysis";
+import { showModal, confirmModal } from "./modal.js?v=20260722-unlock-analysis";
 import { icon } from "./icons.js";
-import { finishHistoryImport } from "./history-import.js?v=20260722-pop-locale-scale";
-import { APP_VERSION } from "../config.js?v=20260722-pop-locale-scale";
-import { currentLanguage, isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js?v=20260722-pop-locale-scale";
+import { finishHistoryImport } from "./history-import.js?v=20260722-unlock-analysis";
+import { APP_VERSION } from "../config.js?v=20260722-unlock-analysis";
+import { currentLanguage, isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js?v=20260722-unlock-analysis";
 import { isDebugMode, tryEnableDebugMode } from "../core/debug.js";
 
 let root = null;

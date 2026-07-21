@@ -117,7 +117,7 @@ FakeAudioContext.holdNextResume = false;
 
 globalThis.window = { AudioContext: FakeAudioContext };
 
-const { setSetting } = await import("../js/core/settings.js?v=20260722-pop-locale-scale");
+const { setSetting } = await import("../js/core/settings.js?v=20260722-unlock-analysis");
 const { audioNeedsRecovery, playSfx, unlockAudio, setUsoMood, stopBgm, BGM_TRACKS } = await import("../js/audio/sound.js");
 
 setSetting("bgm", false);

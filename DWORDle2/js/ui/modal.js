@@ -1,8 +1,8 @@
 // モーダルダイアログ。
 
 import { el, clear } from "./dom.js";
-import { playSfx } from "../audio/sound.js?v=20260722-pop-locale-scale";
-import { tr } from "../core/i18n.js?v=20260722-pop-locale-scale";
+import { playSfx } from "../audio/sound.js?v=20260722-unlock-analysis";
+import { tr } from "../core/i18n.js?v=20260722-unlock-analysis";
 
 const layer = () => document.getElementById("modal-layer");
 const openCloseFns = new Set(); // closeAllModals 用

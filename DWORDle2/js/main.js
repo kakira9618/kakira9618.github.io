@@ -1,26 +1,26 @@
 // エントリポイント。画面登録・ルータ起動・3D 背景・音声の初期化。
 
-import { startRouter, initAppMode } from "./ui/app.js?v=20260722-pop-locale-scale";
-import { initEffects } from "./fx/effects.js?v=20260722-pop-locale-scale";
-import { initPopBackground } from "./fx/pop-background.js?v=20260722-pop-locale-scale";
-import { audioNeedsRecovery, bgmTracksUnlockedBy, restartBgmIfReady, stopBgm, unlockAudio } from "./audio/sound.js?v=20260722-pop-locale-scale";
-import { getSettings, onSettingsChange } from "./core/settings.js?v=20260722-pop-locale-scale";
-import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js?v=20260722-pop-locale-scale";
-import { syncDocumentLanguage } from "./core/i18n.js?v=20260722-pop-locale-scale";
-import { reconcileAchievementsOnce } from "./core/achievements.js?v=20260722-pop-locale-scale";
-import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "./ui/game-screen.js?v=20260722-pop-locale-scale";
-import { achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./ui/toast.js?v=20260722-pop-locale-scale";
-import { hiddenThemesUnlockedBy } from "./core/settings.js?v=20260722-pop-locale-scale";
+import { startRouter, initAppMode } from "./ui/app.js?v=20260722-unlock-analysis";
+import { initEffects } from "./fx/effects.js?v=20260722-unlock-analysis";
+import { initPopBackground } from "./fx/pop-background.js?v=20260722-unlock-analysis";
+import { audioNeedsRecovery, bgmTracksUnlockedBy, restartBgmIfReady, stopBgm, unlockAudio } from "./audio/sound.js?v=20260722-unlock-analysis";
+import { getSettings, onSettingsChange } from "./core/settings.js?v=20260722-unlock-analysis";
+import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js?v=20260722-unlock-analysis";
+import { syncDocumentLanguage } from "./core/i18n.js?v=20260722-unlock-analysis";
+import { reconcileAchievementsOnce } from "./core/achievements.js?v=20260722-unlock-analysis";
+import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "./ui/game-screen.js?v=20260722-unlock-analysis";
+import { achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./ui/toast.js?v=20260722-unlock-analysis";
+import { hiddenThemesUnlockedBy } from "./core/settings.js?v=20260722-unlock-analysis";
 
 // 画面モジュール（import するだけで registerScreen される）
-import "./ui/title-screen.js?v=20260722-pop-locale-scale";
-import "./ui/game-screen.js?v=20260722-pop-locale-scale";
-import "./ui/result-screen.js?v=20260722-pop-locale-scale";
-import "./ui/history-screen.js?v=20260722-pop-locale-scale";
-import "./ui/problems-screen.js?v=20260722-pop-locale-scale";
-import "./ui/achievements-screen.js?v=20260722-pop-locale-scale";
-import "./ui/analysis-screen.js?v=20260722-pop-locale-scale";
-import "./ui/settings-screen.js?v=20260722-pop-locale-scale";
+import "./ui/title-screen.js?v=20260722-unlock-analysis";
+import "./ui/game-screen.js?v=20260722-unlock-analysis";
+import "./ui/result-screen.js?v=20260722-unlock-analysis";
+import "./ui/history-screen.js?v=20260722-unlock-analysis";
+import "./ui/problems-screen.js?v=20260722-unlock-analysis";
+import "./ui/achievements-screen.js?v=20260722-unlock-analysis";
+import "./ui/analysis-screen.js?v=20260722-unlock-analysis";
+import "./ui/settings-screen.js?v=20260722-unlock-analysis";
 
 // 古い Android Chrome は dvh に未対応のため、実際の表示領域を CSS 変数で補う。
 // 対応ブラウザでは CSS 側の 100dvh が優先される。
