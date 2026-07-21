@@ -92,10 +92,10 @@ body.theme-pop {
   --key-unused-border: #b9c0cb;
   --border: rgba(255, 79, 158, 0.32);
   --glow: none;
-  background-image: radial-gradient(rgba(255, 79, 158, 0.08) 2.2px, transparent 2.6px);
-  background-size: 26px 26px;
+  /* 水玉模様は #bgPop の 2D canvas が描く（半径がウェーブ状に伸縮する） */
 }
 body.theme-pop.mode-uso {
+  --bg: #fff1ea;
   --accent: #e0426a;
   --accent-2: #ff8800;
   --border: rgba(224, 66, 106, 0.42);
@@ -117,6 +117,14 @@ body.theme-pop::before {
 @keyframes popDrift {
   from { transform: translate(-2%, -1%) rotate(-2deg) scale(1); }
   to { transform: translate(2%, 2%) rotate(2deg) scale(1.07); }
+}
+/* 裏（DWORDlie）ではパステルの光の玉を毒っ気のある暖色系に切り替える */
+body.theme-pop.mode-uso::before {
+  background:
+    radial-gradient(34% 34% at 20% 26%, rgba(255, 122, 152, 0.6), transparent 70%),
+    radial-gradient(38% 38% at 82% 18%, rgba(255, 168, 92, 0.58), transparent 70%),
+    radial-gradient(44% 44% at 72% 82%, rgba(255, 120, 96, 0.5), transparent 70%),
+    radial-gradient(30% 30% at 24% 76%, rgba(208, 128, 255, 0.52), transparent 70%);
 }
 body.theme-pop #bg3d {
   display: none;
@@ -208,6 +216,20 @@ button {
 body.theme-classic #bg3d,
 body.theme-classic #fx3d {
   display: none;
+}
+
+/* Pop テーマの水玉背景キャンバス（pop のときだけ表示） */
+#bgPop {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  display: none;
+}
+body.theme-pop #bgPop {
+  display: block;
 }
 
 /* ---- アプリ全体レイアウト ---- */

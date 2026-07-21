@@ -13,6 +13,7 @@
 import { loadJSON, saveJSON } from "../core/store.js";
 import { setUsoMood } from "../audio/sound.js";
 import { setBackgroundMood } from "../fx/effects.js";
+import { setPopBackgroundMood } from "../fx/pop-background.js";
 import { closeAllModals } from "./modal.js";
 
 const screens = new Map(); // name -> { element, render(params) }
@@ -32,6 +33,7 @@ export function setAppMode(mode) {
   document.body.classList.toggle("mode-normal", mode === "normal");
   setUsoMood(mode === "uso");
   setBackgroundMood(mode === "uso");
+  setPopBackgroundMood(mode === "uso");
 }
 
 // モード切替を眺めただけの場合ではなく、実際に開始したゲームを次回の初期モードにする。

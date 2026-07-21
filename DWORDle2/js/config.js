@@ -65,6 +65,19 @@ export const FX = {
     hueDriftAmp: 0.05, // 色相のゆっくりした揺らぎ幅（0-1 の色相環比）
     hueDriftSpeed: 0.021, // 揺らぎの速さ（小さいほどじわじわ変わる）
   },
+  // Pop テーマの水玉背景（2D canvas）。ドットの半径が画面を横切る波に合わせて伸縮する
+  popBg: {
+    spacing: 34, // ドットの間隔 px
+    baseRadius: 3.2, // 基本半径 px
+    waveAmp: 0.6, // 半径の伸縮率（基本半径に対する比、0-1）
+    wave1: { wavelengthPx: 460, angleDeg: -16, speed: 1.0 }, // 主波（speed は rad/s）
+    wave2: { wavelengthPx: 260, angleDeg: 58, speed: -0.7 }, // 副波（逆向きに走らせて単調さを消す）
+    wave2Mix: 0.35, // 副波の混合比
+    scroll: { speedPx: 7, angleDeg: 28 }, // 水玉全体のゆっくりした斜めスクロール（px/s と進行方向）
+    // 水玉は単色。裏（DWORDlie）は毒っ気のある深紅に切り替える
+    colors: ["rgba(255, 79, 158, 0.18)"],
+    colorsUso: ["rgba(224, 48, 90, 0.20)"],
+  },
   // 新しい行のタイルが 3D で集合してくる演出（fx3d キャンバス上の本物の 3D 面）
   gather: {
     durationMs: 650, // 1 枚の飛行時間

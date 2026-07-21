@@ -2,6 +2,7 @@
 
 import { startRouter, initAppMode } from "./ui/app.js?v=20260721-debug";
 import { initEffects } from "./fx/effects.js";
+import { initPopBackground } from "./fx/pop-background.js";
 import { audioNeedsRecovery, bgmTracksUnlockedBy, restartBgmIfReady, stopBgm, unlockAudio } from "./audio/sound.js";
 import { getSettings, onSettingsChange } from "./core/settings.js";
 import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js";
@@ -48,6 +49,7 @@ onMotionPreferenceChange(() => syncDisplayClasses());
 
 initAppMode();
 void initEffects();
+initPopBackground();
 
 // 物理キーボード
 addEventListener("keydown", handlePhysicalKey);
