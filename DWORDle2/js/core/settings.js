@@ -3,7 +3,7 @@
 import { loadJSON, saveJSON } from "./store.js";
 
 export const DEFAULT_SETTINGS = {
-  theme: "cyber", // "cyber"（ネオン3D演出）| "classic"（原作風フラット表示）
+  theme: "cyber", // "cyber"（ネオン3D演出）| "classic"（原作風フラット表示）| "pop"（隠し: キャンディポップ）
   sfx: true, // 効果音
   sfxVolume: 100, // 効果音の音量（0〜100）
   bgm: true, // BGM（最初のユーザー操作後に再生開始）
@@ -14,6 +14,25 @@ export const DEFAULT_SETTINGS = {
   reduceFx: false, // 演出を軽くする（パーティクルを完全にオフ）
   randomLevel: 1, // ランダムプレイで前回選んだレベル
 };
+
+// 実績で解放される隠しテーマ。設定画面では解放まで「???」表示になる。
+export const HIDDEN_THEMES = [
+  {
+    id: "pop",
+    name: "Pop",
+    nameEn: "Pop",
+    desc: "キャンディみたいにポップで楽しいテーマ",
+    descEn: "A fun, candy-bright pop theme",
+    unlockAchievement: "rainbow",
+    unlockLabel: "三色盛り",
+    unlockLabelEn: "Three Colors",
+  },
+];
+
+export function hiddenThemesUnlockedBy(achievements) {
+  const ids = new Set(achievements.map((achievement) => achievement.id));
+  return HIDDEN_THEMES.filter((theme) => theme.unlockAchievement && ids.has(theme.unlockAchievement));
+}
 
 export function normalizeVolume(value) {
   const numeric = Number(value);

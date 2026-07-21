@@ -70,6 +70,89 @@ body.theme-classic.mode-uso {
   --accent: #c83c3c;
 }
 
+/* 隠しテーマ「Pop」: 明るいキャンディカラー。盤面の判定色はビビッドで見やすく保つ */
+body.theme-pop {
+  --tile-unused: #a8b1bd;
+  --tile-used: #ffb628;
+  --tile-correct: #2dbd6e;
+  --bg: #fff4f8;
+  --bg-panel: rgba(255, 255, 255, 0.84);
+  --bg-panel-2: #ffffff;
+  --fg: #3a2b3c;
+  --fg-dim: #93819b;
+  --accent: #ff4f9e;
+  --accent-2: #7c5cff;
+  --danger: #e0426a;
+  --key-bg: #ffffff;
+  --key-fg: #4a3550;
+  --key-border: rgba(255, 79, 158, 0.26);
+  --key-unused-bg: #b9c0cb;
+  --key-unused-fg: #ffffff;
+  --key-unused-border: #b9c0cb;
+  --border: rgba(255, 79, 158, 0.32);
+  --glow: none;
+  background-image: radial-gradient(rgba(255, 79, 158, 0.08) 2.2px, transparent 2.6px);
+  background-size: 26px 26px;
+}
+body.theme-pop.mode-uso {
+  --accent: #e0426a;
+  --accent-2: #ff8800;
+  --border: rgba(224, 66, 106, 0.42);
+}
+/* ふわふわ漂うパステルの光の玉（3D 背景の代わりの軽量な演出） */
+body.theme-pop::before {
+  content: "";
+  position: fixed;
+  inset: -22%;
+  z-index: 0;
+  background:
+    radial-gradient(34% 34% at 20% 26%, rgba(255, 179, 222, 0.6), transparent 70%),
+    radial-gradient(38% 38% at 82% 18%, rgba(255, 224, 130, 0.55), transparent 70%),
+    radial-gradient(44% 44% at 72% 82%, rgba(148, 216, 255, 0.55), transparent 70%),
+    radial-gradient(30% 30% at 24% 76%, rgba(190, 167, 255, 0.5), transparent 70%);
+  animation: popDrift 26s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+@keyframes popDrift {
+  from { transform: translate(-2%, -1%) rotate(-2deg) scale(1); }
+  to { transform: translate(2%, 2%) rotate(2deg) scale(1.07); }
+}
+body.theme-pop #bg3d {
+  display: none;
+}
+body.theme-pop .logo {
+  background: linear-gradient(135deg, #ff4f9e 8%, #ff9d3f 38%, #38b6ff 72%, #7c5cff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 3px 0 rgba(255, 255, 255, 0.85));
+}
+body.theme-pop .tile {
+  background: #ffffff;
+  border-color: rgba(255, 79, 158, 0.3);
+  border-radius: 13px;
+  color: #4a3550;
+  box-shadow: 0 3px 0 rgba(233, 179, 205, 0.6);
+}
+body.theme-pop .tile.state-unused,
+body.theme-pop .tile.state-used,
+body.theme-pop .tile.state-correct {
+  border-radius: 13px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.12);
+}
+body.theme-pop .key {
+  border-radius: 11px;
+  box-shadow: 0 2px 0 rgba(233, 179, 205, 0.75);
+}
+body.theme-pop .header,
+body.theme-pop #keyboard {
+  backdrop-filter: blur(10px);
+}
+body.theme-pop .modal,
+body.theme-pop .card {
+  box-shadow: 0 6px 22px rgba(233, 148, 190, 0.22);
+}
+
 * {
   margin: 0;
   padding: 0;

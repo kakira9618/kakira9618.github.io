@@ -10,8 +10,9 @@ import { MODES, saveCurrentGame, clearCurrentGame, getCurrentGame, addFinishedGa
 import { pidLabel } from "../core/problems.js";
 import { checkOnGameFinish } from "../core/achievements.js?v=20260721-runtime";
 import { registerScreen, navigate, getAppMode, currentScreenName, rememberPlayedMode } from "./app.js?v=20260721-runtime";
-import { toast, achievementCelebration, bgmUnlockCelebration } from "./toast.js?v=20260721-unlock-dialog";
+import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./toast.js?v=20260721-unlock-dialog";
 import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js";
+import { hiddenThemesUnlockedBy } from "../core/settings.js";
 import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/effects.js";
 import { showHelpModal } from "./help.js";
 import { icon } from "./icons.js";
@@ -541,6 +542,7 @@ function finishGame(justFinished) {
         if (bgmUnlocks.length > 0) {
           bgmUnlockCelebration(bgmUnlocks);
         }
+        hiddenThemesUnlockedBy(newly).forEach(themeUnlockCelebration);
       }
     }, cleared ? 1400 : 900);
   } else {

@@ -60,7 +60,8 @@ function ensureLoop() {
 // 中心 (cx, cy)（CSS ピクセル）から count 個の粒子を色 colorHex で放つ
 export function burstAt(cx, cy, colorHex, count) {
   const s = getSettings();
-  if (s.theme !== "cyber" || shouldReduceMotion(s)) return;
+  // classic は演出なし。pop は明るい背景に沈まないよう通常合成で描く。
+  if ((s.theme !== "cyber" && s.theme !== "pop") || shouldReduceMotion(s)) return;
   const cfg = FX.burst;
   const n = count;
 
@@ -82,7 +83,7 @@ export function burstAt(cx, cy, colorHex, count) {
     size: cfg.sizePx * (1 + Math.random() * 0.6),
     transparent: true,
     opacity: 1,
-    blending: THREE.AdditiveBlending,
+    blending: s.theme === "pop" ? THREE.NormalBlending : THREE.AdditiveBlending,
     depthWrite: false,
   });
   const mesh = new THREE.Points(geo, mat);
@@ -392,9 +393,9 @@ function renderFrame(now) {
   }
 }
 
-// タイル状態 → バースト色（テーマの判定色と合わせる）
+// タイル状態 → バースト色（現在のテーマの判定色と合わせる）
 export function colorForState(state) {
-  const colors = UI.tileColors.cyber;
+  const colors = UI.tileColors[getSettings().theme] ?? UI.tileColors.cyber;
   const hex = { unused: colors.unused, used: colors.used, correct: colors.correct }[state] ?? "#ffffff";
   return new THREE.Color(hex).getHex();
 }

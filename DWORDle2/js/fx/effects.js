@@ -88,7 +88,7 @@ export function activeTileFlightCount() {
 }
 
 export function colorForState(state) {
-  const colors = UI.tileColors.cyber;
+  const colors = UI.tileColors[getSettings().theme] ?? UI.tileColors.cyber;
   const hex = { unused: colors.unused, used: colors.used, correct: colors.correct }[state] ?? "#ffffff";
   return Number.parseInt(hex.slice(1), 16);
 }

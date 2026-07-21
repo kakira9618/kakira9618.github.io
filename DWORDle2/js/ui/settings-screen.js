@@ -3,7 +3,7 @@
 
 import { el, clear } from "./dom.js";
 import { registerScreen, navigate } from "./app.js?v=20260721-runtime";
-import { getSettings, setSetting } from "../core/settings.js";
+import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js";
 import { importFromLocalStorage, importFromText, scanLegacyHistory } from "../core/migrate.js";
 import { exportJSON } from "../core/records.js";
 import { removeKey } from "../core/store.js";
@@ -223,24 +223,32 @@ function render() {
       )
     )
   );
+  const hiddenTheme = HIDDEN_THEMES[0];
+  const hiddenThemeUnlocked = Boolean(unlocked[hiddenTheme.unlockAchievement]);
+  const hiddenThemeUnlockLabel = isEnglish() ? (hiddenTheme.unlockLabelEn ?? hiddenTheme.unlockLabel) : hiddenTheme.unlockLabel;
   const themeSeg = el(
     "div",
-    { class: "seg", style: { width: "190px" }, role: "radiogroup", "aria-label": tr("テーマ", "Theme") },
+    { class: "seg", style: { width: "230px" }, role: "radiogroup", "aria-label": tr("テーマ", "Theme") },
     [
-      ["cyber", tr("サイバー", "Cyber")],
-      ["classic", tr("クラシック", "Classic")],
-    ].map(([key, label]) =>
+      ["cyber", tr("サイバー", "Cyber"), true],
+      ["classic", tr("クラシック", "Classic"), true],
+      [hiddenTheme.id, hiddenThemeUnlocked ? hiddenTheme.name : "???", hiddenThemeUnlocked],
+    ].map(([key, label, available]) =>
       el(
         "button",
         {
           class: s.theme === key ? "active" : "",
           role: "radio",
           "aria-checked": String(s.theme === key),
+          "aria-disabled": String(!available),
           onclick: () => {
+            if (!available) {
+              playSfx("invalid");
+              toast(tr(`実績「${hiddenThemeUnlockLabel}」で解放されます`, `Unlocks with the “${hiddenThemeUnlockLabel}” achievement`));
+              return;
+            }
             playSfx("ui");
             setSetting("theme", key);
-            document.body.classList.toggle("theme-cyber", key === "cyber");
-            document.body.classList.toggle("theme-classic", key === "classic");
             render();
           },
         },
@@ -257,7 +265,13 @@ function render() {
       { class: "card" },
       el("div", { style: { fontWeight: "800", marginBottom: "4px" } }, tr("表示", "Display")),
       settingRow(tr("言語", "Language"), tr("UIと「遊び方」の言語", "Language used by the UI and Guide"), languageSeg),
-      settingRow(tr("テーマ", "Theme"), tr("サイバー: ネオン + 3D エフェクト / クラシック: 原作風", "Cyber: neon + 3D effects / Classic: original-style"), themeSeg),
+      settingRow(
+        tr("テーマ", "Theme"),
+        hiddenThemeUnlocked
+          ? tr("サイバー: ネオン3D / クラシック: 原作風 / Pop: キャンディポップ", "Cyber: neon 3D / Classic: original-style / Pop: candy-bright")
+          : tr("サイバー: ネオン + 3D エフェクト / クラシック: 原作風", "Cyber: neon + 3D effects / Classic: original-style"),
+        themeSeg
+      ),
       settingRow(
         tr("キーボードヒント", "Keyboard hints"),
         tr("DWORDleで、使用した文字を判定色で表示します", "Color used letters by their feedback in DWORDle"),

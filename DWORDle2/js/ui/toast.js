@@ -283,10 +283,12 @@ export function bgmUnlockCelebration(tracks) {
 
 // ---- 隠しテーマ解放 ----
 
-// theme: { id, name, desc } を受け取り、その場で切り替えられる解放カードを出す。
+// HIDDEN_THEMES のエントリを受け取り、その場で切り替えられる解放カードを出す。
 export function themeUnlockCelebration(theme) {
   enqueueUnlockDialog(() => {
     playSfx("achievement");
+    const name = isEnglish() ? (theme.nameEn ?? theme.name) : theme.name;
+    const desc = isEnglish() ? (theme.descEn ?? theme.desc) : theme.desc;
     const titleId = `theme-unlock-title-${++unlockDialogSerial}`;
     const descId = `theme-unlock-desc-${unlockDialogSerial}`;
     return openUnlockCard({
@@ -304,8 +306,8 @@ export function themeUnlockCelebration(theme) {
           el("div", { class: "bgm-unlock-rays", "aria-hidden": "true" }),
           el("div", { class: "bgm-unlock-kicker" }, "EXTRA THEME UNLOCKED"),
           el("div", { class: "bgm-unlock-note", "aria-hidden": "true" }, icon("palette", 38)),
-          el("div", { class: "bgm-unlock-title", id: titleId }, theme.name),
-          el("div", { class: "bgm-unlock-desc", id: descId }, theme.desc),
+          el("div", { class: "bgm-unlock-title", id: titleId }, name),
+          el("div", { class: "bgm-unlock-desc", id: descId }, desc),
           el(
             "div",
             { class: "bgm-unlock-actions" },

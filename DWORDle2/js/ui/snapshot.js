@@ -47,6 +47,18 @@ const THEME_STYLES = {
     tileBorder: "#555",
     glow: false,
   },
+  pop: {
+    bgTop: "#fff7fb",
+    bgBottom: "#ffeaf3",
+    fg: "#3a2b3c",
+    dim: "#9c8aa3",
+    accent: "#ff4f9e",
+    accentUso: "#e0426a",
+    clear: "#2dbd6e",
+    over: "#e0426a",
+    tileBorder: "rgba(255, 79, 158, 0.35)",
+    glow: false,
+  },
 };
 
 function roundRect(ctx, x, y, w, h, r) {

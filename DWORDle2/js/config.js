@@ -10,6 +10,7 @@ export const UI = {
   tileColors: {
     classic: { unused: "#787c7e", used: "#c9b458", correct: "#6aaa64" },
     cyber: { unused: "#3a4356", used: "#ffc233", correct: "#00e68a" },
+    pop: { unused: "#a8b1bd", used: "#ffb628", correct: "#2dbd6e" },
   },
   // 判定オープン演出
   revealIntervalMs: 180, // タイルを 1 枚ずつ開く間隔

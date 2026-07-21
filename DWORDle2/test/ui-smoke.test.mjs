@@ -138,6 +138,20 @@ try {
   for (const label of ["キーボードヒント", "演出を軽くする", "効果音", "BGM"]) {
     await page.getByRole("switch", { name: label }).waitFor();
   }
+
+  // 隠しテーマ Pop: 実績「三色盛り」解放済みなので選択でき、body クラスに反映される
+  await page.getByRole("radio", { name: "Pop" }).click();
+  await page.locator("body.theme-pop").waitFor();
+  await page.getByRole("radio", { name: "クラシック" }).click();
+  await page.locator("body.theme-classic").waitFor();
+  // クラス切替直後は数フレームだけ旧テーマの文字色が残る（transition の過渡状態）。
+  // axe が過渡状態を拾わないよう、見出し文字の実際の色が classic に戻るまで待つ。
+  await page.waitForFunction(() => {
+    const targets = document.querySelectorAll("#screen-settings .header .title, #screen-settings .label .l1");
+    return targets.length > 0 &&
+      [...targets].every((node) => getComputedStyle(node).color === "rgb(242, 242, 242)");
+  });
+
   await assertNoSeriousA11yViolations("Settings screen");
   await page.getByRole("button", { name: "タイトルへ戻る" }).click();
 

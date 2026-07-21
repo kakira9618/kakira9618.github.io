@@ -8,7 +8,8 @@ import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js";
 import { syncDocumentLanguage } from "./core/i18n.js";
 import { reconcileAchievementsOnce } from "./core/achievements.js?v=20260721-runtime";
 import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "./ui/game-screen.js?v=20260721-unlock-dialog";
-import { achievementCelebration, bgmUnlockCelebration } from "./ui/toast.js?v=20260721-unlock-dialog";
+import { achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./ui/toast.js?v=20260721-unlock-dialog";
+import { hiddenThemesUnlockedBy } from "./core/settings.js";
 
 // 画面モジュール（import するだけで registerScreen される）
 import "./ui/title-screen.js?v=20260721-unlock-dialog";
@@ -34,6 +35,7 @@ window.visualViewport?.addEventListener("resize", syncAppViewportHeight);
 function syncDisplayClasses(settings = getSettings()) {
   document.body.classList.toggle("theme-cyber", settings.theme === "cyber");
   document.body.classList.toggle("theme-classic", settings.theme === "classic");
+  document.body.classList.toggle("theme-pop", settings.theme === "pop");
   document.body.classList.toggle("reduce-motion", shouldReduceMotion(settings));
 }
 syncDisplayClasses();
@@ -85,5 +87,6 @@ if (recoveredAchievements.length) {
     if (bgmUnlocks.length) {
       bgmUnlockCelebration(bgmUnlocks);
     }
+    hiddenThemesUnlockedBy(recoveredAchievements).forEach(themeUnlockCelebration);
   }, 350);
 }
