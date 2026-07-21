@@ -125,6 +125,13 @@ playSfx("ui");
 const context = FakeAudioContext.instance;
 assert.equal(context.startedOscillators, 1, "SFX should be scheduled inside the first user operation");
 assert.equal(await unlockAudio(), true);
+const oscillatorsBeforeHelp = context.startedOscillators;
+playSfx("help");
+assert.equal(
+  context.startedOscillators,
+  oscillatorsBeforeHelp + 2,
+  "opening Help should schedule its two-note SFX"
+);
 setSetting("bgm", true);
 await unlockAudio();
 assert.equal(audioNeedsRecovery(), false, "running BGM should not be restarted on every input");

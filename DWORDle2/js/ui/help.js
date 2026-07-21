@@ -5,6 +5,7 @@
 
 import { el } from "./dom.js";
 import { showModal } from "./modal.js";
+import { playSfx } from "../audio/sound.js";
 import { queryWordPair, usoConvert } from "../core/logic.js";
 import { currentLanguage } from "../core/i18n.js";
 
@@ -448,6 +449,7 @@ function localizedBody(mode, language) {
 
 export function showHelpModal(mode, afterClose = null) {
   stopAnimation();
+  playSfx("help");
   const language = currentLanguage();
   const content = el("div", { class: "help-localized" });
   content.append(...localizedBody(mode, language));

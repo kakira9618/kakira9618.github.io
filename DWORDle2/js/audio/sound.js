@@ -524,6 +524,12 @@ const SFX = {
     noise({ dur: 0.9, gain: 0.05, freq: 8500, when: 0.42 });
   },
   ui: () => tone({ freq: 880, type: "sine", dur: 0.06, gain: 0.15 }),
+  // 遊び方を開いたときの音（ページめくり風のスウッシュ + 問いかけるような上昇 2 音）
+  help: () => {
+    noise({ dur: 0.22, gain: 0.08, freq: 1400, q: 0.9 });
+    tone({ freq: 587.33, type: "triangle", dur: 0.16, gain: 0.2, when: 0.03 });
+    tone({ freq: 880, type: "sine", dur: 0.22, gain: 0.16, when: 0.13 });
+  },
   swoosh: () => noise({ dur: 0.25, gain: 0.12, freq: 1200 }),
 };
 
