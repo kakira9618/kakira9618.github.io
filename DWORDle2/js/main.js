@@ -21,7 +21,7 @@ import "./ui/history-screen.js?v=20260722-oldchrome-colormix";
 import "./ui/problems-screen.js?v=20260722-oldchrome-colormix";
 import "./ui/achievements-screen.js?v=20260722-oldchrome-colormix";
 import "./ui/analysis-screen.js?v=20260722-oldchrome-colormix";
-import "./ui/settings-screen.js?v=20260722-oldchrome-colormix";
+import "./ui/settings-screen.js?v=20260722-debug-secret-once";
 
 // 古い Android Chrome は dvh に未対応のため、実際の表示領域を CSS 変数で補う。
 // 対応ブラウザでは CSS 側の 100dvh が優先される。

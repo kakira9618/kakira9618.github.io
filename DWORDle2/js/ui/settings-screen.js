@@ -106,7 +106,6 @@ function showDebugKeywordModal() {
     placeholder: tr("キーワード", "Keyword"),
     "aria-label": tr("秘密のキーワード", "Secret keyword"),
   });
-  let closeModal = () => {};
   const activate = () => {
     if (!tryEnableDebugMode(input.value)) {
       playSfx("invalid");
@@ -118,12 +117,9 @@ function showDebugKeywordModal() {
     toast(tr("DEBUG ON：実績と隠し要素を一時的に全開放しました", "DEBUG ON: achievements and hidden content are temporarily unlocked"));
     return true;
   };
-  input.addEventListener("keydown", (event) => {
-    if (event.key !== "Enter") return;
-    event.preventDefault();
-    if (activate()) closeModal();
-  });
-  closeModal = showModal({
+  // Enter 確定は showModal 共通の primary アクション処理に任せる。
+  // 入力欄側でも処理するとイベントがバブルして判定・トーストが二重に走る。
+  showModal({
     title: tr("シークレット", "Secret"),
     body: [input],
     actions: [

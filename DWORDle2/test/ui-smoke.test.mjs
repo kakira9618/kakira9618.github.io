@@ -728,9 +728,22 @@ try {
     const debugEntry = freshPage.locator(".debug-entry");
     for (let i = 0; i < 5; i++) await debugEntry.click();
     const secretDialog = freshPage.getByRole("dialog", { name: "シークレット" });
-    await secretDialog.getByLabel("秘密のキーワード").fill("DWORDLER");
-    await secretDialog.getByRole("button", { name: "入力" }).click();
+    const secretInput = secretDialog.getByLabel("秘密のキーワード");
+    await secretInput.fill("WRONG");
+    await secretInput.press("Enter");
+    assert.equal(
+      await freshPage.locator("#toast-layer .toast").filter({ hasText: "キーワードが違います" }).count(),
+      1,
+      "an incorrect secret submitted with Enter should show one verdict"
+    );
+    await secretInput.fill("DWORDLER");
+    await secretInput.press("Enter");
     await freshPage.getByText("DEBUG ON", { exact: true }).waitFor();
+    assert.equal(
+      await freshPage.locator("#toast-layer .toast").filter({ hasText: "DEBUG ON：実績と隠し要素を一時的に全開放しました" }).count(),
+      1,
+      "a correct secret submitted with Enter should show one verdict"
+    );
     const debugPop = freshPage.getByRole("radiogroup", { name: "テーマ" }).getByRole("radio", { name: "ポップ" });
     assert.equal(await debugPop.getAttribute("aria-disabled"), "false", "debug mode should unlock the hidden theme");
     assert.equal(await freshPage.getByRole("radio", { name: "Grand Finale" }).getAttribute("aria-disabled"), "false", "debug mode should unlock hidden BGM");
