@@ -61,8 +61,21 @@ export function computeClear(record) {
   return logic.isGameClear(record.guessWord[record.guessWord.length - 1]);
 }
 
+// タイトルメニューの段階解放用のプレイ回数。実績のカウントと違い、
+// 同日・同じ問題の再プレイも数える。旧作からのインポート（imported 付き）は数えない。
+export function countPlays() {
+  const saved = loadJSON("playCount", null);
+  if (saved !== null) return saved;
+  // 既存ユーザーは手元の実プレイ数（インポート除く）をそのまま引き継ぐ
+  const n = ensureLoaded().filter((g) => !g.imported).length;
+  saveJSON("playCount", n);
+  return n;
+}
+
 export function addFinishedGame(record) {
   ensureLoaded();
+  // 追加前にカウンタを初期化しておく（履歴からの初期化で今回の分を二重に数えない）
+  const playsBefore = countPlays();
   record.clear = computeClear(record);
   // startTime 衝突（同秒開始）は 1 秒ずらして一意にする
   while (history.some((g) => g.startTime === record.startTime && g.gameMode === record.gameMode)) {
@@ -71,6 +84,7 @@ export function addFinishedGame(record) {
   history.push(record);
   history.sort((a, b) => a.startTime - b.startTime);
   persist();
+  saveJSON("playCount", playsBefore + 1);
   return record;
 }
 

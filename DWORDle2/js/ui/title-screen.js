@@ -2,21 +2,25 @@
 // 右上のマスクボタンで DWORDlie（裏モード）に切り替わる。
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260722-oldchrome-colormix";
-import { getCurrentGame, getHistory, isAlreadyPlayed } from "../core/records.js";
+import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260722-bgm-ui-refresh";
+import { countPlays, getCurrentGame, getHistory, isAlreadyPlayed } from "../core/records.js";
+import { isDebugMode } from "../core/debug.js";
 import { LEVELS, todayPID, isValidPID, pidLabel, PID } from "../core/problems.js";
-import { getSettings, setSetting } from "../core/settings.js?v=20260722-oldchrome-colormix";
+import { getSettings, setSetting } from "../core/settings.js?v=20260722-bgm-ui-refresh";
 import { loadJSON, saveJSON } from "../core/store.js";
 import { importFromLocalStorage, scanLegacyHistory } from "../core/migrate.js";
-import { playSfx } from "../audio/sound.js?v=20260722-oldchrome-colormix";
-import { toast } from "./toast.js?v=20260722-oldchrome-colormix";
-import { showModal } from "./modal.js?v=20260722-oldchrome-colormix";
-import { finishHistoryImport } from "./history-import.js?v=20260722-oldchrome-colormix";
-import { showFirstTutorial, showHelpModal } from "./help.js?v=20260722-oldchrome-colormix";
-import { confirmAndStart } from "./game-screen.js?v=20260722-oldchrome-colormix";
+import { playSfx } from "../audio/sound.js?v=20260722-bgm-ui-refresh";
+import { toast } from "./toast.js?v=20260722-bgm-ui-refresh";
+import { showModal } from "./modal.js?v=20260722-bgm-ui-refresh";
+import { finishHistoryImport } from "./history-import.js?v=20260722-bgm-ui-refresh";
+import { showFirstTutorial, showHelpModal } from "./help.js?v=20260722-bgm-ui-refresh";
+import { confirmAndStart } from "./game-screen.js?v=20260722-bgm-ui-refresh";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-bgm-ui-refresh";
+import { burstAtElement } from "../fx/effects.js?v=20260722-bgm-ui-refresh";
+import { shouldReduceMotion } from "../core/motion.js?v=20260722-bgm-ui-refresh";
 import { icon } from "./icons.js";
-import { APP_VERSION } from "../config.js?v=20260722-oldchrome-colormix";
-import { localizedLevel, tr } from "../core/i18n.js?v=20260722-oldchrome-colormix";
+import { APP_VERSION } from "../config.js?v=20260722-bgm-ui-refresh";
+import { localizedLevel, tr } from "../core/i18n.js?v=20260722-bgm-ui-refresh";
 
 let root = null;
 let legacyImportCheckDone = false;
@@ -152,6 +156,10 @@ function maybeShowFirstTutorial(mode, afterClose = null) {
   return true;
 }
 
+// タイトルメニューの段階解放しきい値（必要プレイ回数）。
+// プレイ回数は countPlays()（同日・同問題の再プレイも数え、旧作インポートは数えない）。
+const MENU_UNLOCKS = { history: 1, achievements: 1, random: 2, problems: 2, number: 3, uso: 5 };
+
 function render() {
   if (!root) build();
   clear(root);
@@ -160,11 +168,87 @@ function render() {
   const current = getCurrentGame(mode);
   const hasOngoing = current && current.guessWord.length > 0;
 
-  const menuBtn = (iconName, label, onclick, primary = false) =>
-    el("button", { class: `btn ${primary ? "btn-primary" : ""}`, onclick }, icon(iconName), label);
+  // 段階解放: 新しく解放された項目にはお披露目アニメーションを付ける
+  const plays = countPlays();
+  const bypass = isDebugMode();
+  const seenPlays = loadJSON("menuUnlockSeen", 0);
+  const isUnlocked = (req) => bypass || plays >= req;
+  const justUnlocked = (req) => !bypass && req > 0 && seenPlays < req && plays >= req;
+  let revealCount = 0;
+  const applyReveal = (button, req) => {
+    if (!justUnlocked(req)) return button;
+    const delayMs = revealCount++ * 150;
+    button.classList.add("unlock-reveal");
+    button.style.setProperty("--reveal-delay", `${delayMs}ms`);
+    // 解錠演出: 金の鍵がガチャガチャ揺れ、開いた瞬間にパーティクルが弾けて光が走る
+    if (!shouldReduceMotion()) {
+      const accent = getComputedStyle(document.body).getPropertyValue("--accent").trim() || "#00d5ff";
+      const lockFx = el("span", { class: "unlock-lock", "aria-hidden": "true" }, icon("lock", 22));
+      button.append(lockFx);
+      setTimeout(() => {
+        if (!button.isConnected) return;
+        lockFx.replaceChildren(icon("unlock", 22));
+        lockFx.classList.add("open");
+        burstAtElement(button, revealCount % 2 ? accent : "#ffd166", 14);
+      }, delayMs + 380);
+      setTimeout(() => lockFx.remove(), delayMs + 1050);
+    }
+    return button;
+  };
+
+  const menuBtn = (iconName, label, onclick, primary = false, req = 0) => {
+    if (!isUnlocked(req)) {
+      const remain = req - plays;
+      return el(
+        "button",
+        {
+          class: "btn menu-locked",
+          disabled: true,
+          "aria-label": tr(`${label}（あと${remain}回プレイで解放）`, `${label} (play ${remain} more to unlock)`),
+        },
+        icon("lock"),
+        label,
+        el("span", { class: "unlock-hint" }, tr(`あと${remain}回プレイ`, remain === 1 ? "1 more play" : `${remain} more plays`))
+      );
+    }
+    return applyReveal(el("button", { class: `btn ${primary ? "btn-primary" : ""}`, onclick }, icon(iconName), label), req);
+  };
+
+  // 裏モード切替は 5 回プレイで解放（裏 → 表へ戻る方向はいつでも可能）
+  const usoLocked = !isUso && !isUnlocked(MENU_UNLOCKS.uso);
+  const modeToggle = usoLocked
+    ? el(
+        "button",
+        {
+          class: "icon-btn menu-locked",
+          disabled: true,
+          title: tr(`あと${MENU_UNLOCKS.uso - plays}回プレイで解放`, `Play ${MENU_UNLOCKS.uso - plays} more to unlock`),
+          "aria-label": tr(`裏モード（あと${MENU_UNLOCKS.uso - plays}回プレイで解放）`, `Secret mode (play ${MENU_UNLOCKS.uso - plays} more to unlock)`),
+        },
+        icon("lock")
+      )
+    : applyReveal(
+        el(
+          "button",
+          {
+            class: "icon-btn",
+            title: isUso ? tr("表モードへ", "Switch to DWORDle") : tr("裏モードへ", "Switch to DWORDlie"),
+            "aria-label": isUso ? tr("表モードへ", "Switch to DWORDle") : tr("裏モードへ", "Switch to DWORDlie"),
+            style: isUso ? { boxShadow: "0 0 12px rgba(255,43,94,0.8)", color: "#ff5f8f" } : {},
+            onclick: () => {
+              playSfx("swoosh");
+              setAppMode(isUso ? "normal" : "uso");
+              render();
+            },
+          },
+          icon(isUso ? "mask" : "moon")
+        ),
+        MENU_UNLOCKS.uso
+      );
 
   root.append(
     el("div", { style: { position: "absolute", top: "14px", right: "14px", display: "flex", gap: "8px" } },
+      soundToggleButton(),
       el(
         "button",
         {
@@ -175,21 +259,7 @@ function render() {
         },
         "?"
       ),
-      el(
-        "button",
-        {
-          class: "icon-btn",
-          title: isUso ? tr("表モードへ", "Switch to DWORDle") : tr("裏モードへ", "Switch to DWORDlie"),
-          "aria-label": isUso ? tr("表モードへ", "Switch to DWORDle") : tr("裏モードへ", "Switch to DWORDlie"),
-          style: isUso ? { boxShadow: "0 0 12px rgba(255,43,94,0.8)", color: "#ff5f8f" } : {},
-          onclick: () => {
-            playSfx("swoosh");
-            setAppMode(isUso ? "normal" : "uso");
-            render();
-          },
-        },
-        icon(isUso ? "mask" : "moon")
-      )
+      modeToggle
     ),
     el(
       "div",
@@ -228,19 +298,22 @@ function render() {
           )
         : null,
       menuBtn("calendar", tr("本日の問題", "Daily puzzle"), () => { playSfx("ui"); confirmAndStart(todayPID(), mode); }, !hasOngoing),
-      menuBtn("dice", tr("ランダム（難しさを選択）", "Random (choose difficulty)"), () => { playSfx("ui"); randomPrompt(mode); }),
-      menuBtn("hash", tr("番号を指定", "Choose puzzle number"), () => { playSfx("ui"); numberPrompt(mode); })
+      menuBtn("dice", tr("ランダム（難しさを選択）", "Random (choose difficulty)"), () => { playSfx("ui"); randomPrompt(mode); }, false, MENU_UNLOCKS.random),
+      menuBtn("hash", tr("番号を指定", "Choose puzzle number"), () => { playSfx("ui"); numberPrompt(mode); }, false, MENU_UNLOCKS.number)
     ),
     el(
       "div",
       { class: "title-nav" },
-      menuBtn("clock", tr("プレイ履歴", "Play History"), () => { playSfx("ui"); navigate("/history"); }),
-      menuBtn("grid", tr("問題一覧", "Puzzles"), () => { playSfx("ui"); navigate("/problems"); }),
-      menuBtn("medal", tr("実績", "Achievements"), () => { playSfx("ui"); navigate("/achievements"); }),
+      menuBtn("clock", tr("プレイ履歴", "Play History"), () => { playSfx("ui"); navigate("/history"); }, false, MENU_UNLOCKS.history),
+      menuBtn("grid", tr("問題一覧", "Puzzles"), () => { playSfx("ui"); navigate("/problems"); }, false, MENU_UNLOCKS.problems),
+      menuBtn("medal", tr("実績", "Achievements"), () => { playSfx("ui"); navigate("/achievements"); }, false, MENU_UNLOCKS.achievements),
       menuBtn("gear", tr("設定", "Settings"), () => { playSfx("ui"); navigate("/settings"); })
     ),
     el("div", { class: "app-version", title: "DWORDle 2 version" }, `v${APP_VERSION}`)
   );
+  // お披露目は 1 回だけ。新規解放があった描画でのみ効果音を添える
+  if (!bypass && plays !== seenPlays) saveJSON("menuUnlockSeen", plays);
+  if (revealCount > 0) playSfx("achievement");
   const noPlayData =
     getHistory().length === 0 &&
     !getCurrentGame("normal") &&

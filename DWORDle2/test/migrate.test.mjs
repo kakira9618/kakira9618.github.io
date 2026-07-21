@@ -91,4 +91,22 @@ assert(achievementIds.has("uso-clear"));
   assert.equal(getHistory().length, before);
 }
 
+// ---- 段階解放のプレイ回数: インポートは数えず、同じ問題の再プレイは数える ----
+{
+  const { addFinishedGame, countPlays } = await import("../js/core/records.js");
+  assert.equal(countPlays(), 1, "imported records must not count toward menu unlock plays");
+  const logic = new Logic(7);
+  const play = () =>
+    addFinishedGame({
+      startTime: 1_900_000_000,
+      endTime: 1_900_000_030,
+      gameMode: "normal",
+      problemID: 7,
+      guessWord: [logic.ans1],
+    });
+  play();
+  play(); // 同じ問題の再プレイ（startTime は自動で 1 秒ずれる）
+  assert.equal(countPlays(), 3, "same-puzzle replays must count toward menu unlock plays");
+}
+
 console.log("履歴移行テスト: OK");
