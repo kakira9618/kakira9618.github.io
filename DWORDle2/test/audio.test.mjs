@@ -117,7 +117,7 @@ FakeAudioContext.holdNextResume = false;
 
 globalThis.window = { AudioContext: FakeAudioContext };
 
-const { setSetting } = await import("../js/core/settings.js?v=20260722-review-fixes");
+const { setSetting } = await import("../js/core/settings.js?v=20260722-classic-baroque");
 const { audioNeedsRecovery, playSfx, unlockAudio, setUsoMood, stopBgm, BGM_TRACKS } = await import("../js/audio/sound.js");
 
 setSetting("bgm", false);
@@ -245,18 +245,18 @@ assert(
   "uso mood on the Pop theme should schedule Bitter Candy"
 );
 
-// クラシックテーマの裏モードでは Glitch Letters が選ばれること
+// クラシックテーマの裏モードでは Letter Lament が選ばれること
 const classicUsoFreqs = scheduledAfter(() => setSetting("theme", "classic"));
 assert(
-  classicUsoFreqs.some((freq) => Math.abs(freq - bellHz(80)) < 0.01), // Glitch Letters の濁った鐘（G#5）
-  "uso mood on the Classic theme should schedule Glitch Letters"
+  classicUsoFreqs.some((freq) => Math.abs(freq - bellHz(69)) < 0.01), // Letter Lament の弔鐘（A4）
+  "uso mood on the Classic theme should schedule Letter Lament"
 );
 
-// クラシックテーマの表モードでは Retro Letters が選ばれること
+// クラシックテーマの表モードでは Letter Minuet が選ばれること
 const classicFreqs = scheduledAfter(() => setUsoMood(false));
 assert(
-  classicFreqs.some((freq) => Math.abs(freq - bellHz(91)) < 0.01), // Retro Letters のオルゴール（G6）
-  "auto BGM should schedule Retro Letters while the Classic theme is active"
+  classicFreqs.some((freq) => Math.abs(freq - bellHz(91)) < 0.01), // Letter Minuet のチェレスタ（G6）
+  "auto BGM should schedule Letter Minuet while the Classic theme is active"
 );
 
 stopBgm();

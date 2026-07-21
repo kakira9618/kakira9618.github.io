@@ -5,8 +5,8 @@
 //   曲の実体は TRACKS（テンポ・コード進行・1 小節のスケジューラ）に定義する。
 //   設定やモード切替時はバスをクロスフェードしてシームレスに移行する。
 
-import { AUDIO } from "../config.js?v=20260722-review-fixes";
-import { getSettings, onSettingsChange } from "../core/settings.js?v=20260722-review-fixes";
+import { AUDIO } from "../config.js?v=20260722-classic-baroque";
+import { getSettings, onSettingsChange } from "../core/settings.js?v=20260722-classic-baroque";
 
 let ctx = null;
 let masterGain = null;
@@ -44,17 +44,17 @@ export const BGM_TRACKS = [
   },
   {
     id: "retro",
-    name: "Retro Letters",
-    nameEn: "Retro Letters",
-    desc: "クラシックテーマの表の曲。素朴であたたかいチップチューン",
-    descEn: "The Classic theme's normal-mode track: a simple, warm chiptune",
+    name: "Letter Minuet",
+    nameEn: "Letter Minuet",
+    desc: "クラシックテーマの表の曲。羽根ペンの手紙のような優雅なチェンバロのメヌエット",
+    descEn: "The Classic theme's normal-mode track: an elegant harpsichord minuet, like a letter penned with a quill",
   },
   {
     id: "glitch",
-    name: "Glitch Letters",
-    nameEn: "Glitch Letters",
-    desc: "クラシックテーマの裏の曲。壊れかけたゲーム機のような不穏なチップチューン",
-    descEn: "The Classic theme's uso-mode track: an eerie chiptune like a broken console",
+    name: "Letter Lament",
+    nameEn: "Letter Lament",
+    desc: "クラシックテーマの裏の曲。半音ずつ沈むラメント・バスと弔鐘の暗いチェンバロ",
+    descEn: "The Classic theme's uso-mode track: a dark harpsichord lament sinking over a chromatic bass and a tolling bell",
   },
   {
     id: "pop",
@@ -573,7 +573,7 @@ export function playSfx(name) {
 //
 // テーマごとに表 / 裏の専用曲を持つ（THEME_TRACKS 参照）。
 //   サイバー:   normal（明るいアンビエント）/ uso（遅く暗いドローン）
-//   クラシック: retro（あたたかいチップチューン）/ glitch（壊れたゲーム機風）
+//   クラシック: retro（チェンバロのメヌエット）/ glitch（ラメント・バスの暗いチェンバロ）
 //   Pop:        pop（キャンディポップ）/ bitter（ダークなキャンディポップ）
 // lookahead 方式で小節単位にスケジュールし、トラックごとに専用バスへ流す。
 
@@ -898,74 +898,84 @@ function scheduleBarPop(t0, chord, bar, bus) {
   }
 }
 
-// クラシックテーマの表の曲 Retro Letters: 素朴であたたかいチップチューン。
-// ゆったり歩く三角波ベース + 軽いブラシ + 控えめな和音スタブ + 歌うような矩形波リード。
+// クラシックテーマの表の曲 Letter Minuet: 羽根ペンの手紙のような優雅なチェンバロのメヌエット（3 拍子）。
+// チェロ風ベース + アルベルティ・バス風の通奏低音 + 前打音付きのリード + 弦のパッド。ドラムは使わない。
 function scheduleBarRetro(t0, chord, bar, bus) {
   const beat = 60 / TRACKS.retro.tempo;
-  // ベース: 4 分でルートと 5 度をゆったり歩く（偶数小節の結びは 4 度で次へつなぐ）
-  const bassLine = [0, 7, 0, bar % 2 ? 5 : 7];
-  bassLine.forEach((interval, b) => {
-    bgmTone(bus, { midi: chord[0] - 24 + interval, t: t0 + b * beat, dur: beat * 0.6, type: "triangle", gain: 0.1, attack: 0.008 });
+  // ベース: 1 拍目にルート、3 拍目に 5 度（カデンツ小節はルートを保続して属和音を支える）
+  bgmTone(bus, { midi: chord[0] - 24, t: t0, dur: beat * 1.7, type: "triangle", gain: 0.095, attack: 0.012 });
+  bgmTone(bus, { midi: chord[0] - 24 + (bar % 8 === 7 ? 0 : 7), t: t0 + beat * 2, dur: beat * 0.8, type: "triangle", gain: 0.055, attack: 0.012 });
+  // 通奏低音: 8 分の分散和音
+  const alberti = [0, 2, 1, 2, 0, 2];
+  alberti.forEach((note, i) => {
+    bgmPluck(bus, { midi: chord[note], t: t0 + (i * beat) / 2, dur: beat * 0.5, gain: 0.013 });
   });
-  // ドラム: 2・4 拍の軽いブラシと裏拍の小さなハットだけで静かに刻む
-  for (const b of [1, 3]) bgmNoise(bus, { t: t0 + b * beat, dur: 0.05, gain: 0.018, freq: 5200, q: 0.8 });
-  for (let i = 0; i < 4; i++) bgmNoise(bus, { t: t0 + (i + 0.5) * beat, dur: 0.03, gain: 0.009, freq: 8200 });
-  // 2・4 拍の和音スタブ（柔らかい相づち）
-  for (const b of [1, 3]) {
-    for (const m of chord) bgmTone(bus, { midi: m, t: t0 + b * beat, dur: beat * 0.25, type: "square", gain: 0.007, attack: 0.005 });
-  }
-  // リード: 4 小節ひとまとまりの歌うようなフレーズ（休符多め。-1 = 休符）
-  const degrees = [chord[0] + 12, chord[1] + 12, chord[2] + 12, chord[0] + 24, chord[1] + 24, chord[2] + 24];
+  // リード: 8 小節（パッヘルベル進行 1 周）ひとまとまりの旋律（-1 = 休符）
+  const degrees = [chord[0] + 12, chord[1] + 12, chord[2] + 12, chord[0] + 24, chord[1] + 24];
   const phrases = [
-    [0, -1, 1, 2, -1, 1, 2, 3],
-    [2, -1, 1, 0, 1, -1, 2, -1],
-    [1, 2, 3, -1, 2, 1, 0, -1],
-    [2, -1, 1, 0, -1, -1, -1, -1], // 結びは余韻を残す
+    [0, -1, 1, 2, -1, -1],
+    [2, -1, 1, 0, -1, -1],
+    [0, 1, 2, -1, 3, -1],
+    [2, -1, 1, -1, 0, -1],
+    [1, 2, 3, -1, 2, -1],
+    [3, -1, 2, 1, 2, -1], // 6 小節目が頂点
+    [2, 1, 0, -1, 1, -1],
+    null, // カデンツ小節はトリルに譲る
   ];
-  phrases[bar % 4].forEach((deg, i) => {
-    if (deg < 0) return;
-    bgmTone(bus, { midi: degrees[deg], t: t0 + (i * beat) / 2, dur: beat * 0.42, type: "square", gain: 0.023, attack: 0.006 });
-  });
-  // 2 小節ごとにオルゴールの鐘をそっと鳴らす
-  if (bar % 2 === 0) bgmBell(bus, { midi: chord[2] + 24, t: t0 + beat * 3, dur: 1.6, gain: 0.016 });
+  const phrase = phrases[bar % 8];
+  if (phrase) {
+    phrase.forEach((deg, i) => {
+      if (deg < 0) return;
+      bgmPluck(bus, { midi: degrees[deg], t: t0 + (i * beat) / 2, dur: beat * 0.55, gain: 0.028 });
+    });
+    // 小節あたまの音に上隣の和音構成音の前打音を添える
+    if (phrase[0] >= 0 && phrase[0] < 4) {
+      bgmPluck(bus, { midi: degrees[phrase[0] + 1], t: t0 - 0.045, dur: 0.07, gain: 0.014 });
+    }
+  } else {
+    // カデンツ: 16 分のトリルから 2 拍目へ解決する
+    for (let i = 0; i < 4; i++) {
+      bgmPluck(bus, { midi: chord[2] + 12 + (i % 2 ? 2 : 0), t: t0 + (i * beat) / 4, dur: beat * 0.24, gain: 0.026 });
+    }
+    bgmPluck(bus, { midi: chord[1] + 12, t: t0 + beat, dur: beat * 0.9, gain: 0.028 });
+  }
+  // 2 小節ごとの弦のパッドと、8 小節のあたまを告げるチェレスタ
+  if (bar % 2 === 0) {
+    for (const [i, m] of chord.entries()) {
+      bgmTone(bus, { midi: m, t: t0, dur: beat * 3, type: "triangle", gain: 0.012, attack: beat * 0.8, detune: i % 2 ? 5 : -5 });
+    }
+  }
+  if (bar % 8 === 0) bgmBell(bus, { midi: chord[2] + 24, t: t0, dur: 1.6, gain: 0.014 });
 }
 
-// クラシックテーマの裏の曲 Glitch Letters: 壊れかけたゲーム機のような不穏なチップチューン。
-// 音程のずれたユニゾンドローン + 半音クラスタ + 垂れ下がるリード + まばらなグリッチノイズ。
+// クラシックテーマの裏の曲 Letter Lament: 半音ずつ沈むラメント・バスと弔鐘の暗いチェンバロ。
+// 嘆きのバス + 陰鬱な弦パッド + 下降アルペジオ + 半音上から倒れ込む前打音。ドラムは使わない。
 function scheduleBarGlitch(t0, chord, bar, bus) {
   const beat = 60 / TRACKS.glitch.tempo;
-  // ドローン: ルートの三角波に、わずかに音程のずれたユニゾンを重ねて狂ったうなりを出す
-  bgmTone(bus, { midi: chord[0] - 24, t: t0, dur: beat * 4, type: "triangle", gain: 0.085, attack: 0.6 });
-  bgmTone(bus, { midi: chord[0] - 24, t: t0, dur: beat * 4, type: "triangle", gain: 0.05, attack: 0.6, detune: 22 });
-  // 半音でぶつかるクラスタパッドを薄く敷く
-  bgmTone(bus, { midi: chord[1], t: t0, dur: beat * 4, type: "triangle", gain: 0.014, attack: beat });
-  bgmTone(bus, { midi: chord[1] + 1, t: t0, dur: beat * 4, type: "triangle", gain: 0.012, attack: beat, detune: 10 });
-  // 不揃いな鼓動（1 拍目と 2 拍半）
-  for (const b of [0, 2.5]) bgmTone(bus, { midi: 30, t: t0 + b * beat, dur: 0.35, type: "sine", gain: 0.05, attack: 0.04, bend: -6 });
-  // リード: 下降気味のまばらなフレーズ。時々音程が垂れ下がる（電池切れ風。-1 = 休符）
-  const degrees = [chord[0] + 12, chord[1] + 12, chord[2] + 12, chord[0] + 24];
-  const phrases = [
-    [2, -1, 1, 0, -1, -1, 1, -1],
-    [-1, 2, 1, -1, 0, -1, -1, -1],
+  // ラメント・バス: ルートを長く弾き、半音下の経過音で次の小節へ沈む（結びの小節は 3 度で頭へ戻る）
+  bgmTone(bus, { midi: chord[0] - 24, t: t0, dur: beat * 2.6, type: "triangle", gain: 0.1, attack: 0.02 });
+  const passing = bar % 4 === 3 ? chord[0] - 24 + 4 : chord[0] - 25;
+  bgmTone(bus, { midi: passing, t: t0 + beat * 2.5, dur: beat * 1.3, type: "triangle", gain: 0.06, attack: 0.02 });
+  // 弦の陰鬱なパッド（後半の小節は短 9 度の影を薄く重ねる）
+  for (const [i, m] of chord.entries()) {
+    bgmTone(bus, { midi: m, t: t0, dur: beat * 4, type: "triangle", gain: 0.016, attack: beat * 1.2, detune: i % 2 ? 6 : -6 });
+  }
+  if (bar % 4 >= 2) bgmTone(bus, { midi: chord[0] + 13, t: t0, dur: beat * 4, type: "triangle", gain: 0.007, attack: beat * 1.5 });
+  // チェンバロ: 下降するまばらなアルペジオ。時々半音上から倒れ込む前打音が付く（-1 = 休符）
+  const degrees = [chord[0], chord[1], chord[2], chord[0] + 12];
+  const patterns = [
     [3, -1, 2, 1, -1, 0, -1, -1],
-    [1, 0, -1, -1, -1, -1, -1, -1],
+    [-1, 2, -1, 1, 0, -1, 1, -1],
   ];
-  phrases[bar % 4].forEach((deg, i) => {
+  patterns[bar % 2].forEach((deg, i) => {
     if (deg < 0) return;
-    const droop = (i + bar) % 3 === 2 ? -1 : 0;
-    bgmTone(bus, { midi: degrees[deg], t: t0 + (i * beat) / 2, dur: beat * 0.5, type: "square", gain: 0.02, attack: 0.006, bend: droop });
-    bgmTone(bus, { midi: degrees[deg], t: t0 + (i * beat) / 2, dur: beat * 0.5, type: "square", gain: 0.011, attack: 0.006, detune: -14, bend: droop });
+    const ti = t0 + (i * beat) / 2;
+    if ((i + bar) % 5 === 0) bgmPluck(bus, { midi: degrees[deg] + 1, t: ti - 0.05, dur: 0.08, gain: 0.011 });
+    bgmPluck(bus, { midi: degrees[deg], t: ti, dur: beat * 0.7, gain: 0.021 });
   });
-  // グリッチノイズ: 16 分格子の決まった位置で短くバースト
-  for (let i = 0; i < 16; i++) {
-    if ((bar * 5 + i * 3) % 7 !== 0) continue;
-    bgmNoise(bus, { t: t0 + (i * beat) / 4, dur: 0.025, gain: 0.016, freq: 5200 + (i % 3) * 1800, q: 2.2 });
-  }
-  // 2 小節ごとに、トライトーンで濁った鐘を遠くで鳴らす
-  if (bar % 2 === 1) {
-    bgmBell(bus, { midi: chord[0] + 24, t: t0 + beat * 1.5, dur: 2.4, gain: 0.02 });
-    bgmBell(bus, { midi: chord[0] + 30, t: t0 + beat * 1.5, dur: 2.4, gain: 0.009 });
-  }
+  // 弔鐘: 2 小節ごとにルートの鐘、4 小節ごとに遠くでトライトーンの影
+  if (bar % 2 === 0) bgmBell(bus, { midi: chord[0] + 12, t: t0, dur: 3.0, gain: 0.03 });
+  if (bar % 4 === 2) bgmBell(bus, { midi: chord[0] + 18, t: t0 + beat * 2, dur: 2.2, gain: 0.01 });
 }
 
 // Pop テーマの裏の曲 Bitter Candy: 甘さに毒がにじむダークなキャンディポップ。
@@ -1040,6 +1050,12 @@ function bgmNoise(bus, { t, dur = 0.06, gain = 0.04, freq = 6500, q = 1.1 }) {
   g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
   src.connect(f).connect(g).connect(bus);
   src.start(t);
+}
+
+// チェンバロ・リュート系（鋭い立ち上がりの saw + 1 オクターブ上の弱い共鳴）
+function bgmPluck(bus, { midi, t, dur, gain = 0.03 }) {
+  bgmTone(bus, { midi, t, dur, type: "sawtooth", gain, attack: 0.004 });
+  bgmTone(bus, { midi: midi + 12, t, dur: dur * 0.6, type: "sawtooth", gain: gain * 0.25, attack: 0.004 });
 }
 
 // 鐘・オルゴール系（基音 + 非整数倍音）
@@ -1362,8 +1378,10 @@ const TRACKS = {
   gentle: { ...GENTLE, beats: 4, schedule: scheduleBarGentle },
   classic: { ...CLASSIC, beats: 4, schedule: scheduleBarClassic },
   pop: { tempo: 122, beats: 4, chords: [[60, 64, 67], [57, 60, 64], [53, 57, 60], [55, 59, 62]], schedule: scheduleBarPop },
-  retro: { tempo: 104, beats: 4, chords: [[60, 64, 67], [57, 60, 64], [53, 57, 60], [55, 59, 62]], schedule: scheduleBarRetro },
-  glitch: { tempo: 76, beats: 4, chords: [[57, 60, 64], [56, 59, 63], [53, 56, 60], [52, 55, 59]], schedule: scheduleBarGlitch },
+  // Letter Minuet はパッヘルベル進行（C G Am Em F C F G）を 8 小節で 1 周する
+  retro: { tempo: 116, beats: 3, chords: [[60, 64, 67], [55, 59, 62], [57, 60, 64], [52, 55, 59], [53, 57, 60], [60, 64, 67], [53, 57, 60], [55, 59, 62]], schedule: scheduleBarRetro },
+  // Letter Lament はラメント進行（Am G F E）。ベースが A→G→F→E と半音経過音を挟んで沈む
+  glitch: { tempo: 63, beats: 4, chords: [[57, 60, 64], [55, 59, 62], [53, 57, 60], [52, 56, 59]], schedule: scheduleBarGlitch },
   bitter: { tempo: 112, beats: 4, chords: [[57, 60, 64], [55, 59, 62], [53, 57, 60], [52, 56, 59]], schedule: scheduleBarBitter },
   parade: { tempo: 118, beats: 4, chords: [[60, 64, 67], [65, 69, 72], [67, 71, 74], [60, 64, 67]], schedule: scheduleBarParade },
   rush: { tempo: 132, beats: 4, chords: [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]], schedule: scheduleBarRush },
