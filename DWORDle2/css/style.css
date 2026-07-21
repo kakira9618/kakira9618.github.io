@@ -1930,7 +1930,8 @@ body.theme-pop .htile:not(.unused):not(.used):not(.correct) {
 }
 .help-reaction-line {
   position: absolute;
-  z-index: 2;
+  /* 参照先を示すラインはタイルと文字より前面を通す */
+  z-index: 4;
   height: 3px;
   opacity: 0;
   pointer-events: none;

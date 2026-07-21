@@ -120,13 +120,17 @@ try {
     const statuses = await Promise.all(assetPaths.map(async (assetPath) => (await fetch(assetPath)).status));
     return {
       ogImage: document.querySelector('meta[property="og:image"]')?.content,
+      ogDescription: document.querySelector('meta[property="og:description"]')?.content,
       twitterCard: document.querySelector('meta[name="twitter:card"]')?.content,
+      twitterDescription: document.querySelector('meta[name="twitter:description"]')?.content,
       manifest: document.querySelector('link[rel="manifest"]')?.getAttribute("href"),
       statuses,
     };
   });
   assert.equal(publicEntry.ogImage, "https://kakira9618.github.io/DWORDle2/og.png");
+  assert.equal(publicEntry.ogDescription, "答えは2つ。盤面は1つ。10手以内にどちらかを当てろ！");
   assert.equal(publicEntry.twitterCard, "summary_large_image");
+  assert.equal(publicEntry.twitterDescription, "答えは2つ。盤面は1つ。10手以内にどちらかを当てろ！");
   assert.equal(publicEntry.manifest, "manifest.webmanifest");
   assert.deepEqual(publicEntry.statuses, [200, 200, 200], "Public metadata assets should be served");
 
@@ -161,6 +165,15 @@ try {
     (node) => getComputedStyle(node).backgroundColor
   );
   assert.equal(popHelpTileBackground, "rgb(255, 255, 255)", "Pop help tiles should match the white in-game tiles");
+  const helpLayering = await popHelp.evaluate((dialog) => ({
+    line: Number(getComputedStyle(dialog.querySelector(".help-reaction-line")).zIndex),
+    answerTile: Number(getComputedStyle(dialog.querySelector(".answer-tile")).zIndex),
+    guessArea: Number(getComputedStyle(dialog.querySelector(".help-guess-area")).zIndex),
+  }));
+  assert.ok(
+    helpLayering.line > helpLayering.answerTile && helpLayering.line > helpLayering.guessArea,
+    `Help reaction line should render above tiles and letters: ${JSON.stringify(helpLayering)}`
+  );
   await popHelp.getByRole("button", { name: "閉じる" }).click();
   await page.getByRole("radio", { name: "クラシック", exact: true }).click();
   await page.locator("body.theme-classic").waitFor();
