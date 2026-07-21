@@ -727,36 +727,47 @@ function scheduleBarGentle(t0, chord, bar, bus) {
   });
 }
 
-// Extra BGM: 短い矩形波と三角波ベースの軽快な 8-bit アレンジ。
+// Extra BGM: 軽快な 8-bit アレンジ。
+// 矩形波リード（エコー付き）+ 裏打ちの和音スタブ + 跳ねる三角波ベース + ノイズドラム。
 function scheduleBarClassic(t0, chord, bar, bus) {
   const beat = 60 / CLASSIC.tempo;
-  for (let b = 0; b < 4; b++) {
-    const ti = t0 + b * beat;
-    const bass = ctx.createOscillator();
-    bass.type = "triangle";
-    bass.frequency.value = midiHz(chord[0] - 24 + (b === 3 ? 7 : 0));
-    const bg = ctx.createGain();
-    bg.gain.setValueAtTime(0.0001, ti);
-    bg.gain.exponentialRampToValueAtTime(0.1, ti + 0.015);
-    bg.gain.exponentialRampToValueAtTime(0.0001, ti + beat * 0.72);
-    bass.connect(bg).connect(bus);
-    bass.start(ti);
-    bass.stop(ti + beat);
-  }
-  const melody = [0, 1, 2, 1, 2, 1, 0, 1];
-  melody.forEach((note, i) => {
-    const ti = t0 + i * beat / 2;
-    const osc = ctx.createOscillator();
-    osc.type = "square";
-    osc.frequency.value = midiHz(chord[note] + 12 + ((bar + i) % 8 === 7 ? 12 : 0));
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(0.0001, ti);
-    g.gain.exponentialRampToValueAtTime(0.027, ti + 0.008);
-    g.gain.exponentialRampToValueAtTime(0.0001, ti + beat * 0.34);
-    osc.connect(g).connect(bus);
-    osc.start(ti);
-    osc.stop(ti + beat * 0.45);
+  // ベース: ルート・オクターブ・5 度を跳ねる 8 分のチップチューンライン
+  const bassLine = [0, 12, 7, 12, 0, 12, 7, bar % 2 ? 10 : 12];
+  bassLine.forEach((interval, i) => {
+    bgmTone(bus, { midi: chord[0] - 24 + interval, t: t0 + (i * beat) / 2, dur: beat * 0.34, type: "triangle", gain: 0.09, attack: 0.006 });
   });
+  // ドラム: 丸いキック（1・3 拍）、ノイズスネア（2・4 拍）、8 分裏の軽いハット
+  for (const b of [0, 2]) bgmTone(bus, { midi: 36, t: t0 + b * beat, dur: 0.1, type: "sine", gain: 0.1, bend: -14 });
+  for (const b of [1, 3]) bgmNoise(bus, { t: t0 + b * beat, dur: 0.07, gain: 0.03, freq: 4200, q: 0.8 });
+  for (let i = 0; i < 8; i++) bgmNoise(bus, { t: t0 + ((i + 0.5) * beat) / 2, dur: 0.03, gain: 0.012, freq: 9000 });
+  // 裏打ちの和音スタブ（2 拍目・4 拍目の裏に短く）
+  for (const b of [1.5, 3.5]) {
+    for (const m of chord) {
+      bgmTone(bus, { midi: m, t: t0 + b * beat, dur: beat * 0.2, type: "square", gain: 0.008, attack: 0.004 });
+    }
+  }
+  // リード: 4 小節でひとまとまりのフレーズ（コード構成音 2 オクターブへの度数。-1 = 休符）
+  const degrees = [chord[0], chord[1], chord[2], chord[0] + 12, chord[1] + 12, chord[2] + 12];
+  const phrases = [
+    [3, 4, 5, 4, 3, -1, 2, 3],
+    [4, 3, 2, 3, 4, -1, 4, 5],
+    [3, 4, 5, 4, 3, 2, 3, -1],
+    [4, 5, 4, 3, 2, 3, -1, -1], // 後半はフィルに譲る
+  ];
+  const phrase = phrases[bar % 4];
+  phrase.forEach((deg, i) => {
+    if (deg < 0) return;
+    const ti = t0 + (i * beat) / 2;
+    bgmTone(bus, { midi: degrees[deg], t: ti, dur: beat * 0.36, type: "square", gain: 0.026, attack: 0.006 });
+    // NES 風エコー: 付点 8 分遅れで同じ音を小さく繰り返す
+    bgmTone(bus, { midi: degrees[deg], t: ti + beat * 0.75, dur: beat * 0.3, type: "square", gain: 0.009, attack: 0.006 });
+  });
+  // 4 小節目の最後に 16 分の駆け上がりフィル
+  if (bar % 4 === 3) {
+    [2, 3, 4, 5].forEach((deg, i) => {
+      bgmTone(bus, { midi: degrees[deg], t: t0 + (3 + i * 0.25) * beat, dur: beat * 0.2, type: "square", gain: 0.024, attack: 0.004 });
+    });
+  }
 }
 
 // ---- Extra BGM 用の小さな音源ヘルパー ----
