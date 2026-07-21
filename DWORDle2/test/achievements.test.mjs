@@ -42,6 +42,13 @@ assert.equal(
   false,
   "achievement names should consistently use DWORDler"
 );
+assert.equal(
+  ACHIEVEMENTS.some((achievement) => /(?:1095|1825) 日連続/.test(achievement.desc)),
+  false,
+  "play streak achievements should not require more than one year"
+);
+assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "h-play-days-1095")?.desc, "通算 1095 日プレイする（約 3 年）");
+assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "h-play-days-1825")?.desc, "通算 1825 日プレイする（約 5 年）");
 
 {
   const ids = achievementIdsFromHistory([clearRecord({ pid: 10000, guesses: 3, duration: 10 })]);
@@ -236,7 +243,7 @@ assert.equal(
 }
 
 {
-  // 1 日 1 回を 5 年続けた履歴（長期の隠し実績をまとめて確認）
+  // 1 日 1 回を 5 年続けた履歴（1 年 Streak と長期の通算日数実績をまとめて確認）
   const fiveYears = Array.from({ length: 1825 }, (_, index) =>
     clearRecord({ pid: (index % 5) + 1, startTime: 1_700_000_000 + index * 86400 })
   );
@@ -244,11 +251,20 @@ assert.equal(
   assert(ids.has("play-days-100"), "100 play days should restore A Hundred Days");
   assert(ids.has("h-play-days-365"), "365 play days should restore 365 Days of Footprints");
   assert(ids.has("h-play-streak-365"), "365 consecutive days should restore A Year's Vow");
-  assert(ids.has("h-play-streak-1095"));
-  assert(ids.has("h-play-streak-1825"));
+  assert(ids.has("h-play-days-1095"));
+  assert(ids.has("h-play-days-1825"));
   assert(ids.has("wins-200"), "1825 wins should restore Living Legend");
   assert(!ids.has("h-plays-5000"));
-  assert(!achievementIdsFromHistory(fiveYears.slice(0, 1824)).has("h-play-streak-1825"));
+  assert(!achievementIdsFromHistory(fiveYears.slice(0, 1824)).has("h-play-days-1825"));
+
+  // 間隔が空いていても、異なるプレイ日が積み上がれば 3 年・5 年の実績を解放する。
+  const nonConsecutiveDays = Array.from({ length: 1825 }, (_, index) =>
+    clearRecord({ pid: (index % 5) + 1, startTime: 1_700_000_000 + index * 2 * 86400 })
+  );
+  const nonConsecutiveIds = achievementIdsFromHistory(nonConsecutiveDays);
+  assert(nonConsecutiveIds.has("h-play-days-1095"));
+  assert(nonConsecutiveIds.has("h-play-days-1825"));
+  assert(!nonConsecutiveIds.has("h-play-streak-365"), "non-consecutive play days must not restore the one-year streak");
 }
 
 {

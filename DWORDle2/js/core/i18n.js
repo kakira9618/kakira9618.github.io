@@ -101,8 +101,8 @@ const ACHIEVEMENT_EN = {
   "h-uso-800": ["Eight Hundred Lies", "Win 800 DWORDlie games"],
   "h-play-days-365": ["365 Days of Footprints", "Play on 365 different days"],
   "h-play-streak-365": ["A Year's Vow", "Play on 365 consecutive days"],
-  "h-play-streak-1095": ["Thousand-Day Training", "Play on 1,095 consecutive days (3 years)"],
-  "h-play-streak-1825": ["Five-Year Legend", "Play on 1,825 consecutive days (5 years)"],
+  "h-play-days-1095": ["Thousand-Day Training", "Play on 1,095 different days (about 3 years)"],
+  "h-play-days-1825": ["Five-Year Legend", "Play on 1,825 different days (about 5 years)"],
 };
 
 export function localizedAchievement(achievement) {
