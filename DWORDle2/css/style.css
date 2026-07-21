@@ -36,6 +36,11 @@
   --key-unused-border: #787c7e;
   --border: #444;
   --glow: none;
+  /* 解放カード（実績・BGM・テーマ）は常に暗色地。Pop など明色テーマの --fg に
+     追従すると暗い文字が暗い地に沈むため、テーマ非依存の固定色を使う */
+  --unlock-card-bg: #111827;
+  --unlock-card-fg: #f2f2f2;
+  --unlock-card-fg-dim: #a7b0bf;
   --font-display: "Avenir Next", "Helvetica Neue", "Segoe UI", sans-serif;
 
   /* 統計・分析のバーが伸びるアニメーション（.bar-grow） */
@@ -809,9 +814,9 @@ body.theme-cyber .toast {
   border: 1px solid rgba(255, 214, 92, 0.72);
   border-radius: 18px;
   /* color-mix 非対応の旧 Chrome でも必ず不透明寄りの面を描く。 */
-  background-color: #111827;
+  background-color: var(--unlock-card-bg);
   background-image: radial-gradient(circle at 50% 20%, rgba(255, 214, 92, 0.25), rgba(17, 24, 39, 0) 48%);
-  color: var(--fg);
+  color: var(--unlock-card-fg);
   text-align: center;
   pointer-events: auto;
   box-shadow: 0 0 42px rgba(255, 214, 92, 0.42);
@@ -861,7 +866,7 @@ body.theme-cyber .toast {
 .bgm-unlock-desc {
   position: relative;
   margin: 7px auto 16px;
-  color: var(--fg-dim);
+  color: var(--unlock-card-fg-dim);
   font-size: 12.5px;
 }
 .bgm-unlock-actions {
@@ -873,6 +878,11 @@ body.theme-cyber .toast {
 .bgm-unlock-actions .btn {
   padding: 10px 16px;
   font-size: 13px;
+}
+/* カードは常に暗色地なので、ゴーストボタンの文字もテーマによらず明色にする */
+.bgm-unlock .btn-ghost,
+.ach-unlock .btn-ghost {
+  color: var(--unlock-card-fg);
 }
 .bgm-unlock.closing {
   opacity: 0;
@@ -903,10 +913,10 @@ body.theme-cyber .toast {
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--ach-color, #ffd166) 75%, transparent);
   border-radius: 20px;
-  background-color: #111827;
+  background-color: var(--unlock-card-bg);
   background-image:
     radial-gradient(circle at 50% 16%, color-mix(in srgb, var(--ach-color, #ffd166) 30%, transparent), rgba(17, 24, 39, 0) 52%);
-  color: var(--fg);
+  color: var(--unlock-card-fg);
   text-align: center;
   pointer-events: auto;
   box-shadow: 0 0 52px color-mix(in srgb, var(--ach-color, #ffd166) 45%, transparent);
@@ -980,7 +990,7 @@ body.theme-cyber .toast {
 .ach-unlock-desc {
   position: relative;
   margin: 8px auto 16px;
-  color: var(--fg-dim);
+  color: var(--unlock-card-fg-dim);
   font-size: 12.5px;
   line-height: 1.6;
 }
@@ -1005,7 +1015,7 @@ body.theme-cyber .toast {
   right: 0;
   bottom: 0;
   height: 46px;
-  background: linear-gradient(rgba(17, 24, 39, 0), #111827 86%);
+  background: linear-gradient(rgba(17, 24, 39, 0), var(--unlock-card-bg) 86%);
   opacity: 0;
   transition: opacity 0.25s;
   pointer-events: none;
