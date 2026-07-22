@@ -111,8 +111,27 @@ async function assertNoSeriousA11yViolations(stage) {
   assert.equal(violations.length, 0, `${stage} has serious accessibility violations:\n${details}`);
 }
 
+// エントリーゲート（扉絵）はすべてのロードで最初に表示される。「開始」で通過する
+async function passGate(target) {
+  const start = target.locator("#entry-gate .entry-gate-start");
+  await start.waitFor();
+  await start.click();
+  await target.locator("#entry-gate").waitFor({ state: "detached" });
+}
+
 try {
   await page.goto(baseUrl, { waitUntil: "networkidle" });
+  // 扉絵: ロゴ・音の説明・開始ボタンが表示され、通過するまで本来の画面は始まらない
+  // （このページは音オフ設定でシードしているので「音はオフ」の文言になる）
+  await page.locator("#entry-gate .entry-gate-start").waitFor();
+  await page.getByText("音はオフに設定されています", { exact: false }).waitFor();
+  assert.equal(
+    await page.locator(".entry-gate-muted").count(),
+    0,
+    "the muted-start button should be hidden when sound is already off"
+  );
+  await assertNoSeriousA11yViolations("Entry gate");
+  await passGate(page);
 
   const tutorial = page.getByRole("dialog", { name: "基本ルール | DWORDle" });
   await tutorial.waitFor();
@@ -182,7 +201,7 @@ try {
   // ハイコントラスト配色: 設定 ON で全テーマの判定色が 緑→オレンジ / 黄→青 に置き換わる
   const normalTileCorrect = await page.evaluate(() => getComputedStyle(document.body).getPropertyValue("--tile-correct").trim());
   await page.evaluate(async () => {
-    const mod = await import("./js/core/settings.js?v=20260723-tab-size");
+    const mod = await import("./js/core/settings.js?v=20260723-entry-gate");
     mod.setSetting("highContrast", true);
   });
   assert.ok(
@@ -200,7 +219,7 @@ try {
     "high contrast should replace yellow with blue"
   );
   await page.evaluate(async () => {
-    const mod = await import("./js/core/settings.js?v=20260723-tab-size");
+    const mod = await import("./js/core/settings.js?v=20260723-entry-gate");
     mod.setSetting("highContrast", false);
   });
   assert.equal(
@@ -218,6 +237,7 @@ try {
     }));
   });
   await page.reload({ waitUntil: "networkidle" });
+  await passGate(page);
   const continueButton = page.getByRole("button", { name: /つづきから.*Daily 2026-07-22・3手/ });
   await continueButton.waitFor();
   assert.deepEqual(
@@ -227,7 +247,7 @@ try {
   );
   await page.evaluate(() => localStorage.removeItem("dwordle2.current.normal"));
   await page.reload({ waitUntil: "networkidle" });
-
+  await passGate(page);
   await page.getByRole("button", { name: "設定" }).click();
   await page.waitForURL(/#\/settings$/);
   const switches = page.getByRole("switch");
@@ -267,7 +287,7 @@ try {
   assert.equal(normalPopVisuals.choiceColor, "rgb(74, 53, 80)");
 
   await page.evaluate(async () => {
-    const { setAppMode } = await import("./js/ui/app.js?v=20260723-tab-size");
+    const { setAppMode } = await import("./js/ui/app.js?v=20260723-entry-gate");
     setAppMode("uso");
   });
   await page.locator("body.theme-pop.mode-uso").waitFor();
@@ -327,12 +347,12 @@ try {
   await page.waitForURL(/#\/settings$/);
 
   await page.evaluate(async () => {
-    const { setAppMode } = await import("./js/ui/app.js?v=20260723-tab-size");
+    const { setAppMode } = await import("./js/ui/app.js?v=20260723-entry-gate");
     setAppMode("normal");
   });
   await page.locator("body.theme-pop.mode-normal").waitFor();
   await page.evaluate(async () => {
-    const { showHelpModal } = await import("./js/ui/help.js?v=20260723-tab-size");
+    const { showHelpModal } = await import("./js/ui/help.js?v=20260723-entry-gate");
     showHelpModal("normal");
   });
   const popHelp = page.getByRole("dialog", { name: "DWORDle 遊び方" });
@@ -468,7 +488,7 @@ try {
   await page.getByRole("button", { name: "もう一度", exact: true }).click();
   const replayDialog = page.getByRole("dialog", { name: "プレイ済みの問題" });
   await replayDialog.getByText(
-    "この問題は本日プレイ済みです。今回のプレイは、プレイ数・勝利数などのカウント系実績には加算されません。",
+    "この問題は本日プレイ済みです。今回のプレイは、プレイ数・勝利数などのカウント系実績に加算されず、隠し実績の判定対象にもなりません。",
     { exact: false }
   ).waitFor();
   await replayDialog.getByRole("button", { name: "キャンセル" }).click();
@@ -497,6 +517,7 @@ try {
   await page.getByText("同じ日に同じ問題 No. を複数回プレイした場合、モードを問わず最初の 1 回だけを対象にします", { exact: false }).waitFor();
   await assertNoSeriousA11yViolations("Achievements screen");
 
+  // ハッシュだけが違う同一ドキュメント遷移なのでリロードは起きず、扉絵も出ない
   await page.goto(resultUrl, { waitUntil: "networkidle" });
   await page.getByRole("button", { name: "分析" }).click();
   await page.getByText("正解！").waitFor({ timeout: 30000 });
@@ -534,6 +555,7 @@ try {
     localStorage.setItem("dwordle2.menuUnlockSeen", "99");
   });
   await shortPage.goto(baseUrl, { waitUntil: "networkidle" });
+  await passGate(shortPage);
   await shortPage.addStyleTag({ content: "#app { height: var(--app-height) !important; }" });
   const titleViewportMetrics = await shortPage.evaluate(() => ({
     appHeight: document.getElementById("app").getBoundingClientRect().height,
@@ -569,13 +591,13 @@ try {
   );
   await shortPage.waitForTimeout(50);
   const flightsBeforeLeave = await shortPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260723-tab-size")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260723-entry-gate")).activeTileFlightCount()
   );
   assert.ok(flightsBeforeLeave > 0, "Tile gather animation should be active before leaving the game");
   await shortPage.getByRole("button", { name: "タイトルへ戻る" }).click();
   await shortPage.waitForURL(/#\/$/);
   const flightsAfterLeave = await shortPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260723-tab-size")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260723-entry-gate")).activeTileFlightCount()
   );
   assert.equal(flightsAfterLeave, 0, "Tile gather animation should be removed when leaving the game");
   await shortPage.close();
@@ -591,6 +613,7 @@ try {
   });
   await fallbackPage.route("**/vendor/three.module.min.js", (route) => route.abort("failed"));
   await fallbackPage.goto(baseUrl, { waitUntil: "networkidle" });
+  await passGate(fallbackPage);
   await fallbackPage.locator("body.theme-classic").waitFor();
   await fallbackPage.locator("#screen-title.active .logo").waitFor();
   await fallbackPage.getByRole("button", { name: "番号を指定" }).click();
@@ -614,6 +637,7 @@ try {
     localStorage.setItem("dwordle2.menuUnlockSeen", "99");
   });
   await reducedPage.goto(baseUrl, { waitUntil: "networkidle" });
+  await passGate(reducedPage);
   await reducedPage.locator("body.reduce-motion").waitFor();
   await reducedPage.getByRole("button", { name: "番号を指定" }).click();
   const reducedDialog = reducedPage.getByRole("dialog", { name: "番号を指定してプレイ" });
@@ -621,13 +645,13 @@ try {
   await reducedDialog.getByRole("button", { name: "スタート" }).click();
   await reducedPage.locator("#screen-game.active .row").last().waitFor();
   const reducedFlights = await reducedPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260723-tab-size")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260723-entry-gate")).activeTileFlightCount()
   );
   assert.equal(reducedFlights, 0, "Reduced motion should suppress tile gather flights");
   await reducedContext.close();
 
   await page.evaluate(async () => {
-    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260723-tab-size");
+    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260723-entry-gate");
     bgmUnlockCelebration([{ id: "queue-test-a", name: "Queue Test A", desc: "First unlock" }]);
     bgmUnlockCelebration([{ id: "queue-test-b", name: "Queue Test B", desc: "Second unlock" }]);
   });
@@ -658,7 +682,7 @@ try {
 
   // 2 曲以上の同時解放（履歴インポート等）は 1 枚のまとめカードで報告する
   await page.evaluate(async () => {
-    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260723-tab-size");
+    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260723-entry-gate");
     bgmUnlockCelebration([
       { id: "multi-a", name: "Multi Track A", desc: "" },
       { id: "multi-b", name: "Multi Track B", desc: "" },
@@ -675,7 +699,7 @@ try {
 
   // 実績解放セレブレーション: 単発は大型カード、3 個以上は 1 枚にまとめる
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-tab-size");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-entry-gate");
     achievementCelebration([
       { id: "smoke-single", icon: "trophy", color: "#ffd166", name: "スモーク実績", desc: "テスト用の実績です" },
     ]);
@@ -693,7 +717,7 @@ try {
   await page.locator(".ach-unlock").waitFor({ state: "detached" });
 
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-tab-size");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-entry-gate");
     achievementCelebration([
       { id: "smoke-a", icon: "star", color: "#ffd166", name: "実績A", desc: "" },
       { id: "smoke-b", icon: "gem", color: "#7ee8ff", name: "実績B", desc: "" },
@@ -715,7 +739,7 @@ try {
 
   // リストが溢れるときは下端フェードで続きを示し、最下部まで送るとフェードが消える
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-tab-size");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-entry-gate");
     achievementCelebration(
       Array.from({ length: 9 }, (_, i) => ({ id: `smoke-many-${i}`, icon: "star", color: "#ffd166", name: `実績${i + 1}`, desc: "" }))
     );
@@ -752,6 +776,7 @@ try {
     deleteDialog.getByRole("button", { name: "OK" }).click(),
   ]);
   assert.match(page.url(), /#\/$/, "Deleting all data should reload at the title route");
+  await passGate(page); // 全データ削除はページを再読み込みするので扉絵から始まる
   await page.locator("#screen-title.active").waitFor();
   const cardLeftovers = await page.evaluate(() => [
     localStorage.getItem("dwordle2.playerCard"),
@@ -762,7 +787,7 @@ try {
   // 判定オープン中の先行入力: 次の 1 行分をバッファし、オープン完了後に自動で確定する
   await page.getByRole("dialog", { name: "基本ルール | DWORDle" }).getByRole("button", { name: "わかった" }).click();
   await page.evaluate(async () => {
-    const { setSetting } = await import("./js/core/settings.js?v=20260723-tab-size");
+    const { setSetting } = await import("./js/core/settings.js?v=20260723-entry-gate");
     setSetting("theme", "classic");
     setSetting("sfx", false);
     setSetting("bgm", false);
@@ -822,6 +847,7 @@ try {
       }));
     });
     await freshPage.goto(baseUrl, { waitUntil: "networkidle" });
+    await passGate(freshPage);
     const freshTutorial = freshPage.getByRole("dialog", { name: "基本ルール | DWORDle" });
     await freshTutorial.waitFor();
     assert.equal(
@@ -905,6 +931,7 @@ try {
     await freshPage.getByText("only consider the first play of the same puzzle number on the same day, regardless of mode", { exact: false }).waitFor();
 
     await freshPage.reload({ waitUntil: "networkidle" });
+    await passGate(freshPage);
     await freshPage.locator("#screen-achievements .header .sub").filter({ hasText: `0 / ${ACHIEVEMENTS.length}` }).waitFor();
     await freshPage.evaluate(() => { location.hash = "#/settings"; });
     await freshPage.waitForURL(/#\/settings$/);
@@ -928,6 +955,7 @@ try {
       localStorage.setItem("dwordle2.menuUnlockSeen", "1");
     });
     await usoUnlockPage.goto(baseUrl, { waitUntil: "networkidle" });
+    await passGate(usoUnlockPage);
     const usoUnlockDialog = usoUnlockPage.getByRole("dialog", { name: "裏モード解放！" });
     await usoUnlockDialog.waitFor();
     await usoUnlockDialog.getByText("判定は必ず嘘").waitFor();
@@ -952,6 +980,7 @@ try {
 
     // 案内は解放の描画 1 回きり。リロード後は出ない
     await usoUnlockPage.reload({ waitUntil: "networkidle" });
+    await passGate(usoUnlockPage);
     await usoUnlockPage.waitForTimeout(1800);
     assert.equal(
       await usoUnlockPage.getByRole("dialog", { name: "裏モード解放！" }).count(),
@@ -976,6 +1005,7 @@ try {
       }));
     });
     await importLockPage.goto(baseUrl, { waitUntil: "networkidle" });
+    await passGate(importLockPage);
     const importLockDialog = importLockPage.getByRole("dialog", { name: "旧作のプレイ履歴が見つかりました" });
     await importLockDialog.waitFor();
     assert.equal(
@@ -1014,6 +1044,7 @@ try {
       localStorage.setItem("dwordle2.menuUnlockSeen", "4");
     });
     await cardLockPage.goto(baseUrl, { waitUntil: "networkidle" });
+    await passGate(cardLockPage);
     await cardLockPage.getByRole("button", { name: "プレイヤーカード（あと1回プレイで解放）", exact: true }).waitFor();
     await cardLockPage.evaluate(() => { location.hash = "#/card"; });
     await cardLockPage.waitForURL(/#\/$/);
@@ -1053,6 +1084,7 @@ try {
       }
     });
     await cardPage.goto(baseUrl, { waitUntil: "networkidle" });
+    await passGate(cardPage);
     await cardPage.getByRole("button", { name: "プレイヤーカード", exact: true }).click();
     await cardPage.waitForURL(/#\/card$/);
     // シェア / 保存ボタンは発行前には見えない（[hidden] が display: flex に負ける退行の防止）
@@ -1100,6 +1132,7 @@ try {
 
     // 名前は保存され、再訪問時はカードが自動表示される
     await cardPage.reload({ waitUntil: "networkidle" });
+    await passGate(cardPage);
     await cardPage.evaluate(() => { location.hash = "#/card"; });
     await cardPage.waitForURL(/#\/card$/);
     await cardPage.locator(".player-card-canvas").waitFor();
@@ -1122,7 +1155,7 @@ try {
     // 称号ラダー: 最上位は王（実績全解除 + 1000 プレイ）。多い方のモードの王になり、
     // 同数なら DWORDle。1000 未満は伝説のまま、実績未コンプはプレイ数ランクのまま。
     const ranks = await cardPage.evaluate(async () => {
-      const mod = await import("./js/ui/player-card.js?v=20260723-tab-size");
+      const mod = await import("./js/ui/player-card.js?v=20260723-entry-gate");
       const pick = (stats) => {
         const rank = mod.rankForStats(stats);
         return `${rank.id}:${rank.titleJa}`;
@@ -1159,12 +1192,14 @@ try {
       localStorage.setItem("dwordle2.history", JSON.stringify(games));
     });
     await cardPage.reload({ waitUntil: "networkidle" });
+    await passGate(cardPage);
     await cardPage.evaluate(() => { location.hash = "#/card"; });
     await cardPage.waitForURL(/#\/card$/);
     await cardPage.locator(".rank-up-overlay").waitFor();
     await cardPage.locator(".rank-up-overlay .rank-up-name").filter({ hasText: "GOLD RANK" }).waitFor();
     // 一度見た昇格は次の表示では繰り返さない
     await cardPage.reload({ waitUntil: "networkidle" });
+    await passGate(cardPage);
     await cardPage.evaluate(() => { location.hash = "#/card"; });
     await cardPage.waitForURL(/#\/card$/);
     await cardPage.locator(".player-card-canvas").waitFor();
@@ -1174,8 +1209,8 @@ try {
     // カテゴリバッジ: 実績 9 カテゴリ + 隠しの計 10 個。この時点では実績未解除なのですべて未獲得
     const badgeInfo = await cardPage.evaluate(async () => {
       const [cardMod, achMod] = await Promise.all([
-        import("./js/ui/player-card.js?v=20260723-tab-size"),
-        import("./js/core/achievements.js?v=20260723-tab-size"),
+        import("./js/ui/player-card.js?v=20260723-entry-gate"),
+        import("./js/core/achievements.js?v=20260723-entry-gate"),
       ]);
       const states = cardMod.categoryBadgeStates();
       return {
@@ -1190,17 +1225,18 @@ try {
 
     // 実績を全解除すると 10 個すべて獲得になる
     await cardPage.evaluate(async () => {
-      const mod = await import("./js/core/achievements.js?v=20260723-tab-size");
+      const mod = await import("./js/core/achievements.js?v=20260723-entry-gate");
       const all = {};
       for (const a of mod.ACHIEVEMENTS) all[a.id] = 1750000000;
       localStorage.setItem("dwordle2.achievements", JSON.stringify(all));
     });
     await cardPage.reload({ waitUntil: "networkidle" });
+    await passGate(cardPage);
     await cardPage.evaluate(() => { location.hash = "#/card"; });
     await cardPage.waitForURL(/#\/card$/);
     await cardPage.locator(".player-card-canvas").waitFor();
     const earnedAll = await cardPage.evaluate(async () => {
-      const mod = await import("./js/ui/player-card.js?v=20260723-tab-size");
+      const mod = await import("./js/ui/player-card.js?v=20260723-entry-gate");
       return mod.categoryBadgeStates().every((b) => b.earned);
     });
     assert.ok(earnedAll, "unlocking every achievement must earn all 10 category badges");
@@ -1226,6 +1262,7 @@ try {
       ]));
     });
     await moodPage.goto(baseUrl, { waitUntil: "networkidle" });
+    await passGate(moodPage);
     assert.equal(
       await moodPage.evaluate(() => document.body.classList.contains("mode-normal")),
       true,

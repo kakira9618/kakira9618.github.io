@@ -4,23 +4,23 @@
 // 原作と同じく、Guess は確定するたびに保存され、リロードしても再開できる。
 
 import { el, clear } from "./dom.js";
-import { APP_VERSION, UI, FX } from "../config.js?v=20260723-tab-size";
+import { APP_VERSION, UI, FX } from "../config.js?v=20260723-entry-gate";
 import { Logic, CELL, usoConvert } from "../core/logic.js";
 import { MODES, saveCurrentGame, clearCurrentGame, getCurrentGame, addFinishedGame, isAlreadyPlayed, getHistory } from "../core/records.js";
 import { pidLabel } from "../core/problems.js";
-import { checkOnGameFinish } from "../core/achievements.js?v=20260723-tab-size";
-import { registerScreen, navigate, redirect, getAppMode, currentScreenName, rememberPlayedMode } from "./app.js?v=20260723-tab-size";
-import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./toast.js?v=20260723-tab-size";
-import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js?v=20260723-tab-size";
-import { hiddenThemesUnlockedBy } from "../core/settings.js?v=20260723-tab-size";
-import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/effects.js?v=20260723-tab-size";
-import { showHelpModal } from "./help.js?v=20260723-tab-size";
-import { soundToggleButton } from "./sound-toggle.js?v=20260723-tab-size";
+import { checkOnGameFinish } from "../core/achievements.js?v=20260723-entry-gate";
+import { registerScreen, navigate, redirect, getAppMode, currentScreenName, rememberPlayedMode } from "./app.js?v=20260723-entry-gate";
+import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./toast.js?v=20260723-entry-gate";
+import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js?v=20260723-entry-gate";
+import { hiddenThemesUnlockedBy } from "../core/settings.js?v=20260723-entry-gate";
+import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/effects.js?v=20260723-entry-gate";
+import { showHelpModal } from "./help.js?v=20260723-entry-gate";
+import { soundToggleButton } from "./sound-toggle.js?v=20260723-entry-gate";
 import { icon } from "./icons.js";
-import { tr } from "../core/i18n.js?v=20260723-tab-size";
-import { getSettings } from "../core/settings.js?v=20260723-tab-size";
-import { shouldReduceMotion } from "../core/motion.js?v=20260723-tab-size";
-import { announce, feedbackName, rowAriaLabel, tileAriaLabel } from "./a11y.js?v=20260723-tab-size";
+import { tr } from "../core/i18n.js?v=20260723-entry-gate";
+import { getSettings } from "../core/settings.js?v=20260723-entry-gate";
+import { shouldReduceMotion } from "../core/motion.js?v=20260723-entry-gate";
+import { announce, feedbackName, rowAriaLabel, tileAriaLabel } from "./a11y.js?v=20260723-entry-gate";
 
 const KEY_ROWS = [
   [..."qwertyuiop".split(""), "backspace"],
@@ -668,12 +668,12 @@ export async function confirmAndStart(pid, mode) {
   if (isAlreadyPlayed(pid, mode) || playedToday) {
     // 注意: 動的 import にも必ず ?v= トークンを付ける。素の URL だと古いキャッシュの
     // modal.js（旧トークンで sound.js を import する）が混ざり、BGM が二重再生される。
-    const { confirmModal } = await import("./modal.js?v=20260723-tab-size");
+    const { confirmModal } = await import("./modal.js?v=20260723-entry-gate");
     const label = pidLabel(pid);
     const countNote = playedToday
       ? tr(
-          "\n\n※この問題は本日プレイ済みです。今回のプレイは、プレイ数・勝利数などのカウント系実績には加算されません。",
-          "\n\nThis puzzle has already been played today. This play will not be added to play, win, or other count-based achievement totals."
+          "\n\n※この問題は本日プレイ済みです。今回のプレイは、プレイ数・勝利数などのカウント系実績に加算されず、隠し実績の判定対象にもなりません。",
+          "\n\nThis puzzle has already been played today. This play will not count toward play, win, or other count-based achievement totals, and will not be checked for secret achievements."
         )
       : "";
     const ok = await confirmModal(
@@ -684,7 +684,7 @@ export async function confirmAndStart(pid, mode) {
   }
   const current = getCurrentGame(mode);
   if (current && current.guessWord.length > 0) {
-    const { confirmModal } = await import("./modal.js?v=20260723-tab-size");
+    const { confirmModal } = await import("./modal.js?v=20260723-entry-gate");
     const ok = await confirmModal(
       tr("進行中のゲーム", "Game in progress"),
       tr(

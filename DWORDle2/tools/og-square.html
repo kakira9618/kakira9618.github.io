@@ -41,15 +41,16 @@
     background: radial-gradient(circle, rgba(0, 213, 255, 0.20), transparent 68%); }
   .glow.g2 { right: -160px; top: -260px; width: 900px; height: 900px;
     background: radial-gradient(circle, rgba(150, 80, 255, 0.20), transparent 68%); }
-  .glow.g3 { left: 260px; bottom: -420px; width: 980px; height: 980px;
-    background: radial-gradient(circle, rgba(255, 0, 229, 0.12), transparent 68%); }
+  .glow.g3 { right: -260px; bottom: -360px; width: 980px; height: 980px;
+    background: radial-gradient(circle, rgba(255, 0, 229, 0.16), transparent 68%); }
 
-  /* 巨大タイル盤面: 斜めに傾け、キャンバスから大きくはみ出させる */
+  /* 巨大タイル盤面: 斜めに傾け、右上コーナーに一部だけ覗かせる（対称にしない）。
+     下段の全緑 POUCH 行が右上を横切るように大きくはみ出させる */
   .board {
     position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%) rotate(var(--board-rotate));
+    left: 42%;
+    top: -24%;
+    transform: rotate(var(--board-rotate));
     display: grid;
     gap: var(--tile-gap);
   }
@@ -77,25 +78,25 @@
   }
   .row.dim { opacity: 0.82; }
 
-  /* タイトルを読ませるための中央のシェード */
+  /* タイトルを読ませるための左下寄りのシェード */
   .shade {
     position: absolute;
     inset: 0;
-    background: radial-gradient(78% 46% at 50% 50%,
+    background: radial-gradient(92% 70% at 26% 62%,
       rgba(5, 7, 15, 0.94) 0%,
-      rgba(5, 7, 15, 0.78) 42%,
-      rgba(5, 7, 15, 0.30) 72%,
-      rgba(5, 7, 15, 0) 88%);
+      rgba(5, 7, 15, 0.72) 40%,
+      rgba(5, 7, 15, 0.26) 66%,
+      rgba(5, 7, 15, 0) 84%);
   }
 
-  /* 中央の帯に集めたコピー（正方形でも 2:1 切り抜きでも欠けない） */
+  /* 左寄せのコピー。中央の帯（上下 300px を除く範囲）に収め、
+     summary_large_image の 2:1 切り抜きでも欠けないようにする */
   .copy {
     position: absolute;
-    left: 0;
-    right: 0;
-    top: 50%;
+    left: 84px;
+    top: 54%;
     transform: translateY(-50%);
-    text-align: center;
+    text-align: left;
   }
   .logo {
     font-size: 150px;

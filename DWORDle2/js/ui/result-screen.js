@@ -2,20 +2,20 @@
 // ルート: #/result/<mode>/<startTime>
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate, setViewMood } from "./app.js?v=20260723-tab-size";
+import { registerScreen, navigate, setViewMood } from "./app.js?v=20260723-entry-gate";
 import { findGame, MODES } from "../core/records.js";
 import { Logic, CELL } from "../core/logic.js";
 import { pidLabel, isDailyPID } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260723-tab-size";
-import { toast } from "./toast.js?v=20260723-tab-size";
-import { confirmAndStart } from "./game-screen.js?v=20260723-tab-size";
-import { soundToggleButton } from "./sound-toggle.js?v=20260723-tab-size";
+import { playSfx } from "../audio/sound.js?v=20260723-entry-gate";
+import { toast } from "./toast.js?v=20260723-entry-gate";
+import { confirmAndStart } from "./game-screen.js?v=20260723-entry-gate";
+import { soundToggleButton } from "./sound-toggle.js?v=20260723-entry-gate";
 import { icon } from "./icons.js";
-import { downloadResultPNG } from "./snapshot.js?v=20260723-tab-size";
-import { SHARE_URL } from "../config.js?v=20260723-tab-size";
-import { getSettings } from "../core/settings.js?v=20260723-tab-size";
-import { tr } from "../core/i18n.js?v=20260723-tab-size";
-import { rowAriaLabel } from "./a11y.js?v=20260723-tab-size";
+import { downloadResultPNG } from "./snapshot.js?v=20260723-entry-gate";
+import { SHARE_URL } from "../config.js?v=20260723-entry-gate";
+import { getSettings } from "../core/settings.js?v=20260723-entry-gate";
+import { tr } from "../core/i18n.js?v=20260723-entry-gate";
+import { rowAriaLabel } from "./a11y.js?v=20260723-entry-gate";
 
 let root = null;
 

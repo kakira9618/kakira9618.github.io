@@ -7,9 +7,9 @@
 // 本物の遠近感が付く。CSS 座標 (y 下向き) → ワールド座標は y を反転して使う。
 
 import * as THREE from "three";
-import { FX, tileColorsFor } from "../config.js?v=20260723-tab-size";
-import { getSettings } from "../core/settings.js?v=20260723-tab-size";
-import { shouldReduceMotion } from "../core/motion.js?v=20260723-tab-size";
+import { FX, tileColorsFor } from "../config.js?v=20260723-entry-gate";
+import { getSettings } from "../core/settings.js?v=20260723-entry-gate";
+import { shouldReduceMotion } from "../core/motion.js?v=20260723-entry-gate";
 
 let renderer = null;
 let scene = null;

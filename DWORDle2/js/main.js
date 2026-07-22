@@ -1,29 +1,30 @@
 // エントリポイント。画面登録・ルータ起動・3D 背景・音声の初期化。
 
-import { startRouter, initAppMode } from "./ui/app.js?v=20260723-tab-size";
-import { initEffects } from "./fx/effects.js?v=20260723-tab-size";
-import { initPopBackground } from "./fx/pop-background.js?v=20260723-tab-size";
-import { audioNeedsRecovery, bgmTracksUnlockedBy, restartBgmIfReady, stopBgm, unlockAudio } from "./audio/sound.js?v=20260723-tab-size";
-import { getSettings, onSettingsChange } from "./core/settings.js?v=20260723-tab-size";
-import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js?v=20260723-tab-size";
-import { syncDocumentLanguage, tr } from "./core/i18n.js?v=20260723-tab-size";
-import { reconcileAchievementsOnce } from "./core/achievements.js?v=20260723-tab-size";
-import { initActivity } from "./core/activity.js?v=20260723-tab-size";
-import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "./ui/game-screen.js?v=20260723-tab-size";
+import { startRouter, initAppMode } from "./ui/app.js?v=20260723-entry-gate";
+import { initEffects } from "./fx/effects.js?v=20260723-entry-gate";
+import { initPopBackground } from "./fx/pop-background.js?v=20260723-entry-gate";
+import { audioNeedsRecovery, bgmTracksUnlockedBy, restartBgmIfReady, stopBgm, unlockAudio } from "./audio/sound.js?v=20260723-entry-gate";
+import { getSettings, onSettingsChange } from "./core/settings.js?v=20260723-entry-gate";
+import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js?v=20260723-entry-gate";
+import { syncDocumentLanguage, tr } from "./core/i18n.js?v=20260723-entry-gate";
+import { reconcileAchievementsOnce } from "./core/achievements.js?v=20260723-entry-gate";
+import { initActivity } from "./core/activity.js?v=20260723-entry-gate";
+import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "./ui/game-screen.js?v=20260723-entry-gate";
 import { onSaveError } from "./core/store.js";
-import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./ui/toast.js?v=20260723-tab-size";
-import { hiddenThemesUnlockedBy } from "./core/settings.js?v=20260723-tab-size";
+import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./ui/toast.js?v=20260723-entry-gate";
+import { hiddenThemesUnlockedBy } from "./core/settings.js?v=20260723-entry-gate";
+import { showEntryGate } from "./ui/gate.js?v=20260723-entry-gate";
 
 // 画面モジュール（import するだけで registerScreen される）
-import "./ui/title-screen.js?v=20260723-tab-size";
-import "./ui/game-screen.js?v=20260723-tab-size";
-import "./ui/result-screen.js?v=20260723-tab-size";
-import "./ui/history-screen.js?v=20260723-tab-size";
-import "./ui/problems-screen.js?v=20260723-tab-size";
-import "./ui/achievements-screen.js?v=20260723-tab-size";
-import "./ui/player-card.js?v=20260723-tab-size";
-import "./ui/analysis-screen.js?v=20260723-tab-size";
-import "./ui/settings-screen.js?v=20260723-tab-size";
+import "./ui/title-screen.js?v=20260723-entry-gate";
+import "./ui/game-screen.js?v=20260723-entry-gate";
+import "./ui/result-screen.js?v=20260723-entry-gate";
+import "./ui/history-screen.js?v=20260723-entry-gate";
+import "./ui/problems-screen.js?v=20260723-entry-gate";
+import "./ui/achievements-screen.js?v=20260723-entry-gate";
+import "./ui/player-card.js?v=20260723-entry-gate";
+import "./ui/analysis-screen.js?v=20260723-entry-gate";
+import "./ui/settings-screen.js?v=20260723-entry-gate";
 
 // 古い Android Chrome は dvh に未対応のため、実際の表示領域を CSS 変数で補う。
 // 対応ブラウザでは CSS 側の 100dvh が優先される。
@@ -100,15 +101,21 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
+// エントリーゲート（扉絵）を通ってから本来の画面へ入る。
+// 「開始」タップが最初のユーザー操作になるため、上の pointerdown リスナで
+// AudioContext が解錠され、BGM を最初から鳴らせる。
+// 解放セレブレーションもゲート通過後に出す（ゲートの上に被せない・無音で流さない）。
 const recoveredAchievements = reconcileAchievementsOnce();
-startRouter();
-if (recoveredAchievements.length) {
-  setTimeout(() => {
-    achievementCelebration(recoveredAchievements);
-    const bgmUnlocks = bgmTracksUnlockedBy(recoveredAchievements);
-    if (bgmUnlocks.length) {
-      bgmUnlockCelebration(bgmUnlocks);
-    }
-    hiddenThemesUnlockedBy(recoveredAchievements).forEach(themeUnlockCelebration);
-  }, 350);
-}
+showEntryGate(() => {
+  startRouter();
+  if (recoveredAchievements.length) {
+    setTimeout(() => {
+      achievementCelebration(recoveredAchievements);
+      const bgmUnlocks = bgmTracksUnlockedBy(recoveredAchievements);
+      if (bgmUnlocks.length) {
+        bgmUnlockCelebration(bgmUnlocks);
+      }
+      hiddenThemesUnlockedBy(recoveredAchievements).forEach(themeUnlockCelebration);
+    }, 350);
+  }
+});

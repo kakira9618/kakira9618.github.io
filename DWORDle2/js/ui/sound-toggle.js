@@ -2,20 +2,27 @@
 // オフにする前の個別設定（BGM だけオン等）を覚えておき、復帰時にそのまま戻す。
 
 import { el } from "./dom.js";
-import { getSettings, setSetting, onSettingsChange } from "../core/settings.js?v=20260723-tab-size";
+import { getSettings, setSetting, onSettingsChange } from "../core/settings.js?v=20260723-entry-gate";
 import { loadJSON, saveJSON } from "../core/store.js";
-import { playSfx } from "../audio/sound.js?v=20260723-tab-size";
+import { playSfx } from "../audio/sound.js?v=20260723-entry-gate";
 import { icon } from "./icons.js";
-import { tr } from "../core/i18n.js?v=20260723-tab-size";
+import { tr } from "../core/i18n.js?v=20260723-entry-gate";
 
 const isSoundOn = (s = getSettings()) => s.bgm || s.sfx;
+
+// 音をまとめてオフにする（個別設定は復帰用に保存）。エントリーゲートの「音無しで開始」からも使う
+export function muteAllSounds() {
+  const s = getSettings();
+  if (!isSoundOn(s)) return;
+  saveJSON("soundRestore", { bgm: s.bgm, sfx: s.sfx });
+  setSetting("bgm", false);
+  setSetting("sfx", false);
+}
 
 function toggleSound() {
   const s = getSettings();
   if (isSoundOn(s)) {
-    saveJSON("soundRestore", { bgm: s.bgm, sfx: s.sfx });
-    setSetting("bgm", false);
-    setSetting("sfx", false);
+    muteAllSounds();
   } else {
     const saved = loadJSON("soundRestore", null);
     const restore = saved && (saved.bgm || saved.sfx) ? saved : { bgm: true, sfx: true };

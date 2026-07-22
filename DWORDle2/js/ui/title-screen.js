@@ -2,27 +2,27 @@
 // 右上のマスクボタンで DWORDlie（裏モード）に切り替わる。
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260723-tab-size";
+import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260723-entry-gate";
 import { countPlays, getCurrentGame, getHistory, isAlreadyPlayed } from "../core/records.js";
 import { isDebugMode } from "../core/debug.js";
 import { LEVELS, todayPID, isValidPID, pidLabel, PID } from "../core/problems.js";
-import { getSettings, setSetting } from "../core/settings.js?v=20260723-tab-size";
+import { getSettings, setSetting } from "../core/settings.js?v=20260723-entry-gate";
 import { loadJSON, saveJSON } from "../core/store.js";
 import { importFromLocalStorage, scanLegacyHistory } from "../core/migrate.js";
-import { playSfx } from "../audio/sound.js?v=20260723-tab-size";
-import { toast } from "./toast.js?v=20260723-tab-size";
-import { showModal } from "./modal.js?v=20260723-tab-size";
-import { finishHistoryImport } from "./history-import.js?v=20260723-tab-size";
-import { showFirstTutorial, showHelpModal } from "./help.js?v=20260723-tab-size";
-import { confirmAndStart } from "./game-screen.js?v=20260723-tab-size";
-import { soundToggleButton } from "./sound-toggle.js?v=20260723-tab-size";
-import { burstAtElement } from "../fx/effects.js?v=20260723-tab-size";
-import { shouldReduceMotion } from "../core/motion.js?v=20260723-tab-size";
+import { playSfx } from "../audio/sound.js?v=20260723-entry-gate";
+import { toast } from "./toast.js?v=20260723-entry-gate";
+import { showModal } from "./modal.js?v=20260723-entry-gate";
+import { finishHistoryImport } from "./history-import.js?v=20260723-entry-gate";
+import { showFirstTutorial, showHelpModal } from "./help.js?v=20260723-entry-gate";
+import { confirmAndStart } from "./game-screen.js?v=20260723-entry-gate";
+import { soundToggleButton } from "./sound-toggle.js?v=20260723-entry-gate";
+import { burstAtElement } from "../fx/effects.js?v=20260723-entry-gate";
+import { shouldReduceMotion } from "../core/motion.js?v=20260723-entry-gate";
 import { icon } from "./icons.js";
-import { APP_VERSION } from "../config.js?v=20260723-tab-size";
-import { SOURCE_HASH } from "../version.js?v=20260723-tab-size";
-import { localizedLevel, tr } from "../core/i18n.js?v=20260723-tab-size";
-import { CARD_UNLOCK_PLAYS } from "./player-card.js?v=20260723-tab-size";
+import { APP_VERSION } from "../config.js?v=20260723-entry-gate";
+import { SOURCE_HASH } from "../version.js?v=20260723-entry-gate";
+import { localizedLevel, tr } from "../core/i18n.js?v=20260723-entry-gate";
+import { CARD_UNLOCK_PLAYS } from "./player-card.js?v=20260723-entry-gate";
 
 let root = null;
 let legacyImportCheckDone = false;
