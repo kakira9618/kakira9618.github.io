@@ -8,9 +8,9 @@
 // pop 以外のテーマでは canvas を空にして描画ループも止める。
 // 「演出を軽くする」時はアニメーションを止め、判定済みの静止したラインを 1 回だけ描く。
 
-import { FX } from "../config.js?v=20260722-header-fit";
-import { getSettings, onSettingsChange } from "../core/settings.js?v=20260722-header-fit";
-import { onMotionPreferenceChange, shouldReduceMotion } from "../core/motion.js?v=20260722-header-fit";
+import { FX } from "../config.js?v=20260722-player-card";
+import { getSettings, onSettingsChange } from "../core/settings.js?v=20260722-player-card";
+import { onMotionPreferenceChange, shouldReduceMotion } from "../core/motion.js?v=20260722-player-card";
 
 let canvas = null;
 let ctx = null;
@@ -27,6 +27,16 @@ export function initPopBackground() {
   initLines();
   resize();
   addEventListener("resize", resize);
+  // モバイルで他アプリへ切り替えるとキャンバスの描画内容が破棄されることがある。
+  // 静止描画中（演出を軽くする）はループが上書きしないため、復帰のたびに描き直す。
+  // コンテキスト復元では transform も初期化されるので resize() で再設定して描く。
+  canvas.addEventListener("contextrestored", resize);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && !running && isPopActive()) draw();
+  });
+  addEventListener("pageshow", () => {
+    if (!running && isPopActive()) draw();
+  });
   applyTheme(getSettings().theme);
   onSettingsChange((s, key) => {
     if (key === "theme" || key === "reduceFx") applyTheme(s.theme);

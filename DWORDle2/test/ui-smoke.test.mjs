@@ -210,7 +210,7 @@ try {
   assert.equal(normalPopVisuals.choiceColor, "rgb(74, 53, 80)");
 
   await page.evaluate(async () => {
-    const { setAppMode } = await import("./js/ui/app.js?v=20260722-header-fit");
+    const { setAppMode } = await import("./js/ui/app.js?v=20260722-player-card");
     setAppMode("uso");
   });
   await page.locator("body.theme-pop.mode-uso").waitFor();
@@ -270,12 +270,12 @@ try {
   await page.waitForURL(/#\/settings$/);
 
   await page.evaluate(async () => {
-    const { setAppMode } = await import("./js/ui/app.js?v=20260722-header-fit");
+    const { setAppMode } = await import("./js/ui/app.js?v=20260722-player-card");
     setAppMode("normal");
   });
   await page.locator("body.theme-pop.mode-normal").waitFor();
   await page.evaluate(async () => {
-    const { showHelpModal } = await import("./js/ui/help.js?v=20260722-header-fit");
+    const { showHelpModal } = await import("./js/ui/help.js?v=20260722-player-card");
     showHelpModal("normal");
   });
   const popHelp = page.getByRole("dialog", { name: "DWORDle 遊び方" });
@@ -488,13 +488,13 @@ try {
   );
   await shortPage.waitForTimeout(50);
   const flightsBeforeLeave = await shortPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260722-header-fit")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260722-player-card")).activeTileFlightCount()
   );
   assert.ok(flightsBeforeLeave > 0, "Tile gather animation should be active before leaving the game");
   await shortPage.getByRole("button", { name: "タイトルへ戻る" }).click();
   await shortPage.waitForURL(/#\/$/);
   const flightsAfterLeave = await shortPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260722-header-fit")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260722-player-card")).activeTileFlightCount()
   );
   assert.equal(flightsAfterLeave, 0, "Tile gather animation should be removed when leaving the game");
   await shortPage.close();
@@ -540,13 +540,13 @@ try {
   await reducedDialog.getByRole("button", { name: "スタート" }).click();
   await reducedPage.locator("#screen-game.active .row").last().waitFor();
   const reducedFlights = await reducedPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260722-header-fit")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260722-player-card")).activeTileFlightCount()
   );
   assert.equal(reducedFlights, 0, "Reduced motion should suppress tile gather flights");
   await reducedContext.close();
 
   await page.evaluate(async () => {
-    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260722-header-fit");
+    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260722-player-card");
     bgmUnlockCelebration([{ id: "queue-test-a", name: "Queue Test A", desc: "First unlock" }]);
     bgmUnlockCelebration([{ id: "queue-test-b", name: "Queue Test B", desc: "Second unlock" }]);
   });
@@ -577,7 +577,7 @@ try {
 
   // 2 曲以上の同時解放（履歴インポート等）は 1 枚のまとめカードで報告する
   await page.evaluate(async () => {
-    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260722-header-fit");
+    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260722-player-card");
     bgmUnlockCelebration([
       { id: "multi-a", name: "Multi Track A", desc: "" },
       { id: "multi-b", name: "Multi Track B", desc: "" },
@@ -594,7 +594,7 @@ try {
 
   // 実績解放セレブレーション: 単発は大型カード、3 個以上は 1 枚にまとめる
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-header-fit");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-player-card");
     achievementCelebration([
       { id: "smoke-single", icon: "trophy", color: "#ffd166", name: "スモーク実績", desc: "テスト用の実績です" },
     ]);
@@ -612,14 +612,14 @@ try {
   await page.locator(".ach-unlock").waitFor({ state: "detached" });
 
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-header-fit");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-player-card");
     achievementCelebration([
       { id: "smoke-a", icon: "star", color: "#ffd166", name: "実績A", desc: "" },
       { id: "smoke-b", icon: "gem", color: "#7ee8ff", name: "実績B", desc: "" },
       { id: "smoke-c", icon: "flame", color: "#ff9a5c", name: "実績C", desc: "" },
     ]);
   });
-  const multiUnlock = page.getByRole("dialog", { name: /実績を 3 個解放/ });
+  const multiUnlock = page.getByRole("dialog", { name: /実績を 3 個解除/ });
   await multiUnlock.waitFor({ timeout: 1600 });
   assert.equal(await multiUnlock.locator(".ach-unlock-mini").count(), 3, "The combined celebration should list all achievements");
   // リストが収まっているときはスクロールの手掛かり（下端フェード）を出さない
@@ -634,12 +634,12 @@ try {
 
   // リストが溢れるときは下端フェードで続きを示し、最下部まで送るとフェードが消える
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-header-fit");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-player-card");
     achievementCelebration(
       Array.from({ length: 9 }, (_, i) => ({ id: `smoke-many-${i}`, icon: "star", color: "#ffd166", name: `実績${i + 1}`, desc: "" }))
     );
   });
-  const manyUnlock = page.getByRole("dialog", { name: /実績を 9 個解放/ });
+  const manyUnlock = page.getByRole("dialog", { name: /実績を 9 個解除/ });
   await manyUnlock.waitFor({ timeout: 1600 });
   await page.waitForFunction(() => {
     const wrap = document.querySelector(".ach-unlock-grid-wrap");
@@ -671,7 +671,7 @@ try {
   // 判定オープン中の先行入力: 次の 1 行分をバッファし、オープン完了後に自動で確定する
   await page.getByRole("dialog", { name: "基本ルール | DWORDle" }).getByRole("button", { name: "わかった" }).click();
   await page.evaluate(async () => {
-    const { setSetting } = await import("./js/core/settings.js?v=20260722-header-fit");
+    const { setSetting } = await import("./js/core/settings.js?v=20260722-player-card");
     setSetting("theme", "classic");
     setSetting("sfx", false);
     setSetting("bgm", false);
@@ -910,6 +910,91 @@ try {
     );
   } finally {
     await importLockContext.close();
+  }
+
+  // プレイヤーカード: 5 プレイ未満はロック（メニュー施錠 + 直接 URL はタイトルへ戻す）
+  const cardLockContext = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
+  const cardLockPage = await cardLockContext.newPage();
+  try {
+    await cardLockPage.addInitScript(() => {
+      localStorage.setItem("dwordle2.tutorialSeen", "true");
+      localStorage.setItem("dwordle2.legacyImportPrompted", "true");
+      localStorage.setItem("dwordle2.playCount", "4");
+      localStorage.setItem("dwordle2.menuUnlockSeen", "4");
+    });
+    await cardLockPage.goto(baseUrl, { waitUntil: "networkidle" });
+    await cardLockPage.getByRole("button", { name: "プレイヤーカード（あと1回プレイで解放）", exact: true }).waitFor();
+    await cardLockPage.evaluate(() => { location.hash = "#/card"; });
+    await cardLockPage.waitForURL(/#\/$/);
+    assert.equal(
+      await cardLockPage.locator("#screen-title.active").count(),
+      1,
+      "navigating to #/card before 5 plays must redirect to the title"
+    );
+  } finally {
+    await cardLockContext.close();
+  }
+
+  // プレイヤーカード: 5 プレイで解放。名前を保存してカードを発行し、canvas に描かれる
+  const cardContext = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
+  const cardPage = await cardContext.newPage();
+  try {
+    await cardPage.addInitScript(() => {
+      localStorage.setItem("dwordle2.tutorialSeen", "true");
+      localStorage.setItem("dwordle2.legacyImportPrompted", "true");
+      localStorage.setItem("dwordle2.playCount", "5");
+      localStorage.setItem("dwordle2.menuUnlockSeen", "5");
+      localStorage.setItem("dwordle2.achievements.reconcileVersion", "99");
+      const games = [];
+      for (let i = 0; i < 6; i++) {
+        games.push({
+          gameMode: "normal",
+          problemID: 200 + i,
+          startTime: 1750000000 + i * 86400,
+          endTime: 1750000300 + i * 86400,
+          guessWord: ["about", "crane"],
+          clear: i % 2 === 0,
+        });
+      }
+      localStorage.setItem("dwordle2.history", JSON.stringify(games));
+    });
+    await cardPage.goto(baseUrl, { waitUntil: "networkidle" });
+    await cardPage.getByRole("button", { name: "プレイヤーカード", exact: true }).click();
+    await cardPage.waitForURL(/#\/card$/);
+    await cardPage.getByLabel("プレイヤー名").fill("テスト太郎");
+    await cardPage.getByRole("button", { name: "カードを発行" }).click();
+    const cardCanvas = cardPage.locator(".player-card-canvas");
+    await cardCanvas.waitFor();
+    const painted = await cardCanvas.evaluate((canvas) => {
+      const probe = canvas.getContext("2d");
+      const { data } = probe.getImageData(0, 0, canvas.width, canvas.height);
+      const colors = new Set();
+      for (let i = 0; i < data.length; i += 4096) colors.add(`${data[i]},${data[i + 1]},${data[i + 2]},${data[i + 3]}`);
+      return { width: canvas.width, height: canvas.height, colorCount: colors.size };
+    });
+    assert.equal(painted.width, 2400, "the card image should be rendered at 2x width");
+    assert.equal(painted.height, 1350, "the card image should be rendered at 2x height");
+    assert.ok(painted.colorCount > 4, `the card should actually be painted (sampled colors: ${painted.colorCount})`);
+    await cardPage.getByRole("button", { name: "画像をシェア" }).waitFor();
+    await cardPage.getByRole("button", { name: "画像を保存" }).waitFor();
+
+    // 名前は保存され、再訪問時はカードが自動表示される
+    await cardPage.reload({ waitUntil: "networkidle" });
+    await cardPage.evaluate(() => { location.hash = "#/card"; });
+    await cardPage.waitForURL(/#\/card$/);
+    await cardPage.locator(".player-card-canvas").waitFor();
+    assert.equal(
+      await cardPage.getByLabel("プレイヤー名").inputValue(),
+      "テスト太郎",
+      "the player name must persist across reloads"
+    );
+    assert.equal(
+      await cardPage.getByRole("button", { name: "カードを発行" }).count(),
+      0,
+      "an already issued card should be shown without the issue button"
+    );
+  } finally {
+    await cardContext.close();
   }
 
   console.log("UIスモーク + a11yテスト: OK");

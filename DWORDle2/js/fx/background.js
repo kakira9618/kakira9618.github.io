@@ -6,9 +6,9 @@
 // classic テーマでは canvas ごと非表示になり、描画ループも止める。
 
 import * as THREE from "three";
-import { FX } from "../config.js?v=20260722-header-fit";
-import { getSettings, onSettingsChange } from "../core/settings.js?v=20260722-header-fit";
-import { onMotionPreferenceChange, shouldReduceMotion } from "../core/motion.js?v=20260722-header-fit";
+import { FX } from "../config.js?v=20260722-player-card";
+import { getSettings, onSettingsChange } from "../core/settings.js?v=20260722-player-card";
+import { onMotionPreferenceChange, shouldReduceMotion } from "../core/motion.js?v=20260722-player-card";
 
 let renderer = null;
 let scene = null;
@@ -159,11 +159,30 @@ export function initBackground(onFailure = () => {}) {
   resize();
   addEventListener("resize", resize);
 
+  // モバイルで他アプリへ切り替えると GPU バッファが破棄され、復帰時に
+  // 未初期化の VRAM（過去の画面の残骸）が出ることがある。描画ループ停止中は
+  // 復帰・コンテキスト復元のたびに透明へ描き直す（ループ中は次フレームが上書きする）。
+  canvas.addEventListener("webglcontextrestored", refreshSurface);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) refreshSurface();
+  });
+  addEventListener("pageshow", refreshSurface);
+
   applyTheme(getSettings().theme);
   onSettingsChange((s, key) => {
     if (key === "theme" || key === "reduceFx") applyTheme(s.theme);
   });
   onMotionPreferenceChange(() => applyTheme(getSettings().theme));
+}
+
+function refreshSurface() {
+  if (!renderer || running) return;
+  try {
+    renderer.setClearColor(0x000000, 0); // コンテキスト復元で GL 状態が初期化された場合に備える
+    renderer.clear();
+  } catch (error) {
+    failureHandler(error);
+  }
 }
 
 function disposeLayer(layer) {

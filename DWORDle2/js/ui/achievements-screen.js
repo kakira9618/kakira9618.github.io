@@ -2,12 +2,12 @@
 // ルート: #/achievements
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260722-header-fit";
-import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, getUnlocked } from "../core/achievements.js?v=20260722-header-fit";
-import { playSfx } from "../audio/sound.js?v=20260722-header-fit";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-header-fit";
+import { registerScreen, navigate } from "./app.js?v=20260722-player-card";
+import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, getUnlocked } from "../core/achievements.js?v=20260722-player-card";
+import { playSfx } from "../audio/sound.js?v=20260722-player-card";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-player-card";
 import { icon } from "./icons.js";
-import { localizedAchievement, tr } from "../core/i18n.js?v=20260722-header-fit";
+import { localizedAchievement, tr } from "../core/i18n.js?v=20260722-player-card";
 
 let root = null;
 
@@ -31,7 +31,7 @@ function achCard(ach, unlockedAt) {
         ? el(
             "div",
             { class: "desc", style: { color: "var(--tile-correct)" } },
-            tr(`解放: ${fmtDateTime(unlockedAt)}`, `Unlocked: ${fmtDateTime(unlockedAt)}`)
+            tr(`解除: ${fmtDateTime(unlockedAt)}`, `Unlocked: ${fmtDateTime(unlockedAt)}`)
           )
         : null
     )

@@ -2,25 +2,26 @@
 // 右上のマスクボタンで DWORDlie（裏モード）に切り替わる。
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260722-header-fit";
+import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260722-player-card";
 import { countPlays, getCurrentGame, getHistory, isAlreadyPlayed } from "../core/records.js";
 import { isDebugMode } from "../core/debug.js";
 import { LEVELS, todayPID, isValidPID, pidLabel, PID } from "../core/problems.js";
-import { getSettings, setSetting } from "../core/settings.js?v=20260722-header-fit";
+import { getSettings, setSetting } from "../core/settings.js?v=20260722-player-card";
 import { loadJSON, saveJSON } from "../core/store.js";
 import { importFromLocalStorage, scanLegacyHistory } from "../core/migrate.js";
-import { playSfx } from "../audio/sound.js?v=20260722-header-fit";
-import { toast } from "./toast.js?v=20260722-header-fit";
-import { showModal } from "./modal.js?v=20260722-header-fit";
-import { finishHistoryImport } from "./history-import.js?v=20260722-header-fit";
-import { showFirstTutorial, showHelpModal } from "./help.js?v=20260722-header-fit";
-import { confirmAndStart } from "./game-screen.js?v=20260722-header-fit";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-header-fit";
-import { burstAtElement } from "../fx/effects.js?v=20260722-header-fit";
-import { shouldReduceMotion } from "../core/motion.js?v=20260722-header-fit";
+import { playSfx } from "../audio/sound.js?v=20260722-player-card";
+import { toast } from "./toast.js?v=20260722-player-card";
+import { showModal } from "./modal.js?v=20260722-player-card";
+import { finishHistoryImport } from "./history-import.js?v=20260722-player-card";
+import { showFirstTutorial, showHelpModal } from "./help.js?v=20260722-player-card";
+import { confirmAndStart } from "./game-screen.js?v=20260722-player-card";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-player-card";
+import { burstAtElement } from "../fx/effects.js?v=20260722-player-card";
+import { shouldReduceMotion } from "../core/motion.js?v=20260722-player-card";
 import { icon } from "./icons.js";
-import { APP_VERSION } from "../config.js?v=20260722-header-fit";
-import { localizedLevel, tr } from "../core/i18n.js?v=20260722-header-fit";
+import { APP_VERSION } from "../config.js?v=20260722-player-card";
+import { localizedLevel, tr } from "../core/i18n.js?v=20260722-player-card";
+import { CARD_UNLOCK_PLAYS } from "./player-card.js?v=20260722-player-card";
 
 let root = null;
 let legacyImportCheckDone = false;
@@ -168,8 +169,9 @@ function maybeShowFirstTutorial(mode, afterClose = null) {
 
 // タイトルメニューの段階解放しきい値（必要プレイ回数）。
 // 1 回プレイで DWORDlie（uso）以外をすべて解放し、2 回プレイで DWORDlie を解放する。
+// プレイヤーカードは 5 回プレイで解放。
 // プレイ回数は countPlays()（同日・同問題の再プレイも数え、旧作インポートは数えない）。
-const MENU_UNLOCKS = { history: 1, achievements: 1, random: 1, problems: 1, number: 1, uso: 2 };
+const MENU_UNLOCKS = { history: 1, achievements: 1, random: 1, problems: 1, number: 1, uso: 2, card: CARD_UNLOCK_PLAYS };
 // 解放お披露目アニメーションの項目ごとの時間差
 const UNLOCK_REVEAL_STAGGER_MS = 150;
 // DWORDlie 解放モーダルは解錠演出（鍵シェイク→開錠）が終わってから出す
@@ -180,6 +182,19 @@ const USO_UNLOCK_MODAL_DELAY_REDUCED_MS = 250;
 const USO_ARROW_GAP_PX = 8;
 // 位置ガイド矢印のサイズ
 const USO_ARROW_SIZE = 30;
+
+// プレイヤーカードはメニュー最下段の行を独占させて特別感を出す（グリッド 2 列ぶち抜き）
+function playerCardMenuButton(menuBtn) {
+  const button = menuBtn(
+    "card",
+    tr("プレイヤーカード", "Player Card"),
+    () => { playSfx("ui"); navigate("/card"); },
+    false,
+    MENU_UNLOCKS.card
+  );
+  button.style.gridColumn = "1 / -1";
+  return button;
+}
 
 function render() {
   if (!root) build();
@@ -345,7 +360,8 @@ function render() {
       menuBtn("clock", tr("プレイ履歴", "Play History"), () => { playSfx("ui"); navigate("/history"); }, false, MENU_UNLOCKS.history),
       menuBtn("grid", tr("問題一覧", "Puzzles"), () => { playSfx("ui"); navigate("/problems"); }, false, MENU_UNLOCKS.problems),
       menuBtn("medal", tr("実績", "Achievements"), () => { playSfx("ui"); navigate("/achievements"); }, false, MENU_UNLOCKS.achievements),
-      menuBtn("gear", tr("設定", "Settings"), () => { playSfx("ui"); navigate("/settings"); })
+      menuBtn("gear", tr("設定", "Settings"), () => { playSfx("ui"); navigate("/settings"); }),
+      playerCardMenuButton(menuBtn)
     ),
     el("div", { class: "app-version", title: "DWORDle 2 version" }, `v${APP_VERSION}`)
   );

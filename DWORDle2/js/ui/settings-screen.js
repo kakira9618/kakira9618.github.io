@@ -2,19 +2,19 @@
 // ルート: #/settings
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260722-header-fit";
-import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js?v=20260722-header-fit";
+import { registerScreen, navigate } from "./app.js?v=20260722-player-card";
+import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js?v=20260722-player-card";
 import { importFromLocalStorage, importFromText, scanLegacyHistory } from "../core/migrate.js";
 import { exportJSON } from "../core/records.js";
 import { removeKey } from "../core/store.js";
-import { getUnlocked } from "../core/achievements.js?v=20260722-header-fit";
-import { BGM_TRACKS, playSfx } from "../audio/sound.js?v=20260722-header-fit";
-import { toast } from "./toast.js?v=20260722-header-fit";
-import { showModal, confirmModal } from "./modal.js?v=20260722-header-fit";
+import { getUnlocked } from "../core/achievements.js?v=20260722-player-card";
+import { BGM_TRACKS, playSfx } from "../audio/sound.js?v=20260722-player-card";
+import { toast } from "./toast.js?v=20260722-player-card";
+import { showModal, confirmModal } from "./modal.js?v=20260722-player-card";
 import { icon } from "./icons.js";
-import { finishHistoryImport } from "./history-import.js?v=20260722-header-fit";
-import { APP_VERSION } from "../config.js?v=20260722-header-fit";
-import { currentLanguage, isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js?v=20260722-header-fit";
+import { finishHistoryImport } from "./history-import.js?v=20260722-player-card";
+import { APP_VERSION } from "../config.js?v=20260722-player-card";
+import { currentLanguage, isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js?v=20260722-player-card";
 import { isDebugMode, tryEnableDebugMode } from "../core/debug.js";
 
 let root = null;

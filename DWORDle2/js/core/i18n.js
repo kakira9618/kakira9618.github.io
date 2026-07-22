@@ -1,6 +1,6 @@
 // UI language helpers. The stored setting is the single source of truth.
 
-import { getSettings } from "./settings.js?v=20260722-header-fit";
+import { getSettings } from "./settings.js?v=20260722-player-card";
 
 export function currentLanguage() {
   return getSettings().language === "en" ? "en" : "ja";

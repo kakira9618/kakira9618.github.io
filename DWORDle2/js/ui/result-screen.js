@@ -2,19 +2,19 @@
 // ルート: #/result/<mode>/<startTime>
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260722-header-fit";
+import { registerScreen, navigate } from "./app.js?v=20260722-player-card";
 import { findGame, MODES } from "../core/records.js";
 import { Logic, CELL } from "../core/logic.js";
 import { pidLabel, isDailyPID } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260722-header-fit";
-import { toast } from "./toast.js?v=20260722-header-fit";
-import { confirmAndStart } from "./game-screen.js?v=20260722-header-fit";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-header-fit";
+import { playSfx } from "../audio/sound.js?v=20260722-player-card";
+import { toast } from "./toast.js?v=20260722-player-card";
+import { confirmAndStart } from "./game-screen.js?v=20260722-player-card";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-player-card";
 import { icon } from "./icons.js";
-import { downloadResultPNG } from "./snapshot.js?v=20260722-header-fit";
-import { SHARE_URL } from "../config.js?v=20260722-header-fit";
-import { tr } from "../core/i18n.js?v=20260722-header-fit";
-import { rowAriaLabel } from "./a11y.js?v=20260722-header-fit";
+import { downloadResultPNG } from "./snapshot.js?v=20260722-player-card";
+import { SHARE_URL } from "../config.js?v=20260722-player-card";
+import { tr } from "../core/i18n.js?v=20260722-player-card";
+import { rowAriaLabel } from "./a11y.js?v=20260722-player-card";
 
 let root = null;
 

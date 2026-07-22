@@ -32,7 +32,7 @@ assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "new-year")?.
 assert.equal(COLLECTOR_REQUIREMENT, 30, "Achievement Hunter should require 30 unlocked achievements");
 assert.equal(
   ACHIEVEMENTS.find((achievement) => achievement.id === "collector")?.desc,
-  "実績を 30 個解放する"
+  "実績を 30 個解除する"
 );
 assert.equal(
   ACHIEVEMENTS.find((achievement) => achievement.id === "h-lexicon")?.desc,

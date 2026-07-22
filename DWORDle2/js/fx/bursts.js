@@ -7,9 +7,9 @@
 // 本物の遠近感が付く。CSS 座標 (y 下向き) → ワールド座標は y を反転して使う。
 
 import * as THREE from "three";
-import { FX, UI } from "../config.js?v=20260722-header-fit";
-import { getSettings } from "../core/settings.js?v=20260722-header-fit";
-import { shouldReduceMotion } from "../core/motion.js?v=20260722-header-fit";
+import { FX, UI } from "../config.js?v=20260722-player-card";
+import { getSettings } from "../core/settings.js?v=20260722-player-card";
+import { shouldReduceMotion } from "../core/motion.js?v=20260722-player-card";
 
 let renderer = null;
 let scene = null;
@@ -31,6 +31,26 @@ export function initBursts(onFailure = () => {}) {
   scene = new THREE.Scene();
   resize();
   addEventListener("resize", resize);
+  // この層はバースト中しか描画しないため、モバイルで他アプリへ切り替えると
+  // GPU バッファが破棄され、復帰時に未初期化の VRAM（過去の画面の残骸）が
+  // 表示されたままになることがある。復帰・コンテキスト復元のたびに描き直す。
+  canvas.addEventListener("webglcontextrestored", refreshSurface);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) refreshSurface();
+  });
+  addEventListener("pageshow", refreshSurface);
+}
+
+// 表示内容を現在の状態から描き直す。アニメーション中はループが毎フレーム
+// 上書きするので、止まっている（= 透明のはず）時だけ明示的に透明クリアする。
+function refreshSurface() {
+  if (!renderer || running) return;
+  try {
+    renderer.setClearColor(0x000000, 0); // コンテキスト復元で GL 状態が初期化された場合に備える
+    renderer.clear();
+  } catch (error) {
+    failureHandler(error);
+  }
 }
 
 function resize() {

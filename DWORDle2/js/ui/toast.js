@@ -5,12 +5,12 @@
 // 実績 → Extra BGM / テーマの順で自然に連結する。
 
 import { el } from "./dom.js";
-import { UI } from "../config.js?v=20260722-header-fit";
-import { playSfx } from "../audio/sound.js?v=20260722-header-fit";
-import { winBurst } from "../fx/effects.js?v=20260722-header-fit";
+import { UI } from "../config.js?v=20260722-player-card";
+import { playSfx } from "../audio/sound.js?v=20260722-player-card";
+import { winBurst } from "../fx/effects.js?v=20260722-player-card";
 import { icon } from "./icons.js";
-import { setSetting } from "../core/settings.js?v=20260722-header-fit";
-import { isEnglish, localizedAchievement, tr } from "../core/i18n.js?v=20260722-header-fit";
+import { setSetting } from "../core/settings.js?v=20260722-player-card";
+import { isEnglish, localizedAchievement, tr } from "../core/i18n.js?v=20260722-player-card";
 
 const layer = () => document.getElementById("toast-layer");
 const unlockLayer = () => document.getElementById("unlock-layer");
@@ -194,8 +194,8 @@ function showAchievementUnlockDialog(achievements) {
   const descId = `ach-unlock-desc-${unlockDialogSerial}`;
 
   const kickerText = anyHidden && !multiple
-    ? tr("隠し実績解放！", "SECRET ACHIEVEMENT UNLOCKED!")
-    : tr("実績解放！", "ACHIEVEMENT UNLOCKED!");
+    ? tr("隠し実績解除！", "SECRET ACHIEVEMENT UNLOCKED!")
+    : tr("実績解除！", "ACHIEVEMENT UNLOCKED!");
 
   return openUnlockCard({
     autoCloseMs: multiple ? 8000 : 5200,
@@ -215,7 +215,7 @@ function showAchievementUnlockDialog(achievements) {
         el("div", { class: "ach-unlock-kicker" }, kickerText),
         multiple
           ? [
-              el("div", { class: "ach-unlock-title", id: titleId }, tr(`実績を ${achievements.length} 個解放！`, `${achievements.length} achievements unlocked!`)),
+              el("div", { class: "ach-unlock-title", id: titleId }, tr(`実績を ${achievements.length} 個解除！`, `${achievements.length} achievements unlocked!`)),
               scrollableUnlockGrid(
                 el(
                   "div",

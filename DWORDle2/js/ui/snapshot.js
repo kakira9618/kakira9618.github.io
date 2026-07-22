@@ -3,11 +3,11 @@
 // canvas に再レンダリングして PNG としてダウンロードする。
 // 見た目は現在のテーマ（cyber / classic）に合わせる。
 
-import { UI, SHARE_URL } from "../config.js?v=20260722-header-fit";
+import { UI, SHARE_URL } from "../config.js?v=20260722-player-card";
 import { MODES } from "../core/records.js";
 import { pidLabel } from "../core/problems.js";
 import { CELL } from "../core/logic.js";
-import { getSettings } from "../core/settings.js?v=20260722-header-fit";
+import { getSettings } from "../core/settings.js?v=20260722-player-card";
 
 // レイアウト定数（すべて基準幅 720px に対する px）
 const SS = {
