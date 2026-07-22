@@ -376,10 +376,10 @@ try {
   assert.equal(usoPopHelpTileColors.correct.color, "rgb(6, 40, 26)");
   assert.equal(usoPopHelpTileColors.used.color, "rgb(32, 23, 0)");
   assert.equal(usoPopHelpTileColors.unused.color, "rgb(255, 255, 255)");
-  // 遊び方は右上のシンプルな ✗ ボタンでも閉じられる
+  // 遊び方は右上の控えめな2本線SVGボタンでも閉じられる
   const helpCloseButton = usoPopHelp.locator(".modal-close");
-  assert.equal((await helpCloseButton.textContent()).trim(), "✗");
-  assert.equal(await helpCloseButton.locator("svg").count(), 0, "help close button should use a plain glyph instead of an icon");
+  assert.equal((await helpCloseButton.textContent()).trim(), "");
+  assert.equal(await helpCloseButton.locator("svg line").count(), 2, "help close icon should consist of two SVG lines");
   await helpCloseButton.click();
   await usoPopHelp.waitFor({ state: "detached" });
   await page.getByRole("button", { name: "番号を指定" }).click();
