@@ -456,7 +456,7 @@ function localizedBody(mode, language) {
       { class: "hint" },
       isEnglish
         ? `The rules are like Wordle, but there are two answer words. ${c.Green} and ${c.yellow} feedback can refer to either answer.`
-        : `ルールは Wordle と同じですが、正解単語が 2 つあります。${c.green}・${c.yellow}の判定は Word 1 / 2 のどちらかについての情報です。`
+        : `ルールはほぼ Wordle と同じですが、正解単語が 2 つあります。${c.green}・${c.yellow}の判定は Word 1 / 2 のどちらかについての情報です。`
     ),
     buildExample("normal", language),
     el(

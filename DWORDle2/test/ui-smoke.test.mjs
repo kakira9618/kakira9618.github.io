@@ -403,6 +403,7 @@ try {
   });
   const popHelp = page.getByRole("dialog", { name: "DWORDle 遊び方" });
   await popHelp.waitFor();
+  await popHelp.getByText(/ルールはほぼ Wordle と同じですが/).waitFor();
   const popHelpTileBackground = await popHelp.locator(".help-answers .htile").first().evaluate(
     (node) => getComputedStyle(node).backgroundColor
   );
