@@ -325,6 +325,34 @@ function clearAudioContextReferences() {
   barIndex = 0;
 }
 
+// タブ・ページを閉じるとき、鳴っている最中の音が AudioContext の破棄で途中切断され、
+// 出力の不連続がポップノイズ（プーという音）として聞こえるのを防ぐ。
+// pagehide（閉じる・遷移・リロードで発火）の時点でマスターを瞬時にフェードアウトし、
+// 破棄までの残り時間を無音で埋める。bfcache 入りしたページへ戻ってきた場合は
+// pageshow（persisted）でフェードインして元の音量に戻す。
+const UNLOAD_FADE_SEC = 0.05;
+let unloadFadeInstalled = false;
+
+function installUnloadFade() {
+  if (unloadFadeInstalled) return;
+  unloadFadeInstalled = true;
+  // テスト環境（window のスタブ）ではリスナー登録自体を省略する
+  window.addEventListener?.("pagehide", () => {
+    if (!ctx || ctx.state !== "running" || !masterGain) return;
+    const t = ctx.currentTime;
+    masterGain.gain.cancelScheduledValues(t);
+    masterGain.gain.setValueAtTime(masterGain.gain.value, t);
+    masterGain.gain.linearRampToValueAtTime(0, t + UNLOAD_FADE_SEC);
+  });
+  window.addEventListener?.("pageshow", (event) => {
+    if (!event?.persisted || !ctx || ctx.state !== "running" || !masterGain) return;
+    const t = ctx.currentTime;
+    masterGain.gain.cancelScheduledValues(t);
+    masterGain.gain.setValueAtTime(masterGain.gain.value, t);
+    masterGain.gain.linearRampToValueAtTime(AUDIO.masterGain, t + UNLOAD_FADE_SEC);
+  });
+}
+
 function ensureContext() {
   if (ctx?.state === "closed") clearAudioContextReferences();
   if (ctx) return ctx;
@@ -347,6 +375,7 @@ function ensureContext() {
     clearAudioContextReferences();
     return null;
   }
+  installUnloadFade();
   return ctx;
 }
 

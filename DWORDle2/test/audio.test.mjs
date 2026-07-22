@@ -115,8 +115,13 @@ FakeAudioContext.instances = [];
 FakeAudioContext.failNextResume = false;
 FakeAudioContext.holdNextResume = false;
 
-globalThis.window = { AudioContext: FakeAudioContext };
+const windowListeners = new Map();
+globalThis.window = {
+  AudioContext: FakeAudioContext,
+  addEventListener: (type, listener) => windowListeners.set(type, listener),
+};
 
+const { AUDIO } = await import("../js/config.js?v=20260723-swup");
 const { setSetting } = await import("../js/core/settings.js?v=20260723-swup");
 const { audioNeedsRecovery, currentBgmTrackId, playSfx, rewindBgm, unlockAudio, setUsoMood, stopBgm, BGM_TRACKS } = await import("../js/audio/sound.js");
 
@@ -294,6 +299,16 @@ assert(
   !rewindFreqs.some((freq) => Math.abs(freq - bassHz(34)) < 0.01),
   "rewindBgm + restart must not resume from the middle of the track"
 );
+
+// ページを閉じるときのポップノイズ防止: pagehide でマスターが無音へフェードアウトし、
+// bfcache からの復帰（persisted な pageshow）でのみ元の音量へ戻ること
+const activeMasterGain = rebuiltContext.gains.find((gain) => gain.connections.includes(rebuiltContext.destination));
+windowListeners.get("pagehide")();
+assert.equal(activeMasterGain.gain.value, 0, "pagehide should fade the master gain out");
+windowListeners.get("pageshow")({ persisted: false });
+assert.equal(activeMasterGain.gain.value, 0, "a normal pageshow must not restore the master gain");
+windowListeners.get("pageshow")({ persisted: true });
+assert.equal(activeMasterGain.gain.value, AUDIO.masterGain, "pageshow from bfcache should restore the master gain");
 
 stopBgm();
 console.log("音声テスト: OK");
