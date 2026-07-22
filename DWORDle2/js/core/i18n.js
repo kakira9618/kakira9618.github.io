@@ -1,6 +1,6 @@
 // UI language helpers. The stored setting is the single source of truth.
 
-import { getSettings } from "./settings.js?v=20260723-kbd-tab";
+import { getSettings } from "./settings.js?v=20260723-tab-size";
 
 export function currentLanguage() {
   return getSettings().language === "en" ? "en" : "ja";

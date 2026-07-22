@@ -68,7 +68,7 @@ const ICONS = {
   card: '<rect x="3" y="4.8" width="18" height="14.6" rx="2.5"/><circle cx="8.3" cy="10.8" r="1.9"/><path d="M5.7 16.4c.5-1.7 4.7-1.7 5.2 0M13.6 9.6h4.6M13.6 12.8h4.6M13.6 16h3.2"/>',
   play: '<path d="M7 4.5 19 12 7 19.5Z"/>',
   footprints: '<path d="M6.5 3.5C8.5 3.5 9.5 5.5 9.5 8c0 1.8-.6 2.5-1 4H5.3c-.3-1.5-.8-2.2-.8-4 0-2.5 1-4.5 2-4.5Z"/><path d="M5.5 14h3.6v1.8a1.8 1.8 0 0 1-3.6 0Z"/><path d="M17.5 8.5c2 0 3 2 3 4.5 0 1.8-.5 2.5-.8 4h-3.2c-.4-1.5-1-2.2-1-4 0-2.5 1-4.5 2-4.5Z"/><path d="M16.2 19h3.6v1.3a1.8 1.8 0 0 1-3.6 0Z"/>',
-  triangleDown: '<path d="M5 8h14l-7 8.5Z" fill="currentColor" stroke="none"/>',
+  triangleDown: '<path d="M4 7.5h16l-8 10Z" fill="currentColor" stroke="none"/>',
 };
 
 // SVG 要素を生成

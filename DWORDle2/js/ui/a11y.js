@@ -1,7 +1,7 @@
 // 判定タイルを色だけに依存せず読み上げるための共通ラベル。
 
-import { tr } from "../core/i18n.js?v=20260723-kbd-tab";
-import { getSettings } from "../core/settings.js?v=20260723-kbd-tab";
+import { tr } from "../core/i18n.js?v=20260723-tab-size";
+import { getSettings } from "../core/settings.js?v=20260723-tab-size";
 
 // 判定色の呼び名。ハイコントラスト設定では 緑→オレンジ / 黄→青 と読む
 export function feedbackColorName(state) {

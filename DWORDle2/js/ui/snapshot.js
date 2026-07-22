@@ -3,11 +3,11 @@
 // canvas に再レンダリングして PNG としてダウンロードする。
 // 見た目は現在のテーマ（cyber / classic）に合わせる。
 
-import { SHARE_URL, tileColorsFor } from "../config.js?v=20260723-kbd-tab";
+import { SHARE_URL, tileColorsFor } from "../config.js?v=20260723-tab-size";
 import { MODES } from "../core/records.js";
 import { pidLabel } from "../core/problems.js";
 import { CELL } from "../core/logic.js";
-import { getSettings } from "../core/settings.js?v=20260723-kbd-tab";
+import { getSettings } from "../core/settings.js?v=20260723-tab-size";
 
 // レイアウト定数（すべて基準幅 720px に対する px）
 const SS = {

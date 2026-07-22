@@ -4,16 +4,16 @@
 // ルート: #/problems
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate, getAppMode } from "./app.js?v=20260723-kbd-tab";
+import { registerScreen, navigate, getAppMode } from "./app.js?v=20260723-tab-size";
 import { buildProblemStatus, MODES } from "../core/records.js";
 import { LEVELS, isValidPID, pidLabel } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260723-kbd-tab";
-import { showModal } from "./modal.js?v=20260723-kbd-tab";
-import { confirmAndStart } from "./game-screen.js?v=20260723-kbd-tab";
-import { toast } from "./toast.js?v=20260723-kbd-tab";
-import { soundToggleButton } from "./sound-toggle.js?v=20260723-kbd-tab";
+import { playSfx } from "../audio/sound.js?v=20260723-tab-size";
+import { showModal } from "./modal.js?v=20260723-tab-size";
+import { confirmAndStart } from "./game-screen.js?v=20260723-tab-size";
+import { toast } from "./toast.js?v=20260723-tab-size";
+import { soundToggleButton } from "./sound-toggle.js?v=20260723-tab-size";
 import { icon } from "./icons.js";
-import { localizedLevel, tr } from "../core/i18n.js?v=20260723-kbd-tab";
+import { localizedLevel, tr } from "../core/i18n.js?v=20260723-tab-size";
 
 const BLOCK_SIZE = 100;
 

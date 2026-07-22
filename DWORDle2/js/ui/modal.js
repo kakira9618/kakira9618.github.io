@@ -1,9 +1,9 @@
 // モーダルダイアログ。
 
 import { el, clear } from "./dom.js";
-import { playSfx } from "../audio/sound.js?v=20260723-kbd-tab";
-import { tr } from "../core/i18n.js?v=20260723-kbd-tab";
-import { logEvent } from "../core/activity.js?v=20260723-kbd-tab";
+import { playSfx } from "../audio/sound.js?v=20260723-tab-size";
+import { tr } from "../core/i18n.js?v=20260723-tab-size";
+import { logEvent } from "../core/activity.js?v=20260723-tab-size";
 
 const layer = () => document.getElementById("modal-layer");
 const openCloseFns = new Set(); // closeAllModals 用
