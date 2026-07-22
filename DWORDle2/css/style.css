@@ -2705,6 +2705,18 @@ body.reduce-motion .guess-flag-cloth {
   /* 16px 未満だとモバイルブラウザがフォーカス時に自動ズームする */
   font: 700 16px/1 var(--font-display);
 }
+/* 明るい Pop の入力欄は、無効状態に見える灰色を避けて編集可能な面を明示する。 */
+body.theme-pop.mode-normal .player-card-name-input {
+  background: #ffffff;
+  border-color: rgba(255, 79, 158, 0.58);
+  color: #4a3550;
+  caret-color: var(--accent);
+  box-shadow: inset 0 0 0 1px rgba(255, 79, 158, 0.08), 0 2px 0 rgba(233, 179, 205, 0.35);
+}
+body.theme-pop.mode-normal .player-card-name-input::placeholder {
+  color: #a47f9d;
+  opacity: 1;
+}
 .player-card-form .hint {
   margin-top: 6px;
 }

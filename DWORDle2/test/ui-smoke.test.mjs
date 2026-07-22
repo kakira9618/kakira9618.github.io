@@ -1182,6 +1182,20 @@ try {
     await passGate(cardPage);
     await cardPage.getByRole("button", { name: "プレイヤーカード", exact: true }).click();
     await cardPage.waitForURL(/#\/card$/);
+    await cardPage.evaluate(async () => {
+      const { setSetting } = await import("./js/core/settings.js?v=20260723-swup");
+      setSetting("theme", "pop");
+    });
+    await cardPage.locator("body.theme-pop.mode-normal").waitFor();
+    const popNameInputStyle = await cardPage.getByLabel("プレイヤー名").evaluate((input) => {
+      const style = getComputedStyle(input);
+      return { background: style.backgroundColor, color: style.color, border: style.borderColor };
+    });
+    assert.deepEqual(popNameInputStyle, {
+      background: "rgb(255, 255, 255)",
+      color: "rgb(74, 53, 80)",
+      border: "rgba(255, 79, 158, 0.58)",
+    }, "Pop DWORDle player-name input should look editable rather than disabled");
     // シェア / 保存ボタンは発行前には見えない（[hidden] が display: flex に負ける退行の防止）
     await cardPage.getByRole("button", { name: "カードを発行" }).waitFor();
     assert.equal(
