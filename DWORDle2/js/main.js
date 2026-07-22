@@ -105,8 +105,8 @@ document.addEventListener("visibilitychange", () => {
 });
 
 // エントリーゲート（扉絵）を通ってから本来の画面へ入る。
-// 「開始」タップが最初のユーザー操作になるため、上の pointerdown リスナで
-// AudioContext が解錠され、BGM を最初から鳴らせる。
+// 扉絵の間はグローバル解錠を止めており（上の unlock 参照）、
+// 「開始」タップのユーザー操作スタック内で gate.js が明示的に解錠して BGM を鳴らす。
 // 解放セレブレーションもゲート通過後に出す（ゲートの上に被せない・無音で流さない）。
 const recoveredAchievements = reconcileAchievementsOnce();
 showEntryGate(() => {
