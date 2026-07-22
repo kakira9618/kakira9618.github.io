@@ -89,9 +89,9 @@ const CARD = {
   sinceSize: 17, // 初プレイ日（PLAYER ラベルの隣）の文字サイズ
   idEdgeX: 26, // プレイヤー ID の右端からの距離（縦書きで印字）
   idSize: 12,
-  miniTileSize: 24, // 右上の装飾ミニタイル列（コーナーに密着させる）
+  miniTileSize: 24, // 左上の装飾ミニタイル列（コーナーに密着させる）
   miniTileGap: 8,
-  miniTileX: 42, // コーナーからの距離（右端から測る）
+  miniTileX: 42, // コーナーからの距離
   miniTileY: 42,
   miniTileColors: ["#00e68a", "#ffc233", "#3a4356", "#00e68a", "#ffc233"],
 };
@@ -313,9 +313,16 @@ export async function renderPlayerCardCanvas(name) {
   const left = CARD.pad;
   const right = W - CARD.pad;
 
-  // ---- ヘッダ: ロゴ / PLAYER CARD（左上・光沢なし）+ 判定タイル装飾（右上コーナーに密着）----
+  // ---- ヘッダ: 判定タイル装飾（左上コーナーに密着）+ ロゴ / PLAYER CARD（右上・光沢なし）----
   ctx.textBaseline = "middle";
-  // タイトル画面のロゴに合わせ、「2」は小さめ + 上付きで右肩に置く
+  const tiles = CARD.miniTileColors;
+  tiles.forEach((color, i) => {
+    ctx.fillStyle = color;
+    roundRect(ctx, CARD.miniTileX + i * (CARD.miniTileSize + CARD.miniTileGap), CARD.miniTileY, CARD.miniTileSize, CARD.miniTileSize, 6);
+    ctx.fill();
+  });
+
+  // タイトル画面のロゴに合わせ、「2」は小さめ + 上付きで右肩に置く（全体は右揃え）
   ctx.textAlign = "left";
   const logoMainFont = `900 ${CARD.logoSize}px "Avenir Next", "Helvetica Neue", sans-serif`;
   const logoTwoFont = `900 ${Math.round(CARD.logoSize * CARD.logoTwoScale)}px "Avenir Next", "Helvetica Neue", sans-serif`;
@@ -324,26 +331,21 @@ export async function renderPlayerCardCanvas(name) {
   ctx.font = logoTwoFont;
   const logoTwoW = ctx.measureText("2").width;
   const logoW = logoMainW + CARD.logoTwoGap + logoTwoW;
-  const logoGrad = ctx.createLinearGradient(left, 0, left + logoW, 0);
+  const logoX = right - logoW;
+  const logoGrad = ctx.createLinearGradient(logoX, 0, logoX + logoW, 0);
   logoGrad.addColorStop(0, CARD.logoGrad[0]);
   logoGrad.addColorStop(1, CARD.logoGrad[1]);
   ctx.fillStyle = logoGrad;
   ctx.font = logoMainFont;
-  ctx.fillText("DWORDle", left, CARD.logoY);
+  ctx.fillText("DWORDle", logoX, CARD.logoY);
   ctx.font = logoTwoFont;
-  ctx.fillText("2", left + logoMainW + CARD.logoTwoGap, CARD.logoY - CARD.logoTwoRaise);
+  ctx.fillText("2", logoX + logoMainW + CARD.logoTwoGap, CARD.logoY - CARD.logoTwoRaise);
 
   ctx.font = '700 19px "Avenir Next", sans-serif';
   ctx.fillStyle = CARD.dim;
-  drawSpaced(ctx, "P L A Y E R   C A R D", left, CARD.kickerY);
-
-  const tiles = CARD.miniTileColors;
-  const tilesW = tiles.length * CARD.miniTileSize + (tiles.length - 1) * CARD.miniTileGap;
-  tiles.forEach((color, i) => {
-    ctx.fillStyle = color;
-    roundRect(ctx, W - CARD.miniTileX - tilesW + i * (CARD.miniTileSize + CARD.miniTileGap), CARD.miniTileY, CARD.miniTileSize, CARD.miniTileSize, 6);
-    ctx.fill();
-  });
+  const kickerText = "P L A Y E R   C A R D";
+  const kickerW = [...kickerText].reduce((total, ch) => total + ctx.measureText(ch).width + 1.5, -1.5);
+  drawSpaced(ctx, kickerText, right - kickerW, CARD.kickerY);
 
   // ---- 右側: 大型ランクエンブレム（グロー + 六角形 + リング + アイコン + ランクピル）----
   const em = CARD.emblem;
