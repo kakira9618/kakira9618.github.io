@@ -2,19 +2,19 @@
 // ルート: #/result/<mode>/<startTime>
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate, setViewMood } from "./app.js?v=20260722-activity-log";
+import { registerScreen, navigate, setViewMood } from "./app.js?v=20260722-ios-save";
 import { findGame, MODES } from "../core/records.js";
 import { Logic, CELL } from "../core/logic.js";
 import { pidLabel, isDailyPID } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260722-activity-log";
-import { toast } from "./toast.js?v=20260722-activity-log";
-import { confirmAndStart } from "./game-screen.js?v=20260722-activity-log";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-activity-log";
+import { playSfx } from "../audio/sound.js?v=20260722-ios-save";
+import { toast } from "./toast.js?v=20260722-ios-save";
+import { confirmAndStart } from "./game-screen.js?v=20260722-ios-save";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-ios-save";
 import { icon } from "./icons.js";
-import { downloadResultPNG } from "./snapshot.js?v=20260722-activity-log";
-import { SHARE_URL } from "../config.js?v=20260722-activity-log";
-import { tr } from "../core/i18n.js?v=20260722-activity-log";
-import { rowAriaLabel } from "./a11y.js?v=20260722-activity-log";
+import { downloadResultPNG } from "./snapshot.js?v=20260722-ios-save";
+import { SHARE_URL } from "../config.js?v=20260722-ios-save";
+import { tr } from "../core/i18n.js?v=20260722-ios-save";
+import { rowAriaLabel } from "./a11y.js?v=20260722-ios-save";
 
 let root = null;
 
@@ -186,8 +186,7 @@ function render(args) {
         }
       }),
       actionBtn("camera", tr("画像保存", "Save image"), () => {
-        downloadResultPNG(record, logic, results);
-        toast(tr("画像を保存しました", "Image saved"));
+        void downloadResultPNG(record, logic, results).then(() => toast(tr("画像を保存しました", "Image saved")));
       }),
       actionBtn("flask", tr("分析", "Analysis"), () => navigate(`/analysis/${record.gameMode}/${record.startTime}`)),
       actionBtn("retry", tr("もう一度", "Play again"), () => confirmAndStart(record.problemID, record.gameMode)),

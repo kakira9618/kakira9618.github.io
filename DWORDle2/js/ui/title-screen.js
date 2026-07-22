@@ -2,26 +2,26 @@
 // 右上のマスクボタンで DWORDlie（裏モード）に切り替わる。
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260722-activity-log";
+import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260722-ios-save";
 import { countPlays, getCurrentGame, getHistory, isAlreadyPlayed } from "../core/records.js";
 import { isDebugMode } from "../core/debug.js";
 import { LEVELS, todayPID, isValidPID, pidLabel, PID } from "../core/problems.js";
-import { getSettings, setSetting } from "../core/settings.js?v=20260722-activity-log";
+import { getSettings, setSetting } from "../core/settings.js?v=20260722-ios-save";
 import { loadJSON, saveJSON } from "../core/store.js";
 import { importFromLocalStorage, scanLegacyHistory } from "../core/migrate.js";
-import { playSfx } from "../audio/sound.js?v=20260722-activity-log";
-import { toast } from "./toast.js?v=20260722-activity-log";
-import { showModal } from "./modal.js?v=20260722-activity-log";
-import { finishHistoryImport } from "./history-import.js?v=20260722-activity-log";
-import { showFirstTutorial, showHelpModal } from "./help.js?v=20260722-activity-log";
-import { confirmAndStart } from "./game-screen.js?v=20260722-activity-log";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-activity-log";
-import { burstAtElement } from "../fx/effects.js?v=20260722-activity-log";
-import { shouldReduceMotion } from "../core/motion.js?v=20260722-activity-log";
+import { playSfx } from "../audio/sound.js?v=20260722-ios-save";
+import { toast } from "./toast.js?v=20260722-ios-save";
+import { showModal } from "./modal.js?v=20260722-ios-save";
+import { finishHistoryImport } from "./history-import.js?v=20260722-ios-save";
+import { showFirstTutorial, showHelpModal } from "./help.js?v=20260722-ios-save";
+import { confirmAndStart } from "./game-screen.js?v=20260722-ios-save";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-ios-save";
+import { burstAtElement } from "../fx/effects.js?v=20260722-ios-save";
+import { shouldReduceMotion } from "../core/motion.js?v=20260722-ios-save";
 import { icon } from "./icons.js";
-import { APP_VERSION } from "../config.js?v=20260722-activity-log";
-import { localizedLevel, tr } from "../core/i18n.js?v=20260722-activity-log";
-import { CARD_UNLOCK_PLAYS } from "./player-card.js?v=20260722-activity-log";
+import { APP_VERSION } from "../config.js?v=20260722-ios-save";
+import { localizedLevel, tr } from "../core/i18n.js?v=20260722-ios-save";
+import { CARD_UNLOCK_PLAYS } from "./player-card.js?v=20260722-ios-save";
 
 let root = null;
 let legacyImportCheckDone = false;

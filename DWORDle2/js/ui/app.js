@@ -11,11 +11,11 @@
 //   #/analysis/<mode>/<startTime> 分析画面
 
 import { loadJSON, saveJSON } from "../core/store.js";
-import { setUsoMood } from "../audio/sound.js?v=20260722-activity-log";
-import { setBackgroundMood } from "../fx/effects.js?v=20260722-activity-log";
-import { setPopBackgroundMood } from "../fx/pop-background.js?v=20260722-activity-log";
-import { closeAllModals } from "./modal.js?v=20260722-activity-log";
-import { trackScreen } from "../core/activity.js?v=20260722-activity-log";
+import { setUsoMood } from "../audio/sound.js?v=20260722-ios-save";
+import { setBackgroundMood } from "../fx/effects.js?v=20260722-ios-save";
+import { setPopBackgroundMood } from "../fx/pop-background.js?v=20260722-ios-save";
+import { closeAllModals } from "./modal.js?v=20260722-ios-save";
+import { trackScreen } from "../core/activity.js?v=20260722-ios-save";
 
 const screens = new Map(); // name -> { element, render(params) }
 let currentName = null;

@@ -3,11 +3,11 @@
 // canvas に再レンダリングして PNG としてダウンロードする。
 // 見た目は現在のテーマ（cyber / classic）に合わせる。
 
-import { UI, SHARE_URL } from "../config.js?v=20260722-activity-log";
+import { UI, SHARE_URL } from "../config.js?v=20260722-ios-save";
 import { MODES } from "../core/records.js";
 import { pidLabel } from "../core/problems.js";
 import { CELL } from "../core/logic.js";
-import { getSettings } from "../core/settings.js?v=20260722-activity-log";
+import { getSettings } from "../core/settings.js?v=20260722-ios-save";
 
 // レイアウト定数（すべて基準幅 720px に対する px）
 const SS = {
@@ -276,11 +276,18 @@ export function renderResultCanvas(record, logic, displayRows) {
   return cv;
 }
 
-export function downloadResultPNG(record, logic, displayRows) {
+// iOS Safari は data: URL + download 属性の保存を無視することがあるため、
+// Blob URL + DOM に追加した a 要素で保存する（履歴エクスポートと同じ方式）
+export async function downloadResultPNG(record, logic, displayRows) {
   const cv = renderResultCanvas(record, logic, displayRows);
+  const blob = await new Promise((resolve) => cv.toBlob(resolve, "image/png"));
+  const url = blob ? URL.createObjectURL(blob) : cv.toDataURL("image/png");
   const a = document.createElement("a");
-  a.href = cv.toDataURL("image/png");
+  a.href = url;
   const name = record.gameMode === "uso" ? "DWORDlie2" : "DWORDle2";
   a.download = `${name}_${record.problemID}_${record.startTime}.png`;
+  document.body.append(a);
   a.click();
+  a.remove();
+  if (blob) setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

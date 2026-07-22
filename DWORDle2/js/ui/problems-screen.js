@@ -4,16 +4,16 @@
 // ルート: #/problems
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate, getAppMode } from "./app.js?v=20260722-activity-log";
+import { registerScreen, navigate, getAppMode } from "./app.js?v=20260722-ios-save";
 import { buildProblemStatus, MODES } from "../core/records.js";
 import { LEVELS, isValidPID, pidLabel } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260722-activity-log";
-import { showModal } from "./modal.js?v=20260722-activity-log";
-import { confirmAndStart } from "./game-screen.js?v=20260722-activity-log";
-import { toast } from "./toast.js?v=20260722-activity-log";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-activity-log";
+import { playSfx } from "../audio/sound.js?v=20260722-ios-save";
+import { showModal } from "./modal.js?v=20260722-ios-save";
+import { confirmAndStart } from "./game-screen.js?v=20260722-ios-save";
+import { toast } from "./toast.js?v=20260722-ios-save";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-ios-save";
 import { icon } from "./icons.js";
-import { localizedLevel, tr } from "../core/i18n.js?v=20260722-activity-log";
+import { localizedLevel, tr } from "../core/i18n.js?v=20260722-ios-save";
 
 const BLOCK_SIZE = 100;
 

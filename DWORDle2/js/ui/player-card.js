@@ -4,21 +4,21 @@
 // 通算 5 回プレイで解放（タイトルメニューの段階解放と同じ仕組み）。
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate, redirect } from "./app.js?v=20260722-activity-log";
+import { registerScreen, navigate, redirect } from "./app.js?v=20260722-ios-save";
 import { getHistory, countPlays } from "../core/records.js";
-import { ACHIEVEMENTS, getUnlocked } from "../core/achievements.js?v=20260722-activity-log";
-import { getSettings, HIDDEN_THEMES } from "../core/settings.js?v=20260722-activity-log";
-import { BGM_TRACKS, currentBgmTrackId, playSfx } from "../audio/sound.js?v=20260722-activity-log";
+import { ACHIEVEMENTS, getUnlocked } from "../core/achievements.js?v=20260722-ios-save";
+import { getSettings, HIDDEN_THEMES } from "../core/settings.js?v=20260722-ios-save";
+import { BGM_TRACKS, currentBgmTrackId, playSfx } from "../audio/sound.js?v=20260722-ios-save";
 import { loadJSON, saveJSON } from "../core/store.js";
 import { isDebugMode } from "../core/debug.js";
-import { toast } from "./toast.js?v=20260722-activity-log";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-activity-log";
-import { winBurst } from "../fx/effects.js?v=20260722-activity-log";
-import { shouldReduceMotion } from "../core/motion.js?v=20260722-activity-log";
+import { toast } from "./toast.js?v=20260722-ios-save";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-ios-save";
+import { winBurst } from "../fx/effects.js?v=20260722-ios-save";
+import { shouldReduceMotion } from "../core/motion.js?v=20260722-ios-save";
 import { icon, iconSvg } from "./icons.js";
-import { announce } from "./a11y.js?v=20260722-activity-log";
-import { SHARE_URL } from "../config.js?v=20260722-activity-log";
-import { tr } from "../core/i18n.js?v=20260722-activity-log";
+import { announce } from "./a11y.js?v=20260722-ios-save";
+import { SHARE_URL } from "../config.js?v=20260722-ios-save";
+import { tr } from "../core/i18n.js?v=20260722-ios-save";
 
 // 解放しきい値（タイトルメニューの MENU_UNLOCKS と同じ値を参照させる）
 export const CARD_UNLOCK_PLAYS = 5;
@@ -550,11 +550,18 @@ function drawSpaced(ctx, text, x, y) {
 
 // ---- シェア / 保存 ----
 
-function downloadCard(cv) {
+// iOS Safari は data: URL + download 属性の保存を無視することがあるため、
+// Blob URL + DOM に追加した a 要素で保存する（履歴エクスポートと同じ方式）
+async function downloadCard(cv) {
+  const blob = await new Promise((resolve) => cv.toBlob(resolve, "image/png"));
+  const url = blob ? URL.createObjectURL(blob) : cv.toDataURL("image/png");
   const a = document.createElement("a");
-  a.href = cv.toDataURL("image/png");
+  a.href = url;
   a.download = `DWORDle2_player_card_${Date.now()}.png`;
+  document.body.append(a);
   a.click();
+  a.remove();
+  if (blob) setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 async function shareCard(cv) {
@@ -575,7 +582,7 @@ async function shareCard(cv) {
     }
   }
   // 画像付きシェアが使えない環境では保存に切り替える
-  downloadCard(cv);
+  await downloadCard(cv);
   toast(tr("画像を保存しました。SNS に添付してシェアしてください", "Image saved. Attach it to share on social media"));
 }
 
@@ -713,7 +720,7 @@ function render() {
     ),
     el(
       "button",
-      { class: "btn", onclick: () => { if (cardCanvas) { downloadCard(cardCanvas); toast(tr("画像を保存しました", "Image saved")); } } },
+      { class: "btn", onclick: () => { if (cardCanvas) { void downloadCard(cardCanvas).then(() => toast(tr("画像を保存しました", "Image saved"))); } } },
       icon("download"),
       tr("画像を保存", "Save image")
     )
