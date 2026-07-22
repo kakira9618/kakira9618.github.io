@@ -5,12 +5,12 @@
 // 実績 → Extra BGM / テーマの順で自然に連結する。
 
 import { el } from "./dom.js";
-import { UI } from "../config.js?v=20260723-entry-gate";
-import { playSfx } from "../audio/sound.js?v=20260723-entry-gate";
-import { winBurst } from "../fx/effects.js?v=20260723-entry-gate";
+import { UI } from "../config.js?v=20260723-gate-silent";
+import { playSfx } from "../audio/sound.js?v=20260723-gate-silent";
+import { winBurst } from "../fx/effects.js?v=20260723-gate-silent";
 import { icon } from "./icons.js";
-import { setSetting } from "../core/settings.js?v=20260723-entry-gate";
-import { isEnglish, localizedAchievement, tr } from "../core/i18n.js?v=20260723-entry-gate";
+import { setSetting } from "../core/settings.js?v=20260723-gate-silent";
+import { isEnglish, localizedAchievement, tr } from "../core/i18n.js?v=20260723-gate-silent";
 
 const layer = () => document.getElementById("toast-layer");
 const unlockLayer = () => document.getElementById("unlock-layer");

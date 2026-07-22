@@ -4,16 +4,16 @@
 // ルート: #/problems
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate, getAppMode } from "./app.js?v=20260723-entry-gate";
+import { registerScreen, navigate, getAppMode } from "./app.js?v=20260723-gate-silent";
 import { buildProblemStatus, MODES } from "../core/records.js";
 import { LEVELS, isValidPID, pidLabel } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260723-entry-gate";
-import { showModal } from "./modal.js?v=20260723-entry-gate";
-import { confirmAndStart } from "./game-screen.js?v=20260723-entry-gate";
-import { toast } from "./toast.js?v=20260723-entry-gate";
-import { soundToggleButton } from "./sound-toggle.js?v=20260723-entry-gate";
+import { playSfx } from "../audio/sound.js?v=20260723-gate-silent";
+import { showModal } from "./modal.js?v=20260723-gate-silent";
+import { confirmAndStart } from "./game-screen.js?v=20260723-gate-silent";
+import { toast } from "./toast.js?v=20260723-gate-silent";
+import { soundToggleButton } from "./sound-toggle.js?v=20260723-gate-silent";
 import { icon } from "./icons.js";
-import { localizedLevel, tr } from "../core/i18n.js?v=20260723-entry-gate";
+import { localizedLevel, tr } from "../core/i18n.js?v=20260723-gate-silent";
 
 const BLOCK_SIZE = 100;
 

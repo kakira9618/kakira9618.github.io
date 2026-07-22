@@ -1,30 +1,30 @@
 // エントリポイント。画面登録・ルータ起動・3D 背景・音声の初期化。
 
-import { startRouter, initAppMode } from "./ui/app.js?v=20260723-entry-gate";
-import { initEffects } from "./fx/effects.js?v=20260723-entry-gate";
-import { initPopBackground } from "./fx/pop-background.js?v=20260723-entry-gate";
-import { audioNeedsRecovery, bgmTracksUnlockedBy, restartBgmIfReady, stopBgm, unlockAudio } from "./audio/sound.js?v=20260723-entry-gate";
-import { getSettings, onSettingsChange } from "./core/settings.js?v=20260723-entry-gate";
-import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js?v=20260723-entry-gate";
-import { syncDocumentLanguage, tr } from "./core/i18n.js?v=20260723-entry-gate";
-import { reconcileAchievementsOnce } from "./core/achievements.js?v=20260723-entry-gate";
-import { initActivity } from "./core/activity.js?v=20260723-entry-gate";
-import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "./ui/game-screen.js?v=20260723-entry-gate";
+import { startRouter, initAppMode } from "./ui/app.js?v=20260723-gate-silent";
+import { initEffects } from "./fx/effects.js?v=20260723-gate-silent";
+import { initPopBackground } from "./fx/pop-background.js?v=20260723-gate-silent";
+import { audioNeedsRecovery, bgmTracksUnlockedBy, restartBgmIfReady, stopBgm, unlockAudio } from "./audio/sound.js?v=20260723-gate-silent";
+import { getSettings, onSettingsChange } from "./core/settings.js?v=20260723-gate-silent";
+import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js?v=20260723-gate-silent";
+import { syncDocumentLanguage, tr } from "./core/i18n.js?v=20260723-gate-silent";
+import { reconcileAchievementsOnce } from "./core/achievements.js?v=20260723-gate-silent";
+import { initActivity } from "./core/activity.js?v=20260723-gate-silent";
+import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "./ui/game-screen.js?v=20260723-gate-silent";
 import { onSaveError } from "./core/store.js";
-import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./ui/toast.js?v=20260723-entry-gate";
-import { hiddenThemesUnlockedBy } from "./core/settings.js?v=20260723-entry-gate";
-import { showEntryGate } from "./ui/gate.js?v=20260723-entry-gate";
+import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./ui/toast.js?v=20260723-gate-silent";
+import { hiddenThemesUnlockedBy } from "./core/settings.js?v=20260723-gate-silent";
+import { showEntryGate } from "./ui/gate.js?v=20260723-gate-silent";
 
 // 画面モジュール（import するだけで registerScreen される）
-import "./ui/title-screen.js?v=20260723-entry-gate";
-import "./ui/game-screen.js?v=20260723-entry-gate";
-import "./ui/result-screen.js?v=20260723-entry-gate";
-import "./ui/history-screen.js?v=20260723-entry-gate";
-import "./ui/problems-screen.js?v=20260723-entry-gate";
-import "./ui/achievements-screen.js?v=20260723-entry-gate";
-import "./ui/player-card.js?v=20260723-entry-gate";
-import "./ui/analysis-screen.js?v=20260723-entry-gate";
-import "./ui/settings-screen.js?v=20260723-entry-gate";
+import "./ui/title-screen.js?v=20260723-gate-silent";
+import "./ui/game-screen.js?v=20260723-gate-silent";
+import "./ui/result-screen.js?v=20260723-gate-silent";
+import "./ui/history-screen.js?v=20260723-gate-silent";
+import "./ui/problems-screen.js?v=20260723-gate-silent";
+import "./ui/achievements-screen.js?v=20260723-gate-silent";
+import "./ui/player-card.js?v=20260723-gate-silent";
+import "./ui/analysis-screen.js?v=20260723-gate-silent";
+import "./ui/settings-screen.js?v=20260723-gate-silent";
 
 // 古い Android Chrome は dvh に未対応のため、実際の表示領域を CSS 変数で補う。
 // 対応ブラウザでは CSS 側の 100dvh が優先される。
@@ -79,6 +79,9 @@ addEventListener("blur", releaseKeyboardPresses);
 
 // 最初のユーザー操作で AudioContext を解錠（ブラウザの自動再生制限対策）
 const unlock = () => {
+  // 扉絵の表示中は解錠しない（ボタン以外のタップで音が鳴らないように）。
+  // 扉絵の「開始」ボタンが gate.js 内で明示的に unlockAudio する。
+  if (document.getElementById("entry-gate")) return;
   if (!audioNeedsRecovery()) return;
   // リロード直後は、設定値を変えずに内部だけ停止→再生して音源スケジュールを作り直す。
   unlockAudio({ restartBgm: true });

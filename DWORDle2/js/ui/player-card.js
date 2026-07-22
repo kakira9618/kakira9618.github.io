@@ -4,21 +4,21 @@
 // 通算 5 回プレイで解放（タイトルメニューの段階解放と同じ仕組み）。
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate, redirect } from "./app.js?v=20260723-entry-gate";
+import { registerScreen, navigate, redirect } from "./app.js?v=20260723-gate-silent";
 import { getHistory, countPlays } from "../core/records.js";
-import { ACHIEVEMENTS, getUnlocked } from "../core/achievements.js?v=20260723-entry-gate";
-import { getSettings, HIDDEN_THEMES } from "../core/settings.js?v=20260723-entry-gate";
-import { BGM_TRACKS, currentBgmTrackId, playSfx } from "../audio/sound.js?v=20260723-entry-gate";
+import { ACHIEVEMENTS, getUnlocked } from "../core/achievements.js?v=20260723-gate-silent";
+import { getSettings, HIDDEN_THEMES } from "../core/settings.js?v=20260723-gate-silent";
+import { BGM_TRACKS, currentBgmTrackId, playSfx } from "../audio/sound.js?v=20260723-gate-silent";
 import { loadJSON, saveJSON } from "../core/store.js";
 import { isDebugMode } from "../core/debug.js";
-import { toast } from "./toast.js?v=20260723-entry-gate";
-import { soundToggleButton } from "./sound-toggle.js?v=20260723-entry-gate";
-import { winBurst } from "../fx/effects.js?v=20260723-entry-gate";
-import { shouldReduceMotion } from "../core/motion.js?v=20260723-entry-gate";
+import { toast } from "./toast.js?v=20260723-gate-silent";
+import { soundToggleButton } from "./sound-toggle.js?v=20260723-gate-silent";
+import { winBurst } from "../fx/effects.js?v=20260723-gate-silent";
+import { shouldReduceMotion } from "../core/motion.js?v=20260723-gate-silent";
 import { icon, iconSvg } from "./icons.js";
-import { announce } from "./a11y.js?v=20260723-entry-gate";
-import { SHARE_URL } from "../config.js?v=20260723-entry-gate";
-import { tr } from "../core/i18n.js?v=20260723-entry-gate";
+import { announce } from "./a11y.js?v=20260723-gate-silent";
+import { SHARE_URL } from "../config.js?v=20260723-gate-silent";
+import { tr } from "../core/i18n.js?v=20260723-gate-silent";
 
 // 解放しきい値（タイトルメニューの MENU_UNLOCKS と同じ値を参照させる）
 export const CARD_UNLOCK_PLAYS = 5;

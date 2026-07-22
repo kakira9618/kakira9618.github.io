@@ -2,20 +2,20 @@
 // ルート: #/settings
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260723-entry-gate";
-import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js?v=20260723-entry-gate";
+import { registerScreen, navigate } from "./app.js?v=20260723-gate-silent";
+import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js?v=20260723-gate-silent";
 import { importFromLocalStorage, importFromText, scanLegacyHistory } from "../core/migrate.js";
 import { exportJSON } from "../core/records.js";
 import { removeKey } from "../core/store.js";
-import { getUnlocked } from "../core/achievements.js?v=20260723-entry-gate";
-import { BGM_TRACKS, playSfx } from "../audio/sound.js?v=20260723-entry-gate";
-import { toast } from "./toast.js?v=20260723-entry-gate";
-import { showModal, confirmModal } from "./modal.js?v=20260723-entry-gate";
+import { getUnlocked } from "../core/achievements.js?v=20260723-gate-silent";
+import { BGM_TRACKS, playSfx } from "../audio/sound.js?v=20260723-gate-silent";
+import { toast } from "./toast.js?v=20260723-gate-silent";
+import { showModal, confirmModal } from "./modal.js?v=20260723-gate-silent";
 import { icon } from "./icons.js";
-import { finishHistoryImport } from "./history-import.js?v=20260723-entry-gate";
-import { APP_VERSION } from "../config.js?v=20260723-entry-gate";
-import { SOURCE_HASH } from "../version.js?v=20260723-entry-gate";
-import { currentLanguage, isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js?v=20260723-entry-gate";
+import { finishHistoryImport } from "./history-import.js?v=20260723-gate-silent";
+import { APP_VERSION } from "../config.js?v=20260723-gate-silent";
+import { SOURCE_HASH } from "../version.js?v=20260723-gate-silent";
+import { currentLanguage, isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js?v=20260723-gate-silent";
 import { isDebugMode, tryEnableDebugMode } from "../core/debug.js";
 
 let root = null;

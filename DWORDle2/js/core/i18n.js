@@ -1,6 +1,6 @@
 // UI language helpers. The stored setting is the single source of truth.
 
-import { getSettings } from "./settings.js?v=20260723-entry-gate";
+import { getSettings } from "./settings.js?v=20260723-gate-silent";
 
 export function currentLanguage() {
   return getSettings().language === "en" ? "en" : "ja";

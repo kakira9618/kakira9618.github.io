@@ -5,11 +5,12 @@
 // 初回訪問でも「いきなり基本ルールモーダル」ではなく、まず扉絵で迎える体裁になる。
 
 import { el } from "./dom.js";
-import { getAppMode } from "./app.js?v=20260723-entry-gate";
-import { getSettings } from "../core/settings.js?v=20260723-entry-gate";
-import { muteAllSounds } from "./sound-toggle.js?v=20260723-entry-gate";
-import { shouldReduceMotion } from "../core/motion.js?v=20260723-entry-gate";
-import { tr } from "../core/i18n.js?v=20260723-entry-gate";
+import { getAppMode } from "./app.js?v=20260723-gate-silent";
+import { getSettings } from "../core/settings.js?v=20260723-gate-silent";
+import { unlockAudio } from "../audio/sound.js?v=20260723-gate-silent";
+import { muteAllSounds } from "./sound-toggle.js?v=20260723-gate-silent";
+import { shouldReduceMotion } from "../core/motion.js?v=20260723-gate-silent";
+import { tr } from "../core/i18n.js?v=20260723-gate-silent";
 
 // 退場フェードの長さ（CSS の #entry-gate transition と同期）
 const GATE_EXIT_MS = 340;
@@ -24,6 +25,9 @@ export function showEntryGate(onEnter) {
   const enter = () => {
     if (entered) return;
     entered = true;
+    // 扉絵の間はグローバルの解錠（main.js の pointerdown）を止めているため、
+    // ボタン操作のユーザー操作スタック内でここが明示的に解錠する
+    unlockAudio({ restartBgm: true });
     gate.classList.add("leaving");
     const finish = () => {
       gate.remove();

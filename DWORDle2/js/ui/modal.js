@@ -1,9 +1,9 @@
 // モーダルダイアログ。
 
 import { el, clear } from "./dom.js";
-import { playSfx } from "../audio/sound.js?v=20260723-entry-gate";
-import { tr } from "../core/i18n.js?v=20260723-entry-gate";
-import { logEvent } from "../core/activity.js?v=20260723-entry-gate";
+import { playSfx } from "../audio/sound.js?v=20260723-gate-silent";
+import { tr } from "../core/i18n.js?v=20260723-gate-silent";
+import { logEvent } from "../core/activity.js?v=20260723-gate-silent";
 
 const layer = () => document.getElementById("modal-layer");
 const openCloseFns = new Set(); // closeAllModals 用
