@@ -4,23 +4,23 @@
 // 原作と同じく、Guess は確定するたびに保存され、リロードしても再開できる。
 
 import { el, clear } from "./dom.js";
-import { APP_VERSION, UI, FX } from "../config.js?v=20260723-high-contrast";
+import { APP_VERSION, UI, FX } from "../config.js?v=20260723-kbd-tab";
 import { Logic, CELL, usoConvert } from "../core/logic.js";
 import { MODES, saveCurrentGame, clearCurrentGame, getCurrentGame, addFinishedGame, isAlreadyPlayed, getHistory } from "../core/records.js";
 import { pidLabel } from "../core/problems.js";
-import { checkOnGameFinish } from "../core/achievements.js?v=20260723-high-contrast";
-import { registerScreen, navigate, redirect, getAppMode, currentScreenName, rememberPlayedMode } from "./app.js?v=20260723-high-contrast";
-import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./toast.js?v=20260723-high-contrast";
-import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js?v=20260723-high-contrast";
-import { hiddenThemesUnlockedBy } from "../core/settings.js?v=20260723-high-contrast";
-import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/effects.js?v=20260723-high-contrast";
-import { showHelpModal } from "./help.js?v=20260723-high-contrast";
-import { soundToggleButton } from "./sound-toggle.js?v=20260723-high-contrast";
+import { checkOnGameFinish } from "../core/achievements.js?v=20260723-kbd-tab";
+import { registerScreen, navigate, redirect, getAppMode, currentScreenName, rememberPlayedMode } from "./app.js?v=20260723-kbd-tab";
+import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./toast.js?v=20260723-kbd-tab";
+import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js?v=20260723-kbd-tab";
+import { hiddenThemesUnlockedBy } from "../core/settings.js?v=20260723-kbd-tab";
+import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/effects.js?v=20260723-kbd-tab";
+import { showHelpModal } from "./help.js?v=20260723-kbd-tab";
+import { soundToggleButton } from "./sound-toggle.js?v=20260723-kbd-tab";
 import { icon } from "./icons.js";
-import { tr } from "../core/i18n.js?v=20260723-high-contrast";
-import { getSettings } from "../core/settings.js?v=20260723-high-contrast";
-import { shouldReduceMotion } from "../core/motion.js?v=20260723-high-contrast";
-import { announce, feedbackName, rowAriaLabel, tileAriaLabel } from "./a11y.js?v=20260723-high-contrast";
+import { tr } from "../core/i18n.js?v=20260723-kbd-tab";
+import { getSettings } from "../core/settings.js?v=20260723-kbd-tab";
+import { shouldReduceMotion } from "../core/motion.js?v=20260723-kbd-tab";
+import { announce, feedbackName, rowAriaLabel, tileAriaLabel } from "./a11y.js?v=20260723-kbd-tab";
 
 const KEY_ROWS = [
   [..."qwertyuiop".split(""), "backspace"],
@@ -94,7 +94,7 @@ function build() {
   kbdToggle = el(
     "button",
     { id: "kbd-toggle", class: "icon-btn", onclick: toggleKeyboardCollapsed },
-    icon("arrowUp", 16)
+    icon("triangleDown", 13)
   );
   applyKeyboardCollapsed();
 
@@ -668,7 +668,7 @@ export async function confirmAndStart(pid, mode) {
   if (isAlreadyPlayed(pid, mode) || playedToday) {
     // 注意: 動的 import にも必ず ?v= トークンを付ける。素の URL だと古いキャッシュの
     // modal.js（旧トークンで sound.js を import する）が混ざり、BGM が二重再生される。
-    const { confirmModal } = await import("./modal.js?v=20260723-high-contrast");
+    const { confirmModal } = await import("./modal.js?v=20260723-kbd-tab");
     const label = pidLabel(pid);
     const countNote = playedToday
       ? tr(
@@ -684,7 +684,7 @@ export async function confirmAndStart(pid, mode) {
   }
   const current = getCurrentGame(mode);
   if (current && current.guessWord.length > 0) {
-    const { confirmModal } = await import("./modal.js?v=20260723-high-contrast");
+    const { confirmModal } = await import("./modal.js?v=20260723-kbd-tab");
     const ok = await confirmModal(
       tr("進行中のゲーム", "Game in progress"),
       tr(

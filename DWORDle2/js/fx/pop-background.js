@@ -8,9 +8,9 @@
 // pop 以外のテーマでは canvas を空にして描画ループも止める。
 // 「演出を軽くする」時はアニメーションを止め、判定済みの静止したラインを 1 回だけ描く。
 
-import { FX } from "../config.js?v=20260723-high-contrast";
-import { getSettings, onSettingsChange } from "../core/settings.js?v=20260723-high-contrast";
-import { onMotionPreferenceChange, shouldReduceMotion } from "../core/motion.js?v=20260723-high-contrast";
+import { FX } from "../config.js?v=20260723-kbd-tab";
+import { getSettings, onSettingsChange } from "../core/settings.js?v=20260723-kbd-tab";
+import { onMotionPreferenceChange, shouldReduceMotion } from "../core/motion.js?v=20260723-kbd-tab";
 
 let canvas = null;
 let ctx = null;

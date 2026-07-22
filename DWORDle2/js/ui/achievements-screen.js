@@ -2,12 +2,12 @@
 // ルート: #/achievements
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260723-high-contrast";
-import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, getUnlocked } from "../core/achievements.js?v=20260723-high-contrast";
-import { playSfx } from "../audio/sound.js?v=20260723-high-contrast";
-import { soundToggleButton } from "./sound-toggle.js?v=20260723-high-contrast";
+import { registerScreen, navigate } from "./app.js?v=20260723-kbd-tab";
+import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, getUnlocked } from "../core/achievements.js?v=20260723-kbd-tab";
+import { playSfx } from "../audio/sound.js?v=20260723-kbd-tab";
+import { soundToggleButton } from "./sound-toggle.js?v=20260723-kbd-tab";
 import { icon } from "./icons.js";
-import { localizedAchievement, tr } from "../core/i18n.js?v=20260723-high-contrast";
+import { localizedAchievement, tr } from "../core/i18n.js?v=20260723-kbd-tab";
 
 let root = null;
 

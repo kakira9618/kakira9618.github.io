@@ -886,29 +886,37 @@ body.theme-classic .tile.reveal {
   opacity: 0;
   border-top-color: transparent;
 }
-/* 折りたたみボタン: キーボード上端の左に浮かぶ小さなタブ。畳むと画面下端へ移動する */
+/* 折りたたみボタン: キーボード上端の左に密着した角丸タブ（▼）。
+   下辺に枠線を引かず、キーボードのパネルと一体に見せる。畳むと画面下端に残って ▲ になる */
 #kbd-toggle {
   position: absolute;
   left: 8px;
-  bottom: calc(var(--kbd-h) + 8px);
+  bottom: var(--kbd-h);
   z-index: 20;
-  width: 30px;
-  height: 30px;
+  width: 46px;
+  height: 22px;
   min-width: 0;
   min-height: 0;
-  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px 10px 0 0;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  backdrop-filter: blur(8px);
+  color: var(--fg-dim);
   transition: bottom 0.28s cubic-bezier(0.3, 0.9, 0.3, 1);
 }
 #screen-game.kbd-collapsed #kbd-toggle {
-  bottom: calc(env(safe-area-inset-bottom) + 8px);
+  bottom: env(safe-area-inset-bottom);
 }
-/* 展開中は下向き（畳む）、折りたたみ中は上向き（開く）の矢印。回転もアニメーションさせる */
+/* 展開中は ▼（畳む）、折りたたみ中は ▲（開く）。回転もアニメーションさせる */
 #kbd-toggle svg {
   transition: transform 0.28s ease;
-  transform: rotate(180deg);
 }
 #screen-game.kbd-collapsed #kbd-toggle svg {
-  transform: rotate(0deg);
+  transform: rotate(180deg);
 }
 .kbd-row {
   flex: 1;

@@ -1,29 +1,29 @@
 // エントリポイント。画面登録・ルータ起動・3D 背景・音声の初期化。
 
-import { startRouter, initAppMode } from "./ui/app.js?v=20260723-high-contrast";
-import { initEffects } from "./fx/effects.js?v=20260723-high-contrast";
-import { initPopBackground } from "./fx/pop-background.js?v=20260723-high-contrast";
-import { audioNeedsRecovery, bgmTracksUnlockedBy, restartBgmIfReady, stopBgm, unlockAudio } from "./audio/sound.js?v=20260723-high-contrast";
-import { getSettings, onSettingsChange } from "./core/settings.js?v=20260723-high-contrast";
-import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js?v=20260723-high-contrast";
-import { syncDocumentLanguage, tr } from "./core/i18n.js?v=20260723-high-contrast";
-import { reconcileAchievementsOnce } from "./core/achievements.js?v=20260723-high-contrast";
-import { initActivity } from "./core/activity.js?v=20260723-high-contrast";
-import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "./ui/game-screen.js?v=20260723-high-contrast";
+import { startRouter, initAppMode } from "./ui/app.js?v=20260723-kbd-tab";
+import { initEffects } from "./fx/effects.js?v=20260723-kbd-tab";
+import { initPopBackground } from "./fx/pop-background.js?v=20260723-kbd-tab";
+import { audioNeedsRecovery, bgmTracksUnlockedBy, restartBgmIfReady, stopBgm, unlockAudio } from "./audio/sound.js?v=20260723-kbd-tab";
+import { getSettings, onSettingsChange } from "./core/settings.js?v=20260723-kbd-tab";
+import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js?v=20260723-kbd-tab";
+import { syncDocumentLanguage, tr } from "./core/i18n.js?v=20260723-kbd-tab";
+import { reconcileAchievementsOnce } from "./core/achievements.js?v=20260723-kbd-tab";
+import { initActivity } from "./core/activity.js?v=20260723-kbd-tab";
+import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "./ui/game-screen.js?v=20260723-kbd-tab";
 import { onSaveError } from "./core/store.js";
-import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./ui/toast.js?v=20260723-high-contrast";
-import { hiddenThemesUnlockedBy } from "./core/settings.js?v=20260723-high-contrast";
+import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./ui/toast.js?v=20260723-kbd-tab";
+import { hiddenThemesUnlockedBy } from "./core/settings.js?v=20260723-kbd-tab";
 
 // 画面モジュール（import するだけで registerScreen される）
-import "./ui/title-screen.js?v=20260723-high-contrast";
-import "./ui/game-screen.js?v=20260723-high-contrast";
-import "./ui/result-screen.js?v=20260723-high-contrast";
-import "./ui/history-screen.js?v=20260723-high-contrast";
-import "./ui/problems-screen.js?v=20260723-high-contrast";
-import "./ui/achievements-screen.js?v=20260723-high-contrast";
-import "./ui/player-card.js?v=20260723-high-contrast";
-import "./ui/analysis-screen.js?v=20260723-high-contrast";
-import "./ui/settings-screen.js?v=20260723-high-contrast";
+import "./ui/title-screen.js?v=20260723-kbd-tab";
+import "./ui/game-screen.js?v=20260723-kbd-tab";
+import "./ui/result-screen.js?v=20260723-kbd-tab";
+import "./ui/history-screen.js?v=20260723-kbd-tab";
+import "./ui/problems-screen.js?v=20260723-kbd-tab";
+import "./ui/achievements-screen.js?v=20260723-kbd-tab";
+import "./ui/player-card.js?v=20260723-kbd-tab";
+import "./ui/analysis-screen.js?v=20260723-kbd-tab";
+import "./ui/settings-screen.js?v=20260723-kbd-tab";
 
 // 古い Android Chrome は dvh に未対応のため、実際の表示領域を CSS 変数で補う。
 // 対応ブラウザでは CSS 側の 100dvh が優先される。
