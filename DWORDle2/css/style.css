@@ -2716,7 +2716,10 @@ body.reduce-motion .player-card-wrap.deal::after {
   border-radius: inherit;
   overflow: hidden;
   pointer-events: none;
-  background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--rank-accent) 30%, transparent), transparent 72%);
+  /* カードの絵柄の上でも文字が読めるよう、薄い黒 + ぼかしを下敷きにする */
+  background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--rank-accent) 30%, transparent), transparent 72%), rgba(5, 7, 15, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   animation: rankUpFlash 0.5s ease-out both, rankUpFadeOut 0.5s ease 2s forwards;
 }
 .rank-up-ring {

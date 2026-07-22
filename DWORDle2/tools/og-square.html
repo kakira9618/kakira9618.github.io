@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>DWORDle 2 OGP (square)</title>
+<style>
+  /* 1200x1200 の正方形 OGP 画像（X の Summary カード用。twitter:image が参照する）。
+     tools/make-og.mjs がスクリーンショットして og-square.png に保存する。
+     コンセプトは og.html と同じ（巨大な斜めタイル + タイトル）。
+     ロゴとタグラインは中央の帯（上下 300px を除く範囲）に収め、
+     summary_large_image で 2:1 に切り抜かれても欠けないようにする。 */
+  :root {
+    --bg: #05070f;
+    --correct: #00e68a;
+    --used: #ffc233;
+    --unused: #3a4356;
+    --accent: #00d5ff;
+    --accent-2: #ff00e5;
+    --tile-size: 218px;
+    --tile-gap: 20px;
+    --board-rotate: -9deg;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1200px;
+    height: 1200px;
+    overflow: hidden;
+    position: relative;
+    background: var(--bg);
+    font-family: "Avenir Next", "Helvetica Neue", "Hiragino Sans", sans-serif;
+  }
+
+  /* 大きくふわっとした光（星は置かない） */
+  .glow {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(6px);
+    pointer-events: none;
+  }
+  .glow.g1 { left: -180px; top: -220px; width: 820px; height: 820px;
+    background: radial-gradient(circle, rgba(0, 213, 255, 0.20), transparent 68%); }
+  .glow.g2 { right: -160px; top: -260px; width: 900px; height: 900px;
+    background: radial-gradient(circle, rgba(150, 80, 255, 0.20), transparent 68%); }
+  .glow.g3 { left: 260px; bottom: -420px; width: 980px; height: 980px;
+    background: radial-gradient(circle, rgba(255, 0, 229, 0.12), transparent 68%); }
+
+  /* 巨大タイル盤面: 斜めに傾け、キャンバスから大きくはみ出させる */
+  .board {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) rotate(var(--board-rotate));
+    display: grid;
+    gap: var(--tile-gap);
+  }
+  .row { display: flex; gap: var(--tile-gap); }
+  .tile {
+    width: var(--tile-size);
+    height: var(--tile-size);
+    border-radius: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 132px;
+    font-weight: 900;
+    color: #e8f6ff;
+    background: rgba(14, 20, 38, 0.85);
+    border: 4px solid rgba(0, 213, 255, 0.35);
+  }
+  .tile.unused { background: var(--unused); border-color: var(--unused); color: #aab6cc; }
+  .tile.used { background: var(--used); border-color: var(--used); color: #241a02; }
+  .tile.correct {
+    background: var(--correct);
+    border-color: var(--correct);
+    color: #04120b;
+    box-shadow: 0 0 60px rgba(0, 230, 138, 0.55);
+  }
+  .row.dim { opacity: 0.82; }
+
+  /* タイトルを読ませるための中央のシェード */
+  .shade {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(78% 46% at 50% 50%,
+      rgba(5, 7, 15, 0.94) 0%,
+      rgba(5, 7, 15, 0.78) 42%,
+      rgba(5, 7, 15, 0.30) 72%,
+      rgba(5, 7, 15, 0) 88%);
+  }
+
+  /* 中央の帯に集めたコピー（正方形でも 2:1 切り抜きでも欠けない） */
+  .copy {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    text-align: center;
+  }
+  .logo {
+    font-size: 150px;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    background: linear-gradient(180deg, #fff 15%, var(--accent) 55%, var(--accent-2) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 6px 26px rgba(0, 0, 0, 0.85)) drop-shadow(0 0 26px rgba(0, 213, 255, 0.4));
+  }
+  .logo .two { font-size: 0.62em; vertical-align: super; }
+  .tagline {
+    margin-top: 40px;
+    font-size: 58px;
+    font-weight: 800;
+    color: #e8f6ff;
+    letter-spacing: 0.04em;
+    text-shadow: 0 4px 22px rgba(0, 0, 0, 0.9);
+  }
+  .tagline .num { font-size: 1.25em; }
+  .tagline .num.two { color: var(--used); }
+  .tagline .num.one { color: var(--correct); }
+</style>
+</head>
+<body>
+  <div class="glow g1"></div>
+  <div class="glow g2"></div>
+  <div class="glow g3"></div>
+
+  <div class="board">
+    <div class="row dim">
+      <div class="tile used">P</div>
+      <div class="tile unused">O</div>
+      <div class="tile unused">I</div>
+      <div class="tile used">N</div>
+      <div class="tile unused">T</div>
+    </div>
+    <div class="row dim">
+      <div class="tile used">T</div>
+      <div class="tile correct">O</div>
+      <div class="tile unused">U</div>
+      <div class="tile used">C</div>
+      <div class="tile correct">H</div>
+    </div>
+    <div class="row">
+      <div class="tile correct">P</div>
+      <div class="tile correct">O</div>
+      <div class="tile correct">U</div>
+      <div class="tile correct">C</div>
+      <div class="tile correct">H</div>
+    </div>
+  </div>
+
+  <div class="shade"></div>
+
+  <div class="copy">
+    <div class="logo">DWORDle<span class="two"> 2</span></div>
+    <div class="tagline">答えは<span class="num two">2</span>つ。盤面は<span class="num one">1</span>つ。</div>
+  </div>
+</body>
+</html>

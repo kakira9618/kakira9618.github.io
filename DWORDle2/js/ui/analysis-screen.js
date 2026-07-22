@@ -4,18 +4,18 @@
 // ルート: #/analysis/<mode>/<startTime>
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate, setViewMood } from "./app.js?v=20260723-card-badges";
+import { registerScreen, navigate, setViewMood } from "./app.js?v=20260723-badge-socket";
 import { findGame, MODES } from "../core/records.js";
 import { Logic } from "../core/logic.js";
 import { pidLabel } from "../core/problems.js";
-import { computeTruePatternIds, resultToPatternId, patternIdToStates } from "../core/analysis-core.js?v=20260723-card-badges";
-import { checkOnEvent } from "../core/achievements.js?v=20260723-card-badges";
-import { achievementCelebration } from "./toast.js?v=20260723-card-badges";
-import { playSfx } from "../audio/sound.js?v=20260723-card-badges";
-import { soundToggleButton } from "./sound-toggle.js?v=20260723-card-badges";
+import { computeTruePatternIds, resultToPatternId, patternIdToStates } from "../core/analysis-core.js?v=20260723-badge-socket";
+import { checkOnEvent } from "../core/achievements.js?v=20260723-badge-socket";
+import { achievementCelebration } from "./toast.js?v=20260723-badge-socket";
+import { playSfx } from "../audio/sound.js?v=20260723-badge-socket";
+import { soundToggleButton } from "./sound-toggle.js?v=20260723-badge-socket";
 import { icon } from "./icons.js";
-import { currentLanguage, isEnglish, tr } from "../core/i18n.js?v=20260723-card-badges";
-import { rowAriaLabel } from "./a11y.js?v=20260723-card-badges";
+import { currentLanguage, isEnglish, tr } from "../core/i18n.js?v=20260723-badge-socket";
+import { rowAriaLabel } from "./a11y.js?v=20260723-badge-socket";
 
 let root = null;
 let worker = null;
@@ -149,7 +149,7 @@ function render(args) {
     record.gameMode === "uso" ? record.usoResults.map((r) => resultToPatternId(r)) : truePatternIds;
 
   if (worker) worker.terminate();
-  worker = new Worker(new URL("../core/analysis.worker.js?v=20260723-card-badges", import.meta.url), { type: "module" });
+  worker = new Worker(new URL("../core/analysis.worker.js?v=20260723-badge-socket", import.meta.url), { type: "module" });
   worker.onmessage = (e) => {
     if (token !== renderToken) return; // 画面遷移後の古い結果
     const msg = e.data;

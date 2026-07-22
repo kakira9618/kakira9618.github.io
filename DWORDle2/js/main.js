@@ -1,29 +1,29 @@
 // エントリポイント。画面登録・ルータ起動・3D 背景・音声の初期化。
 
-import { startRouter, initAppMode } from "./ui/app.js?v=20260723-card-badges";
-import { initEffects } from "./fx/effects.js?v=20260723-card-badges";
-import { initPopBackground } from "./fx/pop-background.js?v=20260723-card-badges";
-import { audioNeedsRecovery, bgmTracksUnlockedBy, restartBgmIfReady, stopBgm, unlockAudio } from "./audio/sound.js?v=20260723-card-badges";
-import { getSettings, onSettingsChange } from "./core/settings.js?v=20260723-card-badges";
-import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js?v=20260723-card-badges";
-import { syncDocumentLanguage, tr } from "./core/i18n.js?v=20260723-card-badges";
-import { reconcileAchievementsOnce } from "./core/achievements.js?v=20260723-card-badges";
-import { initActivity } from "./core/activity.js?v=20260723-card-badges";
-import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "./ui/game-screen.js?v=20260723-card-badges";
+import { startRouter, initAppMode } from "./ui/app.js?v=20260723-badge-socket";
+import { initEffects } from "./fx/effects.js?v=20260723-badge-socket";
+import { initPopBackground } from "./fx/pop-background.js?v=20260723-badge-socket";
+import { audioNeedsRecovery, bgmTracksUnlockedBy, restartBgmIfReady, stopBgm, unlockAudio } from "./audio/sound.js?v=20260723-badge-socket";
+import { getSettings, onSettingsChange } from "./core/settings.js?v=20260723-badge-socket";
+import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js?v=20260723-badge-socket";
+import { syncDocumentLanguage, tr } from "./core/i18n.js?v=20260723-badge-socket";
+import { reconcileAchievementsOnce } from "./core/achievements.js?v=20260723-badge-socket";
+import { initActivity } from "./core/activity.js?v=20260723-badge-socket";
+import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "./ui/game-screen.js?v=20260723-badge-socket";
 import { onSaveError } from "./core/store.js";
-import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./ui/toast.js?v=20260723-card-badges";
-import { hiddenThemesUnlockedBy } from "./core/settings.js?v=20260723-card-badges";
+import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./ui/toast.js?v=20260723-badge-socket";
+import { hiddenThemesUnlockedBy } from "./core/settings.js?v=20260723-badge-socket";
 
 // 画面モジュール（import するだけで registerScreen される）
-import "./ui/title-screen.js?v=20260723-card-badges";
-import "./ui/game-screen.js?v=20260723-card-badges";
-import "./ui/result-screen.js?v=20260723-card-badges";
-import "./ui/history-screen.js?v=20260723-card-badges";
-import "./ui/problems-screen.js?v=20260723-card-badges";
-import "./ui/achievements-screen.js?v=20260723-card-badges";
-import "./ui/player-card.js?v=20260723-card-badges";
-import "./ui/analysis-screen.js?v=20260723-card-badges";
-import "./ui/settings-screen.js?v=20260723-card-badges";
+import "./ui/title-screen.js?v=20260723-badge-socket";
+import "./ui/game-screen.js?v=20260723-badge-socket";
+import "./ui/result-screen.js?v=20260723-badge-socket";
+import "./ui/history-screen.js?v=20260723-badge-socket";
+import "./ui/problems-screen.js?v=20260723-badge-socket";
+import "./ui/achievements-screen.js?v=20260723-badge-socket";
+import "./ui/player-card.js?v=20260723-badge-socket";
+import "./ui/analysis-screen.js?v=20260723-badge-socket";
+import "./ui/settings-screen.js?v=20260723-badge-socket";
 
 // 古い Android Chrome は dvh に未対応のため、実際の表示領域を CSS 変数で補う。
 // 対応ブラウザでは CSS 側の 100dvh が優先される。

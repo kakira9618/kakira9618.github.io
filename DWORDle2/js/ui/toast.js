@@ -5,12 +5,12 @@
 // 実績 → Extra BGM / テーマの順で自然に連結する。
 
 import { el } from "./dom.js";
-import { UI } from "../config.js?v=20260723-card-badges";
-import { playSfx } from "../audio/sound.js?v=20260723-card-badges";
-import { winBurst } from "../fx/effects.js?v=20260723-card-badges";
+import { UI } from "../config.js?v=20260723-badge-socket";
+import { playSfx } from "../audio/sound.js?v=20260723-badge-socket";
+import { winBurst } from "../fx/effects.js?v=20260723-badge-socket";
 import { icon } from "./icons.js";
-import { setSetting } from "../core/settings.js?v=20260723-card-badges";
-import { isEnglish, localizedAchievement, tr } from "../core/i18n.js?v=20260723-card-badges";
+import { setSetting } from "../core/settings.js?v=20260723-badge-socket";
+import { isEnglish, localizedAchievement, tr } from "../core/i18n.js?v=20260723-badge-socket";
 
 const layer = () => document.getElementById("toast-layer");
 const unlockLayer = () => document.getElementById("unlock-layer");

@@ -11,11 +11,11 @@
 //   #/analysis/<mode>/<startTime> 分析画面
 
 import { loadJSON, saveJSON } from "../core/store.js";
-import { setUsoMood } from "../audio/sound.js?v=20260723-card-badges";
-import { setBackgroundMood } from "../fx/effects.js?v=20260723-card-badges";
-import { setPopBackgroundMood } from "../fx/pop-background.js?v=20260723-card-badges";
-import { closeAllModals } from "./modal.js?v=20260723-card-badges";
-import { trackScreen } from "../core/activity.js?v=20260723-card-badges";
+import { setUsoMood } from "../audio/sound.js?v=20260723-badge-socket";
+import { setBackgroundMood } from "../fx/effects.js?v=20260723-badge-socket";
+import { setPopBackgroundMood } from "../fx/pop-background.js?v=20260723-badge-socket";
+import { closeAllModals } from "./modal.js?v=20260723-badge-socket";
+import { trackScreen } from "../core/activity.js?v=20260723-badge-socket";
 
 const screens = new Map(); // name -> { element, render(params) }
 let currentName = null;

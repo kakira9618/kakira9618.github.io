@@ -2,19 +2,19 @@
 // ルート: #/result/<mode>/<startTime>
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate, setViewMood } from "./app.js?v=20260723-card-badges";
+import { registerScreen, navigate, setViewMood } from "./app.js?v=20260723-badge-socket";
 import { findGame, MODES } from "../core/records.js";
 import { Logic, CELL } from "../core/logic.js";
 import { pidLabel, isDailyPID } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260723-card-badges";
-import { toast } from "./toast.js?v=20260723-card-badges";
-import { confirmAndStart } from "./game-screen.js?v=20260723-card-badges";
-import { soundToggleButton } from "./sound-toggle.js?v=20260723-card-badges";
+import { playSfx } from "../audio/sound.js?v=20260723-badge-socket";
+import { toast } from "./toast.js?v=20260723-badge-socket";
+import { confirmAndStart } from "./game-screen.js?v=20260723-badge-socket";
+import { soundToggleButton } from "./sound-toggle.js?v=20260723-badge-socket";
 import { icon } from "./icons.js";
-import { downloadResultPNG } from "./snapshot.js?v=20260723-card-badges";
-import { SHARE_URL } from "../config.js?v=20260723-card-badges";
-import { tr } from "../core/i18n.js?v=20260723-card-badges";
-import { rowAriaLabel } from "./a11y.js?v=20260723-card-badges";
+import { downloadResultPNG } from "./snapshot.js?v=20260723-badge-socket";
+import { SHARE_URL } from "../config.js?v=20260723-badge-socket";
+import { tr } from "../core/i18n.js?v=20260723-badge-socket";
+import { rowAriaLabel } from "./a11y.js?v=20260723-badge-socket";
 
 let root = null;
 

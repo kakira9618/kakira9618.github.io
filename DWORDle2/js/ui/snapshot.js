@@ -3,11 +3,11 @@
 // canvas に再レンダリングして PNG としてダウンロードする。
 // 見た目は現在のテーマ（cyber / classic）に合わせる。
 
-import { UI, SHARE_URL } from "../config.js?v=20260723-card-badges";
+import { UI, SHARE_URL } from "../config.js?v=20260723-badge-socket";
 import { MODES } from "../core/records.js";
 import { pidLabel } from "../core/problems.js";
 import { CELL } from "../core/logic.js";
-import { getSettings } from "../core/settings.js?v=20260723-card-badges";
+import { getSettings } from "../core/settings.js?v=20260723-badge-socket";
 
 // レイアウト定数（すべて基準幅 720px に対する px）
 const SS = {

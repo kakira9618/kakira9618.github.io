@@ -4,21 +4,21 @@
 // 通算 5 回プレイで解放（タイトルメニューの段階解放と同じ仕組み）。
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate, redirect } from "./app.js?v=20260723-card-badges";
+import { registerScreen, navigate, redirect } from "./app.js?v=20260723-badge-socket";
 import { getHistory, countPlays } from "../core/records.js";
-import { ACHIEVEMENTS, getUnlocked } from "../core/achievements.js?v=20260723-card-badges";
-import { getSettings, HIDDEN_THEMES } from "../core/settings.js?v=20260723-card-badges";
-import { BGM_TRACKS, currentBgmTrackId, playSfx } from "../audio/sound.js?v=20260723-card-badges";
+import { ACHIEVEMENTS, getUnlocked } from "../core/achievements.js?v=20260723-badge-socket";
+import { getSettings, HIDDEN_THEMES } from "../core/settings.js?v=20260723-badge-socket";
+import { BGM_TRACKS, currentBgmTrackId, playSfx } from "../audio/sound.js?v=20260723-badge-socket";
 import { loadJSON, saveJSON } from "../core/store.js";
 import { isDebugMode } from "../core/debug.js";
-import { toast } from "./toast.js?v=20260723-card-badges";
-import { soundToggleButton } from "./sound-toggle.js?v=20260723-card-badges";
-import { winBurst } from "../fx/effects.js?v=20260723-card-badges";
-import { shouldReduceMotion } from "../core/motion.js?v=20260723-card-badges";
+import { toast } from "./toast.js?v=20260723-badge-socket";
+import { soundToggleButton } from "./sound-toggle.js?v=20260723-badge-socket";
+import { winBurst } from "../fx/effects.js?v=20260723-badge-socket";
+import { shouldReduceMotion } from "../core/motion.js?v=20260723-badge-socket";
 import { icon, iconSvg } from "./icons.js";
-import { announce } from "./a11y.js?v=20260723-card-badges";
-import { SHARE_URL } from "../config.js?v=20260723-card-badges";
-import { tr } from "../core/i18n.js?v=20260723-card-badges";
+import { announce } from "./a11y.js?v=20260723-badge-socket";
+import { SHARE_URL } from "../config.js?v=20260723-badge-socket";
+import { tr } from "../core/i18n.js?v=20260723-badge-socket";
 
 // 解放しきい値（タイトルメニューの MENU_UNLOCKS と同じ値を参照させる）
 export const CARD_UNLOCK_PLAYS = 5;
@@ -100,15 +100,15 @@ const CARD = {
     cols: 5,
     slotR: 28, // スロット（跡）の半径
     gapX: 12,
-    labelY: 178, // "BADGES" 見出し（左の PLAYER 行と同じ高さ）
     row1Cy: 248, // 1 行目の中心 y（名前の行に併走）
     row2Cy: 320, // 2 行目の中心 y（称号バッジと同じ高さ）
     iconSize: 26,
     contentGap: 24, // 棚の左端と名前・称号バッジの間に確保する余白
     socketFill: "rgba(0, 0, 0, 0.30)",
-    socketStroke: "rgba(255, 255, 255, 0.08)",
-    socketRing: "rgba(255, 255, 255, 0.10)", // 未獲得スロット内側の破線リング
-    socketPin: "rgba(255, 255, 255, 0.05)", // 未獲得スロット中央の留め穴
+    socketStroke: "rgba(255, 255, 255, 0.16)",
+    socketRing: "rgba(255, 255, 255, 0.20)", // 未獲得スロット内側の破線リング
+    socketIcon: "#8b9bbd", // 未獲得スロットに透かすバッジシルエットの色
+    socketIconAlpha: 0.32,
   },
 };
 
@@ -525,14 +525,8 @@ export async function renderPlayerCardCanvas(name) {
   ctx.fillStyle = rank.accent;
   ctx.fillText(titleText, ix + rankSegW + 18 + badgeIcon + 12, CARD.titleY + 1);
 
-  // ---- カテゴリバッジ棚（中段右側に 5 列 x 2 行）----
+  // ---- カテゴリバッジ棚（中段右側に 5 列 x 2 行。見出しは置かない）----
   // 全スロットに埋め込み用の跡（窪み）を描き、獲得済みカテゴリだけ色付きバッジを埋める。
-  ctx.textAlign = "left";
-  ctx.font = '700 13px "Avenir Next", sans-serif';
-  ctx.fillStyle = CARD.dim;
-  const badgesLabel = "B A D G E S";
-  const badgesLabelW = [...badgesLabel].reduce((total, ch) => total + ctx.measureText(ch).width + 1.5, -1.5);
-  drawSpaced(ctx, badgesLabel, right - badgesLabelW, bd.labelY);
   const badgeStates = categoryBadgeStates();
   for (let i = 0; i < badgeStates.length; i++) {
     const badge = badgeStates[i];
@@ -548,7 +542,7 @@ export async function renderPlayerCardCanvas(name) {
     ctx.lineWidth = 1;
     ctx.stroke();
     if (!badge.earned) {
-      // 未獲得: 破線リング + 中央の留め穴で「埋め込み予定地」を示す
+      // 未獲得: 破線リング + 埋まる予定のバッジのシルエットで「予定地」を示す
       ctx.beginPath();
       ctx.arc(cx, cy, bd.slotR - 6.5, 0, Math.PI * 2);
       ctx.setLineDash([4, 5]);
@@ -556,10 +550,15 @@ export async function renderPlayerCardCanvas(name) {
       ctx.lineWidth = 1.5;
       ctx.stroke();
       ctx.setLineDash([]);
-      ctx.beginPath();
-      ctx.arc(cx, cy, 3, 0, Math.PI * 2);
-      ctx.fillStyle = bd.socketPin;
-      ctx.fill();
+      try {
+        const img = await loadIconImage(badge.icon, bd.iconSize, bd.socketIcon);
+        ctx.save();
+        ctx.globalAlpha = bd.socketIconAlpha;
+        ctx.drawImage(img, cx - bd.iconSize / 2, cy - bd.iconSize / 2, bd.iconSize, bd.iconSize);
+        ctx.restore();
+      } catch {
+        // アイコン画像が作れない環境でもカード本体は成立させる
+      }
       continue;
     }
     // 獲得済み: カテゴリ色のグロー + 面 + リング + アイコン

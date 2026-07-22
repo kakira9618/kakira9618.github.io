@@ -48,6 +48,12 @@ const ihdrOffset = ogPng.indexOf(Buffer.from("IHDR"));
 assert.notEqual(ihdrOffset, -1, "OGP image should contain a PNG IHDR chunk");
 assert.equal(ogPng.readUInt32BE(ihdrOffset + 4), 1200, "OGP image width should be 1200px");
 assert.equal(ogPng.readUInt32BE(ihdrOffset + 8), 630, "OGP image height should be 630px");
+// X の Summary カード用の正方形版（twitter:image が参照する）
+const ogSquarePng = await readFile(path.join(projectRoot, "og-square.png"));
+const squareIhdrOffset = ogSquarePng.indexOf(Buffer.from("IHDR"));
+assert.notEqual(squareIhdrOffset, -1, "square OGP image should contain a PNG IHDR chunk");
+assert.equal(ogSquarePng.readUInt32BE(squareIhdrOffset + 4), 1200, "square OGP image width should be 1200px");
+assert.equal(ogSquarePng.readUInt32BE(squareIhdrOffset + 8), 1200, "square OGP image height should be 1200px");
 
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
@@ -141,12 +147,13 @@ try {
   await randomDialog.getByRole("button", { name: "閉じる" }).click();
   await assertNoSeriousA11yViolations("Title screen");
   const publicEntry = await page.evaluate(async () => {
-    const assetPaths = ["/favicon.png", "/og.png", "/manifest.webmanifest"];
+    const assetPaths = ["/favicon.png", "/og.png", "/og-square.png", "/manifest.webmanifest"];
     const statuses = await Promise.all(assetPaths.map(async (assetPath) => (await fetch(assetPath)).status));
     return {
       ogImage: document.querySelector('meta[property="og:image"]')?.content,
       ogDescription: document.querySelector('meta[property="og:description"]')?.content,
       twitterCard: document.querySelector('meta[name="twitter:card"]')?.content,
+      twitterImage: document.querySelector('meta[name="twitter:image"]')?.content,
       twitterDescription: document.querySelector('meta[name="twitter:description"]')?.content,
       manifest: document.querySelector('link[rel="manifest"]')?.getAttribute("href"),
       statuses,
@@ -155,9 +162,10 @@ try {
   assert.equal(publicEntry.ogImage, "https://kakira9618.github.io/DWORDle2/og.png");
   assert.equal(publicEntry.ogDescription, "答えは2つ。盤面は1つ。新感覚Wordle！");
   assert.equal(publicEntry.twitterCard, "summary_large_image");
+  assert.equal(publicEntry.twitterImage, "https://kakira9618.github.io/DWORDle2/og-square.png", "X には Summary で見切れない正方形版を渡す");
   assert.equal(publicEntry.twitterDescription, "答えは2つ。盤面は1つ。新感覚Wordle！");
   assert.equal(publicEntry.manifest, "manifest.webmanifest");
-  assert.deepEqual(publicEntry.statuses, [200, 200, 200], "Public metadata assets should be served");
+  assert.deepEqual(publicEntry.statuses, [200, 200, 200, 200], "Public metadata assets should be served");
 
   await page.evaluate(() => {
     localStorage.setItem("dwordle2.current.normal", JSON.stringify({
@@ -217,7 +225,7 @@ try {
   assert.equal(normalPopVisuals.choiceColor, "rgb(74, 53, 80)");
 
   await page.evaluate(async () => {
-    const { setAppMode } = await import("./js/ui/app.js?v=20260723-card-badges");
+    const { setAppMode } = await import("./js/ui/app.js?v=20260723-badge-socket");
     setAppMode("uso");
   });
   await page.locator("body.theme-pop.mode-uso").waitFor();
@@ -277,12 +285,12 @@ try {
   await page.waitForURL(/#\/settings$/);
 
   await page.evaluate(async () => {
-    const { setAppMode } = await import("./js/ui/app.js?v=20260723-card-badges");
+    const { setAppMode } = await import("./js/ui/app.js?v=20260723-badge-socket");
     setAppMode("normal");
   });
   await page.locator("body.theme-pop.mode-normal").waitFor();
   await page.evaluate(async () => {
-    const { showHelpModal } = await import("./js/ui/help.js?v=20260723-card-badges");
+    const { showHelpModal } = await import("./js/ui/help.js?v=20260723-badge-socket");
     showHelpModal("normal");
   });
   const popHelp = page.getByRole("dialog", { name: "DWORDle 遊び方" });
@@ -502,13 +510,13 @@ try {
   );
   await shortPage.waitForTimeout(50);
   const flightsBeforeLeave = await shortPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260723-card-badges")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260723-badge-socket")).activeTileFlightCount()
   );
   assert.ok(flightsBeforeLeave > 0, "Tile gather animation should be active before leaving the game");
   await shortPage.getByRole("button", { name: "タイトルへ戻る" }).click();
   await shortPage.waitForURL(/#\/$/);
   const flightsAfterLeave = await shortPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260723-card-badges")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260723-badge-socket")).activeTileFlightCount()
   );
   assert.equal(flightsAfterLeave, 0, "Tile gather animation should be removed when leaving the game");
   await shortPage.close();
@@ -554,13 +562,13 @@ try {
   await reducedDialog.getByRole("button", { name: "スタート" }).click();
   await reducedPage.locator("#screen-game.active .row").last().waitFor();
   const reducedFlights = await reducedPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260723-card-badges")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260723-badge-socket")).activeTileFlightCount()
   );
   assert.equal(reducedFlights, 0, "Reduced motion should suppress tile gather flights");
   await reducedContext.close();
 
   await page.evaluate(async () => {
-    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260723-card-badges");
+    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260723-badge-socket");
     bgmUnlockCelebration([{ id: "queue-test-a", name: "Queue Test A", desc: "First unlock" }]);
     bgmUnlockCelebration([{ id: "queue-test-b", name: "Queue Test B", desc: "Second unlock" }]);
   });
@@ -591,7 +599,7 @@ try {
 
   // 2 曲以上の同時解放（履歴インポート等）は 1 枚のまとめカードで報告する
   await page.evaluate(async () => {
-    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260723-card-badges");
+    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260723-badge-socket");
     bgmUnlockCelebration([
       { id: "multi-a", name: "Multi Track A", desc: "" },
       { id: "multi-b", name: "Multi Track B", desc: "" },
@@ -608,7 +616,7 @@ try {
 
   // 実績解放セレブレーション: 単発は大型カード、3 個以上は 1 枚にまとめる
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-card-badges");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-badge-socket");
     achievementCelebration([
       { id: "smoke-single", icon: "trophy", color: "#ffd166", name: "スモーク実績", desc: "テスト用の実績です" },
     ]);
@@ -626,7 +634,7 @@ try {
   await page.locator(".ach-unlock").waitFor({ state: "detached" });
 
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-card-badges");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-badge-socket");
     achievementCelebration([
       { id: "smoke-a", icon: "star", color: "#ffd166", name: "実績A", desc: "" },
       { id: "smoke-b", icon: "gem", color: "#7ee8ff", name: "実績B", desc: "" },
@@ -648,7 +656,7 @@ try {
 
   // リストが溢れるときは下端フェードで続きを示し、最下部まで送るとフェードが消える
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-card-badges");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-badge-socket");
     achievementCelebration(
       Array.from({ length: 9 }, (_, i) => ({ id: `smoke-many-${i}`, icon: "star", color: "#ffd166", name: `実績${i + 1}`, desc: "" }))
     );
@@ -695,7 +703,7 @@ try {
   // 判定オープン中の先行入力: 次の 1 行分をバッファし、オープン完了後に自動で確定する
   await page.getByRole("dialog", { name: "基本ルール | DWORDle" }).getByRole("button", { name: "わかった" }).click();
   await page.evaluate(async () => {
-    const { setSetting } = await import("./js/core/settings.js?v=20260723-card-badges");
+    const { setSetting } = await import("./js/core/settings.js?v=20260723-badge-socket");
     setSetting("theme", "classic");
     setSetting("sfx", false);
     setSetting("bgm", false);
@@ -1055,7 +1063,7 @@ try {
     // 称号ラダー: 最上位は王（実績全解除 + 1000 プレイ）。多い方のモードの王になり、
     // 同数なら DWORDle。1000 未満は伝説のまま、実績未コンプはプレイ数ランクのまま。
     const ranks = await cardPage.evaluate(async () => {
-      const mod = await import("./js/ui/player-card.js?v=20260723-card-badges");
+      const mod = await import("./js/ui/player-card.js?v=20260723-badge-socket");
       const pick = (stats) => {
         const rank = mod.rankForStats(stats);
         return `${rank.id}:${rank.titleJa}`;
@@ -1107,8 +1115,8 @@ try {
     // カテゴリバッジ: 実績 9 カテゴリ + 隠しの計 10 個。この時点では実績未解除なのですべて未獲得
     const badgeInfo = await cardPage.evaluate(async () => {
       const [cardMod, achMod] = await Promise.all([
-        import("./js/ui/player-card.js?v=20260723-card-badges"),
-        import("./js/core/achievements.js?v=20260723-card-badges"),
+        import("./js/ui/player-card.js?v=20260723-badge-socket"),
+        import("./js/core/achievements.js?v=20260723-badge-socket"),
       ]);
       const states = cardMod.categoryBadgeStates();
       return {
@@ -1123,7 +1131,7 @@ try {
 
     // 実績を全解除すると 10 個すべて獲得になる
     await cardPage.evaluate(async () => {
-      const mod = await import("./js/core/achievements.js?v=20260723-card-badges");
+      const mod = await import("./js/core/achievements.js?v=20260723-badge-socket");
       const all = {};
       for (const a of mod.ACHIEVEMENTS) all[a.id] = 1750000000;
       localStorage.setItem("dwordle2.achievements", JSON.stringify(all));
@@ -1133,7 +1141,7 @@ try {
     await cardPage.waitForURL(/#\/card$/);
     await cardPage.locator(".player-card-canvas").waitFor();
     const earnedAll = await cardPage.evaluate(async () => {
-      const mod = await import("./js/ui/player-card.js?v=20260723-card-badges");
+      const mod = await import("./js/ui/player-card.js?v=20260723-badge-socket");
       return mod.categoryBadgeStates().every((b) => b.earned);
     });
     assert.ok(earnedAll, "unlocking every achievement must earn all 10 category badges");

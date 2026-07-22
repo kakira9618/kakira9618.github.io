@@ -5,8 +5,8 @@
 //   曲の実体は TRACKS（テンポ・コード進行・1 小節のスケジューラ）に定義する。
 //   設定やモード切替時はバスをクロスフェードしてシームレスに移行する。
 
-import { AUDIO } from "../config.js?v=20260723-card-badges";
-import { getSettings, onSettingsChange } from "../core/settings.js?v=20260723-card-badges";
+import { AUDIO } from "../config.js?v=20260723-badge-socket";
+import { getSettings, onSettingsChange } from "../core/settings.js?v=20260723-badge-socket";
 
 let ctx = null;
 let masterGain = null;

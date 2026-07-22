@@ -2,26 +2,26 @@
 // 右上のマスクボタンで DWORDlie（裏モード）に切り替わる。
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260723-card-badges";
+import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260723-badge-socket";
 import { countPlays, getCurrentGame, getHistory, isAlreadyPlayed } from "../core/records.js";
 import { isDebugMode } from "../core/debug.js";
 import { LEVELS, todayPID, isValidPID, pidLabel, PID } from "../core/problems.js";
-import { getSettings, setSetting } from "../core/settings.js?v=20260723-card-badges";
+import { getSettings, setSetting } from "../core/settings.js?v=20260723-badge-socket";
 import { loadJSON, saveJSON } from "../core/store.js";
 import { importFromLocalStorage, scanLegacyHistory } from "../core/migrate.js";
-import { playSfx } from "../audio/sound.js?v=20260723-card-badges";
-import { toast } from "./toast.js?v=20260723-card-badges";
-import { showModal } from "./modal.js?v=20260723-card-badges";
-import { finishHistoryImport } from "./history-import.js?v=20260723-card-badges";
-import { showFirstTutorial, showHelpModal } from "./help.js?v=20260723-card-badges";
-import { confirmAndStart } from "./game-screen.js?v=20260723-card-badges";
-import { soundToggleButton } from "./sound-toggle.js?v=20260723-card-badges";
-import { burstAtElement } from "../fx/effects.js?v=20260723-card-badges";
-import { shouldReduceMotion } from "../core/motion.js?v=20260723-card-badges";
+import { playSfx } from "../audio/sound.js?v=20260723-badge-socket";
+import { toast } from "./toast.js?v=20260723-badge-socket";
+import { showModal } from "./modal.js?v=20260723-badge-socket";
+import { finishHistoryImport } from "./history-import.js?v=20260723-badge-socket";
+import { showFirstTutorial, showHelpModal } from "./help.js?v=20260723-badge-socket";
+import { confirmAndStart } from "./game-screen.js?v=20260723-badge-socket";
+import { soundToggleButton } from "./sound-toggle.js?v=20260723-badge-socket";
+import { burstAtElement } from "../fx/effects.js?v=20260723-badge-socket";
+import { shouldReduceMotion } from "../core/motion.js?v=20260723-badge-socket";
 import { icon } from "./icons.js";
-import { APP_VERSION } from "../config.js?v=20260723-card-badges";
-import { localizedLevel, tr } from "../core/i18n.js?v=20260723-card-badges";
-import { CARD_UNLOCK_PLAYS } from "./player-card.js?v=20260723-card-badges";
+import { APP_VERSION } from "../config.js?v=20260723-badge-socket";
+import { localizedLevel, tr } from "../core/i18n.js?v=20260723-badge-socket";
+import { CARD_UNLOCK_PLAYS } from "./player-card.js?v=20260723-badge-socket";
 
 let root = null;
 let legacyImportCheckDone = false;
