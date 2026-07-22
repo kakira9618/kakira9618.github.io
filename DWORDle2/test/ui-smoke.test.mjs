@@ -381,13 +381,21 @@ try {
     const dialog = document.querySelector('[role="dialog"][aria-labelledby]');
     return dialog?.textContent.includes("DWORDlie 遊び方") && dialog.scrollTop === 0 && document.activeElement === dialog;
   });
-  await usoPopHelp.evaluate((dialog) => { dialog.scrollTop = dialog.scrollHeight; });
+  await usoPopHelp.evaluate((dialog) => {
+    dialog.style.height = "120px";
+    dialog.style.maxHeight = "120px";
+    dialog.scrollTop = dialog.scrollHeight;
+  });
   assert.ok(await usoPopHelp.evaluate((dialog) => dialog.scrollTop > 0), "help dialog should be scrollable for the reopen test");
   await usoPopHelp.getByRole("button", { name: "閉じる" }).click();
   await usoPopHelp.waitFor({ state: "detached" });
   await page.getByRole("button", { name: "遊び方" }).click();
   const reopenedUsoHelp = page.getByRole("dialog", { name: "DWORDlie 遊び方" });
   await reopenedUsoHelp.waitFor();
+  await reopenedUsoHelp.evaluate((dialog) => {
+    dialog.style.height = "120px";
+    dialog.style.maxHeight = "120px";
+  });
   await page.waitForFunction(() => {
     const dialog = document.querySelector('[role="dialog"][aria-labelledby]');
     return dialog?.textContent.includes("DWORDlie 遊び方") && dialog.scrollTop === 0 && document.activeElement === dialog;
