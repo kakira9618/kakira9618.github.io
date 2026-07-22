@@ -63,7 +63,10 @@ const PRECACHE = ${JSON.stringify(precache, null, 2)};
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
-    await cache.addAll(PRECACHE);
+    // GitHub Pages は max-age=600 なので、素の URL で取ると直近の訪問で残った
+    // ブラウザ HTTP キャッシュの旧ファイルが新キャッシュに混入し、次のデプロイまで
+    // 直らない。必ずサーバで再検証（If-Modified-Since）してから保存する。
+    await cache.addAll(PRECACHE.map((url) => new Request(url, { cache: "no-cache" })));
     await self.skipWaiting();
   })());
 });

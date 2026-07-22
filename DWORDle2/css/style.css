@@ -1047,39 +1047,6 @@ body.theme-cyber .modal {
   margin-bottom: 12px;
   text-shadow: var(--glow);
 }
-/* モーダル右上の × ボタン。モーダル自体がスクロールコンテナのため、
-   高さ 0 の sticky 行に載せてスクロールしても右上に留める */
-.modal-close-row {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  height: 0;
-  display: flex;
-  justify-content: flex-end;
-}
-.modal-close {
-  width: 34px;
-  height: 34px;
-  margin: -6px -6px 0 0;
-  border-color: transparent;
-  background: transparent;
-  color: var(--fg-dim);
-  opacity: 0.68;
-}
-.modal-close::after {
-  inset: -5px;
-}
-.modal-close:hover,
-.modal-close:focus-visible {
-  opacity: 1;
-}
-body.theme-cyber .modal-close:hover {
-  box-shadow: none;
-}
-/* × と重ならないようタイトルの右端を空ける */
-.modal-close-row + h2 {
-  padding-right: 34px;
-}
 .modal .modal-body {
   display: flex;
   flex-direction: column;

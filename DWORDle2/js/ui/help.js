@@ -4,12 +4,12 @@
 // DWORDle では解説後、同じパネルを使って「全部緑でも不正解」の例を再生する。
 
 import { el } from "./dom.js";
-import { showModal } from "./modal.js?v=20260723-pwa";
-import { playSfx } from "../audio/sound.js?v=20260723-pwa";
+import { showModal } from "./modal.js?v=20260723-swup";
+import { playSfx } from "../audio/sound.js?v=20260723-swup";
 import { queryWordPair, usoConvert } from "../core/logic.js";
-import { currentLanguage } from "../core/i18n.js?v=20260723-pwa";
-import { getSettings } from "../core/settings.js?v=20260723-pwa";
-import { shouldReduceMotion } from "../core/motion.js?v=20260723-pwa";
+import { currentLanguage } from "../core/i18n.js?v=20260723-swup";
+import { getSettings } from "../core/settings.js?v=20260723-swup";
+import { shouldReduceMotion } from "../core/motion.js?v=20260723-swup";
 
 // 判定色の呼び名。ハイコントラスト設定では 緑→オレンジ / 黄→青 に置き換わる。
 // *Chip は凡例の 1 文字ラベル（日本語はオレンジを「橙」と略記）。
@@ -479,7 +479,7 @@ export function showHelpModal(mode, afterClose = null) {
   showModal({
     title: mode === "uso" ? (language === "en" ? "DWORDlie Guide" : "DWORDlie 遊び方") : (language === "en" ? "DWORDle Guide" : "DWORDle 遊び方"),
     body: [content],
-    closeIcon: true, // 長い読み物なので、下の閉じるまでスクロールしなくても右上 × で閉じられる
+    startAtTop: true,
     actions: [{ label: language === "en" ? "Close" : "閉じる", primary: true, onClick: () => {} }],
     onClose: () => {
       stopAnimation();

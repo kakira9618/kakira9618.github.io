@@ -2,20 +2,20 @@
 // ルート: #/settings
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260723-pwa";
-import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js?v=20260723-pwa";
+import { registerScreen, navigate } from "./app.js?v=20260723-swup";
+import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js?v=20260723-swup";
 import { importFromLocalStorage, importFromText, scanLegacyHistory } from "../core/migrate.js";
 import { exportJSON } from "../core/records.js";
 import { removeKey } from "../core/store.js";
-import { getUnlocked } from "../core/achievements.js?v=20260723-pwa";
-import { BGM_TRACKS, playSfx } from "../audio/sound.js?v=20260723-pwa";
-import { toast } from "./toast.js?v=20260723-pwa";
-import { showModal, confirmModal } from "./modal.js?v=20260723-pwa";
+import { getUnlocked } from "../core/achievements.js?v=20260723-swup";
+import { BGM_TRACKS, playSfx } from "../audio/sound.js?v=20260723-swup";
+import { toast } from "./toast.js?v=20260723-swup";
+import { showModal, confirmModal } from "./modal.js?v=20260723-swup";
 import { icon } from "./icons.js";
-import { finishHistoryImport } from "./history-import.js?v=20260723-pwa";
-import { APP_VERSION } from "../config.js?v=20260723-pwa";
-import { SOURCE_HASH } from "../version.js?v=20260723-pwa";
-import { isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js?v=20260723-pwa";
+import { finishHistoryImport } from "./history-import.js?v=20260723-swup";
+import { APP_VERSION } from "../config.js?v=20260723-swup";
+import { SOURCE_HASH } from "../version.js?v=20260723-swup";
+import { isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js?v=20260723-swup";
 import { isDebugMode, tryEnableDebugMode } from "../core/debug.js";
 
 let root = null;

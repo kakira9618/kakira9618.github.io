@@ -4,16 +4,16 @@
 // ルート: #/problems
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate, getAppMode } from "./app.js?v=20260723-pwa";
+import { registerScreen, navigate, getAppMode } from "./app.js?v=20260723-swup";
 import { buildProblemStatus, MODES } from "../core/records.js";
 import { LEVELS, isValidPID, pidLabel } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260723-pwa";
-import { showModal } from "./modal.js?v=20260723-pwa";
-import { confirmAndStart } from "./game-screen.js?v=20260723-pwa";
-import { toast } from "./toast.js?v=20260723-pwa";
-import { soundToggleButton } from "./sound-toggle.js?v=20260723-pwa";
+import { playSfx } from "../audio/sound.js?v=20260723-swup";
+import { showModal } from "./modal.js?v=20260723-swup";
+import { confirmAndStart } from "./game-screen.js?v=20260723-swup";
+import { toast } from "./toast.js?v=20260723-swup";
+import { soundToggleButton } from "./sound-toggle.js?v=20260723-swup";
 import { icon } from "./icons.js";
-import { localizedLevel, tr } from "../core/i18n.js?v=20260723-pwa";
+import { localizedLevel, tr } from "../core/i18n.js?v=20260723-swup";
 
 const BLOCK_SIZE = 100;
 

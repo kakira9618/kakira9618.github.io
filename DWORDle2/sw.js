@@ -2,7 +2,7 @@
 // DWORDle 2 の Service Worker。全資産をインストール時に事前キャッシュし、
 // オフラインでも完全動作させる（キャッシュ優先 + ネットワークフォールバック）。
 // キャッシュ名はソースハッシュ入りで、デプロイのたびに新しいキャッシュへ入れ替わる。
-const CACHE_NAME = "dwordle2-e89627be";
+const CACHE_NAME = "dwordle2-61725f6e";
 const PRECACHE = [
   "./",
   "index.html",
@@ -59,7 +59,10 @@ const PRECACHE = [
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
-    await cache.addAll(PRECACHE);
+    // GitHub Pages は max-age=600 なので、素の URL で取ると直近の訪問で残った
+    // ブラウザ HTTP キャッシュの旧ファイルが新キャッシュに混入し、次のデプロイまで
+    // 直らない。必ずサーバで再検証（If-Modified-Since）してから保存する。
+    await cache.addAll(PRECACHE.map((url) => new Request(url, { cache: "no-cache" })));
     await self.skipWaiting();
   })());
 });

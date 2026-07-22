@@ -2,20 +2,20 @@
 // ルート: #/result/<mode>/<startTime>
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate, setViewMood } from "./app.js?v=20260723-pwa";
+import { registerScreen, navigate, setViewMood } from "./app.js?v=20260723-swup";
 import { findGame, MODES } from "../core/records.js";
 import { Logic, CELL } from "../core/logic.js";
 import { pidLabel, isDailyPID } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260723-pwa";
-import { toast } from "./toast.js?v=20260723-pwa";
-import { confirmAndStart } from "./game-screen.js?v=20260723-pwa";
-import { soundToggleButton } from "./sound-toggle.js?v=20260723-pwa";
+import { playSfx } from "../audio/sound.js?v=20260723-swup";
+import { toast } from "./toast.js?v=20260723-swup";
+import { confirmAndStart } from "./game-screen.js?v=20260723-swup";
+import { soundToggleButton } from "./sound-toggle.js?v=20260723-swup";
 import { icon } from "./icons.js";
-import { downloadResultPNG } from "./snapshot.js?v=20260723-pwa";
-import { SHARE_URL } from "../config.js?v=20260723-pwa";
-import { getSettings } from "../core/settings.js?v=20260723-pwa";
-import { tr } from "../core/i18n.js?v=20260723-pwa";
-import { rowAriaLabel } from "./a11y.js?v=20260723-pwa";
+import { downloadResultPNG } from "./snapshot.js?v=20260723-swup";
+import { SHARE_URL } from "../config.js?v=20260723-swup";
+import { getSettings } from "../core/settings.js?v=20260723-swup";
+import { tr } from "../core/i18n.js?v=20260723-swup";
+import { rowAriaLabel } from "./a11y.js?v=20260723-swup";
 
 let root = null;
 

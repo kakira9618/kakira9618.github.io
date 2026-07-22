@@ -1,30 +1,30 @@
 // エントリポイント。画面登録・ルータ起動・3D 背景・音声の初期化。
 
-import { startRouter, initAppMode } from "./ui/app.js?v=20260723-pwa";
-import { initEffects } from "./fx/effects.js?v=20260723-pwa";
-import { initPopBackground } from "./fx/pop-background.js?v=20260723-pwa";
-import { audioNeedsRecovery, bgmTracksUnlockedBy, restartBgmIfReady, stopBgm, unlockAudio } from "./audio/sound.js?v=20260723-pwa";
-import { getSettings, onSettingsChange } from "./core/settings.js?v=20260723-pwa";
-import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js?v=20260723-pwa";
-import { syncDocumentLanguage, tr } from "./core/i18n.js?v=20260723-pwa";
-import { reconcileAchievementsOnce } from "./core/achievements.js?v=20260723-pwa";
-import { initActivity } from "./core/activity.js?v=20260723-pwa";
-import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "./ui/game-screen.js?v=20260723-pwa";
+import { startRouter, initAppMode } from "./ui/app.js?v=20260723-swup";
+import { initEffects } from "./fx/effects.js?v=20260723-swup";
+import { initPopBackground } from "./fx/pop-background.js?v=20260723-swup";
+import { audioNeedsRecovery, bgmTracksUnlockedBy, restartBgmIfReady, stopBgm, unlockAudio } from "./audio/sound.js?v=20260723-swup";
+import { getSettings, onSettingsChange } from "./core/settings.js?v=20260723-swup";
+import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js?v=20260723-swup";
+import { syncDocumentLanguage, tr } from "./core/i18n.js?v=20260723-swup";
+import { reconcileAchievementsOnce } from "./core/achievements.js?v=20260723-swup";
+import { initActivity } from "./core/activity.js?v=20260723-swup";
+import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "./ui/game-screen.js?v=20260723-swup";
 import { onSaveError } from "./core/store.js";
-import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./ui/toast.js?v=20260723-pwa";
-import { hiddenThemesUnlockedBy } from "./core/settings.js?v=20260723-pwa";
-import { showEntryGate } from "./ui/gate.js?v=20260723-pwa";
+import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./ui/toast.js?v=20260723-swup";
+import { hiddenThemesUnlockedBy } from "./core/settings.js?v=20260723-swup";
+import { showEntryGate } from "./ui/gate.js?v=20260723-swup";
 
 // 画面モジュール（import するだけで registerScreen される）
-import "./ui/title-screen.js?v=20260723-pwa";
-import "./ui/game-screen.js?v=20260723-pwa";
-import "./ui/result-screen.js?v=20260723-pwa";
-import "./ui/history-screen.js?v=20260723-pwa";
-import "./ui/problems-screen.js?v=20260723-pwa";
-import "./ui/achievements-screen.js?v=20260723-pwa";
-import "./ui/player-card.js?v=20260723-pwa";
-import "./ui/analysis-screen.js?v=20260723-pwa";
-import "./ui/settings-screen.js?v=20260723-pwa";
+import "./ui/title-screen.js?v=20260723-swup";
+import "./ui/game-screen.js?v=20260723-swup";
+import "./ui/result-screen.js?v=20260723-swup";
+import "./ui/history-screen.js?v=20260723-swup";
+import "./ui/problems-screen.js?v=20260723-swup";
+import "./ui/achievements-screen.js?v=20260723-swup";
+import "./ui/player-card.js?v=20260723-swup";
+import "./ui/analysis-screen.js?v=20260723-swup";
+import "./ui/settings-screen.js?v=20260723-swup";
 
 // 古い Android Chrome は dvh に未対応のため、実際の表示領域を CSS 変数で補う。
 // 対応ブラウザでは CSS 側の 100dvh が優先される。
@@ -46,7 +46,30 @@ if (/Android/i.test(navigator.userAgent)) document.body.classList.add("android-f
 {
   const isLocalHost = ["localhost", "127.0.0.1"].includes(location.hostname);
   if ("serviceWorker" in navigator && (!isLocalHost || new URLSearchParams(location.search).has("sw"))) {
-    navigator.serviceWorker.register("sw.js").catch(() => {});
+    // ブラウザ任せの更新チェックはナビゲーション時に走るとは限らず（検証で未検知を確認）、
+    // 常駐した PWA は新デプロイに気づけない。起動直後・前面復帰時・一定間隔で明示的に確認する。
+    const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000;
+    navigator.serviceWorker.register("sw.js").then((registration) => {
+      const checkForUpdate = () => registration.update().catch(() => {});
+      checkForUpdate();
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) checkForUpdate();
+      });
+      setInterval(checkForUpdate, UPDATE_CHECK_INTERVAL_MS);
+    }).catch(() => {});
+    // 新しい SW への切替 = 新デプロイの事前キャッシュ完了。扉絵の間なら再読み込みだけで
+    // 最新版になるので自動で行い、プレイが始まっていたらトーストで知らせるに留める。
+    const hadController = Boolean(navigator.serviceWorker.controller);
+    let reloadedForUpdate = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!hadController || reloadedForUpdate) return; // 初回インストール時は何もしない
+      reloadedForUpdate = true;
+      if (document.getElementById("entry-gate")) {
+        location.reload();
+      } else {
+        toast(tr("新しいバージョンがあります。再読み込みで最新になります", "A new version is available. Reload to get the latest."));
+      }
+    });
   }
 }
 

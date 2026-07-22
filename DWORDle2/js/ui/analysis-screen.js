@@ -4,18 +4,18 @@
 // ルート: #/analysis/<mode>/<startTime>
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate, setViewMood } from "./app.js?v=20260723-pwa";
+import { registerScreen, navigate, setViewMood } from "./app.js?v=20260723-swup";
 import { findGame, MODES } from "../core/records.js";
 import { Logic } from "../core/logic.js";
 import { pidLabel } from "../core/problems.js";
-import { computeTruePatternIds, resultToPatternId, patternIdToStates } from "../core/analysis-core.js?v=20260723-pwa";
-import { checkOnEvent } from "../core/achievements.js?v=20260723-pwa";
-import { achievementCelebration } from "./toast.js?v=20260723-pwa";
-import { playSfx } from "../audio/sound.js?v=20260723-pwa";
-import { soundToggleButton } from "./sound-toggle.js?v=20260723-pwa";
+import { computeTruePatternIds, resultToPatternId, patternIdToStates } from "../core/analysis-core.js?v=20260723-swup";
+import { checkOnEvent } from "../core/achievements.js?v=20260723-swup";
+import { achievementCelebration } from "./toast.js?v=20260723-swup";
+import { playSfx } from "../audio/sound.js?v=20260723-swup";
+import { soundToggleButton } from "./sound-toggle.js?v=20260723-swup";
 import { icon } from "./icons.js";
-import { currentLanguage, isEnglish, tr } from "../core/i18n.js?v=20260723-pwa";
-import { rowAriaLabel } from "./a11y.js?v=20260723-pwa";
+import { currentLanguage, isEnglish, tr } from "../core/i18n.js?v=20260723-swup";
+import { rowAriaLabel } from "./a11y.js?v=20260723-swup";
 
 let root = null;
 let worker = null;
@@ -149,7 +149,7 @@ function render(args) {
     record.gameMode === "uso" ? record.usoResults.map((r) => resultToPatternId(r)) : truePatternIds;
 
   if (worker) worker.terminate();
-  worker = new Worker(new URL("../core/analysis.worker.js?v=20260723-pwa", import.meta.url), { type: "module" });
+  worker = new Worker(new URL("../core/analysis.worker.js?v=20260723-swup", import.meta.url), { type: "module" });
   worker.onmessage = (e) => {
     if (token !== renderToken) return; // 画面遷移後の古い結果
     const msg = e.data;
