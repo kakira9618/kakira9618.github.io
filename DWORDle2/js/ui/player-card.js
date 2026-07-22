@@ -49,6 +49,10 @@ const CARD = {
   dim: "#8b9bbd",
   logoGrad: ["#00d5ff", "#7c5cff"], // DWORDle 2 ロゴの文字グラデーション
   logoY: 100,
+  logoSize: 46,
+  logoTwoScale: 0.62, // 「2」の縮小率（タイトル画面の .logo .two と同じ）
+  logoTwoRaise: 12, // 「2」を上付きにするための持ち上げ量
+  logoTwoGap: 9, // 「DWORDle」と「2」の間隔
   kickerY: 143, // "PLAYER CARD" の行
   playerLabelY: 178, // "PLAYER | 初プレイ日" の行（左上のタイル装飾に寄せる）
   nameY: 234,
@@ -311,15 +315,23 @@ export async function renderPlayerCardCanvas(name) {
 
   // ---- ヘッダ: ロゴ / PLAYER CARD（左上・光沢なし）+ 判定タイル装飾（右上コーナーに密着）----
   ctx.textBaseline = "middle";
+  // タイトル画面のロゴに合わせ、「2」は小さめ + 上付きで右肩に置く
   ctx.textAlign = "left";
-  ctx.font = '900 46px "Avenir Next", "Helvetica Neue", sans-serif';
-  const logoText = "DWORDle 2";
-  const logoW = ctx.measureText(logoText).width;
+  const logoMainFont = `900 ${CARD.logoSize}px "Avenir Next", "Helvetica Neue", sans-serif`;
+  const logoTwoFont = `900 ${Math.round(CARD.logoSize * CARD.logoTwoScale)}px "Avenir Next", "Helvetica Neue", sans-serif`;
+  ctx.font = logoMainFont;
+  const logoMainW = ctx.measureText("DWORDle").width;
+  ctx.font = logoTwoFont;
+  const logoTwoW = ctx.measureText("2").width;
+  const logoW = logoMainW + CARD.logoTwoGap + logoTwoW;
   const logoGrad = ctx.createLinearGradient(left, 0, left + logoW, 0);
   logoGrad.addColorStop(0, CARD.logoGrad[0]);
   logoGrad.addColorStop(1, CARD.logoGrad[1]);
   ctx.fillStyle = logoGrad;
-  ctx.fillText(logoText, left, CARD.logoY);
+  ctx.font = logoMainFont;
+  ctx.fillText("DWORDle", left, CARD.logoY);
+  ctx.font = logoTwoFont;
+  ctx.fillText("2", left + logoMainW + CARD.logoTwoGap, CARD.logoY - CARD.logoTwoRaise);
 
   ctx.font = '700 19px "Avenir Next", sans-serif';
   ctx.fillStyle = CARD.dim;
