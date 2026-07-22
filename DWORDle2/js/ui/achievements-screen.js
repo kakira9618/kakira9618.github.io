@@ -2,12 +2,12 @@
 // ルート: #/achievements
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260722-ios-save";
-import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, getUnlocked } from "../core/achievements.js?v=20260722-ios-save";
-import { playSfx } from "../audio/sound.js?v=20260722-ios-save";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-ios-save";
+import { registerScreen, navigate } from "./app.js?v=20260723-card-badges";
+import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, getUnlocked } from "../core/achievements.js?v=20260723-card-badges";
+import { playSfx } from "../audio/sound.js?v=20260723-card-badges";
+import { soundToggleButton } from "./sound-toggle.js?v=20260723-card-badges";
 import { icon } from "./icons.js";
-import { localizedAchievement, tr } from "../core/i18n.js?v=20260722-ios-save";
+import { localizedAchievement, tr } from "../core/i18n.js?v=20260723-card-badges";
 
 let root = null;
 
@@ -79,8 +79,8 @@ function render() {
       "p",
       { class: "card hint achievement-count-note" },
       tr(
-        "カウント系実績では、同じ日に同じ問題 No. を複数回プレイした場合、モードを問わず最初の 1 回だけを数えます。同日の別問題と、別日の同じ問題はそれぞれ数えます。",
-        "For count-based achievements, only the first play of the same puzzle number on the same day counts, regardless of mode. A different puzzle on that day or the same puzzle on another day counts separately."
+        "カウント系実績と隠し実績は、同じ日に同じ問題 No. を複数回プレイした場合、モードを問わず最初の 1 回だけを対象にします。同日の別問題と、別日の同じ問題はそれぞれ対象になります。",
+        "Count-based and secret achievements only consider the first play of the same puzzle number on the same day, regardless of mode. A different puzzle on that day or the same puzzle on another day counts separately."
       )
     )
   );

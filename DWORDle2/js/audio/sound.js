@@ -5,8 +5,8 @@
 //   曲の実体は TRACKS（テンポ・コード進行・1 小節のスケジューラ）に定義する。
 //   設定やモード切替時はバスをクロスフェードしてシームレスに移行する。
 
-import { AUDIO } from "../config.js?v=20260722-ios-save";
-import { getSettings, onSettingsChange } from "../core/settings.js?v=20260722-ios-save";
+import { AUDIO } from "../config.js?v=20260723-card-badges";
+import { getSettings, onSettingsChange } from "../core/settings.js?v=20260723-card-badges";
 
 let ctx = null;
 let masterGain = null;
@@ -528,6 +528,21 @@ const SFX = {
     tone({ freq: 130, type: "triangle", dur: 0.07, gain: 0.2 });
     noise({ dur: 0.05, gain: 0.14, freq: 2300, q: 2.6, when: 0.08 });
     tone({ freq: 110, type: "triangle", dur: 0.08, gain: 0.16, when: 0.08 });
+  },
+  // 隠し要素の解放音: 鍵がカチャッと回ってラッチが開き、キラッと光る。
+  // メニューの段階解放（錠前が開く瞬間）・隠しテーマ・Extra BGM で共通に使う。
+  unlock: () => {
+    // 鍵を回す金属クリック
+    noise({ dur: 0.04, gain: 0.16, freq: 3200, q: 2.8 });
+    tone({ freq: 150, type: "triangle", dur: 0.06, gain: 0.18 });
+    // ラッチが開く「ガチャッ」
+    noise({ dur: 0.06, gain: 0.2, freq: 1900, q: 2.2, when: 0.11 });
+    tone({ freq: 100, type: "triangle", dur: 0.1, gain: 0.24, when: 0.11 });
+    // 開放のきらめき（上昇する空虚 5 度 + 高域シャワー）
+    [1318.5, 1975.5, 2637].forEach((f, i) =>
+      tone({ freq: f, type: "sine", dur: 0.32, gain: 0.14, when: 0.2 + i * 0.055 })
+    );
+    noise({ dur: 0.35, gain: 0.04, freq: 7500, when: 0.22 });
   },
   win: () => {
     const notes = [523.25, 659.25, 783.99, 1046.5, 1318.5];

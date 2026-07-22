@@ -2,11 +2,11 @@
 // オフにする前の個別設定（BGM だけオン等）を覚えておき、復帰時にそのまま戻す。
 
 import { el } from "./dom.js";
-import { getSettings, setSetting, onSettingsChange } from "../core/settings.js?v=20260722-ios-save";
+import { getSettings, setSetting, onSettingsChange } from "../core/settings.js?v=20260723-card-badges";
 import { loadJSON, saveJSON } from "../core/store.js";
-import { playSfx } from "../audio/sound.js?v=20260722-ios-save";
+import { playSfx } from "../audio/sound.js?v=20260723-card-badges";
 import { icon } from "./icons.js";
-import { tr } from "../core/i18n.js?v=20260722-ios-save";
+import { tr } from "../core/i18n.js?v=20260723-card-badges";
 
 const isSoundOn = (s = getSettings()) => s.bgm || s.sfx;
 

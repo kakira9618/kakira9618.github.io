@@ -4,21 +4,21 @@
 // 通算 5 回プレイで解放（タイトルメニューの段階解放と同じ仕組み）。
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate, redirect } from "./app.js?v=20260722-ios-save";
+import { registerScreen, navigate, redirect } from "./app.js?v=20260723-card-badges";
 import { getHistory, countPlays } from "../core/records.js";
-import { ACHIEVEMENTS, getUnlocked } from "../core/achievements.js?v=20260722-ios-save";
-import { getSettings, HIDDEN_THEMES } from "../core/settings.js?v=20260722-ios-save";
-import { BGM_TRACKS, currentBgmTrackId, playSfx } from "../audio/sound.js?v=20260722-ios-save";
+import { ACHIEVEMENTS, getUnlocked } from "../core/achievements.js?v=20260723-card-badges";
+import { getSettings, HIDDEN_THEMES } from "../core/settings.js?v=20260723-card-badges";
+import { BGM_TRACKS, currentBgmTrackId, playSfx } from "../audio/sound.js?v=20260723-card-badges";
 import { loadJSON, saveJSON } from "../core/store.js";
 import { isDebugMode } from "../core/debug.js";
-import { toast } from "./toast.js?v=20260722-ios-save";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-ios-save";
-import { winBurst } from "../fx/effects.js?v=20260722-ios-save";
-import { shouldReduceMotion } from "../core/motion.js?v=20260722-ios-save";
+import { toast } from "./toast.js?v=20260723-card-badges";
+import { soundToggleButton } from "./sound-toggle.js?v=20260723-card-badges";
+import { winBurst } from "../fx/effects.js?v=20260723-card-badges";
+import { shouldReduceMotion } from "../core/motion.js?v=20260723-card-badges";
 import { icon, iconSvg } from "./icons.js";
-import { announce } from "./a11y.js?v=20260722-ios-save";
-import { SHARE_URL } from "../config.js?v=20260722-ios-save";
-import { tr } from "../core/i18n.js?v=20260722-ios-save";
+import { announce } from "./a11y.js?v=20260723-card-badges";
+import { SHARE_URL } from "../config.js?v=20260723-card-badges";
+import { tr } from "../core/i18n.js?v=20260723-card-badges";
 
 // 解放しきい値（タイトルメニューの MENU_UNLOCKS と同じ値を参照させる）
 export const CARD_UNLOCK_PLAYS = 5;
@@ -94,6 +94,22 @@ const CARD = {
   miniTileX: 42, // コーナーからの距離
   miniTileY: 42,
   miniTileColors: ["#00e68a", "#ffc233", "#3a4356", "#00e68a", "#ffc233"],
+  // カテゴリバッジ棚（中段右側に右揃えで 5 列 x 2 行）。
+  // 未獲得スロットは埋め込み用の跡（窪み）だけを描き、獲得すると色付きバッジが埋まる。
+  badges: {
+    cols: 5,
+    slotR: 28, // スロット（跡）の半径
+    gapX: 12,
+    labelY: 178, // "BADGES" 見出し（左の PLAYER 行と同じ高さ）
+    row1Cy: 248, // 1 行目の中心 y（名前の行に併走）
+    row2Cy: 320, // 2 行目の中心 y（称号バッジと同じ高さ）
+    iconSize: 26,
+    contentGap: 24, // 棚の左端と名前・称号バッジの間に確保する余白
+    socketFill: "rgba(0, 0, 0, 0.30)",
+    socketStroke: "rgba(255, 255, 255, 0.08)",
+    socketRing: "rgba(255, 255, 255, 0.10)", // 未獲得スロット内側の破線リング
+    socketPin: "rgba(255, 255, 255, 0.05)", // 未獲得スロット中央の留め穴
+  },
 };
 
 // ランク: 通算プレイ回数でフレーム色と称号が上がる。
@@ -136,6 +152,33 @@ const RANK_KING_USO = {
   titleEn: "DWORDlie King",
   icon: "mask",
 };
+
+// カテゴリバッジ: 実績の 1 カテゴリを全解除すると獲得できる。
+// ACHIEVEMENT_CATEGORIES の 9 カテゴリ + 隠し実績（hidden）の計 10 個で、
+// カード中段右側の棚にこの順（左上 → 右下）で並ぶ。
+export const CATEGORY_BADGES = [
+  { cat: "basic", icon: "footprints", color: "#8fd3ff" },
+  { cat: "wins", icon: "trophy", color: "#ffd166" },
+  { cat: "speed", icon: "bolt", color: "#7cf5ff" },
+  { cat: "habit", icon: "calendar", color: "#88d8b8" },
+  { cat: "volume", icon: "book", color: "#d8b88f" },
+  { cat: "board", icon: "palette", color: "#ffb3de" },
+  { cat: "modes", icon: "mask", color: "#ff5f8f" },
+  { cat: "calendar", icon: "clock", color: "#9a8fff" },
+  { cat: "misc", icon: "flask", color: "#66ffc2" },
+  { cat: "hidden", icon: "ghost", color: "#c9a0ff" },
+];
+
+// 各バッジの獲得状態。カテゴリ内の実績をすべて解除していたら earned
+export function categoryBadgeStates() {
+  const unlocked = getUnlocked();
+  return CATEGORY_BADGES.map((badge) => {
+    const items = badge.cat === "hidden"
+      ? ACHIEVEMENTS.filter((a) => a.hidden)
+      : ACHIEVEMENTS.filter((a) => a.cat === badge.cat);
+    return { ...badge, earned: items.length > 0 && items.every((a) => unlocked[a.id] !== undefined) };
+  });
+}
 
 let root = null;
 let cardCanvas = null; // 直近に描いたカード（シェア / 保存用）
@@ -396,7 +439,9 @@ export async function renderPlayerCardCanvas(name) {
 
   // ---- エンブレムの右: 「PLAYER | 初プレイ日」 + 名前 + 称号バッジ ----
   const ix = CARD.identityX;
-  const nameMaxW = right - ix - 20; // 右端（ID 印字）に被らない幅
+  const bd = CARD.badges;
+  const badgesLeft = right - (bd.cols * bd.slotR * 2 + (bd.cols - 1) * bd.gapX); // バッジ棚の左端
+  const nameMaxW = badgesLeft - bd.contentGap - ix; // バッジ棚に被らない幅
   ctx.textAlign = "left";
   ctx.font = '700 15px "Avenir Next", sans-serif';
   ctx.fillStyle = CARD.dim;
@@ -436,9 +481,16 @@ export async function renderPlayerCardCanvas(name) {
   const badgeTop = CARD.titleY - badgeH / 2;
   ctx.font = '800 21px "Avenir Next", sans-serif';
   const rankSegW = ctx.measureText(rankText).width + 46;
-  ctx.font = '800 28px "Avenir Next", sans-serif';
-  const titleW = ctx.measureText(titleText).width;
   const badgeIcon = 32;
+  // 称号もバッジ棚に被らない幅まで縮める（長い英語称号向け）
+  let titleSize = 28;
+  ctx.font = `800 ${titleSize}px "Avenir Next", sans-serif`;
+  let titleW = ctx.measureText(titleText).width;
+  while (rankSegW + badgeIcon + titleW + 58 > nameMaxW && titleSize > 20) {
+    titleSize -= 1;
+    ctx.font = `800 ${titleSize}px "Avenir Next", sans-serif`;
+    titleW = ctx.measureText(titleText).width;
+  }
   const badgeW = rankSegW + badgeIcon + titleW + 58;
   // 土台とランク色セグメント（角丸の内側だけ塗るためクリップする）
   ctx.fillStyle = "rgba(255,255,255,0.06)";
@@ -469,9 +521,83 @@ export async function renderPlayerCardCanvas(name) {
     // アイコン画像が作れない環境でもカード本体は成立させる
   }
   ctx.textAlign = "left";
-  ctx.font = '800 28px "Avenir Next", sans-serif';
+  ctx.font = `800 ${titleSize}px "Avenir Next", sans-serif`;
   ctx.fillStyle = rank.accent;
   ctx.fillText(titleText, ix + rankSegW + 18 + badgeIcon + 12, CARD.titleY + 1);
+
+  // ---- カテゴリバッジ棚（中段右側に 5 列 x 2 行）----
+  // 全スロットに埋め込み用の跡（窪み）を描き、獲得済みカテゴリだけ色付きバッジを埋める。
+  ctx.textAlign = "left";
+  ctx.font = '700 13px "Avenir Next", sans-serif';
+  ctx.fillStyle = CARD.dim;
+  const badgesLabel = "B A D G E S";
+  const badgesLabelW = [...badgesLabel].reduce((total, ch) => total + ctx.measureText(ch).width + 1.5, -1.5);
+  drawSpaced(ctx, badgesLabel, right - badgesLabelW, bd.labelY);
+  const badgeStates = categoryBadgeStates();
+  for (let i = 0; i < badgeStates.length; i++) {
+    const badge = badgeStates[i];
+    const col = i % bd.cols;
+    const cx = right - bd.slotR - (bd.cols - 1 - col) * (bd.slotR * 2 + bd.gapX);
+    const cy = i < bd.cols ? bd.row1Cy : bd.row2Cy;
+    // 台座（跡）。獲得済みバッジもこの窪みに埋め込まれる
+    ctx.beginPath();
+    ctx.arc(cx, cy, bd.slotR, 0, Math.PI * 2);
+    ctx.fillStyle = bd.socketFill;
+    ctx.fill();
+    ctx.strokeStyle = bd.socketStroke;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    if (!badge.earned) {
+      // 未獲得: 破線リング + 中央の留め穴で「埋め込み予定地」を示す
+      ctx.beginPath();
+      ctx.arc(cx, cy, bd.slotR - 6.5, 0, Math.PI * 2);
+      ctx.setLineDash([4, 5]);
+      ctx.strokeStyle = bd.socketRing;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+      ctx.fillStyle = bd.socketPin;
+      ctx.fill();
+      continue;
+    }
+    // 獲得済み: カテゴリ色のグロー + 面 + リング + アイコン
+    const badgeGlow = ctx.createRadialGradient(cx, cy, 0, cx, cy, bd.slotR * 1.6);
+    badgeGlow.addColorStop(0, badge.color);
+    badgeGlow.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.save();
+    ctx.globalAlpha = 0.28;
+    ctx.fillStyle = badgeGlow;
+    ctx.fillRect(cx - bd.slotR * 1.6, cy - bd.slotR * 1.6, bd.slotR * 3.2, bd.slotR * 3.2);
+    ctx.restore();
+    ctx.beginPath();
+    ctx.arc(cx, cy, bd.slotR - 1, 0, Math.PI * 2);
+    ctx.save();
+    ctx.globalAlpha = 0.16;
+    ctx.fillStyle = badge.color;
+    ctx.fill();
+    ctx.restore();
+    ctx.beginPath();
+    ctx.arc(cx, cy, bd.slotR - 1, 0, Math.PI * 2);
+    ctx.strokeStyle = badge.color;
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx, cy, bd.slotR - 6, 0, Math.PI * 2);
+    ctx.strokeStyle = "rgba(255,255,255,0.16)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    try {
+      const img = await loadIconImage(badge.icon, bd.iconSize, badge.color);
+      ctx.shadowColor = badge.color;
+      ctx.shadowBlur = 12;
+      ctx.drawImage(img, cx - bd.iconSize / 2, cy - bd.iconSize / 2, bd.iconSize, bd.iconSize);
+      ctx.shadowBlur = 0;
+    } catch {
+      // アイコン画像が作れない環境でもカード本体は成立させる
+    }
+  }
 
   // ---- 統計パネル（4 列 x 2 行のセル。テーマ / BGM もここで大きく見せる）----
   const st = CARD.stats;
@@ -573,7 +699,7 @@ async function shareCard(cv) {
         await navigator.share({
           files: [file],
           title: "DWORDle 2",
-          text: `${tr("私の DWORDle 2 プレイヤーカード！ #DWORDle2", "My DWORDle 2 player card! #DWORDle2")}\n${SHARE_URL}`,
+          text: `${tr("DWORDle 2 のプレイヤーカードを発行しました！ #DWORDle2", "My DWORDle 2 player card! #DWORDle2")}\n${SHARE_URL}`,
         });
         return;
       } catch (error) {

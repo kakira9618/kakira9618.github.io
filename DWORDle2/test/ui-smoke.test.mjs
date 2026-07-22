@@ -217,7 +217,7 @@ try {
   assert.equal(normalPopVisuals.choiceColor, "rgb(74, 53, 80)");
 
   await page.evaluate(async () => {
-    const { setAppMode } = await import("./js/ui/app.js?v=20260722-ios-save");
+    const { setAppMode } = await import("./js/ui/app.js?v=20260723-card-badges");
     setAppMode("uso");
   });
   await page.locator("body.theme-pop.mode-uso").waitFor();
@@ -277,12 +277,12 @@ try {
   await page.waitForURL(/#\/settings$/);
 
   await page.evaluate(async () => {
-    const { setAppMode } = await import("./js/ui/app.js?v=20260722-ios-save");
+    const { setAppMode } = await import("./js/ui/app.js?v=20260723-card-badges");
     setAppMode("normal");
   });
   await page.locator("body.theme-pop.mode-normal").waitFor();
   await page.evaluate(async () => {
-    const { showHelpModal } = await import("./js/ui/help.js?v=20260722-ios-save");
+    const { showHelpModal } = await import("./js/ui/help.js?v=20260723-card-badges");
     showHelpModal("normal");
   });
   const popHelp = page.getByRole("dialog", { name: "DWORDle 遊び方" });
@@ -427,7 +427,7 @@ try {
   await page.evaluate(() => { location.hash = "#/achievements"; });
   await page.waitForURL(/#\/achievements$/);
   await page.getByRole("heading", { name: "実績" }).waitFor();
-  await page.getByText("同じ日に同じ問題 No. を複数回プレイした場合、モードを問わず最初の 1 回だけを数えます", { exact: false }).waitFor();
+  await page.getByText("同じ日に同じ問題 No. を複数回プレイした場合、モードを問わず最初の 1 回だけを対象にします", { exact: false }).waitFor();
   await assertNoSeriousA11yViolations("Achievements screen");
 
   await page.goto(resultUrl, { waitUntil: "networkidle" });
@@ -502,13 +502,13 @@ try {
   );
   await shortPage.waitForTimeout(50);
   const flightsBeforeLeave = await shortPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260722-ios-save")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260723-card-badges")).activeTileFlightCount()
   );
   assert.ok(flightsBeforeLeave > 0, "Tile gather animation should be active before leaving the game");
   await shortPage.getByRole("button", { name: "タイトルへ戻る" }).click();
   await shortPage.waitForURL(/#\/$/);
   const flightsAfterLeave = await shortPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260722-ios-save")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260723-card-badges")).activeTileFlightCount()
   );
   assert.equal(flightsAfterLeave, 0, "Tile gather animation should be removed when leaving the game");
   await shortPage.close();
@@ -554,13 +554,13 @@ try {
   await reducedDialog.getByRole("button", { name: "スタート" }).click();
   await reducedPage.locator("#screen-game.active .row").last().waitFor();
   const reducedFlights = await reducedPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260722-ios-save")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260723-card-badges")).activeTileFlightCount()
   );
   assert.equal(reducedFlights, 0, "Reduced motion should suppress tile gather flights");
   await reducedContext.close();
 
   await page.evaluate(async () => {
-    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260722-ios-save");
+    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260723-card-badges");
     bgmUnlockCelebration([{ id: "queue-test-a", name: "Queue Test A", desc: "First unlock" }]);
     bgmUnlockCelebration([{ id: "queue-test-b", name: "Queue Test B", desc: "Second unlock" }]);
   });
@@ -591,7 +591,7 @@ try {
 
   // 2 曲以上の同時解放（履歴インポート等）は 1 枚のまとめカードで報告する
   await page.evaluate(async () => {
-    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260722-ios-save");
+    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260723-card-badges");
     bgmUnlockCelebration([
       { id: "multi-a", name: "Multi Track A", desc: "" },
       { id: "multi-b", name: "Multi Track B", desc: "" },
@@ -608,7 +608,7 @@ try {
 
   // 実績解放セレブレーション: 単発は大型カード、3 個以上は 1 枚にまとめる
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-ios-save");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-card-badges");
     achievementCelebration([
       { id: "smoke-single", icon: "trophy", color: "#ffd166", name: "スモーク実績", desc: "テスト用の実績です" },
     ]);
@@ -626,7 +626,7 @@ try {
   await page.locator(".ach-unlock").waitFor({ state: "detached" });
 
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-ios-save");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-card-badges");
     achievementCelebration([
       { id: "smoke-a", icon: "star", color: "#ffd166", name: "実績A", desc: "" },
       { id: "smoke-b", icon: "gem", color: "#7ee8ff", name: "実績B", desc: "" },
@@ -648,7 +648,7 @@ try {
 
   // リストが溢れるときは下端フェードで続きを示し、最下部まで送るとフェードが消える
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-ios-save");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-card-badges");
     achievementCelebration(
       Array.from({ length: 9 }, (_, i) => ({ id: `smoke-many-${i}`, icon: "star", color: "#ffd166", name: `実績${i + 1}`, desc: "" }))
     );
@@ -695,7 +695,7 @@ try {
   // 判定オープン中の先行入力: 次の 1 行分をバッファし、オープン完了後に自動で確定する
   await page.getByRole("dialog", { name: "基本ルール | DWORDle" }).getByRole("button", { name: "わかった" }).click();
   await page.evaluate(async () => {
-    const { setSetting } = await import("./js/core/settings.js?v=20260722-ios-save");
+    const { setSetting } = await import("./js/core/settings.js?v=20260723-card-badges");
     setSetting("theme", "classic");
     setSetting("sfx", false);
     setSetting("bgm", false);
@@ -835,7 +835,7 @@ try {
     await freshPage.evaluate(() => { location.hash = "#/achievements"; });
     await freshPage.waitForURL(/#\/achievements$/);
     await freshPage.locator("#screen-achievements .header .sub").filter({ hasText: `${ACHIEVEMENTS.length} / ${ACHIEVEMENTS.length}` }).waitFor();
-    await freshPage.getByText("only the first play of the same puzzle number on the same day counts, regardless of mode", { exact: false }).waitFor();
+    await freshPage.getByText("only consider the first play of the same puzzle number on the same day, regardless of mode", { exact: false }).waitFor();
 
     await freshPage.reload({ waitUntil: "networkidle" });
     await freshPage.locator("#screen-achievements .header .sub").filter({ hasText: `0 / ${ACHIEVEMENTS.length}` }).waitFor();
@@ -988,6 +988,13 @@ try {
     await cardPage.goto(baseUrl, { waitUntil: "networkidle" });
     await cardPage.getByRole("button", { name: "プレイヤーカード", exact: true }).click();
     await cardPage.waitForURL(/#\/card$/);
+    // シェア / 保存ボタンは発行前には見えない（[hidden] が display: flex に負ける退行の防止）
+    await cardPage.getByRole("button", { name: "カードを発行" }).waitFor();
+    assert.equal(
+      await cardPage.getByRole("button", { name: "画像をシェア" }).isVisible(),
+      false,
+      "the share/save buttons must stay hidden until the card is issued"
+    );
     await cardPage.getByLabel("プレイヤー名").fill("テスト太郎");
     await cardPage.getByRole("button", { name: "カードを発行" }).click();
     const cardCanvas = cardPage.locator(".player-card-canvas");
@@ -1048,7 +1055,7 @@ try {
     // 称号ラダー: 最上位は王（実績全解除 + 1000 プレイ）。多い方のモードの王になり、
     // 同数なら DWORDle。1000 未満は伝説のまま、実績未コンプはプレイ数ランクのまま。
     const ranks = await cardPage.evaluate(async () => {
-      const mod = await import("./js/ui/player-card.js?v=20260722-ios-save");
+      const mod = await import("./js/ui/player-card.js?v=20260723-card-badges");
       const pick = (stats) => {
         const rank = mod.rankForStats(stats);
         return `${rank.id}:${rank.titleJa}`;
@@ -1096,6 +1103,40 @@ try {
     await cardPage.locator(".player-card-canvas").waitFor();
     await cardPage.waitForTimeout(1500);
     assert.equal(await cardPage.locator(".rank-up-overlay").count(), 0, "the rank-up celebration must play only once per promotion");
+
+    // カテゴリバッジ: 実績 9 カテゴリ + 隠しの計 10 個。この時点では実績未解除なのですべて未獲得
+    const badgeInfo = await cardPage.evaluate(async () => {
+      const [cardMod, achMod] = await Promise.all([
+        import("./js/ui/player-card.js?v=20260723-card-badges"),
+        import("./js/core/achievements.js?v=20260723-card-badges"),
+      ]);
+      const states = cardMod.categoryBadgeStates();
+      return {
+        cats: states.map((b) => b.cat),
+        expectedCats: [...achMod.ACHIEVEMENT_CATEGORIES.map((c) => c.id), "hidden"],
+        earned: states.filter((b) => b.earned).map((b) => b.cat),
+      };
+    });
+    assert.equal(badgeInfo.cats.length, 10, "there must be exactly 10 category badges");
+    assert.deepEqual(badgeInfo.cats, badgeInfo.expectedCats, "badges must cover every achievement category plus hidden");
+    assert.deepEqual(badgeInfo.earned, [], "no badge should be earned before unlocking achievements");
+
+    // 実績を全解除すると 10 個すべて獲得になる
+    await cardPage.evaluate(async () => {
+      const mod = await import("./js/core/achievements.js?v=20260723-card-badges");
+      const all = {};
+      for (const a of mod.ACHIEVEMENTS) all[a.id] = 1750000000;
+      localStorage.setItem("dwordle2.achievements", JSON.stringify(all));
+    });
+    await cardPage.reload({ waitUntil: "networkidle" });
+    await cardPage.evaluate(() => { location.hash = "#/card"; });
+    await cardPage.waitForURL(/#\/card$/);
+    await cardPage.locator(".player-card-canvas").waitFor();
+    const earnedAll = await cardPage.evaluate(async () => {
+      const mod = await import("./js/ui/player-card.js?v=20260723-card-badges");
+      return mod.categoryBadgeStates().every((b) => b.earned);
+    });
+    assert.ok(earnedAll, "unlocking every achievement must earn all 10 category badges");
   } finally {
     await cardContext.close();
   }

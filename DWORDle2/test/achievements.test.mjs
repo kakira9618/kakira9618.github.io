@@ -6,6 +6,7 @@ import {
   achievementIdsFromHistory,
 } from "../js/core/achievements.js";
 import { Logic, queryWordPair } from "../js/core/logic.js";
+import { ALL_WORDS } from "../js/data/words.js";
 
 function clearRecord({
   pid = 1,
@@ -210,6 +211,25 @@ assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "h-play-days-
     achievementCountableRecords(records),
     [records[0], records[2], records[4]],
     "replays of the same puzzle number on the same local day should be excluded regardless of mode"
+  );
+}
+
+// 同日・同問題の再プレイに含まれる Guess は、履歴復元でも隠し実績を解除しない
+{
+  const base = Math.floor(new Date(2026, 6, 20, 12, 0, 0).getTime() / 1000);
+  const logic = new Logic(1);
+  const palindrome = ALL_WORDS.find((w) => w === [...w].reverse().join("") && !logic.isGameClear(w));
+  assert(palindrome, "回文の単語が見つかるはず");
+  const first = clearRecord({ pid: 1, startTime: base });
+  const replay = { ...clearRecord({ pid: 1, startTime: base + 600 }), guessWord: [palindrome, logic.ans1] };
+  assert(
+    !achievementIdsFromHistory([first, replay]).has("h-mirror"),
+    "a same-day replay must not restore secret achievements"
+  );
+  const nextDay = { ...replay, startTime: base + 86400, endTime: base + 86400 + 15 };
+  assert(
+    achievementIdsFromHistory([first, nextDay]).has("h-mirror"),
+    "the same puzzle on another day should restore secret achievements"
   );
 }
 

@@ -5,12 +5,12 @@
 // 実績 → Extra BGM / テーマの順で自然に連結する。
 
 import { el } from "./dom.js";
-import { UI } from "../config.js?v=20260722-ios-save";
-import { playSfx } from "../audio/sound.js?v=20260722-ios-save";
-import { winBurst } from "../fx/effects.js?v=20260722-ios-save";
+import { UI } from "../config.js?v=20260723-card-badges";
+import { playSfx } from "../audio/sound.js?v=20260723-card-badges";
+import { winBurst } from "../fx/effects.js?v=20260723-card-badges";
 import { icon } from "./icons.js";
-import { setSetting } from "../core/settings.js?v=20260722-ios-save";
-import { isEnglish, localizedAchievement, tr } from "../core/i18n.js?v=20260722-ios-save";
+import { setSetting } from "../core/settings.js?v=20260723-card-badges";
+import { isEnglish, localizedAchievement, tr } from "../core/i18n.js?v=20260723-card-badges";
 
 const layer = () => document.getElementById("toast-layer");
 const unlockLayer = () => document.getElementById("unlock-layer");
@@ -253,7 +253,7 @@ function showAchievementUnlockDialog(achievements) {
 // ---- Extra BGM 解放 ----
 
 function showBgmUnlockDialog(track) {
-  playSfx("achievement");
+  playSfx("unlock");
   const name = isEnglish() ? (track.nameEn ?? track.name) : track.name;
   const desc = isEnglish() ? (track.descEn ?? track.desc) : track.desc;
   const titleId = `bgm-unlock-title-${++unlockDialogSerial}`;
@@ -300,7 +300,7 @@ function showBgmUnlockDialog(track) {
 
 // 2 曲以上の同時解放（履歴インポートや複数実績の同時達成）を 1 枚にまとめて報告する。
 function showBgmUnlockListDialog(tracks) {
-  playSfx("achievement");
+  playSfx("unlock");
   const titleId = `bgm-unlock-title-${++unlockDialogSerial}`;
   const descId = `bgm-unlock-desc-${unlockDialogSerial}`;
 
@@ -360,7 +360,7 @@ export function bgmUnlockCelebration(tracks) {
 // HIDDEN_THEMES のエントリを受け取り、その場で切り替えられる解放カードを出す。
 export function themeUnlockCelebration(theme) {
   enqueueUnlockDialog(() => {
-    playSfx("achievement");
+    playSfx("unlock");
     const name = isEnglish() ? (theme.nameEn ?? theme.name) : theme.name;
     const desc = isEnglish() ? (theme.descEn ?? theme.desc) : theme.desc;
     const titleId = `theme-unlock-title-${++unlockDialogSerial}`;

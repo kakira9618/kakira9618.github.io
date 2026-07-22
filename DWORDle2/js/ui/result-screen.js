@@ -2,19 +2,19 @@
 // ルート: #/result/<mode>/<startTime>
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate, setViewMood } from "./app.js?v=20260722-ios-save";
+import { registerScreen, navigate, setViewMood } from "./app.js?v=20260723-card-badges";
 import { findGame, MODES } from "../core/records.js";
 import { Logic, CELL } from "../core/logic.js";
 import { pidLabel, isDailyPID } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260722-ios-save";
-import { toast } from "./toast.js?v=20260722-ios-save";
-import { confirmAndStart } from "./game-screen.js?v=20260722-ios-save";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-ios-save";
+import { playSfx } from "../audio/sound.js?v=20260723-card-badges";
+import { toast } from "./toast.js?v=20260723-card-badges";
+import { confirmAndStart } from "./game-screen.js?v=20260723-card-badges";
+import { soundToggleButton } from "./sound-toggle.js?v=20260723-card-badges";
 import { icon } from "./icons.js";
-import { downloadResultPNG } from "./snapshot.js?v=20260722-ios-save";
-import { SHARE_URL } from "../config.js?v=20260722-ios-save";
-import { tr } from "../core/i18n.js?v=20260722-ios-save";
-import { rowAriaLabel } from "./a11y.js?v=20260722-ios-save";
+import { downloadResultPNG } from "./snapshot.js?v=20260723-card-badges";
+import { SHARE_URL } from "../config.js?v=20260723-card-badges";
+import { tr } from "../core/i18n.js?v=20260723-card-badges";
+import { rowAriaLabel } from "./a11y.js?v=20260723-card-badges";
 
 let root = null;
 

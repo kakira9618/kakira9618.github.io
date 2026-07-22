@@ -1,5 +1,8 @@
 // 実績システム。通常 50 種 + 隠し 16 種。
 //
+// 同日・同問題の再プレイ（achievementCountableRecords のカウント対象外）では、
+// カウント系実績に加えて隠し実績も判定しない（答えを知った再プレイでの稼ぎ防止）。
+//
 // 解放判定はイベント駆動:
 //   - checkOnGameFinish(ctx): ゲーム終了時（ctx はこのファイル冒頭のコメント参照）
 //   - checkOnEvent(type): 分析モード使用・履歴移行などの単発イベント
@@ -417,16 +420,20 @@ export function achievementIdsFromHistory(records) {
       if (grays === 5) ids.add("all-gray");
       if (greens > 0 && yellows > 0 && grays > 0) ids.add("rainbow");
       if (turn === 0 && greens >= 3) ids.add("green-start");
-      if (greens === 5 && logic && !logic.isGameClear(record.guessWord[turn])) ids.add("h-phantom");
+      // 隠し実績は同日・同問題の再プレイ（カウント対象外）では判定しない
+      if (countable && greens === 5 && logic && !logic.isGameClear(record.guessWord[turn])) ids.add("h-phantom");
     }
 
-    for (let turn = 0; turn < record.guessWord.length; turn++) {
-      const word = record.guessWord[turn];
-      if (word && isPalindrome(word)) ids.add("h-mirror");
-      if (turn > 0 && isAnagram(record.guessWord[turn - 1], word)) ids.add("h-anagram");
+    if (countable) {
+      for (let turn = 0; turn < record.guessWord.length; turn++) {
+        const word = record.guessWord[turn];
+        if (word && isPalindrome(word)) ids.add("h-mirror");
+        if (turn > 0 && isAnagram(record.guessWord[turn - 1], word)) ids.add("h-anagram");
+      }
     }
     if (lettersUsed.size >= 26) ids.add("all-letters");
     if (
+      countable &&
       mode === "uso" &&
       Array.isArray(record.usoResults) &&
       record.usoResults.some((row) => Array.isArray(row) && row.every((state) => state === CELL.CORRECT))
@@ -452,7 +459,7 @@ export function achievementIdsFromHistory(records) {
     }
     if (mode === "normal" && pid >= PID.HARD_MIN && pid <= PID.HARD_MAX) {
       ids.add("extreme-clear");
-      if (guesses <= 4) ids.add("h-abyss");
+      if (countable && guesses <= 4) ids.add("h-abyss");
     }
     if (mode === "normal" && pid >= PID.LEVEL_MIN && pid <= PID.LEVEL_MAX) ids.add("level-clear");
 
@@ -476,7 +483,7 @@ export function achievementIdsFromHistory(records) {
       const durationSec = endTime - startTime;
       if (durationSec <= 60) ids.add("speed-60");
       if (durationSec >= 600) ids.add("slow-10");
-      if (guesses >= 3 && durationSec <= 10) ids.add("h-lightning");
+      if (countable && guesses >= 3 && durationSec <= 10) ids.add("h-lightning");
     }
     const completedAt = Number.isFinite(endTime) && endTime > 0 ? endTime : startTime;
     if (Number.isFinite(completedAt)) {
@@ -484,8 +491,8 @@ export function achievementIdsFromHistory(records) {
       if (hour >= 0 && hour < 4) ids.add("night-owl");
     }
 
-    if (isGuessWordChain(record.guessWord)) ids.add("h-alphabet");
-    if (guesses >= 3 && lettersUsed.size === guesses * 5) ids.add("h-noreuse");
+    if (countable && isGuessWordChain(record.guessWord)) ids.add("h-alphabet");
+    if (countable && guesses >= 3 && lettersUsed.size === guesses * 5) ids.add("h-noreuse");
 
     if (countable) {
       winStreak[mode]++;
@@ -532,6 +539,21 @@ export function checkOnGameFinish(ctx) {
   const logic = new Logic(pid);
   const history = getHistory();
   const countableHistory = achievementCountableRecords(history);
+  // 同日・同問題の再プレイか（achievementCountableRecords と同じ「その日の初回だけ」基準）。
+  // 答えを知った再プレイでチャレンジ系の隠し実績を稼げないよう、隠し実績は初回プレイだけ判定する。
+  const countablePlay = (() => {
+    const day = localDayKey(record);
+    if (day === null || pid === null || pid === undefined || pid === "") return true;
+    return !history.some(
+      (g) =>
+        g !== record &&
+        Array.isArray(g?.guessWord) &&
+        g.guessWord.length > 0 &&
+        Number(g.startTime) < Number(record.startTime) &&
+        String(g.problemID) === String(pid) &&
+        localDayKey(g) === day
+    );
+  })();
 
   unlock("first-play", newly);
   if (countableHistory.length >= 100) unlock("plays-100", newly);
@@ -546,18 +568,20 @@ export function checkOnGameFinish(ctx) {
     if (greens > 0 && yellows > 0 && grays > 0) unlock("rainbow", newly);
     if (t === 0 && greens >= 3) unlock("green-start", newly);
     // 隠し: 2 語の文字を位置ごとに組み合わせて全緑になったが、正解語そのものではない。
-    if (greens === 5 && !logic.isGameClear(record.guessWord[t])) unlock("h-phantom", newly);
+    if (countablePlay && greens === 5 && !logic.isGameClear(record.guessWord[t])) unlock("h-phantom", newly);
   }
 
-  // 隠し: Guess の単語そのものに関するもの（勝敗不問）
-  for (let t = 0; t < record.guessWord.length; t++) {
-    const w = record.guessWord[t];
-    if (isPalindrome(w)) unlock("h-mirror", newly);
-    if (t > 0 && isAnagram(record.guessWord[t - 1], w)) unlock("h-anagram", newly);
+  // 隠し: Guess の単語そのものに関するもの（勝敗不問・初回プレイのみ）
+  if (countablePlay) {
+    for (let t = 0; t < record.guessWord.length; t++) {
+      const w = record.guessWord[t];
+      if (isPalindrome(w)) unlock("h-mirror", newly);
+      if (t > 0 && isAnagram(record.guessWord[t - 1], w)) unlock("h-anagram", newly);
+    }
   }
   const lettersUsed = new Set(record.guessWord.join(""));
   if (lettersUsed.size >= 26) unlock("all-letters", newly);
-  if (isUso && Array.isArray(record.usoResults)) {
+  if (countablePlay && isUso && Array.isArray(record.usoResults)) {
     if (record.usoResults.some((row) => row.every((s) => s === CELL.CORRECT))) {
       unlock("h-uso-green", newly);
     }
@@ -608,12 +632,14 @@ export function checkOnGameFinish(ctx) {
     if (wins >= 50) unlock("wins-50", newly);
     if (wins >= 100) unlock("wins-100", newly);
 
-    // 隠し（クリア時のみ）
+    // 隠し（クリア時のみ）。1 局の内容で決まるものは初回プレイのみ判定
     if (clearedZoromeCount(countableHistory) >= 10) unlock("h-zorome", newly);
-    if (isGuessWordChain(record.guessWord)) unlock("h-alphabet", newly);
-    if (!isUso && pid >= PID.HARD_MIN && pid <= PID.HARD_MAX && guesses <= 4) unlock("h-abyss", newly);
-    if (guesses >= 3 && durationSec <= 10) unlock("h-lightning", newly);
-    if (guesses >= 3 && lettersUsed.size === guesses * 5) unlock("h-noreuse", newly);
+    if (countablePlay) {
+      if (isGuessWordChain(record.guessWord)) unlock("h-alphabet", newly);
+      if (!isUso && pid >= PID.HARD_MIN && pid <= PID.HARD_MAX && guesses <= 4) unlock("h-abyss", newly);
+      if (guesses >= 3 && durationSec <= 10) unlock("h-lightning", newly);
+      if (guesses >= 3 && lettersUsed.size === guesses * 5) unlock("h-noreuse", newly);
+    }
   }
 
   // 日付・回数系（record は履歴に保存済みなので、現在のゲームも集計に含まれる）

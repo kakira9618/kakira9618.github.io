@@ -2,26 +2,26 @@
 // 右上のマスクボタンで DWORDlie（裏モード）に切り替わる。
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260722-ios-save";
+import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260723-card-badges";
 import { countPlays, getCurrentGame, getHistory, isAlreadyPlayed } from "../core/records.js";
 import { isDebugMode } from "../core/debug.js";
 import { LEVELS, todayPID, isValidPID, pidLabel, PID } from "../core/problems.js";
-import { getSettings, setSetting } from "../core/settings.js?v=20260722-ios-save";
+import { getSettings, setSetting } from "../core/settings.js?v=20260723-card-badges";
 import { loadJSON, saveJSON } from "../core/store.js";
 import { importFromLocalStorage, scanLegacyHistory } from "../core/migrate.js";
-import { playSfx } from "../audio/sound.js?v=20260722-ios-save";
-import { toast } from "./toast.js?v=20260722-ios-save";
-import { showModal } from "./modal.js?v=20260722-ios-save";
-import { finishHistoryImport } from "./history-import.js?v=20260722-ios-save";
-import { showFirstTutorial, showHelpModal } from "./help.js?v=20260722-ios-save";
-import { confirmAndStart } from "./game-screen.js?v=20260722-ios-save";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-ios-save";
-import { burstAtElement } from "../fx/effects.js?v=20260722-ios-save";
-import { shouldReduceMotion } from "../core/motion.js?v=20260722-ios-save";
+import { playSfx } from "../audio/sound.js?v=20260723-card-badges";
+import { toast } from "./toast.js?v=20260723-card-badges";
+import { showModal } from "./modal.js?v=20260723-card-badges";
+import { finishHistoryImport } from "./history-import.js?v=20260723-card-badges";
+import { showFirstTutorial, showHelpModal } from "./help.js?v=20260723-card-badges";
+import { confirmAndStart } from "./game-screen.js?v=20260723-card-badges";
+import { soundToggleButton } from "./sound-toggle.js?v=20260723-card-badges";
+import { burstAtElement } from "../fx/effects.js?v=20260723-card-badges";
+import { shouldReduceMotion } from "../core/motion.js?v=20260723-card-badges";
 import { icon } from "./icons.js";
-import { APP_VERSION } from "../config.js?v=20260722-ios-save";
-import { localizedLevel, tr } from "../core/i18n.js?v=20260722-ios-save";
-import { CARD_UNLOCK_PLAYS } from "./player-card.js?v=20260722-ios-save";
+import { APP_VERSION } from "../config.js?v=20260723-card-badges";
+import { localizedLevel, tr } from "../core/i18n.js?v=20260723-card-badges";
+import { CARD_UNLOCK_PLAYS } from "./player-card.js?v=20260723-card-badges";
 
 let root = null;
 let legacyImportCheckDone = false;
@@ -223,6 +223,7 @@ function render() {
       button.append(lockFx);
       setTimeout(() => {
         if (!button.isConnected) return;
+        if (delayMs === 0) playSfx("unlock"); // 解錠音は最初の錠前が開く瞬間に 1 回だけ
         lockFx.replaceChildren(icon("unlock", 22));
         lockFx.classList.add("open");
         burstAtElement(button, revealCount % 2 ? accent : "#ffd166", 14);
@@ -365,9 +366,10 @@ function render() {
     ),
     el("div", { class: "app-version", title: "DWORDle 2 version" }, `v${APP_VERSION}`)
   );
-  // お披露目は 1 回だけ。新規解放があった描画でのみ効果音を添える
+  // お披露目は 1 回だけ。解錠音は錠前が開く瞬間（applyReveal 内）に鳴らすが、
+  // reduce-motion 時は解錠演出がないのでここで即時に鳴らす
   if (!bypass && plays !== seenPlays) saveJSON("menuUnlockSeen", plays);
-  if (revealCount > 0) playSfx("achievement");
+  if (revealCount > 0 && shouldReduceMotion()) playSfx("unlock");
   // DWORDlie の解放は大きな節目なので、解錠演出のあとにモーダルで案内する
   if (!isUso && justUnlocked(MENU_UNLOCKS.uso)) {
     const delayMs = shouldReduceMotion()

@@ -1790,6 +1790,10 @@ body.theme-pop.mode-uso .rcell.unused { color: #fff; }
   justify-content: center;
   margin-top: 6px;
 }
+/* display: flex が UA の [hidden] を上書きするため明示する（カード発行前のボタン非表示） */
+.result-actions[hidden] {
+  display: none;
+}
 
 /* ---- 分析画面 ---- */
 .turn-card {
@@ -2178,6 +2182,10 @@ body.theme-pop.mode-uso .bgm-choice.locked {
   border: 1px solid var(--border);
   border-radius: 12px;
   background: rgba(0, 0, 0, 0.18);
+}
+/* ポップ（表）は明色パネルなので、暗色の被せを薄くして文字を読みやすくする */
+body.theme-pop:not(.mode-uso) .help-example-box {
+  background: rgba(0, 0, 0, 0.05);
 }
 .help-example-box.help-example-switch-out {
   pointer-events: none;

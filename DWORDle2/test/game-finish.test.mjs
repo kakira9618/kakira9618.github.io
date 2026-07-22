@@ -216,6 +216,23 @@ function rainbowWord(logic) {
   assert.ok(!ids.has("streak-3"), "a same-day replay must not extend the counted win streak");
 }
 
+// ---- 同日・同問題の再プレイでは隠し実績も解除されない ----
+{
+  const base = Math.floor(new Date(2026, 6, 20, 12, 0, 0).getTime() / 1000);
+  const logic = new Logic(123);
+  const palindrome = ALL_WORDS.find((w) => w === [...w].reverse().join("") && !logic.isGameClear(w));
+  assert.ok(palindrome, "回文の単語が見つかるはず");
+  const prior = finishGameCtx({ pid: 123, guessWords: [logic.ans1], startTime: base }).record;
+  const replay = finishGameCtx({ pid: 123, guessWords: [palindrome, logic.ans1], startTime: base + 600 });
+  const replayIds = idsOf((await scenario([prior, replay.record]))(replay));
+  assert.ok(!replayIds.has("h-mirror"), "同日・同問題の再プレイでは隠し実績（鏡の言葉）は解除されないはず");
+  assert.ok(replayIds.has("two-shot"), "通常の 1 局実績は同日再プレイでも解除されるはず");
+
+  const nextDay = finishGameCtx({ pid: 123, guessWords: [palindrome, logic.ans1], startTime: base + 86400 });
+  const nextDayIds = idsOf((await scenario([prior, nextDay.record]))(nextDay));
+  assert.ok(nextDayIds.has("h-mirror"), "別日の同じ問題なら隠し実績（鏡の言葉）が解除されるはず");
+}
+
 // ---- デイリー問題のクリア ----
 {
   const pid = 20260720;

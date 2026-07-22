@@ -1,9 +1,9 @@
 // モーダルダイアログ。
 
 import { el, clear } from "./dom.js";
-import { playSfx } from "../audio/sound.js?v=20260722-ios-save";
-import { tr } from "../core/i18n.js?v=20260722-ios-save";
-import { logEvent } from "../core/activity.js?v=20260722-ios-save";
+import { playSfx } from "../audio/sound.js?v=20260723-card-badges";
+import { tr } from "../core/i18n.js?v=20260723-card-badges";
+import { logEvent } from "../core/activity.js?v=20260723-card-badges";
 
 const layer = () => document.getElementById("modal-layer");
 const openCloseFns = new Set(); // closeAllModals 用

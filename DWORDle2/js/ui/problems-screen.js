@@ -4,16 +4,16 @@
 // ルート: #/problems
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate, getAppMode } from "./app.js?v=20260722-ios-save";
+import { registerScreen, navigate, getAppMode } from "./app.js?v=20260723-card-badges";
 import { buildProblemStatus, MODES } from "../core/records.js";
 import { LEVELS, isValidPID, pidLabel } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260722-ios-save";
-import { showModal } from "./modal.js?v=20260722-ios-save";
-import { confirmAndStart } from "./game-screen.js?v=20260722-ios-save";
-import { toast } from "./toast.js?v=20260722-ios-save";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-ios-save";
+import { playSfx } from "../audio/sound.js?v=20260723-card-badges";
+import { showModal } from "./modal.js?v=20260723-card-badges";
+import { confirmAndStart } from "./game-screen.js?v=20260723-card-badges";
+import { toast } from "./toast.js?v=20260723-card-badges";
+import { soundToggleButton } from "./sound-toggle.js?v=20260723-card-badges";
 import { icon } from "./icons.js";
-import { localizedLevel, tr } from "../core/i18n.js?v=20260722-ios-save";
+import { localizedLevel, tr } from "../core/i18n.js?v=20260723-card-badges";
 
 const BLOCK_SIZE = 100;
 
