@@ -54,11 +54,12 @@ const CARD = {
   nameY: 234,
   nameSize: 64,
   titleY: 320, // 称号バッジの中心
-  identityX: 240, // PLAYER 行・名前・称号バッジの左端（左のエンブレムのぶん字下げ）
+  identityX: 280, // PLAYER 行・名前・称号バッジの左端（左のエンブレムのぶん字下げ）
   // ランクエンブレム(六角形 + リング + アイコン)。
-  // 名前ブロックの左にアバターのように置き、ブロックの垂直中央に合わせる
+  // 名前ブロックの左にアバターのように置き、ブロックの垂直中央に合わせる。
+  // 中段の塊はヘッダや統計セルより深めの左余白をとる
   emblem: {
-    cx: 133, // 中心 x
+    cx: 172, // 中心 x
     cy: 259, // 中心 y
     hexR: 80, // 外側六角形の半径
     ringR: 61, // 内側リングの半径
@@ -82,11 +83,9 @@ const CARD = {
   footerDividerY: 622, // フッター上の細い区切り線
   footerY: 644, // URL・発行日（右寄せ）
   sinceSize: 17, // 初プレイ日（PLAYER ラベルの隣）の文字サイズ
-  cornerLen: 26, // 四隅の L 字アクセントの辺の長さ
-  cornerInset: 30, // 四隅アクセントのフレームからの距離
   idEdgeX: 26, // プレイヤー ID の右端からの距離（縦書きで印字）
   idSize: 12,
-  miniTileSize: 24, // 右上の装飾ミニタイル列（コーナーの L 字アクセントに密着させる）
+  miniTileSize: 24, // 右上の装飾ミニタイル列（コーナーに密着させる）
   miniTileGap: 8,
   miniTileX: 42, // コーナーからの距離（右端から測る）
   miniTileY: 42,
@@ -309,21 +308,6 @@ export async function renderPlayerCardCanvas(name) {
 
   const left = CARD.pad;
   const right = W - CARD.pad;
-
-  // 四隅の L 字アクセント（フレームの内側に小さな飾り角）
-  ctx.strokeStyle = rank.accent;
-  ctx.lineWidth = 2;
-  ctx.globalAlpha = 0.55;
-  const ci = CARD.cornerInset;
-  const cl = CARD.cornerLen;
-  for (const [cx, cy, dx, dy] of [[ci, ci, 1, 1], [W - ci, ci, -1, 1], [ci, H - ci, 1, -1], [W - ci, H - ci, -1, -1]]) {
-    ctx.beginPath();
-    ctx.moveTo(cx + dx * cl, cy);
-    ctx.lineTo(cx, cy);
-    ctx.lineTo(cx, cy + dy * cl);
-    ctx.stroke();
-  }
-  ctx.globalAlpha = 1;
 
   // ---- ヘッダ: ロゴ / PLAYER CARD（左上・光沢なし）+ 判定タイル装飾（右上コーナーに密着）----
   ctx.textBaseline = "middle";
