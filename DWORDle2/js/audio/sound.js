@@ -409,6 +409,7 @@ export function unlockAudio({ restartBgm = false } = {}) {
 
   // iOS Safari では resume() の Promise 完了後に初めて音源を作ると無音になることがある。
   // Promise は待たず、ユーザー操作の呼び出しスタック内でBGMを予約する。
+  const barIndexBeforeStart = barIndex;
   if (getSettings().bgm) {
     if (restartBgm) stopBgm();
     startBgm();
@@ -418,7 +419,10 @@ export function unlockAudio({ restartBgm = false } = {}) {
     if (!isReady || !getSettings().bgm) return;
     if (!wasRunning) {
       // interrupted 中に予約時刻が過ぎた場合に備え、復帰時刻を基準に予約し直す。
+      // 同期予約で進んだ小節位置だけが残ると 3 小節目から始まってしまうため、
+      // 開始時の位置へ戻してから予約し直す。
       stopBgm();
+      barIndex = barIndexBeforeStart;
       startBgm();
     } else if (!bgmRunning) {
       startBgm();

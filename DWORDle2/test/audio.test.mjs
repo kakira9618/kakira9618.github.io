@@ -310,5 +310,22 @@ assert.equal(activeMasterGain.gain.value, 0, "a normal pageshow must not restore
 windowListeners.get("pageshow")({ persisted: true });
 assert.equal(activeMasterGain.gain.value, AUDIO.masterGain, "pageshow from bfcache should restore the master gain");
 
+// resume 前の新規 AudioContext への unlockAudio（扉絵「開始」と同じ経路）では、
+// suspend 中の同期予約を破棄して復帰時刻で予約し直す。このとき小節位置を開始時へ
+// 戻さないと、1〜2 小節目が捨てられて 3 小節目から始まってしまう不具合があった。
+rebuiltContext.state = "closed";
+rewindBgm();
+await unlockAudio({ restartBgm: true });
+const freshContext = FakeAudioContext.instance;
+assert.notEqual(freshContext, rebuiltContext, "a closed audio context should be replaced");
+assert(
+  freshContext.startedFrequencies.some((freq) => Math.abs(freq - bassHz(36)) < 0.01), // 1 小節目 (C) のベース頭
+  "a fresh-context unlock should schedule the track from its first bar"
+);
+assert(
+  !freshContext.startedFrequencies.some((freq) => Math.abs(freq - bassHz(34)) < 0.01), // 3 小節目 (Bb) のベース頭
+  "a fresh-context unlock must not skip to bar 3"
+);
+
 stopBgm();
 console.log("音声テスト: OK");
