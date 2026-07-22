@@ -2,19 +2,19 @@
 // ルート: #/result/<mode>/<startTime>
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260722-card-refine";
+import { registerScreen, navigate } from "./app.js?v=20260722-monthly-vow";
 import { findGame, MODES } from "../core/records.js";
 import { Logic, CELL } from "../core/logic.js";
 import { pidLabel, isDailyPID } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260722-card-refine";
-import { toast } from "./toast.js?v=20260722-card-refine";
-import { confirmAndStart } from "./game-screen.js?v=20260722-card-refine";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-card-refine";
+import { playSfx } from "../audio/sound.js?v=20260722-monthly-vow";
+import { toast } from "./toast.js?v=20260722-monthly-vow";
+import { confirmAndStart } from "./game-screen.js?v=20260722-monthly-vow";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-monthly-vow";
 import { icon } from "./icons.js";
-import { downloadResultPNG } from "./snapshot.js?v=20260722-card-refine";
-import { SHARE_URL } from "../config.js?v=20260722-card-refine";
-import { tr } from "../core/i18n.js?v=20260722-card-refine";
-import { rowAriaLabel } from "./a11y.js?v=20260722-card-refine";
+import { downloadResultPNG } from "./snapshot.js?v=20260722-monthly-vow";
+import { SHARE_URL } from "../config.js?v=20260722-monthly-vow";
+import { tr } from "../core/i18n.js?v=20260722-monthly-vow";
+import { rowAriaLabel } from "./a11y.js?v=20260722-monthly-vow";
 
 let root = null;
 

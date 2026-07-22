@@ -306,6 +306,15 @@ assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "h-play-days-
 }
 
 {
+  // 「一ヶ月の誓い」は 30 日連続ちょうどで解除、29 日では解除しない
+  const thirtyDays = Array.from({ length: 30 }, (_, index) =>
+    clearRecord({ pid: (index % 5) + 1, startTime: 1_700_000_000 + index * 86400 })
+  );
+  assert(achievementIdsFromHistory(thirtyDays).has("h-play-streak-30"), "30 consecutive days should unlock A Month's Vow");
+  assert(!achievementIdsFromHistory(thirtyDays.slice(0, 29)).has("h-play-streak-30"), "29 consecutive days must not unlock A Month's Vow");
+}
+
+{
   // 1 日 1 回を 5 年続けた履歴（1 年 Streak と長期の通算日数実績をまとめて確認）
   const fiveYears = Array.from({ length: 1825 }, (_, index) =>
     clearRecord({ pid: (index % 5) + 1, startTime: 1_700_000_000 + index * 86400 })
@@ -313,7 +322,7 @@ assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "h-play-days-
   const ids = achievementIdsFromHistory(fiveYears);
   assert(ids.has("play-days-100"), "100 play days should restore A Hundred Days");
   assert(ids.has("h-play-days-365"), "365 play days should restore 365 Days of Footprints");
-  assert(ids.has("h-play-streak-365"), "365 consecutive days should restore A Year's Vow");
+  assert(ids.has("h-play-streak-30"), "30+ consecutive days should restore A Month's Vow");
   assert(ids.has("h-play-days-1095"));
   assert(ids.has("h-play-days-1825"));
   assert(ids.has("wins-200"), "1825 wins should restore Living Legend");
@@ -327,7 +336,7 @@ assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "h-play-days-
   const nonConsecutiveIds = achievementIdsFromHistory(nonConsecutiveDays);
   assert(nonConsecutiveIds.has("h-play-days-1095"));
   assert(nonConsecutiveIds.has("h-play-days-1825"));
-  assert(!nonConsecutiveIds.has("h-play-streak-365"), "non-consecutive play days must not restore the one-year streak");
+  assert(!nonConsecutiveIds.has("h-play-streak-30"), "non-consecutive play days must not restore the monthly streak");
 }
 
 {

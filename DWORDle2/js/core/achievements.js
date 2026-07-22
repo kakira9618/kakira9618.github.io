@@ -23,7 +23,8 @@ import { getHistory } from "./records.js";
 import { CELL, Logic } from "./logic.js";
 import { isDebugMode } from "./debug.js";
 
-const RECONCILE_VERSION = 5;
+// v6: h-play-streak-365 → h-play-streak-30 の緩和を既存ユーザーの履歴にも適用する
+const RECONCILE_VERSION = 6;
 export const COLLECTOR_REQUIREMENT = 30;
 
 // 実績画面の見出しに使うカテゴリ。ACHIEVEMENTS はこの順に並べる
@@ -114,7 +115,7 @@ export const ACHIEVEMENTS = [
   { id: "h-plays-5000", hidden: true, icon: "layers", color: "#d8b8ff", name: "無限の探求", desc: "通算 5000 回プレイする" },
   { id: "h-uso-800", hidden: true, icon: "mask", color: "#ff6f9f", name: "嘘八百", desc: "裏モード DWORDlie で通算 800 勝する" },
   { id: "h-play-days-365", hidden: true, icon: "footprints", color: "#c0ffe0", name: "365 日の足跡", desc: "通算 365 日プレイする" },
-  { id: "h-play-streak-365", hidden: true, icon: "sunrise", color: "#ffd890", name: "一年の誓い", desc: "365 日連続でプレイする（1 日 1 回を 1 年）" },
+  { id: "h-play-streak-30", hidden: true, icon: "sunrise", color: "#ffd890", name: "一ヶ月の誓い", desc: "30 日連続でプレイする（1 日 1 回を 30 日）" },
   { id: "h-play-days-1095", hidden: true, icon: "mountain", color: "#a0d8e8", name: "千日修行", desc: "通算 1095 日プレイする（約 3 年）" },
   { id: "h-play-days-1825", hidden: true, icon: "crown", color: "#ffe060", name: "五年の伝説", desc: "通算 1825 日プレイする（約 5 年）" },
 ];
@@ -126,10 +127,12 @@ onExternalChange("achievements", () => {
   unlocked = { ...loadJSON("achievements", {}), ...unlocked };
 });
 
-// 旧バージョンで長期 Streak 実績を解放済みなら、新しい通算日数実績へ引き継ぐ。
+// 旧バージョンで長期 Streak 実績を解除済みなら、後継の実績へ引き継ぐ。
+// h-play-streak-365（一年の誓い）は難しすぎたため 30 日連続（一ヶ月の誓い）へ緩和。
 const achievementIdMigrations = {
   "h-play-streak-1095": "h-play-days-1095",
   "h-play-streak-1825": "h-play-days-1825",
+  "h-play-streak-365": "h-play-streak-30",
 };
 let migratedAchievementIds = false;
 for (const [oldId, newId] of Object.entries(achievementIdMigrations)) {
@@ -348,7 +351,7 @@ function calendarAndCountIds(records) {
   if (playStreak >= 3) ids.add("play-streak-3");
   if (playStreak >= 7) ids.add("play-streak-7");
   if (playStreak >= 14) ids.add("play-streak-14");
-  if (playStreak >= 365) ids.add("h-play-streak-365");
+  if (playStreak >= 30) ids.add("h-play-streak-30");
   if (dailyClearPids.length >= 30) ids.add("daily-30");
   if (maxHistoricalDailyStreak(dailyClearPids) >= 30) ids.add("daily-streak-30");
   if (games >= 30) ids.add("plays-30");

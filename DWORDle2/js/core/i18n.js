@@ -1,6 +1,6 @@
 // UI language helpers. The stored setting is the single source of truth.
 
-import { getSettings } from "./settings.js?v=20260722-card-refine";
+import { getSettings } from "./settings.js?v=20260722-monthly-vow";
 
 export function currentLanguage() {
   return getSettings().language === "en" ? "en" : "ja";
@@ -100,7 +100,7 @@ const ACHIEVEMENT_EN = {
   "h-plays-5000": ["Endless Pursuit", "Finish 5,000 games total"],
   "h-uso-800": ["Eight Hundred Lies", "Win 800 DWORDlie games"],
   "h-play-days-365": ["365 Days of Footprints", "Play on 365 different days"],
-  "h-play-streak-365": ["A Year's Vow", "Play on 365 consecutive days"],
+  "h-play-streak-30": ["A Month's Vow", "Play on 30 consecutive days"],
   "h-play-days-1095": ["Thousand-Day Training", "Play on 1,095 different days (about 3 years)"],
   "h-play-days-1825": ["Five-Year Legend", "Play on 1,825 different days (about 5 years)"],
 };
