@@ -1,30 +1,30 @@
 // エントリポイント。画面登録・ルータ起動・3D 背景・音声の初期化。
 
-import { startRouter, initAppMode } from "./ui/app.js?v=20260723-lang-bgm";
-import { initEffects } from "./fx/effects.js?v=20260723-lang-bgm";
-import { initPopBackground } from "./fx/pop-background.js?v=20260723-lang-bgm";
-import { audioNeedsRecovery, bgmTracksUnlockedBy, restartBgmIfReady, stopBgm, unlockAudio } from "./audio/sound.js?v=20260723-lang-bgm";
-import { getSettings, onSettingsChange } from "./core/settings.js?v=20260723-lang-bgm";
-import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js?v=20260723-lang-bgm";
-import { syncDocumentLanguage, tr } from "./core/i18n.js?v=20260723-lang-bgm";
-import { reconcileAchievementsOnce } from "./core/achievements.js?v=20260723-lang-bgm";
-import { initActivity } from "./core/activity.js?v=20260723-lang-bgm";
-import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "./ui/game-screen.js?v=20260723-lang-bgm";
+import { startRouter, initAppMode } from "./ui/app.js?v=20260723-gate-mode";
+import { initEffects } from "./fx/effects.js?v=20260723-gate-mode";
+import { initPopBackground } from "./fx/pop-background.js?v=20260723-gate-mode";
+import { audioNeedsRecovery, bgmTracksUnlockedBy, restartBgmIfReady, stopBgm, unlockAudio } from "./audio/sound.js?v=20260723-gate-mode";
+import { getSettings, onSettingsChange } from "./core/settings.js?v=20260723-gate-mode";
+import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js?v=20260723-gate-mode";
+import { syncDocumentLanguage, tr } from "./core/i18n.js?v=20260723-gate-mode";
+import { reconcileAchievementsOnce } from "./core/achievements.js?v=20260723-gate-mode";
+import { initActivity } from "./core/activity.js?v=20260723-gate-mode";
+import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "./ui/game-screen.js?v=20260723-gate-mode";
 import { onSaveError } from "./core/store.js";
-import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./ui/toast.js?v=20260723-lang-bgm";
-import { hiddenThemesUnlockedBy } from "./core/settings.js?v=20260723-lang-bgm";
-import { showEntryGate } from "./ui/gate.js?v=20260723-lang-bgm";
+import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./ui/toast.js?v=20260723-gate-mode";
+import { hiddenThemesUnlockedBy } from "./core/settings.js?v=20260723-gate-mode";
+import { showEntryGate } from "./ui/gate.js?v=20260723-gate-mode";
 
 // 画面モジュール（import するだけで registerScreen される）
-import "./ui/title-screen.js?v=20260723-lang-bgm";
-import "./ui/game-screen.js?v=20260723-lang-bgm";
-import "./ui/result-screen.js?v=20260723-lang-bgm";
-import "./ui/history-screen.js?v=20260723-lang-bgm";
-import "./ui/problems-screen.js?v=20260723-lang-bgm";
-import "./ui/achievements-screen.js?v=20260723-lang-bgm";
-import "./ui/player-card.js?v=20260723-lang-bgm";
-import "./ui/analysis-screen.js?v=20260723-lang-bgm";
-import "./ui/settings-screen.js?v=20260723-lang-bgm";
+import "./ui/title-screen.js?v=20260723-gate-mode";
+import "./ui/game-screen.js?v=20260723-gate-mode";
+import "./ui/result-screen.js?v=20260723-gate-mode";
+import "./ui/history-screen.js?v=20260723-gate-mode";
+import "./ui/problems-screen.js?v=20260723-gate-mode";
+import "./ui/achievements-screen.js?v=20260723-gate-mode";
+import "./ui/player-card.js?v=20260723-gate-mode";
+import "./ui/analysis-screen.js?v=20260723-gate-mode";
+import "./ui/settings-screen.js?v=20260723-gate-mode";
 
 // 古い Android Chrome は dvh に未対応のため、実際の表示領域を CSS 変数で補う。
 // 対応ブラウザでは CSS 側の 100dvh が優先される。

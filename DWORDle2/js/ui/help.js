@@ -4,12 +4,12 @@
 // DWORDle では解説後、同じパネルを使って「全部緑でも不正解」の例を再生する。
 
 import { el } from "./dom.js";
-import { showModal } from "./modal.js?v=20260723-lang-bgm";
-import { playSfx } from "../audio/sound.js?v=20260723-lang-bgm";
+import { showModal } from "./modal.js?v=20260723-gate-mode";
+import { playSfx } from "../audio/sound.js?v=20260723-gate-mode";
 import { queryWordPair, usoConvert } from "../core/logic.js";
-import { currentLanguage } from "../core/i18n.js?v=20260723-lang-bgm";
-import { getSettings } from "../core/settings.js?v=20260723-lang-bgm";
-import { shouldReduceMotion } from "../core/motion.js?v=20260723-lang-bgm";
+import { currentLanguage } from "../core/i18n.js?v=20260723-gate-mode";
+import { getSettings } from "../core/settings.js?v=20260723-gate-mode";
+import { shouldReduceMotion } from "../core/motion.js?v=20260723-gate-mode";
 
 // 判定色の呼び名。ハイコントラスト設定では 緑→オレンジ / 黄→青 に置き換わる。
 // *Chip は凡例の 1 文字ラベル（日本語はオレンジを「橙」と略記）。

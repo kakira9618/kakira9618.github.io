@@ -2,11 +2,11 @@
 // オフにする前の個別設定（BGM だけオン等）を覚えておき、復帰時にそのまま戻す。
 
 import { el } from "./dom.js";
-import { getSettings, setSetting, onSettingsChange } from "../core/settings.js?v=20260723-lang-bgm";
+import { getSettings, setSetting, onSettingsChange } from "../core/settings.js?v=20260723-gate-mode";
 import { loadJSON, saveJSON } from "../core/store.js";
-import { playSfx } from "../audio/sound.js?v=20260723-lang-bgm";
+import { playSfx } from "../audio/sound.js?v=20260723-gate-mode";
 import { icon } from "./icons.js";
-import { tr } from "../core/i18n.js?v=20260723-lang-bgm";
+import { tr } from "../core/i18n.js?v=20260723-gate-mode";
 
 const isSoundOn = (s = getSettings()) => s.bgm || s.sfx;
 
@@ -19,16 +19,23 @@ export function muteAllSounds() {
   setSetting("sfx", false);
 }
 
-function toggleSound() {
+// まとめてオフにした音を復帰する（保存済みの個別設定があればそれを、なければ全オン）。
+// エントリーゲートの「開始」からも使い、音無し状態からでも音付きで始められるようにする
+export function unmuteAllSounds() {
   const s = getSettings();
-  if (isSoundOn(s)) {
+  if (isSoundOn(s)) return;
+  const saved = loadJSON("soundRestore", null);
+  const restore = saved && (saved.bgm || saved.sfx) ? saved : { bgm: true, sfx: true };
+  // ユーザー操作中に設定を戻すことで、Safari でも BGM がそのまま再開できる
+  setSetting("sfx", !!restore.sfx);
+  setSetting("bgm", !!restore.bgm);
+}
+
+function toggleSound() {
+  if (isSoundOn()) {
     muteAllSounds();
   } else {
-    const saved = loadJSON("soundRestore", null);
-    const restore = saved && (saved.bgm || saved.sfx) ? saved : { bgm: true, sfx: true };
-    // ユーザー操作中に設定を戻すことで、Safari でも BGM がそのまま再開できる
-    setSetting("sfx", !!restore.sfx);
-    setSetting("bgm", !!restore.bgm);
+    unmuteAllSounds();
     playSfx("ui");
   }
 }

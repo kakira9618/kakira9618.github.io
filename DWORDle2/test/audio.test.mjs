@@ -117,7 +117,7 @@ FakeAudioContext.holdNextResume = false;
 
 globalThis.window = { AudioContext: FakeAudioContext };
 
-const { setSetting } = await import("../js/core/settings.js?v=20260723-lang-bgm");
+const { setSetting } = await import("../js/core/settings.js?v=20260723-gate-mode");
 const { audioNeedsRecovery, currentBgmTrackId, playSfx, unlockAudio, setUsoMood, stopBgm, BGM_TRACKS } = await import("../js/audio/sound.js");
 
 setSetting("bgm", false);

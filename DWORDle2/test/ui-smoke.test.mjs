@@ -121,28 +121,38 @@ async function passGate(target) {
 
 try {
   await page.goto(baseUrl, { waitUntil: "networkidle" });
-  // 扉絵: ロゴ・音の説明・開始ボタンが表示され、通過するまで本来の画面は始まらない
-  // （このページは音オフ設定でシードしているので「音はオフ」の文言になる）
+  // 扉絵: ロゴ・音の説明・「開始 / 音無しで開始」の 2 択が表示され、通過するまで本来の画面は始まらない
+  // （メッセージと 2 択は音設定にかかわらず固定。このページは音オフ設定でシード済み）
   await page.locator("#entry-gate .entry-gate-start").waitFor();
   await page.locator("#entry-gate .app-version").waitFor(); // 扉絵でもバージョンが分かる
-  await page.getByText("音はオフに設定されています", { exact: false }).waitFor();
+  await page.getByText("このゲームは音が出ます", { exact: false }).waitFor();
+  await page.locator("#entry-gate .entry-gate-muted").waitFor();
   assert.equal(
-    await page.locator(".entry-gate-muted").count(),
-    0,
-    "the muted-start button should be hidden when sound is already off"
+    await page.locator("#entry-gate .entry-gate-credit a").getAttribute("href"),
+    "https://x.com/kakira9618",
+    "the entry gate should credit the author with a link to X"
   );
   await assertNoSeriousA11yViolations("Entry gate");
   // 扉絵の間はボタン以外をタップしても音声は解錠されない（開始ボタンだけが解錠する）
   await page.mouse.click(30, 200);
   assert.equal(
     await page.evaluate(async () => {
-      const mod = await import("./js/audio/sound.js?v=20260723-lang-bgm");
+      const mod = await import("./js/audio/sound.js?v=20260723-gate-mode");
       return mod.audioNeedsRecovery();
     }),
     true,
     "audio must stay locked while the entry gate is open"
   );
   await passGate(page);
+  // 「開始」は音オフ設定からでも音を復帰する（音無しのまま入るのは「音無しで開始」の役割）
+  assert.deepEqual(
+    await page.evaluate(async () => {
+      const s = (await import("./js/core/settings.js?v=20260723-gate-mode")).getSettings();
+      return { bgm: s.bgm, sfx: s.sfx };
+    }),
+    { bgm: true, sfx: true },
+    "the Start button should restore sound even when settings were muted"
+  );
 
   const tutorial = page.getByRole("dialog", { name: "基本ルール | DWORDle" });
   await tutorial.waitFor();
@@ -212,7 +222,7 @@ try {
   // ハイコントラスト配色: 設定 ON で全テーマの判定色が 緑→オレンジ / 黄→青 に置き換わる
   const normalTileCorrect = await page.evaluate(() => getComputedStyle(document.body).getPropertyValue("--tile-correct").trim());
   await page.evaluate(async () => {
-    const mod = await import("./js/core/settings.js?v=20260723-lang-bgm");
+    const mod = await import("./js/core/settings.js?v=20260723-gate-mode");
     mod.setSetting("highContrast", true);
   });
   assert.ok(
@@ -230,7 +240,7 @@ try {
     "high contrast should replace yellow with blue"
   );
   await page.evaluate(async () => {
-    const mod = await import("./js/core/settings.js?v=20260723-lang-bgm");
+    const mod = await import("./js/core/settings.js?v=20260723-gate-mode");
     mod.setSetting("highContrast", false);
   });
   assert.equal(
@@ -267,7 +277,7 @@ try {
   for (const label of ["ハイコントラスト配色", "キーボードヒント", "演出を軽くする", "効果音", "BGM"]) {
     await page.getByRole("switch", { name: label }).waitFor();
   }
-  for (const copy of ["UIの言語を設定。システムはブラウザの言語に合わせます", "UIや背景のテーマを設定", "パーティクルを完全にオフにします"]) {
+  for (const copy of ["UIの言語を設定", "UIや背景のテーマを設定", "パーティクルを完全にオフにします"]) {
     await page.getByText(copy, { exact: true }).waitFor();
   }
   assert.equal(await page.getByText("低スペック端末向け", { exact: false }).count(), 0);
@@ -298,7 +308,7 @@ try {
   assert.equal(normalPopVisuals.choiceColor, "rgb(74, 53, 80)");
 
   await page.evaluate(async () => {
-    const { setAppMode } = await import("./js/ui/app.js?v=20260723-lang-bgm");
+    const { setAppMode } = await import("./js/ui/app.js?v=20260723-gate-mode");
     setAppMode("uso");
   });
   await page.locator("body.theme-pop.mode-uso").waitFor();
@@ -327,6 +337,16 @@ try {
   await page.getByRole("button", { name: "遊び方" }).click();
   const usoPopHelp = page.getByRole("dialog", { name: "DWORDlie 遊び方" });
   await usoPopHelp.waitFor();
+  // モーダルは左右中央に出る（幅の狭い端末で右寄りに開いていた回帰の検知）
+  {
+    const modalBox = await usoPopHelp.boundingBox();
+    const leftGap = modalBox.x;
+    const rightGap = 390 - (modalBox.x + modalBox.width);
+    assert.ok(
+      Math.abs(leftGap - rightGap) <= 2,
+      `the help dialog should be horizontally centered: leftGap=${leftGap}, rightGap=${rightGap}`
+    );
+  }
   const usoPopHelpTileColors = await usoPopHelp.evaluate((dialog) => {
     const styleOf = (selector) => {
       const style = getComputedStyle(dialog.querySelector(selector));
@@ -358,12 +378,12 @@ try {
   await page.waitForURL(/#\/settings$/);
 
   await page.evaluate(async () => {
-    const { setAppMode } = await import("./js/ui/app.js?v=20260723-lang-bgm");
+    const { setAppMode } = await import("./js/ui/app.js?v=20260723-gate-mode");
     setAppMode("normal");
   });
   await page.locator("body.theme-pop.mode-normal").waitFor();
   await page.evaluate(async () => {
-    const { showHelpModal } = await import("./js/ui/help.js?v=20260723-lang-bgm");
+    const { showHelpModal } = await import("./js/ui/help.js?v=20260723-gate-mode");
     showHelpModal("normal");
   });
   const popHelp = page.getByRole("dialog", { name: "DWORDle 遊び方" });
@@ -506,7 +526,7 @@ try {
 
   // ハイコントラスト配色ではシェア文字列の絵文字も 🟧 / 🟦 になる（灰は ⬜ のまま）
   await page.evaluate(async () => {
-    const mod = await import("./js/core/settings.js?v=20260723-lang-bgm");
+    const mod = await import("./js/core/settings.js?v=20260723-gate-mode");
     mod.setSetting("highContrast", true);
     navigator.clipboard.writeText = (text) => {
       window.__copiedShareText = text;
@@ -518,7 +538,7 @@ try {
   assert.ok(hcShareText.includes("🟧"), `high-contrast share text should use the orange emoji: ${hcShareText}`);
   assert.ok(!hcShareText.includes("🟩") && !hcShareText.includes("🟨"), "high-contrast share text must not contain green/yellow emojis");
   await page.evaluate(async () => {
-    const mod = await import("./js/core/settings.js?v=20260723-lang-bgm");
+    const mod = await import("./js/core/settings.js?v=20260723-gate-mode");
     mod.setSetting("highContrast", false);
   });
 
@@ -620,13 +640,13 @@ try {
   );
   await shortPage.waitForTimeout(50);
   const flightsBeforeLeave = await shortPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260723-lang-bgm")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260723-gate-mode")).activeTileFlightCount()
   );
   assert.ok(flightsBeforeLeave > 0, "Tile gather animation should be active before leaving the game");
   await shortPage.getByRole("button", { name: "タイトルへ戻る" }).click();
   await shortPage.waitForURL(/#\/$/);
   const flightsAfterLeave = await shortPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260723-lang-bgm")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260723-gate-mode")).activeTileFlightCount()
   );
   assert.equal(flightsAfterLeave, 0, "Tile gather animation should be removed when leaving the game");
   await shortPage.close();
@@ -674,13 +694,13 @@ try {
   await reducedDialog.getByRole("button", { name: "スタート" }).click();
   await reducedPage.locator("#screen-game.active .row").last().waitFor();
   const reducedFlights = await reducedPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260723-lang-bgm")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260723-gate-mode")).activeTileFlightCount()
   );
   assert.equal(reducedFlights, 0, "Reduced motion should suppress tile gather flights");
   await reducedContext.close();
 
   await page.evaluate(async () => {
-    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260723-lang-bgm");
+    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260723-gate-mode");
     bgmUnlockCelebration([{ id: "queue-test-a", name: "Queue Test A", desc: "First unlock" }]);
     bgmUnlockCelebration([{ id: "queue-test-b", name: "Queue Test B", desc: "Second unlock" }]);
   });
@@ -711,7 +731,7 @@ try {
 
   // 2 曲以上の同時解放（履歴インポート等）は 1 枚のまとめカードで報告する
   await page.evaluate(async () => {
-    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260723-lang-bgm");
+    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260723-gate-mode");
     bgmUnlockCelebration([
       { id: "multi-a", name: "Multi Track A", desc: "" },
       { id: "multi-b", name: "Multi Track B", desc: "" },
@@ -728,7 +748,7 @@ try {
 
   // 実績解放セレブレーション: 単発は大型カード、3 個以上は 1 枚にまとめる
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-lang-bgm");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-gate-mode");
     achievementCelebration([
       { id: "smoke-single", icon: "trophy", color: "#ffd166", name: "スモーク実績", desc: "テスト用の実績です" },
     ]);
@@ -746,7 +766,7 @@ try {
   await page.locator(".ach-unlock").waitFor({ state: "detached" });
 
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-lang-bgm");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-gate-mode");
     achievementCelebration([
       { id: "smoke-a", icon: "star", color: "#ffd166", name: "実績A", desc: "" },
       { id: "smoke-b", icon: "gem", color: "#7ee8ff", name: "実績B", desc: "" },
@@ -768,7 +788,7 @@ try {
 
   // リストが溢れるときは下端フェードで続きを示し、最下部まで送るとフェードが消える
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-lang-bgm");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-gate-mode");
     achievementCelebration(
       Array.from({ length: 9 }, (_, i) => ({ id: `smoke-many-${i}`, icon: "star", color: "#ffd166", name: `実績${i + 1}`, desc: "" }))
     );
@@ -816,7 +836,7 @@ try {
   // 判定オープン中の先行入力: 次の 1 行分をバッファし、オープン完了後に自動で確定する
   await page.getByRole("dialog", { name: "基本ルール | DWORDle" }).getByRole("button", { name: "わかった" }).click();
   await page.evaluate(async () => {
-    const { setSetting } = await import("./js/core/settings.js?v=20260723-lang-bgm");
+    const { setSetting } = await import("./js/core/settings.js?v=20260723-gate-mode");
     setSetting("theme", "classic");
     setSetting("sfx", false);
     setSetting("bgm", false);
@@ -1184,7 +1204,7 @@ try {
     // 称号ラダー: 最上位は王（実績全解除 + 1000 プレイ）。多い方のモードの王になり、
     // 同数なら DWORDle。1000 未満は伝説のまま、実績未コンプはプレイ数ランクのまま。
     const ranks = await cardPage.evaluate(async () => {
-      const mod = await import("./js/ui/player-card.js?v=20260723-lang-bgm");
+      const mod = await import("./js/ui/player-card.js?v=20260723-gate-mode");
       const pick = (stats) => {
         const rank = mod.rankForStats(stats);
         return `${rank.id}:${rank.titleJa}`;
@@ -1238,8 +1258,8 @@ try {
     // カテゴリバッジ: 実績 9 カテゴリ + 隠しの計 10 個。この時点では実績未解除なのですべて未獲得
     const badgeInfo = await cardPage.evaluate(async () => {
       const [cardMod, achMod] = await Promise.all([
-        import("./js/ui/player-card.js?v=20260723-lang-bgm"),
-        import("./js/core/achievements.js?v=20260723-lang-bgm"),
+        import("./js/ui/player-card.js?v=20260723-gate-mode"),
+        import("./js/core/achievements.js?v=20260723-gate-mode"),
       ]);
       const states = cardMod.categoryBadgeStates();
       return {
@@ -1254,7 +1274,7 @@ try {
 
     // 実績を全解除すると 10 個すべて獲得になる
     await cardPage.evaluate(async () => {
-      const mod = await import("./js/core/achievements.js?v=20260723-lang-bgm");
+      const mod = await import("./js/core/achievements.js?v=20260723-gate-mode");
       const all = {};
       for (const a of mod.ACHIEVEMENTS) all[a.id] = 1750000000;
       localStorage.setItem("dwordle2.achievements", JSON.stringify(all));
@@ -1265,7 +1285,7 @@ try {
     await cardPage.waitForURL(/#\/card$/);
     await cardPage.locator(".player-card-canvas").waitFor();
     const earnedAll = await cardPage.evaluate(async () => {
-      const mod = await import("./js/ui/player-card.js?v=20260723-lang-bgm");
+      const mod = await import("./js/ui/player-card.js?v=20260723-gate-mode");
       return mod.categoryBadgeStates().every((b) => b.earned);
     });
     assert.ok(earnedAll, "unlocking every achievement must earn all 10 category badges");
@@ -1327,6 +1347,103 @@ try {
     );
   } finally {
     await moodContext.close();
+  }
+
+  // 扉絵は前回選択していたモード（プレイの有無は問わない）のテーマで表示し、
+  // 「開始」でそのままそのモードへ直行する
+  {
+    const usoGatePage = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
+    await usoGatePage.addInitScript(() => {
+      localStorage.setItem("dwordle2.settings", JSON.stringify({ theme: "cyber", sfx: false, bgm: false, language: "ja" }));
+      localStorage.setItem("dwordle2.mode", JSON.stringify("uso"));
+      localStorage.setItem("dwordle2.lastPlayedMode", JSON.stringify("normal")); // 旧仕様の保存値より選択を優先する
+      localStorage.setItem("dwordle2.tutorialSeen", "true");
+      localStorage.setItem("dwordle2.tutorialSeenUso", "true");
+      localStorage.setItem("dwordle2.legacyImportPrompted", "true");
+      localStorage.setItem("dwordle2.playCount", "99");
+      localStorage.setItem("dwordle2.menuUnlockSeen", "99");
+      localStorage.setItem("dwordle2.achievements.reconcileVersion", "99");
+    });
+    await usoGatePage.goto(baseUrl, { waitUntil: "networkidle" });
+    await usoGatePage.locator("#entry-gate .entry-gate-start").waitFor();
+    assert.equal(
+      await usoGatePage.evaluate(() => document.body.classList.contains("mode-uso")),
+      true,
+      "the entry gate should use the DWORDlie theme when DWORDlie was selected last"
+    );
+    assert.match(
+      await usoGatePage.locator("#entry-gate .logo").textContent(),
+      /DWORDlie/,
+      "the entry gate logo should read DWORDlie"
+    );
+    await passGate(usoGatePage);
+    await usoGatePage.locator("#screen-title.active").waitFor();
+    assert.match(
+      await usoGatePage.locator("#screen-title .logo").textContent(),
+      /DWORDlie/,
+      "starting from the gate should land directly in DWORDlie"
+    );
+    await usoGatePage.close();
+  }
+
+  // 「音無しで開始」は音オン設定でも音を止めたまま入る（2 択は常に表示される）
+  {
+    const mutedStartPage = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
+    await mutedStartPage.addInitScript(() => {
+      localStorage.setItem("dwordle2.settings", JSON.stringify({ theme: "classic", sfx: true, bgm: true, language: "ja" }));
+      localStorage.setItem("dwordle2.tutorialSeen", "true");
+      localStorage.setItem("dwordle2.legacyImportPrompted", "true");
+      localStorage.setItem("dwordle2.playCount", "99");
+      localStorage.setItem("dwordle2.menuUnlockSeen", "99");
+      localStorage.setItem("dwordle2.achievements.reconcileVersion", "99");
+    });
+    await mutedStartPage.goto(baseUrl, { waitUntil: "networkidle" });
+    await mutedStartPage.getByText("このゲームは音が出ます", { exact: false }).waitFor();
+    await mutedStartPage.locator("#entry-gate .entry-gate-muted").click();
+    await mutedStartPage.locator("#entry-gate").waitFor({ state: "detached" });
+    assert.deepEqual(
+      await mutedStartPage.evaluate(async () => {
+        const s = (await import("./js/core/settings.js?v=20260723-gate-mode")).getSettings();
+        return { bgm: s.bgm, sfx: s.sfx };
+      }),
+      { bgm: false, sfx: false },
+      "Start muted should mute all sounds"
+    );
+    await mutedStartPage.close();
+  }
+
+  // 言語 3 択: ラベルは言語設定にかかわらず固定で、狭い端末でもテーマと同幅で崩れない
+  {
+    const narrowPage = await browser.newPage({ viewport: { width: 320, height: 700 }, locale: "en-US" });
+    await narrowPage.addInitScript(() => {
+      localStorage.setItem("dwordle2.settings", JSON.stringify({ theme: "classic", sfx: false, bgm: false, language: "en" }));
+      localStorage.setItem("dwordle2.tutorialSeen", "true");
+      localStorage.setItem("dwordle2.legacyImportPrompted", "true");
+      localStorage.setItem("dwordle2.playCount", "99");
+      localStorage.setItem("dwordle2.menuUnlockSeen", "99");
+      localStorage.setItem("dwordle2.achievements.reconcileVersion", "99");
+    });
+    await narrowPage.goto(`${baseUrl}#/settings`, { waitUntil: "networkidle" });
+    await passGate(narrowPage);
+    const languageSeg = narrowPage.getByRole("radiogroup", { name: "Language" });
+    await languageSeg.waitFor();
+    assert.deepEqual(
+      await languageSeg.getByRole("radio").allTextContents(),
+      ["日本語", "English", "System"],
+      "language choices should keep fixed labels regardless of the UI language"
+    );
+    await narrowPage.getByText("Set the UI language", { exact: true }).waitFor();
+    const languageBox = await languageSeg.boundingBox();
+    const themeBox = await narrowPage.getByRole("radiogroup", { name: "Theme" }).boundingBox();
+    assert.ok(
+      Math.abs(languageBox.width - themeBox.width) <= 1,
+      `the language segment should match the theme segment width: ${languageBox.width} vs ${themeBox.width}`
+    );
+    assert.ok(
+      languageBox.x >= 0 && languageBox.x + languageBox.width <= 320,
+      `the language segment should fit a narrow phone viewport: ${JSON.stringify(languageBox)}`
+    );
+    await narrowPage.close();
   }
 
   // 言語のシステム連動: 設定が未保存（既定 system）なら navigator.language に従う

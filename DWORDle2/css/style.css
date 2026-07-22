@@ -13,6 +13,8 @@
   --tile-size: clamp(44px, min(11.5vw, 7.2vh), 62px);
   --tile-gap: 8px;
   --radius: 10px;
+  /* モーダルと画面端の最小余白（backdrop の padding と .modal の幅上限で共用） */
+  --modal-edge-gap: 18px;
 
   /* 判定色（classic 既定。theme-cyber で上書き） */
   --tile-unused: #787c7e;
@@ -985,7 +987,7 @@ body.theme-pop .key.state-correct { color: #06281a; }
   background: rgba(0, 0, 0, 0.62);
   display: grid;
   place-items: center;
-  padding: 18px;
+  padding: var(--modal-edge-gap);
   animation: fadeIn 0.18s ease;
 }
 @keyframes fadeIn {
@@ -993,7 +995,10 @@ body.theme-pop .key.state-correct { color: #06281a; }
   to { opacity: 1; }
 }
 .modal {
-  width: min(440px, 94vw);
+  /* 幅は backdrop の padding を差し引いた残り。94vw のような独立上限だと
+     狭い端末で padding 分を食い越え、グリッドのはみ出しが右側だけに出て
+     ダイアログが右寄りに見えてしまう */
+  width: min(440px, 100vw - var(--modal-edge-gap) * 2);
   max-height: 86vh; /* dvh 未対応ブラウザ向けフォールバック */
   max-height: 86dvh;
   overflow-y: auto;
@@ -1992,6 +1997,18 @@ body.reduce-motion .bar-grow {
   padding: 13px 2px;
   border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
 }
+/* 3 択（言語・テーマ）はボタン列が固定幅のため、ラベルと横並びで収まらない
+   狭い端末ではボタン列をラベルの下の行へ落とす
+   （.label は flex: 1（basis 0）で折り返し判定に掛からないため、全幅にして明示的に折る） */
+@media (max-width: 374px) {
+  .setting-row:has(.seg) {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+  .setting-row:has(.seg) .label {
+    flex-basis: 100%;
+  }
+}
 .setting-row .label {
   flex: 1;
 }
@@ -2935,6 +2952,16 @@ body.reduce-motion .player-card-wrap.deal::after {
   font-size: 12.5px;
   padding: 8px 16px;
   opacity: 0.85;
+}
+.entry-gate-credit {
+  color: var(--fg-dim);
+  font-size: 11px;
+  margin-top: 10px;
+}
+.entry-gate-credit a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 @keyframes entryGateIn {
   from {

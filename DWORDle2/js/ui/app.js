@@ -11,17 +11,20 @@
 //   #/analysis/<mode>/<startTime> 分析画面
 
 import { loadJSON, saveJSON } from "../core/store.js";
-import { setUsoMood } from "../audio/sound.js?v=20260723-lang-bgm";
-import { setBackgroundMood } from "../fx/effects.js?v=20260723-lang-bgm";
-import { setPopBackgroundMood } from "../fx/pop-background.js?v=20260723-lang-bgm";
-import { closeAllModals } from "./modal.js?v=20260723-lang-bgm";
-import { trackScreen } from "../core/activity.js?v=20260723-lang-bgm";
+import { setUsoMood } from "../audio/sound.js?v=20260723-gate-mode";
+import { setBackgroundMood } from "../fx/effects.js?v=20260723-gate-mode";
+import { setPopBackgroundMood } from "../fx/pop-background.js?v=20260723-gate-mode";
+import { closeAllModals } from "./modal.js?v=20260723-gate-mode";
+import { trackScreen } from "../core/activity.js?v=20260723-gate-mode";
 
 const screens = new Map(); // name -> { element, render(params) }
 let currentName = null;
 
 // ---- 表 / 裏モード ----
-let appMode = loadJSON("lastPlayedMode", loadJSON("mode", "normal")); // "normal" | "uso"
+// 前回選択していたモード（タイトルでの切替そのもの）で起動する。
+// 扉絵もこのモードのテーマで表示され、「開始」でそのまま選択中のモードへ直行する。
+// "lastPlayedMode" は旧仕様（最後にプレイしたモードで起動）の保存値のフォールバック。
+let appMode = loadJSON("mode", loadJSON("lastPlayedMode", "normal")); // "normal" | "uso"
 
 export function getAppMode() {
   return appMode;
@@ -35,11 +38,6 @@ export function setAppMode(mode) {
   setUsoMood(mode === "uso");
   setBackgroundMood(mode === "uso");
   setPopBackgroundMood(mode === "uso");
-}
-
-// モード切替を眺めただけの場合ではなく、実際に開始したゲームを次回の初期モードにする。
-export function rememberPlayedMode(mode) {
-  saveJSON("lastPlayedMode", mode);
 }
 
 // 記録閲覧系の画面（結果・分析）で、開いた記録のモードの配色を一時的に適用する。

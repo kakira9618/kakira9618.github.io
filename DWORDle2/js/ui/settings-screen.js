@@ -2,20 +2,20 @@
 // ルート: #/settings
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260723-lang-bgm";
-import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js?v=20260723-lang-bgm";
+import { registerScreen, navigate } from "./app.js?v=20260723-gate-mode";
+import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js?v=20260723-gate-mode";
 import { importFromLocalStorage, importFromText, scanLegacyHistory } from "../core/migrate.js";
 import { exportJSON } from "../core/records.js";
 import { removeKey } from "../core/store.js";
-import { getUnlocked } from "../core/achievements.js?v=20260723-lang-bgm";
-import { BGM_TRACKS, playSfx } from "../audio/sound.js?v=20260723-lang-bgm";
-import { toast } from "./toast.js?v=20260723-lang-bgm";
-import { showModal, confirmModal } from "./modal.js?v=20260723-lang-bgm";
+import { getUnlocked } from "../core/achievements.js?v=20260723-gate-mode";
+import { BGM_TRACKS, playSfx } from "../audio/sound.js?v=20260723-gate-mode";
+import { toast } from "./toast.js?v=20260723-gate-mode";
+import { showModal, confirmModal } from "./modal.js?v=20260723-gate-mode";
 import { icon } from "./icons.js";
-import { finishHistoryImport } from "./history-import.js?v=20260723-lang-bgm";
-import { APP_VERSION } from "../config.js?v=20260723-lang-bgm";
-import { SOURCE_HASH } from "../version.js?v=20260723-lang-bgm";
-import { isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js?v=20260723-lang-bgm";
+import { finishHistoryImport } from "./history-import.js?v=20260723-gate-mode";
+import { APP_VERSION } from "../config.js?v=20260723-gate-mode";
+import { SOURCE_HASH } from "../version.js?v=20260723-gate-mode";
+import { isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js?v=20260723-gate-mode";
 import { isDebugMode, tryEnableDebugMode } from "../core/debug.js";
 
 let root = null;
@@ -255,16 +255,16 @@ function render() {
 
   const s = getSettings();
   const unlocked = getUnlocked();
-  // 言語は 日本語 / English / システム連動 の 3 択。
-  // active 判定は保存値そのもの（system 選択中に ja へ解決されても「システム」を光らせる）
+  // 言語は 日本語 / English / システム連動 の 3 択。ラベルは言語設定にかかわらず固定。
+  // active 判定は保存値そのもの（system 選択中に ja へ解決されても「System」を光らせる）
   const languageSetting = ["ja", "en", "system"].includes(s.language) ? s.language : "system";
   const languageSeg = el(
     "div",
-    { class: "seg", style: { width: "280px" }, role: "radiogroup", "aria-label": tr("言語", "Language") },
+    { class: "seg", style: { width: "230px" }, role: "radiogroup", "aria-label": tr("言語", "Language") },
     [
       ["ja", "日本語"],
       ["en", "English"],
-      ["system", tr("システム", "System")],
+      ["system", "System"],
     ].map(([key, label]) =>
       el(
         "button",
@@ -327,7 +327,7 @@ function render() {
       el("div", { style: { fontWeight: "800", marginBottom: "4px" } }, tr("表示", "Display")),
       settingRow(
         tr("言語", "Language"),
-        tr("UIの言語を設定。システムはブラウザの言語に合わせます", "Set the UI language. System follows your browser's language"),
+        tr("UIの言語を設定", "Set the UI language"),
         languageSeg
       ),
       settingRow(

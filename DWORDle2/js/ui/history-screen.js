@@ -2,16 +2,16 @@
 // ルート: #/history
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260723-lang-bgm";
+import { registerScreen, navigate } from "./app.js?v=20260723-gate-mode";
 import { getRecentGames, getStatistics, MODES } from "../core/records.js";
 import { Logic, CELL } from "../core/logic.js";
 import { pidLabel } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260723-lang-bgm";
-import { showModal } from "./modal.js?v=20260723-lang-bgm";
-import { soundToggleButton } from "./sound-toggle.js?v=20260723-lang-bgm";
+import { playSfx } from "../audio/sound.js?v=20260723-gate-mode";
+import { showModal } from "./modal.js?v=20260723-gate-mode";
+import { soundToggleButton } from "./sound-toggle.js?v=20260723-gate-mode";
 import { icon } from "./icons.js";
-import { currentLanguage, tr } from "../core/i18n.js?v=20260723-lang-bgm";
-import { rowAriaLabel } from "./a11y.js?v=20260723-lang-bgm";
+import { currentLanguage, tr } from "../core/i18n.js?v=20260723-gate-mode";
+import { rowAriaLabel } from "./a11y.js?v=20260723-gate-mode";
 
 let root = null;
 let filter = "all"; // "all" | "normal" | "uso"
