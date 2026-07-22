@@ -11,10 +11,11 @@
 //   #/analysis/<mode>/<startTime> 分析画面
 
 import { loadJSON, saveJSON } from "../core/store.js";
-import { setUsoMood } from "../audio/sound.js?v=20260722-monthly-vow";
-import { setBackgroundMood } from "../fx/effects.js?v=20260722-monthly-vow";
-import { setPopBackgroundMood } from "../fx/pop-background.js?v=20260722-monthly-vow";
-import { closeAllModals } from "./modal.js?v=20260722-monthly-vow";
+import { setUsoMood } from "../audio/sound.js?v=20260722-activity-log";
+import { setBackgroundMood } from "../fx/effects.js?v=20260722-activity-log";
+import { setPopBackgroundMood } from "../fx/pop-background.js?v=20260722-activity-log";
+import { closeAllModals } from "./modal.js?v=20260722-activity-log";
+import { trackScreen } from "../core/activity.js?v=20260722-activity-log";
 
 const screens = new Map(); // name -> { element, render(params) }
 let currentName = null;
@@ -39,6 +40,16 @@ export function setAppMode(mode) {
 // モード切替を眺めただけの場合ではなく、実際に開始したゲームを次回の初期モードにする。
 export function rememberPlayedMode(mode) {
   saveJSON("lastPlayedMode", mode);
+}
+
+// 記録閲覧系の画面（結果・分析）で、開いた記録のモードの配色を一時的に適用する。
+// アプリ本体のモード（保存値・BGM）は変えず、null で現在のモードの見た目へ戻す。
+export function setViewMood(mode = null) {
+  const uso = (mode ?? appMode) === "uso";
+  document.body.classList.toggle("mode-uso", uso);
+  document.body.classList.toggle("mode-normal", !uso);
+  setBackgroundMood(uso);
+  setPopBackgroundMood(uso);
 }
 
 // ---- 画面管理 ----
@@ -76,6 +87,7 @@ function show(name, args) {
     if (s !== screen && n === currentName) s.onLeave?.();
   }
   currentName = name;
+  trackScreen(screens.has(name) ? name : "title"); // 行動ログ（訪問回数・滞在時間）
   screen.render(args);
 }
 

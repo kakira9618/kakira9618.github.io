@@ -4,16 +4,16 @@
 // ルート: #/problems
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate, getAppMode } from "./app.js?v=20260722-monthly-vow";
+import { registerScreen, navigate, getAppMode } from "./app.js?v=20260722-activity-log";
 import { buildProblemStatus, MODES } from "../core/records.js";
 import { LEVELS, isValidPID, pidLabel } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260722-monthly-vow";
-import { showModal } from "./modal.js?v=20260722-monthly-vow";
-import { confirmAndStart } from "./game-screen.js?v=20260722-monthly-vow";
-import { toast } from "./toast.js?v=20260722-monthly-vow";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-monthly-vow";
+import { playSfx } from "../audio/sound.js?v=20260722-activity-log";
+import { showModal } from "./modal.js?v=20260722-activity-log";
+import { confirmAndStart } from "./game-screen.js?v=20260722-activity-log";
+import { toast } from "./toast.js?v=20260722-activity-log";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-activity-log";
 import { icon } from "./icons.js";
-import { localizedLevel, tr } from "../core/i18n.js?v=20260722-monthly-vow";
+import { localizedLevel, tr } from "../core/i18n.js?v=20260722-activity-log";
 
 const BLOCK_SIZE = 100;
 

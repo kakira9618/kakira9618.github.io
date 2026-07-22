@@ -4,18 +4,18 @@
 // ルート: #/analysis/<mode>/<startTime>
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260722-monthly-vow";
+import { registerScreen, navigate, setViewMood } from "./app.js?v=20260722-activity-log";
 import { findGame, MODES } from "../core/records.js";
 import { Logic } from "../core/logic.js";
 import { pidLabel } from "../core/problems.js";
-import { computeTruePatternIds, resultToPatternId, patternIdToStates } from "../core/analysis-core.js?v=20260722-monthly-vow";
-import { checkOnEvent } from "../core/achievements.js?v=20260722-monthly-vow";
-import { achievementCelebration } from "./toast.js?v=20260722-monthly-vow";
-import { playSfx } from "../audio/sound.js?v=20260722-monthly-vow";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-monthly-vow";
+import { computeTruePatternIds, resultToPatternId, patternIdToStates } from "../core/analysis-core.js?v=20260722-activity-log";
+import { checkOnEvent } from "../core/achievements.js?v=20260722-activity-log";
+import { achievementCelebration } from "./toast.js?v=20260722-activity-log";
+import { playSfx } from "../audio/sound.js?v=20260722-activity-log";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-activity-log";
 import { icon } from "./icons.js";
-import { currentLanguage, isEnglish, tr } from "../core/i18n.js?v=20260722-monthly-vow";
-import { rowAriaLabel } from "./a11y.js?v=20260722-monthly-vow";
+import { currentLanguage, isEnglish, tr } from "../core/i18n.js?v=20260722-activity-log";
+import { rowAriaLabel } from "./a11y.js?v=20260722-activity-log";
 
 let root = null;
 let worker = null;
@@ -50,6 +50,8 @@ function render(args) {
   const token = ++renderToken;
   const [mode, startTimeStr] = args;
   const record = findGame(parseInt(startTimeStr, 10), mode);
+  // 履歴などから別モードの記録を開いても、その記録のモードの配色で表示する
+  if (record) setViewMood(record.gameMode);
 
   const header = el(
     "div",
@@ -147,7 +149,7 @@ function render(args) {
     record.gameMode === "uso" ? record.usoResults.map((r) => resultToPatternId(r)) : truePatternIds;
 
   if (worker) worker.terminate();
-  worker = new Worker(new URL("../core/analysis.worker.js?v=20260722-monthly-vow", import.meta.url), { type: "module" });
+  worker = new Worker(new URL("../core/analysis.worker.js?v=20260722-activity-log", import.meta.url), { type: "module" });
   worker.onmessage = (e) => {
     if (token !== renderToken) return; // 画面遷移後の古い結果
     const msg = e.data;
@@ -357,5 +359,6 @@ registerScreen("analysis", {
       worker.terminate();
       worker = null;
     }
+    setViewMood(null); // 一時的に適用した記録モードの配色を現在のモードへ戻す
   },
 });

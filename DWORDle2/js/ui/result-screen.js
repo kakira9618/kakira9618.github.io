@@ -2,19 +2,19 @@
 // ルート: #/result/<mode>/<startTime>
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260722-monthly-vow";
+import { registerScreen, navigate, setViewMood } from "./app.js?v=20260722-activity-log";
 import { findGame, MODES } from "../core/records.js";
 import { Logic, CELL } from "../core/logic.js";
 import { pidLabel, isDailyPID } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260722-monthly-vow";
-import { toast } from "./toast.js?v=20260722-monthly-vow";
-import { confirmAndStart } from "./game-screen.js?v=20260722-monthly-vow";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-monthly-vow";
+import { playSfx } from "../audio/sound.js?v=20260722-activity-log";
+import { toast } from "./toast.js?v=20260722-activity-log";
+import { confirmAndStart } from "./game-screen.js?v=20260722-activity-log";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-activity-log";
 import { icon } from "./icons.js";
-import { downloadResultPNG } from "./snapshot.js?v=20260722-monthly-vow";
-import { SHARE_URL } from "../config.js?v=20260722-monthly-vow";
-import { tr } from "../core/i18n.js?v=20260722-monthly-vow";
-import { rowAriaLabel } from "./a11y.js?v=20260722-monthly-vow";
+import { downloadResultPNG } from "./snapshot.js?v=20260722-activity-log";
+import { SHARE_URL } from "../config.js?v=20260722-activity-log";
+import { tr } from "../core/i18n.js?v=20260722-activity-log";
+import { rowAriaLabel } from "./a11y.js?v=20260722-activity-log";
 
 let root = null;
 
@@ -68,6 +68,9 @@ function render(args) {
     );
     return;
   }
+
+  // 履歴などから別モードの記録を開いても、その記録のモードの配色で表示する
+  setViewMood(record.gameMode);
 
   const logic = new Logic(record.problemID);
   const lastWord = record.guessWord[record.guessWord.length - 1];
@@ -201,4 +204,7 @@ registerScreen("result", {
     return root;
   },
   render,
+  onLeave() {
+    setViewMood(null); // 一時的に適用した記録モードの配色を現在のモードへ戻す
+  },
 });

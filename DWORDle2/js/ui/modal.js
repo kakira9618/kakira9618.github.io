@@ -1,8 +1,9 @@
 // モーダルダイアログ。
 
 import { el, clear } from "./dom.js";
-import { playSfx } from "../audio/sound.js?v=20260722-monthly-vow";
-import { tr } from "../core/i18n.js?v=20260722-monthly-vow";
+import { playSfx } from "../audio/sound.js?v=20260722-activity-log";
+import { tr } from "../core/i18n.js?v=20260722-activity-log";
+import { logEvent } from "../core/activity.js?v=20260722-activity-log";
 
 const layer = () => document.getElementById("modal-layer");
 const openCloseFns = new Set(); // closeAllModals 用
@@ -14,6 +15,7 @@ const FOCUSABLE =
 // showModal({ title, body, actions: [{label, primary, danger, onClick}] })
 // onClick が false を返さない限り閉じる。戻り値は close()。
 export function showModal({ title, body, actions = [], onClose = null }) {
+  if (typeof title === "string") logEvent("modal", title.slice(0, 40)); // 行動ログ
   const backdrop = el("div", { class: "modal-backdrop" });
   const previousFocus = document.activeElement;
   const titleId = `modal-title-${++modalSerial}`;

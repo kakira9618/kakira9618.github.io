@@ -217,7 +217,7 @@ try {
   assert.equal(normalPopVisuals.choiceColor, "rgb(74, 53, 80)");
 
   await page.evaluate(async () => {
-    const { setAppMode } = await import("./js/ui/app.js?v=20260722-monthly-vow");
+    const { setAppMode } = await import("./js/ui/app.js?v=20260722-activity-log");
     setAppMode("uso");
   });
   await page.locator("body.theme-pop.mode-uso").waitFor();
@@ -277,12 +277,12 @@ try {
   await page.waitForURL(/#\/settings$/);
 
   await page.evaluate(async () => {
-    const { setAppMode } = await import("./js/ui/app.js?v=20260722-monthly-vow");
+    const { setAppMode } = await import("./js/ui/app.js?v=20260722-activity-log");
     setAppMode("normal");
   });
   await page.locator("body.theme-pop.mode-normal").waitFor();
   await page.evaluate(async () => {
-    const { showHelpModal } = await import("./js/ui/help.js?v=20260722-monthly-vow");
+    const { showHelpModal } = await import("./js/ui/help.js?v=20260722-activity-log");
     showHelpModal("normal");
   });
   const popHelp = page.getByRole("dialog", { name: "DWORDle 遊び方" });
@@ -502,13 +502,13 @@ try {
   );
   await shortPage.waitForTimeout(50);
   const flightsBeforeLeave = await shortPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260722-monthly-vow")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260722-activity-log")).activeTileFlightCount()
   );
   assert.ok(flightsBeforeLeave > 0, "Tile gather animation should be active before leaving the game");
   await shortPage.getByRole("button", { name: "タイトルへ戻る" }).click();
   await shortPage.waitForURL(/#\/$/);
   const flightsAfterLeave = await shortPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260722-monthly-vow")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260722-activity-log")).activeTileFlightCount()
   );
   assert.equal(flightsAfterLeave, 0, "Tile gather animation should be removed when leaving the game");
   await shortPage.close();
@@ -554,13 +554,13 @@ try {
   await reducedDialog.getByRole("button", { name: "スタート" }).click();
   await reducedPage.locator("#screen-game.active .row").last().waitFor();
   const reducedFlights = await reducedPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260722-monthly-vow")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260722-activity-log")).activeTileFlightCount()
   );
   assert.equal(reducedFlights, 0, "Reduced motion should suppress tile gather flights");
   await reducedContext.close();
 
   await page.evaluate(async () => {
-    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260722-monthly-vow");
+    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260722-activity-log");
     bgmUnlockCelebration([{ id: "queue-test-a", name: "Queue Test A", desc: "First unlock" }]);
     bgmUnlockCelebration([{ id: "queue-test-b", name: "Queue Test B", desc: "Second unlock" }]);
   });
@@ -591,7 +591,7 @@ try {
 
   // 2 曲以上の同時解放（履歴インポート等）は 1 枚のまとめカードで報告する
   await page.evaluate(async () => {
-    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260722-monthly-vow");
+    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260722-activity-log");
     bgmUnlockCelebration([
       { id: "multi-a", name: "Multi Track A", desc: "" },
       { id: "multi-b", name: "Multi Track B", desc: "" },
@@ -608,7 +608,7 @@ try {
 
   // 実績解放セレブレーション: 単発は大型カード、3 個以上は 1 枚にまとめる
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-monthly-vow");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-activity-log");
     achievementCelebration([
       { id: "smoke-single", icon: "trophy", color: "#ffd166", name: "スモーク実績", desc: "テスト用の実績です" },
     ]);
@@ -626,7 +626,7 @@ try {
   await page.locator(".ach-unlock").waitFor({ state: "detached" });
 
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-monthly-vow");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-activity-log");
     achievementCelebration([
       { id: "smoke-a", icon: "star", color: "#ffd166", name: "実績A", desc: "" },
       { id: "smoke-b", icon: "gem", color: "#7ee8ff", name: "実績B", desc: "" },
@@ -648,7 +648,7 @@ try {
 
   // リストが溢れるときは下端フェードで続きを示し、最下部まで送るとフェードが消える
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-monthly-vow");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-activity-log");
     achievementCelebration(
       Array.from({ length: 9 }, (_, i) => ({ id: `smoke-many-${i}`, icon: "star", color: "#ffd166", name: `実績${i + 1}`, desc: "" }))
     );
@@ -695,7 +695,7 @@ try {
   // 判定オープン中の先行入力: 次の 1 行分をバッファし、オープン完了後に自動で確定する
   await page.getByRole("dialog", { name: "基本ルール | DWORDle" }).getByRole("button", { name: "わかった" }).click();
   await page.evaluate(async () => {
-    const { setSetting } = await import("./js/core/settings.js?v=20260722-monthly-vow");
+    const { setSetting } = await import("./js/core/settings.js?v=20260722-activity-log");
     setSetting("theme", "classic");
     setSetting("sfx", false);
     setSetting("bgm", false);
@@ -1040,7 +1040,7 @@ try {
     // 称号ラダー: 最上位は王（実績全解除 + 1000 プレイ）。多い方のモードの王になり、
     // 同数なら DWORDle。1000 未満は伝説のまま、実績未コンプはプレイ数ランクのまま。
     const ranks = await cardPage.evaluate(async () => {
-      const mod = await import("./js/ui/player-card.js?v=20260722-monthly-vow");
+      const mod = await import("./js/ui/player-card.js?v=20260722-activity-log");
       const pick = (stats) => {
         const rank = mod.rankForStats(stats);
         return `${rank.id}:${rank.titleJa}`;
@@ -1090,6 +1090,61 @@ try {
     assert.equal(await cardPage.locator(".rank-up-overlay").count(), 0, "the rank-up celebration must play only once per promotion");
   } finally {
     await cardContext.close();
+  }
+
+  // 履歴から別モードの記録を開いたときは、その記録のモードの配色で表示し、離れたら戻す。
+  // あわせて行動ログ（画面滞在・クリック）が記録されることも確認する。
+  const moodContext = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
+  const moodPage = await moodContext.newPage();
+  try {
+    await moodPage.addInitScript(() => {
+      localStorage.setItem("dwordle2.tutorialSeen", "true");
+      localStorage.setItem("dwordle2.legacyImportPrompted", "true");
+      localStorage.setItem("dwordle2.playCount", "99");
+      localStorage.setItem("dwordle2.menuUnlockSeen", "99");
+      localStorage.setItem("dwordle2.achievements.reconcileVersion", "99");
+      localStorage.setItem("dwordle2.mode", JSON.stringify("normal"));
+      localStorage.setItem("dwordle2.lastPlayedMode", JSON.stringify("normal"));
+      localStorage.setItem("dwordle2.history", JSON.stringify([
+        { gameMode: "uso", problemID: 300, startTime: 1750000000, endTime: 1750000300, guessWord: ["about", "crane"], clear: true },
+      ]));
+    });
+    await moodPage.goto(baseUrl, { waitUntil: "networkidle" });
+    assert.equal(
+      await moodPage.evaluate(() => document.body.classList.contains("mode-normal")),
+      true,
+      "the app should start in DWORDle mode"
+    );
+    await moodPage.evaluate(() => { location.hash = "#/result/uso/1750000000"; });
+    await moodPage.waitForFunction(() => document.body.classList.contains("mode-uso"));
+    await moodPage.evaluate(() => { location.hash = "#/analysis/uso/1750000000"; });
+    await moodPage.waitForFunction(() => document.body.classList.contains("mode-uso"));
+    await moodPage.evaluate(() => { location.hash = "#/history"; });
+    await moodPage.waitForFunction(
+      () => document.body.classList.contains("mode-normal") && !document.body.classList.contains("mode-uso"),
+      undefined,
+      { timeout: 5000 }
+    );
+
+    // 行動ログ: クリックと画面滞在が localStorage に集計される
+    await moodPage.getByRole("button", { name: "タイトルへ戻る" }).click();
+    await moodPage.waitForURL(/#\/$/);
+    const activity = await moodPage.evaluate(() => {
+      window.dispatchEvent(new Event("pagehide")); // 保留中のログを書き出させる
+      return JSON.parse(localStorage.getItem("dwordle2.activity"));
+    });
+    assert.ok(activity, "the activity log should be persisted");
+    assert.ok(activity.screens?.history?.visits >= 1, "screen visits should be tracked");
+    assert.ok(
+      Object.keys(activity.counters).some((key) => key.startsWith("click:")),
+      "button clicks should be tracked"
+    );
+    assert.ok(
+      Object.keys(activity.counters).some((key) => key.startsWith("screen:")),
+      "screen transitions should be tracked"
+    );
+  } finally {
+    await moodContext.close();
   }
 
   console.log("UIスモーク + a11yテスト: OK");

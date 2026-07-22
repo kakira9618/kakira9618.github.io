@@ -43,9 +43,11 @@
   --unlock-card-fg-dim: #a7b0bf;
   --font-display: "Avenir Next", "Helvetica Neue", "Segoe UI", sans-serif;
 
-  /* 統計・分析のバーが伸びるアニメーション（.bar-grow） */
+  /* 統計・分析のバーが伸びるアニメーション（.bar-grow）。
+     stagger は統計モーダルで最大 25 本が連なるため、大きくすると後半の
+     バーの伸び始めが遅くなりすぎる（70ms だと最後は 1.7 秒待ち） */
   --bar-grow-dur: 0.7s;
-  --bar-grow-stagger: 70ms;
+  --bar-grow-stagger: 30ms;
 }
 
 body.theme-cyber {

@@ -2,16 +2,16 @@
 // ルート: #/history
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260722-monthly-vow";
+import { registerScreen, navigate } from "./app.js?v=20260722-activity-log";
 import { getRecentGames, getStatistics, MODES } from "../core/records.js";
 import { Logic, CELL } from "../core/logic.js";
 import { pidLabel } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260722-monthly-vow";
-import { showModal } from "./modal.js?v=20260722-monthly-vow";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-monthly-vow";
+import { playSfx } from "../audio/sound.js?v=20260722-activity-log";
+import { showModal } from "./modal.js?v=20260722-activity-log";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-activity-log";
 import { icon } from "./icons.js";
-import { currentLanguage, tr } from "../core/i18n.js?v=20260722-monthly-vow";
-import { rowAriaLabel } from "./a11y.js?v=20260722-monthly-vow";
+import { currentLanguage, tr } from "../core/i18n.js?v=20260722-activity-log";
+import { rowAriaLabel } from "./a11y.js?v=20260722-activity-log";
 
 let root = null;
 let filter = "all"; // "all" | "normal" | "uso"
