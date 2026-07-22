@@ -86,9 +86,9 @@ const CARD = {
   cornerInset: 30, // 四隅アクセントのフレームからの距離
   idEdgeX: 26, // プレイヤー ID の右端からの距離（縦書きで印字）
   idSize: 12,
-  miniTileSize: 24, // 左上の装飾ミニタイル列（コーナーの L 字アクセントに密着させる）
+  miniTileSize: 24, // 右上の装飾ミニタイル列（コーナーの L 字アクセントに密着させる）
   miniTileGap: 8,
-  miniTileX: 42,
+  miniTileX: 42, // コーナーからの距離（右端から測る）
   miniTileY: 42,
   miniTileColors: ["#00e68a", "#ffc233", "#3a4356", "#00e68a", "#ffc233"],
 };
@@ -325,31 +325,29 @@ export async function renderPlayerCardCanvas(name) {
   }
   ctx.globalAlpha = 1;
 
-  // ---- ヘッダ: 判定タイル装飾（左上コーナーに密着）+ ロゴ / PLAYER CARD（右上・光沢なし）----
+  // ---- ヘッダ: ロゴ / PLAYER CARD（左上・光沢なし）+ 判定タイル装飾（右上コーナーに密着）----
   ctx.textBaseline = "middle";
-  const tiles = CARD.miniTileColors;
-  tiles.forEach((color, i) => {
-    ctx.fillStyle = color;
-    roundRect(ctx, CARD.miniTileX + i * (CARD.miniTileSize + CARD.miniTileGap), CARD.miniTileY, CARD.miniTileSize, CARD.miniTileSize, 6);
-    ctx.fill();
-  });
-
-  ctx.textAlign = "right";
+  ctx.textAlign = "left";
   ctx.font = '900 46px "Avenir Next", "Helvetica Neue", sans-serif';
   const logoText = "DWORDle 2";
   const logoW = ctx.measureText(logoText).width;
-  const logoGrad = ctx.createLinearGradient(right - logoW, 0, right, 0);
+  const logoGrad = ctx.createLinearGradient(left, 0, left + logoW, 0);
   logoGrad.addColorStop(0, CARD.logoGrad[0]);
   logoGrad.addColorStop(1, CARD.logoGrad[1]);
   ctx.fillStyle = logoGrad;
-  ctx.fillText(logoText, right, CARD.logoY);
+  ctx.fillText(logoText, left, CARD.logoY);
 
-  ctx.textAlign = "left";
   ctx.font = '700 19px "Avenir Next", sans-serif';
   ctx.fillStyle = CARD.dim;
-  const kickerText = "P L A Y E R   C A R D";
-  const kickerW = [...kickerText].reduce((total, ch) => total + ctx.measureText(ch).width + 1.5, -1.5);
-  drawSpaced(ctx, kickerText, right - kickerW, CARD.kickerY);
+  drawSpaced(ctx, "P L A Y E R   C A R D", left, CARD.kickerY);
+
+  const tiles = CARD.miniTileColors;
+  const tilesW = tiles.length * CARD.miniTileSize + (tiles.length - 1) * CARD.miniTileGap;
+  tiles.forEach((color, i) => {
+    ctx.fillStyle = color;
+    roundRect(ctx, W - CARD.miniTileX - tilesW + i * (CARD.miniTileSize + CARD.miniTileGap), CARD.miniTileY, CARD.miniTileSize, CARD.miniTileSize, 6);
+    ctx.fill();
+  });
 
   // ---- 右側: 大型ランクエンブレム（グロー + 六角形 + リング + アイコン + ランクピル）----
   const em = CARD.emblem;
