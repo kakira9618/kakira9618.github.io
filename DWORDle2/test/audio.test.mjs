@@ -117,8 +117,8 @@ FakeAudioContext.holdNextResume = false;
 
 globalThis.window = { AudioContext: FakeAudioContext };
 
-const { setSetting } = await import("../js/core/settings.js?v=20260723-gate-mode");
-const { audioNeedsRecovery, currentBgmTrackId, playSfx, unlockAudio, setUsoMood, stopBgm, BGM_TRACKS } = await import("../js/audio/sound.js");
+const { setSetting } = await import("../js/core/settings.js?v=20260723-gate-bgm");
+const { audioNeedsRecovery, currentBgmTrackId, playSfx, rewindBgm, unlockAudio, setUsoMood, stopBgm, BGM_TRACKS } = await import("../js/audio/sound.js");
 
 setSetting("bgm", false);
 playSfx("ui");
@@ -259,6 +259,30 @@ assert(classicFreqs.length > 0, "switching back to normal mood should reschedule
 assert(
   !classicFreqs.some((freq) => Math.abs(freq - bellHz(91)) < 0.01), // Letter Minuet のチェレスタ（G6）は鳴らない
   "the Classic theme's normal mode must no longer schedule Letter Minuet"
+);
+
+// 扉絵の「開始」用の巻き戻し: 小節位置が進んだ状態からの再開は進んだ小節の続きになるが、
+// rewindBgm() を挟むと曲頭（1 小節目）から予約し直される。
+// Classic 8-bit のベース頭（小節コードのルート - 24）で小節位置を識別する:
+// 3 小節目 (Bb) のベース頭 midi 34 は、巻き戻しなしの再開でだけ現れる。
+// （この時点で直前の再スケジュールにより 1〜2 小節目が予約済み = 小節位置は 3 小節目）
+const bassHz = (midi) => 440 * Math.pow(2, (midi - 69) / 12);
+const resumeFreqs = scheduledAfter(() => unlockAudio({ restartBgm: true }));
+assert(
+  resumeFreqs.some((freq) => Math.abs(freq - bassHz(34)) < 0.01),
+  "a restart without rewind should resume from the advanced bar position"
+);
+const rewindFreqs = scheduledAfter(() => {
+  rewindBgm();
+  unlockAudio({ restartBgm: true });
+});
+assert(
+  rewindFreqs.some((freq) => Math.abs(freq - bassHz(31)) < 0.01), // 2 小節目 (G) のベース頭
+  "rewindBgm + restart should schedule the track from its first bars"
+);
+assert(
+  !rewindFreqs.some((freq) => Math.abs(freq - bassHz(34)) < 0.01),
+  "rewindBgm + restart must not resume from the middle of the track"
 );
 
 stopBgm();

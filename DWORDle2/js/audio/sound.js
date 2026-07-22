@@ -5,8 +5,8 @@
 //   曲の実体は TRACKS（テンポ・コード進行・1 小節のスケジューラ）に定義する。
 //   設定やモード切替時はバスをクロスフェードしてシームレスに移行する。
 
-import { AUDIO } from "../config.js?v=20260723-gate-mode";
-import { getSettings, onSettingsChange } from "../core/settings.js?v=20260723-gate-mode";
+import { AUDIO } from "../config.js?v=20260723-gate-bgm";
+import { getSettings, onSettingsChange } from "../core/settings.js?v=20260723-gate-bgm";
 
 let ctx = null;
 let masterGain = null;
@@ -1673,6 +1673,14 @@ function bgmLoop() {
     barIndex++;
   }
   bgmTimer = setTimeout(bgmLoop, 300);
+}
+
+// BGM を曲頭（1 小節目）へ巻き戻す。次の startBgm がトラックの先頭から予約し直す。
+// 単体では再生位置を変えないため、unlockAudio({ restartBgm: true }) とセットで使う。
+// 扉絵の「開始」が使い、入場時の BGM を必ず曲の頭から鳴らす
+// （音復帰の設定変更で BGM が先に走り出し、小節位置が進んでいることがあるため）。
+export function rewindBgm() {
+  barIndex = 0;
 }
 
 export function startBgm() {

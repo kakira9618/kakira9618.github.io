@@ -11,11 +11,11 @@
 //   #/analysis/<mode>/<startTime> 分析画面
 
 import { loadJSON, saveJSON } from "../core/store.js";
-import { setUsoMood } from "../audio/sound.js?v=20260723-gate-mode";
-import { setBackgroundMood } from "../fx/effects.js?v=20260723-gate-mode";
-import { setPopBackgroundMood } from "../fx/pop-background.js?v=20260723-gate-mode";
-import { closeAllModals } from "./modal.js?v=20260723-gate-mode";
-import { trackScreen } from "../core/activity.js?v=20260723-gate-mode";
+import { setUsoMood } from "../audio/sound.js?v=20260723-gate-bgm";
+import { setBackgroundMood } from "../fx/effects.js?v=20260723-gate-bgm";
+import { setPopBackgroundMood } from "../fx/pop-background.js?v=20260723-gate-bgm";
+import { closeAllModals } from "./modal.js?v=20260723-gate-bgm";
+import { trackScreen } from "../core/activity.js?v=20260723-gate-bgm";
 
 const screens = new Map(); // name -> { element, render(params) }
 let currentName = null;

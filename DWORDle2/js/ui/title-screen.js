@@ -2,27 +2,27 @@
 // 右上のマスクボタンで DWORDlie（裏モード）に切り替わる。
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260723-gate-mode";
+import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260723-gate-bgm";
 import { countPlays, getCurrentGame, getHistory, isAlreadyPlayed } from "../core/records.js";
 import { isDebugMode } from "../core/debug.js";
 import { LEVELS, todayPID, isValidPID, pidLabel, PID } from "../core/problems.js";
-import { getSettings, setSetting } from "../core/settings.js?v=20260723-gate-mode";
+import { getSettings, setSetting } from "../core/settings.js?v=20260723-gate-bgm";
 import { loadJSON, saveJSON } from "../core/store.js";
 import { importFromLocalStorage, scanLegacyHistory } from "../core/migrate.js";
-import { playSfx } from "../audio/sound.js?v=20260723-gate-mode";
-import { toast } from "./toast.js?v=20260723-gate-mode";
-import { showModal } from "./modal.js?v=20260723-gate-mode";
-import { finishHistoryImport } from "./history-import.js?v=20260723-gate-mode";
-import { showFirstTutorial, showHelpModal } from "./help.js?v=20260723-gate-mode";
-import { confirmAndStart } from "./game-screen.js?v=20260723-gate-mode";
-import { soundToggleButton } from "./sound-toggle.js?v=20260723-gate-mode";
-import { burstAtElement } from "../fx/effects.js?v=20260723-gate-mode";
-import { shouldReduceMotion } from "../core/motion.js?v=20260723-gate-mode";
+import { playSfx } from "../audio/sound.js?v=20260723-gate-bgm";
+import { toast } from "./toast.js?v=20260723-gate-bgm";
+import { showModal } from "./modal.js?v=20260723-gate-bgm";
+import { finishHistoryImport } from "./history-import.js?v=20260723-gate-bgm";
+import { showFirstTutorial, showHelpModal } from "./help.js?v=20260723-gate-bgm";
+import { confirmAndStart } from "./game-screen.js?v=20260723-gate-bgm";
+import { soundToggleButton } from "./sound-toggle.js?v=20260723-gate-bgm";
+import { burstAtElement } from "../fx/effects.js?v=20260723-gate-bgm";
+import { shouldReduceMotion } from "../core/motion.js?v=20260723-gate-bgm";
 import { icon } from "./icons.js";
-import { APP_VERSION } from "../config.js?v=20260723-gate-mode";
-import { SOURCE_HASH } from "../version.js?v=20260723-gate-mode";
-import { localizedLevel, tr } from "../core/i18n.js?v=20260723-gate-mode";
-import { CARD_UNLOCK_PLAYS } from "./player-card.js?v=20260723-gate-mode";
+import { APP_VERSION } from "../config.js?v=20260723-gate-bgm";
+import { SOURCE_HASH } from "../version.js?v=20260723-gate-bgm";
+import { localizedLevel, tr } from "../core/i18n.js?v=20260723-gate-bgm";
+import { CARD_UNLOCK_PLAYS } from "./player-card.js?v=20260723-gate-bgm";
 
 let root = null;
 let legacyImportCheckDone = false;

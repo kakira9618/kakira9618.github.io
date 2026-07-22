@@ -4,23 +4,23 @@
 // 原作と同じく、Guess は確定するたびに保存され、リロードしても再開できる。
 
 import { el, clear } from "./dom.js";
-import { APP_VERSION, UI, FX } from "../config.js?v=20260723-gate-mode";
+import { APP_VERSION, UI, FX } from "../config.js?v=20260723-gate-bgm";
 import { Logic, CELL, usoConvert } from "../core/logic.js";
 import { MODES, saveCurrentGame, clearCurrentGame, getCurrentGame, addFinishedGame, isAlreadyPlayed, getHistory } from "../core/records.js";
 import { pidLabel } from "../core/problems.js";
-import { checkOnGameFinish } from "../core/achievements.js?v=20260723-gate-mode";
-import { registerScreen, navigate, redirect, getAppMode, currentScreenName } from "./app.js?v=20260723-gate-mode";
-import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./toast.js?v=20260723-gate-mode";
-import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js?v=20260723-gate-mode";
-import { hiddenThemesUnlockedBy } from "../core/settings.js?v=20260723-gate-mode";
-import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/effects.js?v=20260723-gate-mode";
-import { showHelpModal } from "./help.js?v=20260723-gate-mode";
-import { soundToggleButton } from "./sound-toggle.js?v=20260723-gate-mode";
+import { checkOnGameFinish } from "../core/achievements.js?v=20260723-gate-bgm";
+import { registerScreen, navigate, redirect, getAppMode, currentScreenName } from "./app.js?v=20260723-gate-bgm";
+import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./toast.js?v=20260723-gate-bgm";
+import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js?v=20260723-gate-bgm";
+import { hiddenThemesUnlockedBy } from "../core/settings.js?v=20260723-gate-bgm";
+import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/effects.js?v=20260723-gate-bgm";
+import { showHelpModal } from "./help.js?v=20260723-gate-bgm";
+import { soundToggleButton } from "./sound-toggle.js?v=20260723-gate-bgm";
 import { icon } from "./icons.js";
-import { tr } from "../core/i18n.js?v=20260723-gate-mode";
-import { getSettings } from "../core/settings.js?v=20260723-gate-mode";
-import { shouldReduceMotion } from "../core/motion.js?v=20260723-gate-mode";
-import { announce, feedbackName, rowAriaLabel, tileAriaLabel } from "./a11y.js?v=20260723-gate-mode";
+import { tr } from "../core/i18n.js?v=20260723-gate-bgm";
+import { getSettings } from "../core/settings.js?v=20260723-gate-bgm";
+import { shouldReduceMotion } from "../core/motion.js?v=20260723-gate-bgm";
+import { announce, feedbackName, rowAriaLabel, tileAriaLabel } from "./a11y.js?v=20260723-gate-bgm";
 
 const KEY_ROWS = [
   [..."qwertyuiop".split(""), "backspace"],
@@ -667,7 +667,7 @@ export async function confirmAndStart(pid, mode) {
   if (isAlreadyPlayed(pid, mode) || playedToday) {
     // 注意: 動的 import にも必ず ?v= トークンを付ける。素の URL だと古いキャッシュの
     // modal.js（旧トークンで sound.js を import する）が混ざり、BGM が二重再生される。
-    const { confirmModal } = await import("./modal.js?v=20260723-gate-mode");
+    const { confirmModal } = await import("./modal.js?v=20260723-gate-bgm");
     const label = pidLabel(pid);
     const countNote = playedToday
       ? tr(
@@ -683,7 +683,7 @@ export async function confirmAndStart(pid, mode) {
   }
   const current = getCurrentGame(mode);
   if (current && current.guessWord.length > 0) {
-    const { confirmModal } = await import("./modal.js?v=20260723-gate-mode");
+    const { confirmModal } = await import("./modal.js?v=20260723-gate-bgm");
     const ok = await confirmModal(
       tr("進行中のゲーム", "Game in progress"),
       tr(

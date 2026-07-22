@@ -4,18 +4,18 @@
 // ルート: #/analysis/<mode>/<startTime>
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate, setViewMood } from "./app.js?v=20260723-gate-mode";
+import { registerScreen, navigate, setViewMood } from "./app.js?v=20260723-gate-bgm";
 import { findGame, MODES } from "../core/records.js";
 import { Logic } from "../core/logic.js";
 import { pidLabel } from "../core/problems.js";
-import { computeTruePatternIds, resultToPatternId, patternIdToStates } from "../core/analysis-core.js?v=20260723-gate-mode";
-import { checkOnEvent } from "../core/achievements.js?v=20260723-gate-mode";
-import { achievementCelebration } from "./toast.js?v=20260723-gate-mode";
-import { playSfx } from "../audio/sound.js?v=20260723-gate-mode";
-import { soundToggleButton } from "./sound-toggle.js?v=20260723-gate-mode";
+import { computeTruePatternIds, resultToPatternId, patternIdToStates } from "../core/analysis-core.js?v=20260723-gate-bgm";
+import { checkOnEvent } from "../core/achievements.js?v=20260723-gate-bgm";
+import { achievementCelebration } from "./toast.js?v=20260723-gate-bgm";
+import { playSfx } from "../audio/sound.js?v=20260723-gate-bgm";
+import { soundToggleButton } from "./sound-toggle.js?v=20260723-gate-bgm";
 import { icon } from "./icons.js";
-import { currentLanguage, isEnglish, tr } from "../core/i18n.js?v=20260723-gate-mode";
-import { rowAriaLabel } from "./a11y.js?v=20260723-gate-mode";
+import { currentLanguage, isEnglish, tr } from "../core/i18n.js?v=20260723-gate-bgm";
+import { rowAriaLabel } from "./a11y.js?v=20260723-gate-bgm";
 
 let root = null;
 let worker = null;
@@ -149,7 +149,7 @@ function render(args) {
     record.gameMode === "uso" ? record.usoResults.map((r) => resultToPatternId(r)) : truePatternIds;
 
   if (worker) worker.terminate();
-  worker = new Worker(new URL("../core/analysis.worker.js?v=20260723-gate-mode", import.meta.url), { type: "module" });
+  worker = new Worker(new URL("../core/analysis.worker.js?v=20260723-gate-bgm", import.meta.url), { type: "module" });
   worker.onmessage = (e) => {
     if (token !== renderToken) return; // 画面遷移後の古い結果
     const msg = e.data;

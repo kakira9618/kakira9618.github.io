@@ -4,21 +4,21 @@
 // 通算 5 回プレイで解放（タイトルメニューの段階解放と同じ仕組み）。
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate, redirect } from "./app.js?v=20260723-gate-mode";
+import { registerScreen, navigate, redirect } from "./app.js?v=20260723-gate-bgm";
 import { getHistory, countPlays } from "../core/records.js";
-import { ACHIEVEMENTS, getUnlocked } from "../core/achievements.js?v=20260723-gate-mode";
-import { getSettings, HIDDEN_THEMES } from "../core/settings.js?v=20260723-gate-mode";
-import { BGM_TRACKS, currentBgmTrackId, playSfx } from "../audio/sound.js?v=20260723-gate-mode";
+import { ACHIEVEMENTS, getUnlocked } from "../core/achievements.js?v=20260723-gate-bgm";
+import { getSettings, HIDDEN_THEMES } from "../core/settings.js?v=20260723-gate-bgm";
+import { BGM_TRACKS, currentBgmTrackId, playSfx } from "../audio/sound.js?v=20260723-gate-bgm";
 import { loadJSON, saveJSON } from "../core/store.js";
 import { isDebugMode } from "../core/debug.js";
-import { toast } from "./toast.js?v=20260723-gate-mode";
-import { soundToggleButton } from "./sound-toggle.js?v=20260723-gate-mode";
-import { winBurst } from "../fx/effects.js?v=20260723-gate-mode";
-import { shouldReduceMotion } from "../core/motion.js?v=20260723-gate-mode";
+import { toast } from "./toast.js?v=20260723-gate-bgm";
+import { soundToggleButton } from "./sound-toggle.js?v=20260723-gate-bgm";
+import { winBurst } from "../fx/effects.js?v=20260723-gate-bgm";
+import { shouldReduceMotion } from "../core/motion.js?v=20260723-gate-bgm";
 import { icon, iconSvg } from "./icons.js";
-import { announce } from "./a11y.js?v=20260723-gate-mode";
-import { SHARE_URL } from "../config.js?v=20260723-gate-mode";
-import { tr } from "../core/i18n.js?v=20260723-gate-mode";
+import { announce } from "./a11y.js?v=20260723-gate-bgm";
+import { SHARE_URL } from "../config.js?v=20260723-gate-bgm";
+import { tr } from "../core/i18n.js?v=20260723-gate-bgm";
 
 // 解放しきい値（タイトルメニューの MENU_UNLOCKS と同じ値を参照させる）
 export const CARD_UNLOCK_PLAYS = 5;

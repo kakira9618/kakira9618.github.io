@@ -1,9 +1,9 @@
 // モーダルダイアログ。
 
 import { el, clear } from "./dom.js";
-import { playSfx } from "../audio/sound.js?v=20260723-gate-mode";
-import { tr } from "../core/i18n.js?v=20260723-gate-mode";
-import { logEvent } from "../core/activity.js?v=20260723-gate-mode";
+import { playSfx } from "../audio/sound.js?v=20260723-gate-bgm";
+import { tr } from "../core/i18n.js?v=20260723-gate-bgm";
+import { logEvent } from "../core/activity.js?v=20260723-gate-bgm";
 
 const layer = () => document.getElementById("modal-layer");
 const openCloseFns = new Set(); // closeAllModals 用
