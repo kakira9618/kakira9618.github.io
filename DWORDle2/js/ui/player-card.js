@@ -117,7 +117,7 @@ const CARD = {
 // さらに通算 1000 プレイに到達すると最上位 KING（王）になる。
 // 王の称号は多くプレイしている方のモードで決まる（同数なら DWORDle）。
 const RANKS = [
-  { min: 5, tier: 1, id: "BRONZE", frame: ["#f0a35e", "#9a5b2d"], accent: "#f0a35e", titleJa: "見習いWORDler", titleEn: "Apprentice WORDler", icon: "star" },
+  { min: 5, tier: 1, id: "BRONZE", frame: ["#f0a35e", "#9a5b2d"], accent: "#f0a35e", titleJa: "見習いDWORDler", titleEn: "Apprentice WORDler", titleSize: 26, icon: "star" },
   { min: 25, tier: 2, id: "SILVER", frame: ["#eef3fa", "#8fa3b8"], accent: "#c9d6e8", titleJa: "一人前WORDler", titleEn: "Seasoned WORDler", icon: "shield" },
   { min: 75, tier: 3, id: "GOLD", frame: ["#ffe08a", "#d99a1b"], accent: "#ffd166", titleJa: "凄腕WORDler", titleEn: "Ace WORDler", icon: "swords" },
   { min: 200, tier: 4, id: "PLATINUM", frame: ["#c5fff2", "#4fc3d8"], accent: "#8ee9dd", titleJa: "達人WORDler", titleEn: "Master WORDler", icon: "flame" },
@@ -483,7 +483,7 @@ export async function renderPlayerCardCanvas(name) {
   const rankSegW = ctx.measureText(rankText).width + 46;
   const badgeIcon = 32;
   // 称号もバッジ棚に被らない幅まで縮める（長い英語称号向け）
-  let titleSize = 28;
+  let titleSize = rank.titleSize ?? 28;
   ctx.font = `800 ${titleSize}px "Avenir Next", sans-serif`;
   let titleW = ctx.measureText(titleText).width;
   while (rankSegW + badgeIcon + titleW + 58 > nameMaxW && titleSize > 20) {

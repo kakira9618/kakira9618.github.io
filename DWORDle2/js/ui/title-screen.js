@@ -89,6 +89,7 @@ function randomPrompt(mode) {
             class: `btn ${lv.id === lastLevel ? "btn-primary" : ""}`,
             style: { width: "100%", justifyContent: "space-between" },
             onclick: () => {
+              playSfx("ui");
               setSetting("randomLevel", lv.id);
               confirmAndStart(randomPID(lv.range[0], lv.range[1], mode), mode);
             },

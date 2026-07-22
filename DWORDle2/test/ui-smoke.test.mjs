@@ -1258,6 +1258,10 @@ try {
       const ach = { achUnlocked: 10, achTotal: 10 };
       const noAch = { achUnlocked: 9, achTotal: 10 };
       return {
+        apprentice: (() => {
+          const rank = mod.rankForStats({ ...noAch, plays: 5, normalPlays: 5, usoPlays: 0 });
+          return `${rank.id}:${rank.titleJa}:${rank.titleSize}`;
+        })(),
         kingNormal: pick({ ...ach, plays: 1000, normalPlays: 600, usoPlays: 400 }),
         kingUso: pick({ ...ach, plays: 1000, normalPlays: 400, usoPlays: 600 }),
         kingTie: pick({ ...ach, plays: 1000, normalPlays: 500, usoPlays: 500 }),
@@ -1265,6 +1269,7 @@ try {
         diamondWithoutAllAchievements: pick({ ...noAch, plays: 1500, normalPlays: 0, usoPlays: 1500 }),
       };
     });
+    assert.equal(ranks.apprentice, "BRONZE:見習いDWORDler:26", "the apprentice card title should use DWORDler at a slightly smaller size");
     assert.equal(ranks.kingNormal, "KING:DWORDleの王", "mostly-DWORDle players should become the DWORDle king");
     assert.equal(ranks.kingUso, "KING:DWORDlieの王", "mostly-DWORDlie players should become the DWORDlie king");
     assert.equal(ranks.kingTie, "KING:DWORDleの王", "an even split should crown the DWORDle king");
