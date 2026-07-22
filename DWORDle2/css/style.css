@@ -2614,7 +2614,18 @@ body.reduce-motion .guess-flag-cloth {
 .player-card-wrap {
   position: relative;
   border-radius: 14px;
+  /* 発行時の光の帯（::after）やランクアップ演出をカードの外へはみ出させない */
+  overflow: hidden;
+}
+/* スワイプ / ドラッグで指の方向にカードが少し傾く（「カードである」ことの提示）。
+   遠近感は親 .player-card-stage の perspective を使う */
+.player-card-tilt {
   transform-style: preserve-3d;
+  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.3, 1);
+  touch-action: pan-y; /* 横スワイプは傾き、縦は画面スクロールを優先 */
+}
+.player-card-tilt.tilting {
+  transition: transform 0.08s linear;
 }
 .player-card-canvas {
   display: block;

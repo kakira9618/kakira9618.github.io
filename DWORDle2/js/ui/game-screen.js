@@ -4,23 +4,23 @@
 // 原作と同じく、Guess は確定するたびに保存され、リロードしても再開できる。
 
 import { el, clear } from "./dom.js";
-import { APP_VERSION, UI, FX } from "../config.js?v=20260722-wipe-card";
+import { APP_VERSION, UI, FX } from "../config.js?v=20260722-card-refine";
 import { Logic, CELL, usoConvert } from "../core/logic.js";
 import { MODES, saveCurrentGame, clearCurrentGame, getCurrentGame, addFinishedGame, isAlreadyPlayed, getHistory } from "../core/records.js";
 import { pidLabel } from "../core/problems.js";
-import { checkOnGameFinish } from "../core/achievements.js?v=20260722-wipe-card";
-import { registerScreen, navigate, redirect, getAppMode, currentScreenName, rememberPlayedMode } from "./app.js?v=20260722-wipe-card";
-import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./toast.js?v=20260722-wipe-card";
-import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js?v=20260722-wipe-card";
-import { hiddenThemesUnlockedBy } from "../core/settings.js?v=20260722-wipe-card";
-import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/effects.js?v=20260722-wipe-card";
-import { showHelpModal } from "./help.js?v=20260722-wipe-card";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-wipe-card";
+import { checkOnGameFinish } from "../core/achievements.js?v=20260722-card-refine";
+import { registerScreen, navigate, redirect, getAppMode, currentScreenName, rememberPlayedMode } from "./app.js?v=20260722-card-refine";
+import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./toast.js?v=20260722-card-refine";
+import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js?v=20260722-card-refine";
+import { hiddenThemesUnlockedBy } from "../core/settings.js?v=20260722-card-refine";
+import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/effects.js?v=20260722-card-refine";
+import { showHelpModal } from "./help.js?v=20260722-card-refine";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-card-refine";
 import { icon } from "./icons.js";
-import { tr } from "../core/i18n.js?v=20260722-wipe-card";
-import { getSettings } from "../core/settings.js?v=20260722-wipe-card";
-import { shouldReduceMotion } from "../core/motion.js?v=20260722-wipe-card";
-import { announce, feedbackName, rowAriaLabel, tileAriaLabel } from "./a11y.js?v=20260722-wipe-card";
+import { tr } from "../core/i18n.js?v=20260722-card-refine";
+import { getSettings } from "../core/settings.js?v=20260722-card-refine";
+import { shouldReduceMotion } from "../core/motion.js?v=20260722-card-refine";
+import { announce, feedbackName, rowAriaLabel, tileAriaLabel } from "./a11y.js?v=20260722-card-refine";
 
 const KEY_ROWS = [
   [..."qwertyuiop".split(""), "backspace"],
@@ -643,7 +643,7 @@ export async function confirmAndStart(pid, mode) {
   if (isAlreadyPlayed(pid, mode) || playedToday) {
     // 注意: 動的 import にも必ず ?v= トークンを付ける。素の URL だと古いキャッシュの
     // modal.js（旧トークンで sound.js を import する）が混ざり、BGM が二重再生される。
-    const { confirmModal } = await import("./modal.js?v=20260722-wipe-card");
+    const { confirmModal } = await import("./modal.js?v=20260722-card-refine");
     const label = pidLabel(pid);
     const countNote = playedToday
       ? tr(
@@ -659,7 +659,7 @@ export async function confirmAndStart(pid, mode) {
   }
   const current = getCurrentGame(mode);
   if (current && current.guessWord.length > 0) {
-    const { confirmModal } = await import("./modal.js?v=20260722-wipe-card");
+    const { confirmModal } = await import("./modal.js?v=20260722-card-refine");
     const ok = await confirmModal(
       tr("進行中のゲーム", "Game in progress"),
       tr(

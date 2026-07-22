@@ -4,21 +4,21 @@
 // 通算 5 回プレイで解放（タイトルメニューの段階解放と同じ仕組み）。
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate, redirect } from "./app.js?v=20260722-wipe-card";
+import { registerScreen, navigate, redirect } from "./app.js?v=20260722-card-refine";
 import { getHistory, countPlays } from "../core/records.js";
-import { ACHIEVEMENTS, getUnlocked } from "../core/achievements.js?v=20260722-wipe-card";
-import { getSettings, HIDDEN_THEMES } from "../core/settings.js?v=20260722-wipe-card";
-import { BGM_TRACKS, currentBgmTrackId, playSfx } from "../audio/sound.js?v=20260722-wipe-card";
+import { ACHIEVEMENTS, getUnlocked } from "../core/achievements.js?v=20260722-card-refine";
+import { getSettings, HIDDEN_THEMES } from "../core/settings.js?v=20260722-card-refine";
+import { BGM_TRACKS, currentBgmTrackId, playSfx } from "../audio/sound.js?v=20260722-card-refine";
 import { loadJSON, saveJSON } from "../core/store.js";
 import { isDebugMode } from "../core/debug.js";
-import { toast } from "./toast.js?v=20260722-wipe-card";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-wipe-card";
-import { winBurst } from "../fx/effects.js?v=20260722-wipe-card";
-import { shouldReduceMotion } from "../core/motion.js?v=20260722-wipe-card";
+import { toast } from "./toast.js?v=20260722-card-refine";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-card-refine";
+import { winBurst } from "../fx/effects.js?v=20260722-card-refine";
+import { shouldReduceMotion } from "../core/motion.js?v=20260722-card-refine";
 import { icon, iconSvg } from "./icons.js";
-import { announce } from "./a11y.js?v=20260722-wipe-card";
-import { SHARE_URL } from "../config.js?v=20260722-wipe-card";
-import { tr } from "../core/i18n.js?v=20260722-wipe-card";
+import { announce } from "./a11y.js?v=20260722-card-refine";
+import { SHARE_URL } from "../config.js?v=20260722-card-refine";
+import { tr } from "../core/i18n.js?v=20260722-card-refine";
 
 // 解放しきい値（タイトルメニューの MENU_UNLOCKS と同じ値を参照させる）
 export const CARD_UNLOCK_PLAYS = 5;
@@ -29,6 +29,10 @@ export const NAME_MAX_CHARS = 12;
 // 昇格演出: カード着地アニメーションが落ち着いてから出すまでの時間と、演出の長さ
 const PROMO_DELAY_MS = 1000;
 const PROMO_OVERLAY_MS = 2600;
+
+// スワイプ / ドラッグでカードが指の方向に傾く演出の強さ
+const TILT_MAX_DEG = 8; // 傾きの最大角度
+const TILT_GAIN = 16; // カード幅ぶんの移動で何度傾くか
 
 // ---- カードのレイアウト・配色定数（描画座標は幅 1200 x 高さ 675 基準の px）----
 const CARD = {
@@ -51,28 +55,32 @@ const CARD = {
   nameSize: 64,
   titleY: 352, // 称号バッジの中心
   // 右側の大型ランクエンブレム(六角形 + リング + アイコン)。
-  // ランク名は名前下の称号バッジに統合したので、ここはシンボルだけ置く
+  // ロゴを右上へ移したぶん、名前〜称号バッジ帯の垂直中央に置いて安定させる
   emblem: {
     cx: 972, // 中心 x
-    cy: 252, // 中心 y
-    hexR: 126, // 外側六角形の半径
-    ringR: 96, // 内側リングの半径
-    iconSize: 94,
-    glowR: 205, // 背後のグロー半径
+    cy: 296, // 中心 y
+    hexR: 118, // 外側六角形の半径
+    ringR: 90, // 内側リングの半径
+    iconSize: 88,
+    glowR: 190, // 背後のグロー半径
   },
   // 統計セル（4 列 x 2 行のパネル。お気に入りテーマ / BGM も 1 セルとして大きく見せる）
+  // セル内はラベル上・値下の 2 段（左のアクセントバーは廃止）
   stats: {
     top: 428, // 1 行目セルの上端
     cellH: 82,
     gap: 12,
-    valueSize: 40,
-    textValueSize: 25, // テーマ名・曲名などテキスト値のセル（収まらなければさらに縮める）
-    labelSize: 15,
+    valueSize: 36,
+    textValueSize: 24, // テーマ名・曲名などテキスト値のセル（収まらなければさらに縮める）
+    labelSize: 13,
+    labelOffsetY: 22, // セル上端 → ラベル中心
+    valueOffsetY: 56, // セル上端 → 値の中心
     cellFill: "rgba(255, 255, 255, 0.045)",
     cellStroke: "rgba(255, 255, 255, 0.09)",
   },
   footerDividerY: 622, // フッター上の細い区切り線
-  footerY: 644, // お気に入り（左）と URL・発行日（右）
+  footerY: 644, // 初プレイ（左・大きめ）と URL・発行日（右）
+  sinceSize: 21, // 初プレイ表示の文字サイズ
   cornerLen: 26, // 四隅の L 字アクセントの辺の長さ
   cornerInset: 30, // 四隅アクセントのフレームからの距離
   idEdgeX: 26, // プレイヤー ID の右端からの距離（縦書きで印字）
@@ -200,6 +208,12 @@ const fmtDate = (unixSec) => {
 // 総プレイ時間の表示（xx:yy = 時間:分）
 const fmtPlayTime = (minutes) => `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, "0")}`;
 
+// 初プレイ日の表示（ゼロ埋めなしの 2026/7/22 形式）
+const fmtDateShort = (unixSec) => {
+  const d = new Date(unixSec * 1000);
+  return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+};
+
 // プレイヤー ID: このブラウザで初めてカード機能に触れたときに乱数から一意に決め、
 // 以後は固定（16 進数 8 桁・大文字）。カードの右端に小さく印字される。
 export function getPlayerId() {
@@ -279,15 +293,6 @@ export async function renderPlayerCardCanvas(name) {
     ctx.restore();
   }
 
-  // 斜めの光の帯
-  ctx.save();
-  ctx.translate(W * 0.62, 0);
-  ctx.rotate(Math.PI / 10);
-  ctx.fillStyle = "rgba(255,255,255,0.03)";
-  ctx.fillRect(0, -H, 150, H * 3);
-  ctx.fillRect(220, -H, 60, H * 3);
-  ctx.restore();
-
   // ---- ランク色フレーム ----
   const fi = CARD.frameInset;
   ctx.strokeStyle = frameGradient(ctx, rank);
@@ -317,33 +322,31 @@ export async function renderPlayerCardCanvas(name) {
   }
   ctx.globalAlpha = 1;
 
-  // ---- ヘッダ: ロゴ + PLAYER CARD + 装飾タイル ----
+  // ---- ヘッダ: 判定タイル装飾（左上）+ ロゴ / PLAYER CARD（右上・光沢なし）----
   ctx.textBaseline = "middle";
-  ctx.textAlign = "left";
+  const tiles = CARD.miniTileColors;
+  tiles.forEach((color, i) => {
+    ctx.fillStyle = color;
+    roundRect(ctx, left + i * (CARD.miniTileSize + CARD.miniTileGap), CARD.logoY - CARD.miniTileSize / 2, CARD.miniTileSize, CARD.miniTileSize, 6);
+    ctx.fill();
+  });
+
+  ctx.textAlign = "right";
   ctx.font = '900 46px "Avenir Next", "Helvetica Neue", sans-serif';
   const logoText = "DWORDle 2";
   const logoW = ctx.measureText(logoText).width;
-  const logoGrad = ctx.createLinearGradient(left, 0, left + logoW, 0);
+  const logoGrad = ctx.createLinearGradient(right - logoW, 0, right, 0);
   logoGrad.addColorStop(0, CARD.logoGrad[0]);
   logoGrad.addColorStop(1, CARD.logoGrad[1]);
-  ctx.shadowColor = CARD.logoGrad[0];
-  ctx.shadowBlur = 22;
   ctx.fillStyle = logoGrad;
-  ctx.fillText(logoText, left, CARD.logoY);
-  ctx.shadowBlur = 0;
+  ctx.fillText(logoText, right, CARD.logoY);
 
+  ctx.textAlign = "left";
   ctx.font = '700 19px "Avenir Next", sans-serif';
   ctx.fillStyle = CARD.dim;
-  drawSpaced(ctx, "P L A Y E R   C A R D", left, CARD.kickerY);
-
-  // 判定タイル風の装飾（右上）
-  const tiles = CARD.miniTileColors;
-  const tilesW = tiles.length * CARD.miniTileSize + (tiles.length - 1) * CARD.miniTileGap;
-  tiles.forEach((color, i) => {
-    ctx.fillStyle = color;
-    roundRect(ctx, right - tilesW + i * (CARD.miniTileSize + CARD.miniTileGap), CARD.logoY - CARD.miniTileSize / 2, CARD.miniTileSize, CARD.miniTileSize, 6);
-    ctx.fill();
-  });
+  const kickerText = "P L A Y E R   C A R D";
+  const kickerW = [...kickerText].reduce((total, ch) => total + ctx.measureText(ch).width + 1.5, -1.5);
+  drawSpaced(ctx, kickerText, right - kickerW, CARD.kickerY);
 
   // ---- 右側: 大型ランクエンブレム（グロー + 六角形 + リング + アイコン + ランクピル）----
   const em = CARD.emblem;
@@ -416,13 +419,6 @@ export async function renderPlayerCardCanvas(name) {
   ctx.fillStyle = CARD.fg;
   ctx.fillText(displayName, left, CARD.nameY);
   ctx.shadowBlur = 0;
-  // 名前の下のアクセントライン（名前の幅に沿って伸びる）
-  const nameW = Math.min(ctx.measureText(displayName).width, nameMaxW);
-  const nameLine = ctx.createLinearGradient(left, 0, left + nameW + 60, 0);
-  nameLine.addColorStop(0, rank.accent);
-  nameLine.addColorStop(1, "rgba(255,255,255,0)");
-  ctx.fillStyle = nameLine;
-  ctx.fillRect(left, CARD.nameY + 44, nameW + 60, 2);
 
   // ---- ランク + 称号の一体バッジ ----
   // 左セグメントはランク色で塗って「GOLD RANK」、右セグメントにアイコン + 称号。
@@ -472,10 +468,10 @@ export async function renderPlayerCardCanvas(name) {
   // ---- 統計パネル（4 列 x 2 行のセル。テーマ / BGM もここで大きく見せる）----
   const st = CARD.stats;
   const cells = [
-    [String(stats.plays), tr("総プレイ", "Total plays")],
+    [String(stats.plays), tr("総プレイ回数", "Total plays")],
     [`${stats.winRate}%`, tr("勝率", "Win rate")],
     [String(stats.playDays), tr("プレイ日数", "Days played")],
-    [String(stats.maxStreak), tr("MAXストリーク", "Max streak")],
+    [String(stats.maxStreak), "Max Streak"],
     [`${stats.achUnlocked}/${stats.achTotal}`, tr("実績", "Achievements")],
     [fmtPlayTime(stats.playMinutes), tr("総プレイ時間", "Play time")],
     [themeLabel(settings.theme), tr("お気に入りテーマ", "Favorite theme"), true],
@@ -492,36 +488,33 @@ export async function renderPlayerCardCanvas(name) {
     ctx.lineWidth = 1;
     roundRect(ctx, x, y, cellW, st.cellH, 14);
     ctx.stroke();
-    // セル左端のアクセントバー
-    ctx.fillStyle = rank.accent;
-    ctx.globalAlpha = 0.6;
-    roundRect(ctx, x, y + 14, 3, st.cellH - 28, 1.5);
-    ctx.fill();
-    ctx.globalAlpha = 1;
+    // ラベル上・値下の 2 段組（ダッシュボード風）
     ctx.textAlign = "left";
+    ctx.font = `600 ${st.labelSize}px "Avenir Next", sans-serif`;
+    ctx.fillStyle = CARD.dim;
+    ctx.fillText(label, x + 20, y + st.labelOffsetY);
     // テキスト値（テーマ名・曲名）は数値より小さく始め、収まるまで縮める
     let valueSize = isText ? st.textValueSize : st.valueSize;
     ctx.font = `800 ${valueSize}px "Avenir Next", sans-serif`;
-    while (isText && valueSize > 15 && ctx.measureText(value).width > cellW - 44) {
+    while (isText && valueSize > 15 && ctx.measureText(value).width > cellW - 40) {
       valueSize -= 1;
       ctx.font = `800 ${valueSize}px "Avenir Next", sans-serif`;
     }
     ctx.fillStyle = CARD.fg;
-    ctx.fillText(value, x + 24, y + st.cellH / 2 - 9);
-    ctx.font = `600 ${st.labelSize}px "Avenir Next", sans-serif`;
-    ctx.fillStyle = CARD.dim;
-    ctx.fillText(label, x + 24, y + st.cellH / 2 + 22);
+    ctx.fillText(value, x + 20, y + st.valueOffsetY);
   });
 
-  // ---- フッター: 細い区切り線 + 初プレイ / URL / 発行日 ----
+  // ---- フッター: 細い区切り線 + 初プレイ（大きめ） / URL / 発行日 ----
   ctx.fillStyle = "rgba(255,255,255,0.08)";
   ctx.fillRect(left, CARD.footerDividerY, right - left, 1);
   ctx.textAlign = "left";
+  if (stats.firstPlay) {
+    ctx.font = `800 ${CARD.sinceSize}px "Avenir Next", sans-serif`;
+    ctx.fillStyle = CARD.fg;
+    ctx.fillText(tr(`${fmtDateShort(stats.firstPlay)}〜`, `Since ${fmtDateShort(stats.firstPlay)}`), left, CARD.footerY);
+  }
   ctx.font = '600 17px "Avenir Next", sans-serif';
   ctx.fillStyle = CARD.dim;
-  if (stats.firstPlay) {
-    ctx.fillText(tr(`初プレイ ${fmtDate(stats.firstPlay)}`, `Since ${fmtDate(stats.firstPlay)}`), left, CARD.footerY);
-  }
   ctx.textAlign = "right";
   ctx.fillText(
     `${SHARE_URL.replace(/^https:\/\//, "")}   ・   ${fmtDate(Math.floor(Date.now() / 1000))}`,
@@ -629,6 +622,38 @@ function celebratePromotion(stage, rank) {
   }, PROMO_DELAY_MS);
 }
 
+// スワイプ / ドラッグで指の方向にカードが少し傾く（カードらしさの提示）。
+// 指を離すと CSS transition でゆっくり水平に戻る。
+function attachCardTilt(tiltEl) {
+  const clampDeg = (v) => Math.min(TILT_MAX_DEG, Math.max(-TILT_MAX_DEG, v));
+  let pointerId = null;
+  let startX = 0;
+  let startY = 0;
+  tiltEl.addEventListener("pointerdown", (event) => {
+    if (shouldReduceMotion()) return;
+    pointerId = event.pointerId;
+    startX = event.clientX;
+    startY = event.clientY;
+    tiltEl.classList.add("tilting");
+    tiltEl.setPointerCapture?.(pointerId);
+  });
+  tiltEl.addEventListener("pointermove", (event) => {
+    if (pointerId !== event.pointerId) return;
+    const rect = tiltEl.getBoundingClientRect();
+    const ry = clampDeg(((event.clientX - startX) / rect.width) * TILT_GAIN);
+    const rx = clampDeg(((startY - event.clientY) / rect.height) * TILT_GAIN);
+    tiltEl.style.transform = `rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`;
+  });
+  const release = (event) => {
+    if (pointerId === null || pointerId !== event.pointerId) return;
+    pointerId = null;
+    tiltEl.classList.remove("tilting");
+    tiltEl.style.transform = "";
+  };
+  tiltEl.addEventListener("pointerup", release);
+  tiltEl.addEventListener("pointercancel", release);
+}
+
 async function drawInto(stage, name, { deal }) {
   const cv = await renderPlayerCardCanvas(name);
   cardCanvas = cv;
@@ -636,7 +661,9 @@ async function drawInto(stage, name, { deal }) {
   cv.setAttribute("role", "img");
   cv.setAttribute("aria-label", tr("プレイヤーカード画像", "Player card image"));
   const wrap = el("div", { class: `player-card-wrap ${deal && !shouldReduceMotion() ? "deal" : ""}` }, cv);
-  clear(stage).append(wrap);
+  const tilt = el("div", { class: "player-card-tilt" }, wrap);
+  attachCardTilt(tilt);
+  clear(stage).append(tilt);
 }
 
 function render() {
