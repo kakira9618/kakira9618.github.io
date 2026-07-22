@@ -11,10 +11,10 @@
 //   #/analysis/<mode>/<startTime> 分析画面
 
 import { loadJSON, saveJSON } from "../core/store.js";
-import { setUsoMood } from "../audio/sound.js?v=20260722-card-polish";
-import { setBackgroundMood } from "../fx/effects.js?v=20260722-card-polish";
-import { setPopBackgroundMood } from "../fx/pop-background.js?v=20260722-card-polish";
-import { closeAllModals } from "./modal.js?v=20260722-card-polish";
+import { setUsoMood } from "../audio/sound.js?v=20260722-no-zoom";
+import { setBackgroundMood } from "../fx/effects.js?v=20260722-no-zoom";
+import { setPopBackgroundMood } from "../fx/pop-background.js?v=20260722-no-zoom";
+import { closeAllModals } from "./modal.js?v=20260722-no-zoom";
 
 const screens = new Map(); // name -> { element, render(params) }
 let currentName = null;

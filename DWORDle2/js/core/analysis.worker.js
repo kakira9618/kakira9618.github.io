@@ -1,7 +1,7 @@
 // 分析モードの Worker。重い候補ペア計算を UI スレッドから隔離する。
 // module worker として起動される（ui/analysis-screen.js 参照）。
 
-import { analyzeGame } from "./analysis-core.js?v=20260722-card-polish";
+import { analyzeGame } from "./analysis-core.js?v=20260722-no-zoom";
 
 self.onmessage = (e) => {
   const params = e.data;

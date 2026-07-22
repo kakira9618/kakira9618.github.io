@@ -1,28 +1,28 @@
 // エントリポイント。画面登録・ルータ起動・3D 背景・音声の初期化。
 
-import { startRouter, initAppMode } from "./ui/app.js?v=20260722-card-polish";
-import { initEffects } from "./fx/effects.js?v=20260722-card-polish";
-import { initPopBackground } from "./fx/pop-background.js?v=20260722-card-polish";
-import { audioNeedsRecovery, bgmTracksUnlockedBy, restartBgmIfReady, stopBgm, unlockAudio } from "./audio/sound.js?v=20260722-card-polish";
-import { getSettings, onSettingsChange } from "./core/settings.js?v=20260722-card-polish";
-import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js?v=20260722-card-polish";
-import { syncDocumentLanguage, tr } from "./core/i18n.js?v=20260722-card-polish";
-import { reconcileAchievementsOnce } from "./core/achievements.js?v=20260722-card-polish";
-import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "./ui/game-screen.js?v=20260722-card-polish";
+import { startRouter, initAppMode } from "./ui/app.js?v=20260722-no-zoom";
+import { initEffects } from "./fx/effects.js?v=20260722-no-zoom";
+import { initPopBackground } from "./fx/pop-background.js?v=20260722-no-zoom";
+import { audioNeedsRecovery, bgmTracksUnlockedBy, restartBgmIfReady, stopBgm, unlockAudio } from "./audio/sound.js?v=20260722-no-zoom";
+import { getSettings, onSettingsChange } from "./core/settings.js?v=20260722-no-zoom";
+import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js?v=20260722-no-zoom";
+import { syncDocumentLanguage, tr } from "./core/i18n.js?v=20260722-no-zoom";
+import { reconcileAchievementsOnce } from "./core/achievements.js?v=20260722-no-zoom";
+import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "./ui/game-screen.js?v=20260722-no-zoom";
 import { onSaveError } from "./core/store.js";
-import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./ui/toast.js?v=20260722-card-polish";
-import { hiddenThemesUnlockedBy } from "./core/settings.js?v=20260722-card-polish";
+import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./ui/toast.js?v=20260722-no-zoom";
+import { hiddenThemesUnlockedBy } from "./core/settings.js?v=20260722-no-zoom";
 
 // 画面モジュール（import するだけで registerScreen される）
-import "./ui/title-screen.js?v=20260722-card-polish";
-import "./ui/game-screen.js?v=20260722-card-polish";
-import "./ui/result-screen.js?v=20260722-card-polish";
-import "./ui/history-screen.js?v=20260722-card-polish";
-import "./ui/problems-screen.js?v=20260722-card-polish";
-import "./ui/achievements-screen.js?v=20260722-card-polish";
-import "./ui/player-card.js?v=20260722-card-polish";
-import "./ui/analysis-screen.js?v=20260722-card-polish";
-import "./ui/settings-screen.js?v=20260722-card-polish";
+import "./ui/title-screen.js?v=20260722-no-zoom";
+import "./ui/game-screen.js?v=20260722-no-zoom";
+import "./ui/result-screen.js?v=20260722-no-zoom";
+import "./ui/history-screen.js?v=20260722-no-zoom";
+import "./ui/problems-screen.js?v=20260722-no-zoom";
+import "./ui/achievements-screen.js?v=20260722-no-zoom";
+import "./ui/player-card.js?v=20260722-no-zoom";
+import "./ui/analysis-screen.js?v=20260722-no-zoom";
+import "./ui/settings-screen.js?v=20260722-no-zoom";
 
 // 古い Android Chrome は dvh に未対応のため、実際の表示領域を CSS 変数で補う。
 // 対応ブラウザでは CSS 側の 100dvh が優先される。
@@ -84,8 +84,8 @@ const unlock = () => {
 addEventListener("pointerdown", unlock);
 addEventListener("keydown", unlock);
 
-// ダブルタップによる意図しない拡大だけを抑止する。
-// ピンチズームは弱視ユーザーが利用できるようブラウザ標準のまま許可する。
+// ズームは全面禁止（viewport の user-scalable=no + CSS touch-action: pan-x pan-y）。
+// これはそれらが効かない環境向けの保険として、ダブルタップ拡大も直接抑止する。
 document.addEventListener("dblclick", (event) => event.preventDefault(), { passive: false });
 
 // バックグラウンド復帰時は、状態に応じて即時再生または次の操作で再接続する。

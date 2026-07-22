@@ -1,8 +1,8 @@
 // モーダルダイアログ。
 
 import { el, clear } from "./dom.js";
-import { playSfx } from "../audio/sound.js?v=20260722-card-polish";
-import { tr } from "../core/i18n.js?v=20260722-card-polish";
+import { playSfx } from "../audio/sound.js?v=20260722-no-zoom";
+import { tr } from "../core/i18n.js?v=20260722-no-zoom";
 
 const layer = () => document.getElementById("modal-layer");
 const openCloseFns = new Set(); // closeAllModals 用

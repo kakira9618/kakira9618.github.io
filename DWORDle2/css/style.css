@@ -211,11 +211,13 @@ body.theme-pop .card {
   border: 0;
 }
 
+/* ズームは全面禁止（viewport の user-scalable=no と合わせた二段構え）。
+   pan-x pan-y はスクロールだけを許可し、ピンチズーム・ダブルタップズームを封じる */
 html,
 body {
   height: 100%;
   overscroll-behavior: none;
-  touch-action: manipulation;
+  touch-action: pan-x pan-y;
 }
 
 body {
@@ -227,7 +229,7 @@ body {
 
 #app,
 .screen {
-  touch-action: manipulation;
+  touch-action: pan-x pan-y;
 }
 
 button {
@@ -236,7 +238,7 @@ button {
   background: none;
   border: none;
   cursor: pointer;
-  touch-action: manipulation;
+  touch-action: pan-x pan-y;
 }
 
 :where(button, a, input, select, textarea, summary, [tabindex]):focus-visible {
@@ -445,6 +447,7 @@ body.theme-cyber .btn:hover {
   padding: 24px;
   text-align: center;
   overflow-y: auto;
+  touch-action: pan-y; /* スクロールコンテナには祖先のズーム禁止が届かないため個別に指定 */
 }
 .logo {
   font-size: clamp(40px, 11vw, 58px);
@@ -942,6 +945,7 @@ body.theme-pop .key.state-correct { color: #06281a; }
   max-height: 86vh; /* dvh 未対応ブラウザ向けフォールバック */
   max-height: 86dvh;
   overflow-y: auto;
+  touch-action: pan-y; /* スクロールコンテナには祖先のズーム禁止が届かないため個別に指定 */
   background: var(--bg-panel-2);
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -1253,6 +1257,7 @@ body.theme-cyber .toast {
   max-height: min(38vh, 280px); /* dvh 未対応ブラウザ向けフォールバック */
   max-height: min(38dvh, 280px);
   overflow-y: auto;
+  touch-action: pan-y; /* スクロールコンテナには祖先のズーム禁止が届かないため個別に指定 */
   margin: 0;
   text-align: left;
 }
@@ -1340,9 +1345,9 @@ body.theme-cyber .toast {
   flex-direction: column;
   gap: 10px;
   /* スクロールコンテナは effective touch-action の探索がここで打ち切られ、
-     祖先（html/body）の manipulation が届かない。ダブルタップズームを
-     ここでも抑止する（ピンチズームは弱視ユーザー向けに残る）。 */
-  touch-action: manipulation;
+     祖先（html/body）の指定が届かないため、ここでもズームを封じる
+     （縦スクロールだけ許可） */
+  touch-action: pan-y;
 }
 .card {
   background: var(--bg-panel);
@@ -2009,6 +2014,7 @@ body.reduce-motion .bar-grow {
   margin-top: 10px;
   padding: 2px 6px 2px 2px;
   overflow-y: auto;
+  touch-action: pan-y; /* スクロールコンテナには祖先のズーム禁止が届かないため個別に指定 */
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
   border-radius: 9px;

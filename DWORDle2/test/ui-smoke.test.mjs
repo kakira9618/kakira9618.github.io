@@ -78,7 +78,14 @@ await page.addInitScript(({ unlockedAchievements }) => {
 await page.addInitScript({ path: axePath });
 
 async function assertNoSeriousA11yViolations(stage) {
-  const result = await page.evaluate(async () => window.axe.run(document, { resultTypes: ["violations"] }));
+  // meta-viewport ルール（ズーム禁止の検出）は除外する。
+  // ズーム全面禁止はユーザーの明示要望による製品判断（2026-07-22）。
+  const result = await page.evaluate(async () =>
+    window.axe.run(document, {
+      resultTypes: ["violations"],
+      rules: { "meta-viewport": { enabled: false }, "meta-viewport-large": { enabled: false } },
+    })
+  );
   const violations = result.violations.filter((violation) => ["serious", "critical"].includes(violation.impact));
   const details = violations
     .map((violation) => `${violation.id}: ${violation.help}\n${violation.nodes.map((node) => `  ${node.target.join(" ")}: ${node.failureSummary}`).join("\n")}`)
@@ -210,7 +217,7 @@ try {
   assert.equal(normalPopVisuals.choiceColor, "rgb(74, 53, 80)");
 
   await page.evaluate(async () => {
-    const { setAppMode } = await import("./js/ui/app.js?v=20260722-card-polish");
+    const { setAppMode } = await import("./js/ui/app.js?v=20260722-no-zoom");
     setAppMode("uso");
   });
   await page.locator("body.theme-pop.mode-uso").waitFor();
@@ -270,12 +277,12 @@ try {
   await page.waitForURL(/#\/settings$/);
 
   await page.evaluate(async () => {
-    const { setAppMode } = await import("./js/ui/app.js?v=20260722-card-polish");
+    const { setAppMode } = await import("./js/ui/app.js?v=20260722-no-zoom");
     setAppMode("normal");
   });
   await page.locator("body.theme-pop.mode-normal").waitFor();
   await page.evaluate(async () => {
-    const { showHelpModal } = await import("./js/ui/help.js?v=20260722-card-polish");
+    const { showHelpModal } = await import("./js/ui/help.js?v=20260722-no-zoom");
     showHelpModal("normal");
   });
   const popHelp = page.getByRole("dialog", { name: "DWORDle 遊び方" });
@@ -432,8 +439,15 @@ try {
   assert.equal(await solvedCard.getByText("もっと絞れたかもしれない単語").count(), 0, "Winning Guess should not show suggestions");
   await assertNoSeriousA11yViolations("Analysis screen");
 
+  // ズームは全面禁止（ユーザーの明示要望による製品判断。2026-07-22）
   const viewport = await page.locator('meta[name="viewport"]').getAttribute("content");
-  assert.equal(viewport.includes("user-scalable=no"), false, "Pinch zoom must remain available");
+  assert.equal(viewport.includes("user-scalable=no"), true, "Zoom must be fully disabled by request");
+  assert.equal(viewport.includes("maximum-scale=1"), true, "Zoom must be fully disabled by request");
+  assert.equal(
+    await page.evaluate(() => getComputedStyle(document.body).touchAction),
+    "pan-x pan-y",
+    "touch-action must block pinch zoom app-wide"
+  );
   assert.equal(runtimeErrors.length, 0, `Runtime errors:\n${runtimeErrors.join("\n")}`);
 
   const shortPage = await browser.newPage({ viewport: { width: 393, height: 559 }, locale: "ja-JP" });
@@ -488,13 +502,13 @@ try {
   );
   await shortPage.waitForTimeout(50);
   const flightsBeforeLeave = await shortPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260722-card-polish")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260722-no-zoom")).activeTileFlightCount()
   );
   assert.ok(flightsBeforeLeave > 0, "Tile gather animation should be active before leaving the game");
   await shortPage.getByRole("button", { name: "タイトルへ戻る" }).click();
   await shortPage.waitForURL(/#\/$/);
   const flightsAfterLeave = await shortPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260722-card-polish")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260722-no-zoom")).activeTileFlightCount()
   );
   assert.equal(flightsAfterLeave, 0, "Tile gather animation should be removed when leaving the game");
   await shortPage.close();
@@ -540,13 +554,13 @@ try {
   await reducedDialog.getByRole("button", { name: "スタート" }).click();
   await reducedPage.locator("#screen-game.active .row").last().waitFor();
   const reducedFlights = await reducedPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260722-card-polish")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260722-no-zoom")).activeTileFlightCount()
   );
   assert.equal(reducedFlights, 0, "Reduced motion should suppress tile gather flights");
   await reducedContext.close();
 
   await page.evaluate(async () => {
-    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260722-card-polish");
+    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260722-no-zoom");
     bgmUnlockCelebration([{ id: "queue-test-a", name: "Queue Test A", desc: "First unlock" }]);
     bgmUnlockCelebration([{ id: "queue-test-b", name: "Queue Test B", desc: "Second unlock" }]);
   });
@@ -577,7 +591,7 @@ try {
 
   // 2 曲以上の同時解放（履歴インポート等）は 1 枚のまとめカードで報告する
   await page.evaluate(async () => {
-    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260722-card-polish");
+    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260722-no-zoom");
     bgmUnlockCelebration([
       { id: "multi-a", name: "Multi Track A", desc: "" },
       { id: "multi-b", name: "Multi Track B", desc: "" },
@@ -594,7 +608,7 @@ try {
 
   // 実績解放セレブレーション: 単発は大型カード、3 個以上は 1 枚にまとめる
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-card-polish");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-no-zoom");
     achievementCelebration([
       { id: "smoke-single", icon: "trophy", color: "#ffd166", name: "スモーク実績", desc: "テスト用の実績です" },
     ]);
@@ -612,7 +626,7 @@ try {
   await page.locator(".ach-unlock").waitFor({ state: "detached" });
 
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-card-polish");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-no-zoom");
     achievementCelebration([
       { id: "smoke-a", icon: "star", color: "#ffd166", name: "実績A", desc: "" },
       { id: "smoke-b", icon: "gem", color: "#7ee8ff", name: "実績B", desc: "" },
@@ -634,7 +648,7 @@ try {
 
   // リストが溢れるときは下端フェードで続きを示し、最下部まで送るとフェードが消える
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-card-polish");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-no-zoom");
     achievementCelebration(
       Array.from({ length: 9 }, (_, i) => ({ id: `smoke-many-${i}`, icon: "star", color: "#ffd166", name: `実績${i + 1}`, desc: "" }))
     );
@@ -671,7 +685,7 @@ try {
   // 判定オープン中の先行入力: 次の 1 行分をバッファし、オープン完了後に自動で確定する
   await page.getByRole("dialog", { name: "基本ルール | DWORDle" }).getByRole("button", { name: "わかった" }).click();
   await page.evaluate(async () => {
-    const { setSetting } = await import("./js/core/settings.js?v=20260722-card-polish");
+    const { setSetting } = await import("./js/core/settings.js?v=20260722-no-zoom");
     setSetting("theme", "classic");
     setSetting("sfx", false);
     setSetting("bgm", false);
@@ -1016,7 +1030,7 @@ try {
     // 称号ラダー: 最上位は王（実績全解除 + 1000 プレイ）。多い方のモードの王になり、
     // 同数なら DWORDle。1000 未満は伝説のまま、実績未コンプはプレイ数ランクのまま。
     const ranks = await cardPage.evaluate(async () => {
-      const mod = await import("./js/ui/player-card.js?v=20260722-card-polish");
+      const mod = await import("./js/ui/player-card.js?v=20260722-no-zoom");
       const pick = (stats) => {
         const rank = mod.rankForStats(stats);
         return `${rank.id}:${rank.titleJa}`;
