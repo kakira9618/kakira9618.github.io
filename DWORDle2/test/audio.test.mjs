@@ -117,7 +117,7 @@ FakeAudioContext.holdNextResume = false;
 
 globalThis.window = { AudioContext: FakeAudioContext };
 
-const { setSetting } = await import("../js/core/settings.js?v=20260723-gate-bgm");
+const { setSetting } = await import("../js/core/settings.js?v=20260723-pwa");
 const { audioNeedsRecovery, currentBgmTrackId, playSfx, rewindBgm, unlockAudio, setUsoMood, stopBgm, BGM_TRACKS } = await import("../js/audio/sound.js");
 
 setSetting("bgm", false);
@@ -208,8 +208,8 @@ assert(
   BGM_TRACKS.some((track) => track.id === "bitter" && track.unlockAchievement === "rainbow"),
   "the Bitter Candy track should unlock together with the Pop theme (rainbow achievement)"
 );
-// クラシックテーマの表・裏の曲（と旧・表の Letter Minuet）は初期状態で解放されていること
-for (const id of ["classic", "glitch", "retro"]) {
+// クラシックテーマの表・裏の曲（と旧・表裏の Letter Minuet / Letter Lament）は初期状態で解放されていること
+for (const id of ["classic", "darkbit", "glitch", "retro"]) {
   assert(
     BGM_TRACKS.some((track) => track.id === id && !track.unlockAchievement),
     `the "${id}" track should be unlocked from the start`
@@ -245,11 +245,15 @@ assert(
   "uso mood on the Pop theme should schedule Bitter Candy"
 );
 
-// クラシックテーマの裏モードでは Letter Lament が選ばれること
+// クラシックテーマの裏モードでは Glitch 8-bit（Classic 8-bit と対のダーク 8bit）が選ばれること
 const classicUsoFreqs = scheduledAfter(() => setSetting("theme", "classic"));
 assert(
-  classicUsoFreqs.some((freq) => Math.abs(freq - bellHz(69)) < 0.01), // Letter Lament の弔鐘（A4）
-  "uso mood on the Classic theme should schedule Letter Lament"
+  classicUsoFreqs.some((freq) => Math.abs(freq - bellHz(76)) < 0.01), // Glitch 8-bit のブラウン管の鐘（E5）
+  "uso mood on the Classic theme should schedule Glitch 8-bit"
+);
+assert(
+  !classicUsoFreqs.some((freq) => Math.abs(freq - bellHz(69)) < 0.01), // Letter Lament の弔鐘（A4）は鳴らない
+  "the Classic theme's uso mode must no longer schedule Letter Lament by default"
 );
 
 // クラシックテーマの表モードでは Classic 8-bit が選ばれること
@@ -266,16 +270,22 @@ assert(
 // Classic 8-bit のベース頭（小節コードのルート - 24）で小節位置を識別する:
 // 3 小節目 (Bb) のベース頭 midi 34 は、巻き戻しなしの再開でだけ現れる。
 // （この時点で直前の再スケジュールにより 1〜2 小節目が予約済み = 小節位置は 3 小節目）
+// unlockAudio は resume 完了後の内部コールバック（BGM 再開ガード）を持つため、
+// 同期キャプチャではなく await で内部処理まで消化してから次へ進む
+// （消化しないと、最後の stopBgm() の後にガードが BGM ループを再始動して
+// タイマーが残り、テストプロセスが終了しなくなる）。
 const bassHz = (midi) => 440 * Math.pow(2, (midi - 69) / 12);
-const resumeFreqs = scheduledAfter(() => unlockAudio({ restartBgm: true }));
+const beforeResume = rebuiltContext.startedFrequencies.length;
+await unlockAudio({ restartBgm: true });
+const resumeFreqs = rebuiltContext.startedFrequencies.slice(beforeResume);
 assert(
   resumeFreqs.some((freq) => Math.abs(freq - bassHz(34)) < 0.01),
   "a restart without rewind should resume from the advanced bar position"
 );
-const rewindFreqs = scheduledAfter(() => {
-  rewindBgm();
-  unlockAudio({ restartBgm: true });
-});
+const beforeRewind = rebuiltContext.startedFrequencies.length;
+rewindBgm();
+await unlockAudio({ restartBgm: true });
+const rewindFreqs = rebuiltContext.startedFrequencies.slice(beforeRewind);
 assert(
   rewindFreqs.some((freq) => Math.abs(freq - bassHz(31)) < 0.01), // 2 小節目 (G) のベース頭
   "rewindBgm + restart should schedule the track from its first bars"

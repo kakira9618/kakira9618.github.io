@@ -10,13 +10,13 @@
 // 初回訪問でも「いきなり基本ルールモーダル」ではなく、まず扉絵で迎える体裁になる。
 
 import { el } from "./dom.js";
-import { getAppMode } from "./app.js?v=20260723-gate-bgm";
-import { APP_VERSION } from "../config.js?v=20260723-gate-bgm";
-import { SOURCE_HASH } from "../version.js?v=20260723-gate-bgm";
-import { playSfx, rewindBgm, unlockAudio } from "../audio/sound.js?v=20260723-gate-bgm";
-import { muteAllSounds, unmuteAllSounds } from "./sound-toggle.js?v=20260723-gate-bgm";
-import { shouldReduceMotion } from "../core/motion.js?v=20260723-gate-bgm";
-import { tr } from "../core/i18n.js?v=20260723-gate-bgm";
+import { getAppMode } from "./app.js?v=20260723-pwa";
+import { APP_VERSION } from "../config.js?v=20260723-pwa";
+import { SOURCE_HASH } from "../version.js?v=20260723-pwa";
+import { playSfx, rewindBgm, unlockAudio } from "../audio/sound.js?v=20260723-pwa";
+import { muteAllSounds, unmuteAllSounds } from "./sound-toggle.js?v=20260723-pwa";
+import { shouldReduceMotion } from "../core/motion.js?v=20260723-pwa";
+import { tr } from "../core/i18n.js?v=20260723-pwa";
 
 // 退場フェードの長さ（CSS の #entry-gate transition と同期）
 const GATE_EXIT_MS = 340;

@@ -1,9 +1,10 @@
 // モーダルダイアログ。
 
 import { el, clear } from "./dom.js";
-import { playSfx } from "../audio/sound.js?v=20260723-gate-bgm";
-import { tr } from "../core/i18n.js?v=20260723-gate-bgm";
-import { logEvent } from "../core/activity.js?v=20260723-gate-bgm";
+import { playSfx } from "../audio/sound.js?v=20260723-pwa";
+import { tr } from "../core/i18n.js?v=20260723-pwa";
+import { logEvent } from "../core/activity.js?v=20260723-pwa";
+import { icon } from "./icons.js";
 
 const layer = () => document.getElementById("modal-layer");
 const openCloseFns = new Set(); // closeAllModals 用
@@ -14,7 +15,8 @@ const FOCUSABLE =
 
 // showModal({ title, body, actions: [{label, primary, danger, onClick}] })
 // onClick が false を返さない限り閉じる。戻り値は close()。
-export function showModal({ title, body, actions = [], onClose = null }) {
+// closeIcon: true で右上に × ボタンを置く（遊び方のような長い読み物モーダル用）。
+export function showModal({ title, body, actions = [], onClose = null, closeIcon = false }) {
   if (typeof title === "string") logEvent("modal", title.slice(0, 40)); // 行動ログ
   const backdrop = el("div", { class: "modal-backdrop" });
   const previousFocus = document.activeElement;
@@ -59,6 +61,18 @@ export function showModal({ title, body, actions = [], onClose = null }) {
       "aria-label": title ? null : tr("ダイアログ", "Dialog"),
       tabindex: "-1",
     },
+    // スクロールしても右上に留まるよう、高さ 0 の sticky 行に × を載せる
+    closeIcon
+      ? el(
+          "div",
+          { class: "modal-close-row" },
+          el(
+            "button",
+            { class: "icon-btn modal-close", "aria-label": tr("閉じる", "Close"), onclick: () => { playSfx("ui"); close(); } },
+            icon("x", 17)
+          )
+        )
+      : null,
     title ? el("h2", { id: titleId }, title) : null,
     el("div", { class: "modal-body" }, body),
     actions.length ? el("div", { class: "modal-actions" }, actionBtns) : null

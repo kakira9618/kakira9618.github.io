@@ -5,8 +5,8 @@
 //   曲の実体は TRACKS（テンポ・コード進行・1 小節のスケジューラ）に定義する。
 //   設定やモード切替時はバスをクロスフェードしてシームレスに移行する。
 
-import { AUDIO } from "../config.js?v=20260723-gate-bgm";
-import { getSettings, onSettingsChange } from "../core/settings.js?v=20260723-gate-bgm";
+import { AUDIO } from "../config.js?v=20260723-pwa";
+import { getSettings, onSettingsChange } from "../core/settings.js?v=20260723-pwa";
 
 let ctx = null;
 let masterGain = null;
@@ -50,11 +50,11 @@ export const BGM_TRACKS = [
     descEn: "The Classic theme's normal-mode track: an upbeat chiptune inspired by the original",
   },
   {
-    id: "glitch",
-    name: "Letter Lament",
-    nameEn: "Letter Lament",
-    desc: "クラシックテーマの裏の曲。半音ずつ沈むラメント・バスと弔鐘の暗いチェンバロ",
-    descEn: "The Classic theme's uso-mode track: a dark harpsichord lament sinking over a chromatic bass and a tolling bell",
+    id: "darkbit",
+    name: "Glitch 8-bit",
+    nameEn: "Glitch 8-bit",
+    desc: "クラシックテーマの裏の曲。軽快なチップチューンが短調に歪むダーク8bit",
+    descEn: "The Classic theme's uso-mode track: the upbeat chiptune warped into a dark minor key",
   },
   {
     id: "pop",
@@ -92,6 +92,13 @@ export const BGM_TRACKS = [
     nameEn: "Letter Minuet",
     desc: "羽根ペンの手紙のような優雅なチェンバロのメヌエット",
     descEn: "An elegant harpsichord minuet, like a letter penned with a quill",
+  },
+  {
+    id: "glitch",
+    name: "Letter Lament",
+    nameEn: "Letter Lament",
+    desc: "半音ずつ沈むラメント・バスと弔鐘の暗いチェンバロ",
+    descEn: "A dark harpsichord lament sinking over a chromatic bass and a tolling bell",
   },
   {
     id: "parade",
@@ -223,7 +230,7 @@ export function bgmTracksUnlockedBy(achievements) {
 // テーマごとの表 / 裏の既定曲。モード連動（auto）ではテーマとモードの両方から選ぶ。
 const THEME_TRACKS = {
   cyber: { normal: "normal", uso: "uso" },
-  classic: { normal: "classic", uso: "glitch" },
+  classic: { normal: "classic", uso: "darkbit" },
   pop: { normal: "pop", uso: "bitter" },
 };
 
@@ -598,7 +605,7 @@ export function playSfx(name) {
 //
 // テーマごとに表 / 裏の専用曲を持つ（THEME_TRACKS 参照）。
 //   サイバー:   normal（明るいアンビエント）/ uso（遅く暗いドローン）
-//   クラシック: classic（原作風チップチューン）/ glitch（ラメント・バスの暗いチェンバロ）
+//   クラシック: classic（原作風チップチューン）/ darkbit（短調に歪むダーク 8bit）
 //   Pop:        pop（キャンディポップ）/ bitter（ダークなキャンディポップ）
 // lookahead 方式で小節単位にスケジュールし、トラックごとに専用バスへ流す。
 
@@ -854,6 +861,57 @@ function scheduleBarClassic(t0, chord, bar, bus) {
       bgmTone(bus, { midi: degrees[deg] + lift, t: t0 + (3 + i * 0.25) * beat, dur: beat * 0.2, type: "square", gain: 0.024, attack: 0.004 });
     });
   }
+}
+
+// クラシックテーマの裏の曲 Glitch 8-bit: Classic 8-bit と対になるダークチップチューン。
+// 同じ NES 編成（三角波ベース・ノイズドラム・デチューン矩形波リード + エコー）のまま
+// 短調へ歪み、ベースは半音経過音で沈み、リードはまれに半音下へベンドして「嘘」をつく。
+function scheduleBarDarkbit(t0, chord, bar, bus) {
+  const beat = 60 / TRACKS.darkbit.tempo;
+  const section = Math.floor(bar / 8) % 2; // 0: A メロ, 1: B メロ
+  // ベース: 8 分のチップチューンライン。A メロは減 5 度・半音経過音で影を差し、
+  // B メロは長 7 度で不穏に駆け上がる
+  const bassLine = section ? [0, 7, 12, 7, 0, 7, 11, 12] : [0, 12, 7, 12, 0, 12, 6, 7];
+  bassLine.forEach((interval, i) => {
+    bgmTone(bus, { midi: chord[0] - 24 + interval, t: t0 + (i * beat) / 2, dur: beat * 0.34, type: "triangle", gain: 0.09, attack: 0.006 });
+  });
+  // ドラム: 丸いキック（1・3 拍）、スネアは 4 拍目を半拍うしろへ倒して足を引っ掛ける
+  for (const b of [0, 2]) bgmTone(bus, { midi: 36, t: t0 + b * beat, dur: 0.1, type: "sine", gain: 0.1, bend: -14 });
+  for (const b of [1, 3.5]) bgmNoise(bus, { t: t0 + b * beat, dur: 0.07, gain: 0.03, freq: 3400, q: 0.8 });
+  // ハットはまばらに置き、2 小節ごとの裏拍でグリッチノイズがざらりと走る
+  for (const i of [1, 3, 5, 7]) bgmNoise(bus, { t: t0 + ((i + 0.5) * beat) / 2, dur: 0.03, gain: 0.01, freq: 7800 });
+  if (bar % 2 === 1) bgmNoise(bus, { t: t0 + 2.5 * beat, dur: 0.09, gain: 0.02, freq: 5200, q: 0.6 });
+  // 裏打ちの和音スタブ（表より暗く、2 拍目裏だけに絞る）
+  for (const m of chord) {
+    bgmTone(bus, { midi: m, t: t0 + 1.5 * beat, dur: beat * 0.2, type: "square", gain: 0.008, attack: 0.004 });
+  }
+  // リード: 下降癖のある短調フレーズ（コード構成音 2 オクターブへの度数。-1 = 休符）
+  const degrees = [chord[0], chord[1], chord[2], chord[0] + 12, chord[1] + 12, chord[2] + 12];
+  const phrases = [
+    [3, 2, 1, 2, 3, -1, 4, 3],
+    [2, 3, 4, 3, 2, -1, 1, 0],
+    [3, -1, 2, 1, 0, 1, 2, -1],
+    [4, 3, 2, 1, 2, 0, -1, -1], // 後半はフィルに譲る
+  ];
+  const lift = section ? 12 : 0;
+  phrases[bar % 4].forEach((deg, i) => {
+    if (deg < 0) return;
+    const ti = t0 + (i * beat) / 2;
+    const lies = (bar * 8 + i) % 11 === 7; // まれに音程が半音下へ折れて嘘をつく
+    for (const det of [-8, 8]) {
+      bgmTone(bus, { midi: degrees[deg] + lift, t: ti, dur: beat * 0.36, type: "square", gain: 0.013, attack: 0.006, detune: det, bend: lies ? -1 : 0 });
+    }
+    // NES 風エコー: 付点 8 分遅れで同じ音を小さく繰り返す
+    bgmTone(bus, { midi: degrees[deg] + lift, t: ti + beat * 0.75, dur: beat * 0.3, type: "square", gain: 0.008, attack: 0.006 });
+  });
+  // 4 小節目の最後は駆け上がりではなく、半音ずつ沈む 16 分の転げ落ちフィル
+  if (bar % 4 === 3) {
+    [5, 4, 3, 2].forEach((deg, i) => {
+      bgmTone(bus, { midi: degrees[deg] + lift, t: t0 + (3 + i * 0.25) * beat, dur: beat * 0.2, type: "square", gain: 0.022, attack: 0.004 });
+    });
+  }
+  // 4 小節ごとの頭に、遠くのブラウン管が鳴るような固定ピッチの鐘（自動選択の識別にも使う）
+  if (bar % 4 === 0) bgmBell(bus, { midi: 76, t: t0, dur: 1.8, gain: 0.014 });
 }
 
 // Pop テーマの既定曲 Candy Pop: 甘く弾むキャンディポップ。
@@ -1628,6 +1686,9 @@ const TRACKS = {
   gentle: { tempo: 72, beats: 4, chords: [[60, 64, 67, 71], [57, 60, 64, 67], [53, 57, 60, 64], [55, 59, 62, 64], [52, 55, 59, 62], [57, 60, 64, 67], [50, 53, 57, 60], [55, 60, 62, 65]], schedule: scheduleBarGentle },
   // Classic 8-bit は A メロ（C G Bb F ×2 — bVII 借用）と B メロ（Am F D7 G / Am F G C）の 16 小節構成
   classic: { tempo: 112, beats: 4, chords: [[60, 64, 67], [55, 59, 62], [58, 62, 65], [53, 57, 60], [60, 64, 67], [55, 59, 62], [58, 62, 65], [53, 57, 60], [57, 60, 64], [53, 57, 60], [50, 54, 57], [55, 59, 62], [57, 60, 64], [53, 57, 60], [55, 59, 62], [60, 64, 67]], schedule: scheduleBarClassic },
+  // Glitch 8-bit は Classic 8-bit の平行短調。A メロ（Am Em F E ×2 — 2 周目はナポリの Bb）と
+  // B メロ（Dm Am Bb E7 / Dm F E7 Am）の 16 小節構成
+  darkbit: { tempo: 104, beats: 4, chords: [[57, 60, 64], [52, 55, 59], [53, 57, 60], [52, 56, 59], [57, 60, 64], [52, 55, 59], [58, 62, 65], [52, 56, 59], [50, 53, 57], [57, 60, 64], [58, 62, 65], [52, 56, 59, 62], [50, 53, 57], [53, 57, 60], [52, 56, 59, 62], [57, 60, 64]], schedule: scheduleBarDarkbit },
   pop: { tempo: 122, beats: 4, chords: [[60, 64, 67], [57, 60, 64], [53, 57, 60], [55, 59, 62]], schedule: scheduleBarPop },
   // Letter Minuet はパッヘルベル進行（C G Am Em F C F G）を 8 小節で 1 周する
   retro: { tempo: 116, beats: 3, chords: [[60, 64, 67], [55, 59, 62], [57, 60, 64], [52, 55, 59], [53, 57, 60], [60, 64, 67], [53, 57, 60], [55, 59, 62]], schedule: scheduleBarRetro },

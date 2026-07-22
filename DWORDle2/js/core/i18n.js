@@ -2,7 +2,7 @@
 // language 設定は "system" | "ja" | "en"。"system"（既定）はブラウザの言語に連動し、
 // 日本語なら ja、それ以外はすべて en として扱う。
 
-import { getSettings } from "./settings.js?v=20260723-gate-bgm";
+import { getSettings } from "./settings.js?v=20260723-pwa";
 
 // ブラウザ / OS の言語設定から表示言語を決める
 function systemLanguage() {

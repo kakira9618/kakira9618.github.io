@@ -237,6 +237,30 @@ body {
   color: var(--fg);
   font-family: var(--font-display);
   overflow: hidden;
+  /* 長押しの文字選択はゲーム UI 全体で無効化する（キーボード・盤面・ボタン等）。
+     読み物（モーダル本文）と入力欄だけ下で許可し直す */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Android は Avenir Next / Helvetica Neue を持たず Roboto の細字にフォールバックして
+   全体が細く見えるため、中間ウェイトの sans-serif-medium（Roboto Medium）を既定にして
+   iPhone / Safari の見た目へ寄せる（main.js が UA から body クラスを付与する） */
+body.android-font {
+  --font-display: "sans-serif-medium", Roboto, "Segoe UI", sans-serif;
+}
+
+/* 読み物・入力欄はアクセシビリティのため選択できるままにする */
+input,
+textarea,
+.modal .modal-body {
+  user-select: text;
+  -webkit-user-select: text;
+}
+/* ただしモーダル内でもボタンのラベルは選択させない */
+.modal .modal-body button {
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 #app,
@@ -1022,6 +1046,25 @@ body.theme-cyber .modal {
   letter-spacing: 0.06em;
   margin-bottom: 12px;
   text-shadow: var(--glow);
+}
+/* モーダル右上の × ボタン。モーダル自体がスクロールコンテナのため、
+   高さ 0 の sticky 行に載せてスクロールしても右上に留める */
+.modal-close-row {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  height: 0;
+  display: flex;
+  justify-content: flex-end;
+}
+.modal-close {
+  width: 34px;
+  height: 34px;
+  margin: -6px -6px 0 0;
+}
+/* × と重ならないようタイトルの右端を空ける */
+.modal-close-row + h2 {
+  padding-right: 34px;
 }
 .modal .modal-body {
   display: flex;
