@@ -2623,6 +2623,10 @@ body.reduce-motion .guess-flag-cloth {
   transform-style: preserve-3d;
   transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.3, 1);
   touch-action: pan-y; /* 横スワイプは傾き、縦は画面スクロールを優先 */
+  /* ドラッグ中にカードや周辺の文字が選択状態にならないようにする */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 .player-card-tilt.tilting {
   transition: transform 0.08s linear;

@@ -31,8 +31,8 @@ const PROMO_DELAY_MS = 1000;
 const PROMO_OVERLAY_MS = 2600;
 
 // スワイプ / ドラッグでカードが指の方向に傾く演出の強さ
-const TILT_MAX_DEG = 8; // 傾きの最大角度
-const TILT_GAIN = 16; // カード幅ぶんの移動で何度傾くか
+const TILT_MAX_DEG = 30; // 傾きの最大角度
+const TILT_GAIN = 60; // カード幅ぶんの移動で何度傾くか（半分のスワイプで最大に達する）
 
 // ---- カードのレイアウト・配色定数（描画座標は幅 1200 x 高さ 675 基準の px）----
 const CARD = {
@@ -54,15 +54,16 @@ const CARD = {
   nameY: 234,
   nameSize: 64,
   titleY: 320, // 称号バッジの中心
-  // 右側の大型ランクエンブレム(六角形 + リング + アイコン)。
-  // ロゴを右上へ移したぶん、名前〜称号バッジ帯の垂直中央に置いて安定させる
+  identityX: 240, // PLAYER 行・名前・称号バッジの左端（左のエンブレムのぶん字下げ）
+  // ランクエンブレム(六角形 + リング + アイコン)。
+  // 名前ブロックの左にアバターのように置き、ブロックの垂直中央に合わせる
   emblem: {
-    cx: 972, // 中心 x
-    cy: 280, // 中心 y
-    hexR: 112, // 外側六角形の半径
-    ringR: 86, // 内側リングの半径
-    iconSize: 84,
-    glowR: 180, // 背後のグロー半径
+    cx: 133, // 中心 x
+    cy: 259, // 中心 y
+    hexR: 80, // 外側六角形の半径
+    ringR: 61, // 内側リングの半径
+    iconSize: 58,
+    glowR: 130, // 背後のグロー半径
   },
   // 統計セル（4 列 x 2 行のパネル。お気に入りテーマ / BGM も 1 セルとして大きく見せる）
   // セル内はラベル上・値下の 2 段（左のアクセントバーは廃止）
@@ -85,8 +86,10 @@ const CARD = {
   cornerInset: 30, // 四隅アクセントのフレームからの距離
   idEdgeX: 26, // プレイヤー ID の右端からの距離（縦書きで印字）
   idSize: 12,
-  miniTileSize: 24, // 右上の装飾ミニタイル列
+  miniTileSize: 24, // 左上の装飾ミニタイル列（コーナーの L 字アクセントに密着させる）
   miniTileGap: 8,
+  miniTileX: 42,
+  miniTileY: 42,
   miniTileColors: ["#00e68a", "#ffc233", "#3a4356", "#00e68a", "#ffc233"],
 };
 
@@ -322,12 +325,12 @@ export async function renderPlayerCardCanvas(name) {
   }
   ctx.globalAlpha = 1;
 
-  // ---- ヘッダ: 判定タイル装飾（左上）+ ロゴ / PLAYER CARD（右上・光沢なし）----
+  // ---- ヘッダ: 判定タイル装飾（左上コーナーに密着）+ ロゴ / PLAYER CARD（右上・光沢なし）----
   ctx.textBaseline = "middle";
   const tiles = CARD.miniTileColors;
   tiles.forEach((color, i) => {
     ctx.fillStyle = color;
-    roundRect(ctx, left + i * (CARD.miniTileSize + CARD.miniTileGap), CARD.logoY - CARD.miniTileSize / 2, CARD.miniTileSize, CARD.miniTileSize, 6);
+    roundRect(ctx, CARD.miniTileX + i * (CARD.miniTileSize + CARD.miniTileGap), CARD.miniTileY, CARD.miniTileSize, CARD.miniTileSize, 6);
     ctx.fill();
   });
 
@@ -401,16 +404,17 @@ export async function renderPlayerCardCanvas(name) {
     // アイコン画像が作れない環境でもカード本体は成立させる
   }
 
-  // ---- 左側: 「PLAYER | 初プレイ日」 + 名前 + 称号バッジ ----
-  const nameMaxW = em.cx - em.hexR - 40 - left; // エンブレムに被らない幅
+  // ---- エンブレムの右: 「PLAYER | 初プレイ日」 + 名前 + 称号バッジ ----
+  const ix = CARD.identityX;
+  const nameMaxW = right - ix - 20; // 右端（ID 印字）に被らない幅
   ctx.textAlign = "left";
   ctx.font = '700 15px "Avenir Next", sans-serif';
   ctx.fillStyle = CARD.dim;
   const playerLabel = "P L A Y E R";
   const playerLabelW = [...playerLabel].reduce((total, ch) => total + ctx.measureText(ch).width + 1.5, -1.5);
-  drawSpaced(ctx, playerLabel, left, CARD.playerLabelY);
+  drawSpaced(ctx, playerLabel, ix, CARD.playerLabelY);
   if (stats.firstPlay) {
-    const sepX = left + playerLabelW + 16;
+    const sepX = ix + playerLabelW + 16;
     ctx.fillStyle = "rgba(139, 155, 189, 0.55)";
     ctx.fillRect(sepX, CARD.playerLabelY - 8, 1.5, 16);
     ctx.font = `700 ${CARD.sinceSize}px "Avenir Next", sans-serif`;
@@ -431,7 +435,7 @@ export async function renderPlayerCardCanvas(name) {
   ctx.shadowColor = "rgba(124, 92, 255, 0.55)";
   ctx.shadowBlur = 26;
   ctx.fillStyle = CARD.fg;
-  ctx.fillText(displayName, left, CARD.nameY);
+  ctx.fillText(displayName, ix, CARD.nameY);
   ctx.shadowBlur = 0;
 
   // ---- ランク + 称号の一体バッジ ----
@@ -448,36 +452,36 @@ export async function renderPlayerCardCanvas(name) {
   const badgeW = rankSegW + badgeIcon + titleW + 58;
   // 土台とランク色セグメント（角丸の内側だけ塗るためクリップする）
   ctx.fillStyle = "rgba(255,255,255,0.06)";
-  roundRect(ctx, left, badgeTop, badgeW, badgeH, badgeH / 2);
+  roundRect(ctx, ix, badgeTop, badgeW, badgeH, badgeH / 2);
   ctx.fill();
   ctx.save();
-  roundRect(ctx, left, badgeTop, badgeW, badgeH, badgeH / 2);
+  roundRect(ctx, ix, badgeTop, badgeW, badgeH, badgeH / 2);
   ctx.clip();
-  const segGrad = ctx.createLinearGradient(left, 0, left + rankSegW, 0);
+  const segGrad = ctx.createLinearGradient(ix, 0, ix + rankSegW, 0);
   rank.frame.forEach((c, i) => segGrad.addColorStop(rank.frame.length === 1 ? 0 : i / (rank.frame.length - 1), c));
   ctx.fillStyle = segGrad;
-  ctx.fillRect(left, badgeTop, rankSegW, badgeH);
+  ctx.fillRect(ix, badgeTop, rankSegW, badgeH);
   ctx.restore();
   ctx.strokeStyle = rank.accent;
   ctx.lineWidth = 2;
-  roundRect(ctx, left, badgeTop, badgeW, badgeH, badgeH / 2);
+  roundRect(ctx, ix, badgeTop, badgeW, badgeH, badgeH / 2);
   ctx.stroke();
   // ランク名（塗りセグメントの上に暗色で）
   ctx.font = '800 21px "Avenir Next", sans-serif';
   ctx.fillStyle = "#101228";
   ctx.textAlign = "center";
-  ctx.fillText(rankText, left + rankSegW / 2, CARD.titleY + 1);
+  ctx.fillText(rankText, ix + rankSegW / 2, CARD.titleY + 1);
   // 称号（アイコン + テキスト）
   try {
     const img = await loadIconImage(rank.icon, badgeIcon, rank.accent);
-    ctx.drawImage(img, left + rankSegW + 18, CARD.titleY - badgeIcon / 2, badgeIcon, badgeIcon);
+    ctx.drawImage(img, ix + rankSegW + 18, CARD.titleY - badgeIcon / 2, badgeIcon, badgeIcon);
   } catch {
     // アイコン画像が作れない環境でもカード本体は成立させる
   }
   ctx.textAlign = "left";
   ctx.font = '800 28px "Avenir Next", sans-serif';
   ctx.fillStyle = rank.accent;
-  ctx.fillText(titleText, left + rankSegW + 18 + badgeIcon + 12, CARD.titleY + 1);
+  ctx.fillText(titleText, ix + rankSegW + 18 + badgeIcon + 12, CARD.titleY + 1);
 
   // ---- 統計パネル（4 列 x 2 行のセル。テーマ / BGM もここで大きく見せる）----
   const st = CARD.stats;
@@ -639,6 +643,7 @@ function attachCardTilt(tiltEl) {
   let startY = 0;
   tiltEl.addEventListener("pointerdown", (event) => {
     if (shouldReduceMotion()) return;
+    event.preventDefault(); // ドラッグで周囲のテキストが選択状態になるのを防ぐ
     pointerId = event.pointerId;
     startX = event.clientX;
     startY = event.clientY;
