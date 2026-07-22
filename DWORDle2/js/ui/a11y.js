@@ -1,12 +1,24 @@
 // 判定タイルを色だけに依存せず読み上げるための共通ラベル。
 
-import { tr } from "../core/i18n.js?v=20260723-badge-socket";
+import { tr } from "../core/i18n.js?v=20260723-high-contrast";
+import { getSettings } from "../core/settings.js?v=20260723-high-contrast";
+
+// 判定色の呼び名。ハイコントラスト設定では 緑→オレンジ / 黄→青 と読む
+export function feedbackColorName(state) {
+  const highContrast = getSettings().highContrast;
+  const names = {
+    correct: highContrast ? tr("オレンジ", "orange") : tr("緑", "green"),
+    used: highContrast ? tr("青", "blue") : tr("黄", "yellow"),
+    unused: tr("灰", "gray"),
+  };
+  return names[state] ?? "";
+}
 
 export function feedbackName(state) {
   const names = {
-    correct: tr("緑、位置一致", "green, exact position"),
-    used: tr("黄、文字あり", "yellow, present"),
-    unused: tr("灰、文字なし", "gray, absent"),
+    correct: tr(`${feedbackColorName("correct")}、位置一致`, `${feedbackColorName("correct")}, exact position`),
+    used: tr(`${feedbackColorName("used")}、文字あり`, `${feedbackColorName("used")}, present`),
+    unused: tr(`${feedbackColorName("unused")}、文字なし`, `${feedbackColorName("unused")}, absent`),
     guessing: tr("未判定", "not checked"),
   };
   return names[state] ?? tr("未判定", "not checked");

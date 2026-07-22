@@ -48,6 +48,18 @@ const ihdrOffset = ogPng.indexOf(Buffer.from("IHDR"));
 assert.notEqual(ihdrOffset, -1, "OGP image should contain a PNG IHDR chunk");
 assert.equal(ogPng.readUInt32BE(ihdrOffset + 4), 1200, "OGP image width should be 1200px");
 assert.equal(ogPng.readUInt32BE(ihdrOffset + 8), 630, "OGP image height should be 630px");
+// バージョン表示のソースハッシュが最新か（ソース変更後の tools/make-source-hash.mjs 実行忘れを検出）
+{
+  const { computeSourceHash } = await import("../tools/make-source-hash.mjs");
+  const { SOURCE_HASH } = await import("../js/version.js");
+  assert.equal(
+    SOURCE_HASH,
+    await computeSourceHash(),
+    "js/version.js のソースハッシュが古い。node tools/make-source-hash.mjs で更新する"
+  );
+  assert.match(SOURCE_HASH, /^[0-9a-f]{8}$/, "the source hash should be 8 hex digits");
+}
+
 // X の Summary カード用の正方形版（twitter:image が参照する）
 const ogSquarePng = await readFile(path.join(projectRoot, "og-square.png"));
 const squareIhdrOffset = ogSquarePng.indexOf(Buffer.from("IHDR"));
@@ -167,6 +179,36 @@ try {
   assert.equal(publicEntry.manifest, "manifest.webmanifest");
   assert.deepEqual(publicEntry.statuses, [200, 200, 200, 200], "Public metadata assets should be served");
 
+  // ハイコントラスト配色: 設定 ON で全テーマの判定色が 緑→オレンジ / 黄→青 に置き換わる
+  const normalTileCorrect = await page.evaluate(() => getComputedStyle(document.body).getPropertyValue("--tile-correct").trim());
+  await page.evaluate(async () => {
+    const mod = await import("./js/core/settings.js?v=20260723-high-contrast");
+    mod.setSetting("highContrast", true);
+  });
+  assert.ok(
+    await page.evaluate(() => document.body.classList.contains("high-contrast")),
+    "enabling high contrast should add the body class"
+  );
+  assert.equal(
+    await page.evaluate(() => getComputedStyle(document.body).getPropertyValue("--tile-correct").trim()),
+    "#f5793a",
+    "high contrast should replace green with orange"
+  );
+  assert.equal(
+    await page.evaluate(() => getComputedStyle(document.body).getPropertyValue("--tile-used").trim()),
+    "#85c0f9",
+    "high contrast should replace yellow with blue"
+  );
+  await page.evaluate(async () => {
+    const mod = await import("./js/core/settings.js?v=20260723-high-contrast");
+    mod.setSetting("highContrast", false);
+  });
+  assert.equal(
+    await page.evaluate(() => getComputedStyle(document.body).getPropertyValue("--tile-correct").trim()),
+    normalTileCorrect,
+    "disabling high contrast should restore the theme colors"
+  );
+
   await page.evaluate(() => {
     localStorage.setItem("dwordle2.current.normal", JSON.stringify({
       startTime: 1_700_000_000,
@@ -190,8 +232,8 @@ try {
   await page.waitForURL(/#\/settings$/);
   const switches = page.getByRole("switch");
   await switches.first().waitFor();
-  assert.equal(await switches.count(), 4, "All settings switches should expose the switch role");
-  for (const label of ["キーボードヒント", "演出を軽くする", "効果音", "BGM"]) {
+  assert.equal(await switches.count(), 5, "All settings switches should expose the switch role");
+  for (const label of ["ハイコントラスト配色", "キーボードヒント", "演出を軽くする", "効果音", "BGM"]) {
     await page.getByRole("switch", { name: label }).waitFor();
   }
   for (const copy of ["UIの言語を設定", "UIや背景のテーマを設定", "パーティクルを完全にオフにします"]) {
@@ -225,7 +267,7 @@ try {
   assert.equal(normalPopVisuals.choiceColor, "rgb(74, 53, 80)");
 
   await page.evaluate(async () => {
-    const { setAppMode } = await import("./js/ui/app.js?v=20260723-badge-socket");
+    const { setAppMode } = await import("./js/ui/app.js?v=20260723-high-contrast");
     setAppMode("uso");
   });
   await page.locator("body.theme-pop.mode-uso").waitFor();
@@ -285,12 +327,12 @@ try {
   await page.waitForURL(/#\/settings$/);
 
   await page.evaluate(async () => {
-    const { setAppMode } = await import("./js/ui/app.js?v=20260723-badge-socket");
+    const { setAppMode } = await import("./js/ui/app.js?v=20260723-high-contrast");
     setAppMode("normal");
   });
   await page.locator("body.theme-pop.mode-normal").waitFor();
   await page.evaluate(async () => {
-    const { showHelpModal } = await import("./js/ui/help.js?v=20260723-badge-socket");
+    const { showHelpModal } = await import("./js/ui/help.js?v=20260723-high-contrast");
     showHelpModal("normal");
   });
   const popHelp = page.getByRole("dialog", { name: "DWORDle 遊び方" });
@@ -375,6 +417,23 @@ try {
   await page.locator("#screen-game.active .row").last().waitFor();
 
   await assertNoSeriousA11yViolations("Game screen");
+
+  // キーボード折りたたみ: トグルで画面下へ畳まれ、再度押すと展開する
+  const kbdBefore = await page.evaluate(() => document.getElementById("keyboard").getBoundingClientRect().height);
+  assert.ok(kbdBefore > 100, "the keyboard should be expanded by default");
+  await page.locator("#kbd-toggle").click();
+  await page.waitForTimeout(450);
+  assert.ok(
+    await page.evaluate(() => document.getElementById("screen-game").classList.contains("kbd-collapsed")),
+    "the toggle should mark the game screen as keyboard-collapsed"
+  );
+  const kbdCollapsed = await page.evaluate(() => document.getElementById("keyboard").getBoundingClientRect().height);
+  assert.ok(kbdCollapsed < 5, `the keyboard should fold away (height: ${kbdCollapsed})`);
+  await page.locator("#kbd-toggle").click();
+  await page.waitForTimeout(450);
+  const kbdRestored = await page.evaluate(() => document.getElementById("keyboard").getBoundingClientRect().height);
+  assert.ok(kbdRestored > 100, "the keyboard should expand again");
+
   const answer = new Logic(1).ans1;
   await page.keyboard.type(answer);
   await page.keyboard.press("Enter");
@@ -510,13 +569,13 @@ try {
   );
   await shortPage.waitForTimeout(50);
   const flightsBeforeLeave = await shortPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260723-badge-socket")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260723-high-contrast")).activeTileFlightCount()
   );
   assert.ok(flightsBeforeLeave > 0, "Tile gather animation should be active before leaving the game");
   await shortPage.getByRole("button", { name: "タイトルへ戻る" }).click();
   await shortPage.waitForURL(/#\/$/);
   const flightsAfterLeave = await shortPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260723-badge-socket")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260723-high-contrast")).activeTileFlightCount()
   );
   assert.equal(flightsAfterLeave, 0, "Tile gather animation should be removed when leaving the game");
   await shortPage.close();
@@ -562,13 +621,13 @@ try {
   await reducedDialog.getByRole("button", { name: "スタート" }).click();
   await reducedPage.locator("#screen-game.active .row").last().waitFor();
   const reducedFlights = await reducedPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260723-badge-socket")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260723-high-contrast")).activeTileFlightCount()
   );
   assert.equal(reducedFlights, 0, "Reduced motion should suppress tile gather flights");
   await reducedContext.close();
 
   await page.evaluate(async () => {
-    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260723-badge-socket");
+    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260723-high-contrast");
     bgmUnlockCelebration([{ id: "queue-test-a", name: "Queue Test A", desc: "First unlock" }]);
     bgmUnlockCelebration([{ id: "queue-test-b", name: "Queue Test B", desc: "Second unlock" }]);
   });
@@ -599,7 +658,7 @@ try {
 
   // 2 曲以上の同時解放（履歴インポート等）は 1 枚のまとめカードで報告する
   await page.evaluate(async () => {
-    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260723-badge-socket");
+    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260723-high-contrast");
     bgmUnlockCelebration([
       { id: "multi-a", name: "Multi Track A", desc: "" },
       { id: "multi-b", name: "Multi Track B", desc: "" },
@@ -616,7 +675,7 @@ try {
 
   // 実績解放セレブレーション: 単発は大型カード、3 個以上は 1 枚にまとめる
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-badge-socket");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-high-contrast");
     achievementCelebration([
       { id: "smoke-single", icon: "trophy", color: "#ffd166", name: "スモーク実績", desc: "テスト用の実績です" },
     ]);
@@ -634,7 +693,7 @@ try {
   await page.locator(".ach-unlock").waitFor({ state: "detached" });
 
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-badge-socket");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-high-contrast");
     achievementCelebration([
       { id: "smoke-a", icon: "star", color: "#ffd166", name: "実績A", desc: "" },
       { id: "smoke-b", icon: "gem", color: "#7ee8ff", name: "実績B", desc: "" },
@@ -656,7 +715,7 @@ try {
 
   // リストが溢れるときは下端フェードで続きを示し、最下部まで送るとフェードが消える
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-badge-socket");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-high-contrast");
     achievementCelebration(
       Array.from({ length: 9 }, (_, i) => ({ id: `smoke-many-${i}`, icon: "star", color: "#ffd166", name: `実績${i + 1}`, desc: "" }))
     );
@@ -703,7 +762,7 @@ try {
   // 判定オープン中の先行入力: 次の 1 行分をバッファし、オープン完了後に自動で確定する
   await page.getByRole("dialog", { name: "基本ルール | DWORDle" }).getByRole("button", { name: "わかった" }).click();
   await page.evaluate(async () => {
-    const { setSetting } = await import("./js/core/settings.js?v=20260723-badge-socket");
+    const { setSetting } = await import("./js/core/settings.js?v=20260723-high-contrast");
     setSetting("theme", "classic");
     setSetting("sfx", false);
     setSetting("bgm", false);
@@ -1063,7 +1122,7 @@ try {
     // 称号ラダー: 最上位は王（実績全解除 + 1000 プレイ）。多い方のモードの王になり、
     // 同数なら DWORDle。1000 未満は伝説のまま、実績未コンプはプレイ数ランクのまま。
     const ranks = await cardPage.evaluate(async () => {
-      const mod = await import("./js/ui/player-card.js?v=20260723-badge-socket");
+      const mod = await import("./js/ui/player-card.js?v=20260723-high-contrast");
       const pick = (stats) => {
         const rank = mod.rankForStats(stats);
         return `${rank.id}:${rank.titleJa}`;
@@ -1115,8 +1174,8 @@ try {
     // カテゴリバッジ: 実績 9 カテゴリ + 隠しの計 10 個。この時点では実績未解除なのですべて未獲得
     const badgeInfo = await cardPage.evaluate(async () => {
       const [cardMod, achMod] = await Promise.all([
-        import("./js/ui/player-card.js?v=20260723-badge-socket"),
-        import("./js/core/achievements.js?v=20260723-badge-socket"),
+        import("./js/ui/player-card.js?v=20260723-high-contrast"),
+        import("./js/core/achievements.js?v=20260723-high-contrast"),
       ]);
       const states = cardMod.categoryBadgeStates();
       return {
@@ -1131,7 +1190,7 @@ try {
 
     // 実績を全解除すると 10 個すべて獲得になる
     await cardPage.evaluate(async () => {
-      const mod = await import("./js/core/achievements.js?v=20260723-badge-socket");
+      const mod = await import("./js/core/achievements.js?v=20260723-high-contrast");
       const all = {};
       for (const a of mod.ACHIEVEMENTS) all[a.id] = 1750000000;
       localStorage.setItem("dwordle2.achievements", JSON.stringify(all));
@@ -1141,7 +1200,7 @@ try {
     await cardPage.waitForURL(/#\/card$/);
     await cardPage.locator(".player-card-canvas").waitFor();
     const earnedAll = await cardPage.evaluate(async () => {
-      const mod = await import("./js/ui/player-card.js?v=20260723-badge-socket");
+      const mod = await import("./js/ui/player-card.js?v=20260723-high-contrast");
       return mod.categoryBadgeStates().every((b) => b.earned);
     });
     assert.ok(earnedAll, "unlocking every achievement must earn all 10 category badges");

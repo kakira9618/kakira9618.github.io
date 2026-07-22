@@ -7,9 +7,9 @@
 // 本物の遠近感が付く。CSS 座標 (y 下向き) → ワールド座標は y を反転して使う。
 
 import * as THREE from "three";
-import { FX, UI } from "../config.js?v=20260723-badge-socket";
-import { getSettings } from "../core/settings.js?v=20260723-badge-socket";
-import { shouldReduceMotion } from "../core/motion.js?v=20260723-badge-socket";
+import { FX, tileColorsFor } from "../config.js?v=20260723-high-contrast";
+import { getSettings } from "../core/settings.js?v=20260723-high-contrast";
+import { shouldReduceMotion } from "../core/motion.js?v=20260723-high-contrast";
 
 let renderer = null;
 let scene = null;
@@ -422,7 +422,8 @@ function renderFrame(now) {
 
 // タイル状態 → バースト色（現在のテーマの判定色と合わせる）
 export function colorForState(state) {
-  const colors = UI.tileColors[getSettings().theme] ?? UI.tileColors.cyber;
+  const { theme, highContrast } = getSettings();
+  const colors = tileColorsFor(theme, highContrast);
   const hex = { unused: colors.unused, used: colors.used, correct: colors.correct }[state] ?? "#ffffff";
   return new THREE.Color(hex).getHex();
 }

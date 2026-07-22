@@ -2,19 +2,20 @@
 // ルート: #/settings
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260723-badge-socket";
-import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js?v=20260723-badge-socket";
+import { registerScreen, navigate } from "./app.js?v=20260723-high-contrast";
+import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js?v=20260723-high-contrast";
 import { importFromLocalStorage, importFromText, scanLegacyHistory } from "../core/migrate.js";
 import { exportJSON } from "../core/records.js";
 import { removeKey } from "../core/store.js";
-import { getUnlocked } from "../core/achievements.js?v=20260723-badge-socket";
-import { BGM_TRACKS, playSfx } from "../audio/sound.js?v=20260723-badge-socket";
-import { toast } from "./toast.js?v=20260723-badge-socket";
-import { showModal, confirmModal } from "./modal.js?v=20260723-badge-socket";
+import { getUnlocked } from "../core/achievements.js?v=20260723-high-contrast";
+import { BGM_TRACKS, playSfx } from "../audio/sound.js?v=20260723-high-contrast";
+import { toast } from "./toast.js?v=20260723-high-contrast";
+import { showModal, confirmModal } from "./modal.js?v=20260723-high-contrast";
 import { icon } from "./icons.js";
-import { finishHistoryImport } from "./history-import.js?v=20260723-badge-socket";
-import { APP_VERSION } from "../config.js?v=20260723-badge-socket";
-import { currentLanguage, isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js?v=20260723-badge-socket";
+import { finishHistoryImport } from "./history-import.js?v=20260723-high-contrast";
+import { APP_VERSION } from "../config.js?v=20260723-high-contrast";
+import { SOURCE_HASH } from "../version.js?v=20260723-high-contrast";
+import { currentLanguage, isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js?v=20260723-high-contrast";
 import { isDebugMode, tryEnableDebugMode } from "../core/debug.js";
 
 let root = null;
@@ -327,6 +328,11 @@ function render() {
         themeSeg
       ),
       settingRow(
+        tr("ハイコントラスト配色", "High contrast colors"),
+        tr("判定色を 緑→オレンジ / 黄→青 に置き換えます（色覚特性向け）", "Replace green with orange and yellow with blue (for color vision accessibility)"),
+        toggle("highContrast", tr("ハイコントラスト配色", "High contrast colors"))
+      ),
+      settingRow(
         tr("キーボードヒント", "Keyboard hints"),
         tr("DWORDleで、使用した文字を判定色で表示します", "Color used letters by their feedback in DWORDle"),
         toggle("keyboardHints", tr("キーボードヒント", "Keyboard hints"))
@@ -481,7 +487,7 @@ function render() {
           "aria-label": tr(`DWORDle 2 バージョン ${APP_VERSION}`, `DWORDle 2 version ${APP_VERSION}`),
           onclick: handleDebugEntryTap,
         },
-        `DWORDle 2 v${APP_VERSION}`
+        `DWORDle 2 v${APP_VERSION} (${SOURCE_HASH})`
       ),
       tr(" ・ by ", " — by "),
       el(

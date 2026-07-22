@@ -1,9 +1,9 @@
 // モーダルダイアログ。
 
 import { el, clear } from "./dom.js";
-import { playSfx } from "../audio/sound.js?v=20260723-badge-socket";
-import { tr } from "../core/i18n.js?v=20260723-badge-socket";
-import { logEvent } from "../core/activity.js?v=20260723-badge-socket";
+import { playSfx } from "../audio/sound.js?v=20260723-high-contrast";
+import { tr } from "../core/i18n.js?v=20260723-high-contrast";
+import { logEvent } from "../core/activity.js?v=20260723-high-contrast";
 
 const layer = () => document.getElementById("modal-layer");
 const openCloseFns = new Set(); // closeAllModals 用

@@ -4,11 +4,26 @@
 // DWORDle では解説後、同じパネルを使って「全部緑でも不正解」の例を再生する。
 
 import { el } from "./dom.js";
-import { showModal } from "./modal.js?v=20260723-badge-socket";
-import { playSfx } from "../audio/sound.js?v=20260723-badge-socket";
+import { showModal } from "./modal.js?v=20260723-high-contrast";
+import { playSfx } from "../audio/sound.js?v=20260723-high-contrast";
 import { queryWordPair, usoConvert } from "../core/logic.js";
-import { currentLanguage } from "../core/i18n.js?v=20260723-badge-socket";
-import { shouldReduceMotion } from "../core/motion.js?v=20260723-badge-socket";
+import { currentLanguage } from "../core/i18n.js?v=20260723-high-contrast";
+import { getSettings } from "../core/settings.js?v=20260723-high-contrast";
+import { shouldReduceMotion } from "../core/motion.js?v=20260723-high-contrast";
+
+// 判定色の呼び名。ハイコントラスト設定では 緑→オレンジ / 黄→青 に置き換わる。
+// *Chip は凡例の 1 文字ラベル（日本語はオレンジを「橙」と略記）。
+function colorWords(isEnglish) {
+  const highContrast = getSettings().highContrast;
+  return {
+    green: highContrast ? (isEnglish ? "orange" : "オレンジ") : isEnglish ? "green" : "緑",
+    Green: highContrast ? (isEnglish ? "Orange" : "オレンジ") : isEnglish ? "Green" : "緑",
+    yellow: highContrast ? (isEnglish ? "blue" : "青") : isEnglish ? "yellow" : "黄",
+    Yellow: highContrast ? (isEnglish ? "Blue" : "青") : isEnglish ? "Yellow" : "黄",
+    greenChip: highContrast ? (isEnglish ? "O" : "橙") : isEnglish ? "G" : "緑",
+    yellowChip: highContrast ? (isEnglish ? "B" : "青") : isEnglish ? "Y" : "黄",
+  };
+}
 
 const EX = {
   ans1: "blood",
@@ -96,6 +111,7 @@ function buildWordRow(label, word) {
 
 function buildExample(mode, language) {
   const isEnglish = language === "en";
+  const c = colorWords(isEnglish);
   const { result: trueResult, links } = traceExample();
   const allGreenResult = queryWordPair(ALL_GREEN_EX.guess, ALL_GREEN_EX.ans1, ALL_GREEN_EX.ans2);
   const answerRows = [
@@ -176,7 +192,7 @@ function buildExample(mode, language) {
     reactionLine.className = `help-reaction-line show ${link.state}`;
 
     const char = example.guess[guessIndex].toUpperCase();
-    const stateLabel = link.state === "correct" ? (isEnglish ? "Green" : "緑") : isEnglish ? "Yellow" : "黄";
+    const stateLabel = link.state === "correct" ? c.Green : c.Yellow;
     const reason = link.state === "correct"
       ? (isEnglish ? "same spot" : "同位置")
       : (isEnglish ? "elsewhere" : "別位置");
@@ -292,8 +308,8 @@ function buildExample(mode, language) {
     clearReaction();
     box.classList.add("showing-all-green");
     exampleTitle.textContent = isEnglish
-      ? "Example: all green, not solved"
-      : "例：全部緑でも未正解";
+      ? `Example: all ${c.green}, not solved`
+      : `例：全部${c.green}でも未正解`;
     setAnswerWords(ALL_GREEN_EX);
     guessTiles.forEach((tile) => {
       tile.textContent = "";
@@ -337,8 +353,8 @@ function buildExample(mode, language) {
     later(() => {
       clearReaction();
       caption.textContent = isEnglish
-        ? "Each tile matches one word → all green"
-        : "各文字がどちらかと一致 → 全部緑";
+        ? `Each tile matches one word → all ${c.green}`
+        : `各文字がどちらかと一致 → 全部${c.green}`;
     }, reactionDone);
     later(() => {
       // CSS の reduce-motion クランプは Web Animations API には効かないため個別に抑制する
@@ -366,24 +382,24 @@ function buildExample(mode, language) {
   const notes = mode === "uso"
     ? isEnglish
       ? [
-          ["correct", "G", "A green lie means this letter was truly yellow or gray"],
-          ["used", "Y", "A yellow lie means this letter was truly green or gray"],
-          ["unused", "×", "A gray lie means this letter was truly green or yellow"],
+          ["correct", c.greenChip, `A ${c.green} lie means this letter was truly ${c.yellow} or gray`],
+          ["used", c.yellowChip, `A ${c.yellow} lie means this letter was truly ${c.green} or gray`],
+          ["unused", "×", `A gray lie means this letter was truly ${c.green} or ${c.yellow}`],
         ]
       : [
-          ["correct", "緑", "この文字の本当の判定は「黄 か 灰」"],
-          ["used", "黄", "この文字の本当の判定は「緑 か 灰」"],
-          ["unused", "灰", "この文字の本当の判定は「緑 か 黄」"],
+          ["correct", c.greenChip, `この文字の本当の判定は「${c.yellow} か 灰」`],
+          ["used", c.yellowChip, `この文字の本当の判定は「${c.green} か 灰」`],
+          ["unused", "灰", `この文字の本当の判定は「${c.green} か ${c.yellow}」`],
         ]
     : isEnglish
       ? [
-          ["correct", "G", "Green: matches the same position in Word 1 or Word 2"],
-          ["used", "Y", "Yellow: appears elsewhere in Word 1 or Word 2"],
+          ["correct", c.greenChip, `${c.Green}: matches the same position in Word 1 or Word 2`],
+          ["used", c.yellowChip, `${c.Yellow}: appears elsewhere in Word 1 or Word 2`],
           ["unused", "×", "Gray: does not appear in either answer"],
         ]
       : [
-          ["correct", "緑", "Word 1 / 2 どちらかの同じ位置と一致"],
-          ["used", "黄", "Word 1 / 2 どちらかの別の位置に含まれる"],
+          ["correct", c.greenChip, "Word 1 / 2 どちらかの同じ位置と一致"],
+          ["used", c.yellowChip, "Word 1 / 2 どちらかの別の位置に含まれる"],
           ["unused", "灰", "どちらの答えにも含まれない"],
         ];
 
@@ -407,6 +423,7 @@ function buildExample(mode, language) {
 
 function localizedBody(mode, language) {
   const isEnglish = language === "en";
+  const c = colorWords(isEnglish);
   if (mode === "uso") {
     return [
       el(
@@ -438,16 +455,16 @@ function localizedBody(mode, language) {
       "p",
       { class: "hint" },
       isEnglish
-        ? "The rules are like Wordle, but there are two answer words. Green and yellow feedback can refer to either answer."
-        : "ルールは Wordle と同じですが、正解単語が 2 つあります。緑・黄の判定は Word 1 / 2 のどちらかについての情報です。"
+        ? `The rules are like Wordle, but there are two answer words. ${c.Green} and ${c.yellow} feedback can refer to either answer.`
+        : `ルールは Wordle と同じですが、正解単語が 2 つあります。${c.green}・${c.yellow}の判定は Word 1 / 2 のどちらかについての情報です。`
     ),
     buildExample("normal", language),
     el(
       "p",
       { class: "hint" },
       isEnglish
-        ? "Guess either answer within 10 tries. Even five green tiles may not be an exact answer; if so, the game continues."
-        : "10 回以内の試行で、2 つの正解単語の「どちらか」を当ててください。全部緑であっても正解単語とは限りません（その場合ゲーム続行となります）。"
+        ? `Guess either answer within 10 tries. Even five ${c.green} tiles may not be an exact answer; if so, the game continues.`
+        : `10 回以内の試行で、2 つの正解単語の「どちらか」を当ててください。全部${c.green}であっても正解単語とは限りません（その場合ゲーム続行となります）。`
     ),
   ];
 }
@@ -508,12 +525,12 @@ export function showFirstTutorial(mode, afterClose = null) {
           "2",
           currentLanguage() === "en" ? "Feedback checks both words" : "判定は 2 つの答えを参照",
           currentLanguage() === "en"
-            ? "Green and yellow may refer to Word 1 or 2."
-            : "緑・黄は、Word 1 / 2 のどちらかの情報です。"
+            ? `${colorWords(true).Green} and ${colorWords(true).yellow} may refer to Word 1 or 2.`
+            : `${colorWords(false).green}・${colorWords(false).yellow}は、Word 1 / 2 のどちらかの情報です。`
         ),
         point(
           "3",
-          currentLanguage() === "en" ? "All green may be unsolved" : "全部緑でも未正解の可能性",
+          currentLanguage() === "en" ? `All ${colorWords(true).green} may be unsolved` : `全部${colorWords(false).green}でも未正解の可能性`,
           currentLanguage() === "en"
             ? "Match Word 1 or 2 exactly to win."
             : "入力全体が Word 1 / 2 と一致すればクリアです。"

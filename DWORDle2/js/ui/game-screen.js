@@ -4,23 +4,23 @@
 // 原作と同じく、Guess は確定するたびに保存され、リロードしても再開できる。
 
 import { el, clear } from "./dom.js";
-import { APP_VERSION, UI, FX } from "../config.js?v=20260723-badge-socket";
+import { APP_VERSION, UI, FX } from "../config.js?v=20260723-high-contrast";
 import { Logic, CELL, usoConvert } from "../core/logic.js";
 import { MODES, saveCurrentGame, clearCurrentGame, getCurrentGame, addFinishedGame, isAlreadyPlayed, getHistory } from "../core/records.js";
 import { pidLabel } from "../core/problems.js";
-import { checkOnGameFinish } from "../core/achievements.js?v=20260723-badge-socket";
-import { registerScreen, navigate, redirect, getAppMode, currentScreenName, rememberPlayedMode } from "./app.js?v=20260723-badge-socket";
-import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./toast.js?v=20260723-badge-socket";
-import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js?v=20260723-badge-socket";
-import { hiddenThemesUnlockedBy } from "../core/settings.js?v=20260723-badge-socket";
-import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/effects.js?v=20260723-badge-socket";
-import { showHelpModal } from "./help.js?v=20260723-badge-socket";
-import { soundToggleButton } from "./sound-toggle.js?v=20260723-badge-socket";
+import { checkOnGameFinish } from "../core/achievements.js?v=20260723-high-contrast";
+import { registerScreen, navigate, redirect, getAppMode, currentScreenName, rememberPlayedMode } from "./app.js?v=20260723-high-contrast";
+import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./toast.js?v=20260723-high-contrast";
+import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js?v=20260723-high-contrast";
+import { hiddenThemesUnlockedBy } from "../core/settings.js?v=20260723-high-contrast";
+import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/effects.js?v=20260723-high-contrast";
+import { showHelpModal } from "./help.js?v=20260723-high-contrast";
+import { soundToggleButton } from "./sound-toggle.js?v=20260723-high-contrast";
 import { icon } from "./icons.js";
-import { tr } from "../core/i18n.js?v=20260723-badge-socket";
-import { getSettings } from "../core/settings.js?v=20260723-badge-socket";
-import { shouldReduceMotion } from "../core/motion.js?v=20260723-badge-socket";
-import { announce, feedbackName, rowAriaLabel, tileAriaLabel } from "./a11y.js?v=20260723-badge-socket";
+import { tr } from "../core/i18n.js?v=20260723-high-contrast";
+import { getSettings } from "../core/settings.js?v=20260723-high-contrast";
+import { shouldReduceMotion } from "../core/motion.js?v=20260723-high-contrast";
+import { announce, feedbackName, rowAriaLabel, tileAriaLabel } from "./a11y.js?v=20260723-high-contrast";
 
 const KEY_ROWS = [
   [..."qwertyuiop".split(""), "backspace"],
@@ -34,6 +34,8 @@ let root = null;
 let boardEl = null;
 let boardScrollEl = null;
 let keyboardEl = null;
+let kbdToggle = null;
+let keyboardCollapsed = false; // キーボード折りたたみ状態（セッション中だけ保持）
 let headerTitleEl = null;
 let seedEl = null;
 let counterEl = null;
@@ -89,6 +91,12 @@ function build() {
 
   keyboardEl = el("div", { id: "keyboard" });
   buildKeyboard();
+  kbdToggle = el(
+    "button",
+    { id: "kbd-toggle", class: "icon-btn", onclick: toggleKeyboardCollapsed },
+    icon("arrowUp", 16)
+  );
+  applyKeyboardCollapsed();
 
   resultFab = el(
     "button",
@@ -102,7 +110,24 @@ function build() {
     tr("結果を見る", "View result")
   );
 
-  root.append(header, boardScrollEl, keyboardEl, resultFab);
+  root.append(header, boardScrollEl, keyboardEl, kbdToggle, resultFab);
+}
+
+// キーボード折りたたみ: 盤面を全画面で見たいとき用。状態はセッション中だけ保持する。
+// 折りたたみ中も物理キーボードの入力は受け付ける。
+function toggleKeyboardCollapsed() {
+  keyboardCollapsed = !keyboardCollapsed;
+  playSfx("swoosh");
+  applyKeyboardCollapsed();
+}
+
+function applyKeyboardCollapsed() {
+  root.classList.toggle("kbd-collapsed", keyboardCollapsed);
+  kbdToggle.setAttribute("aria-expanded", String(!keyboardCollapsed));
+  kbdToggle.setAttribute(
+    "aria-label",
+    keyboardCollapsed ? tr("キーボードを展開", "Expand keyboard") : tr("キーボードを折りたたむ", "Collapse keyboard")
+  );
 }
 
 function buildKeyboard() {
@@ -643,7 +668,7 @@ export async function confirmAndStart(pid, mode) {
   if (isAlreadyPlayed(pid, mode) || playedToday) {
     // 注意: 動的 import にも必ず ?v= トークンを付ける。素の URL だと古いキャッシュの
     // modal.js（旧トークンで sound.js を import する）が混ざり、BGM が二重再生される。
-    const { confirmModal } = await import("./modal.js?v=20260723-badge-socket");
+    const { confirmModal } = await import("./modal.js?v=20260723-high-contrast");
     const label = pidLabel(pid);
     const countNote = playedToday
       ? tr(
@@ -659,7 +684,7 @@ export async function confirmAndStart(pid, mode) {
   }
   const current = getCurrentGame(mode);
   if (current && current.guessWord.length > 0) {
-    const { confirmModal } = await import("./modal.js?v=20260723-badge-socket");
+    const { confirmModal } = await import("./modal.js?v=20260723-high-contrast");
     const ok = await confirmModal(
       tr("進行中のゲーム", "Game in progress"),
       tr(

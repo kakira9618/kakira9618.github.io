@@ -10,6 +10,7 @@ export const DEFAULT_SETTINGS = {
   bgmVolume: 100, // BGM の音量（0〜100）
   bgmTrack: "auto", // "auto"（モード・テーマ連動）または BGM_TRACKS のトラック id
   language: "ja", // "ja" | "en"
+  highContrast: false, // 色覚特性向け: 全テーマの判定色を 緑→オレンジ / 黄→青 に置き換える
   keyboardHints: true, // DWORDle のキーボードを判定色で塗り分ける
   reduceFx: false, // 演出を軽くする（パーティクルを完全にオフ）
   randomLevel: 1, // ランダムプレイで前回選んだレベル

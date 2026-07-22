@@ -2,26 +2,27 @@
 // 右上のマスクボタンで DWORDlie（裏モード）に切り替わる。
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260723-badge-socket";
+import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260723-high-contrast";
 import { countPlays, getCurrentGame, getHistory, isAlreadyPlayed } from "../core/records.js";
 import { isDebugMode } from "../core/debug.js";
 import { LEVELS, todayPID, isValidPID, pidLabel, PID } from "../core/problems.js";
-import { getSettings, setSetting } from "../core/settings.js?v=20260723-badge-socket";
+import { getSettings, setSetting } from "../core/settings.js?v=20260723-high-contrast";
 import { loadJSON, saveJSON } from "../core/store.js";
 import { importFromLocalStorage, scanLegacyHistory } from "../core/migrate.js";
-import { playSfx } from "../audio/sound.js?v=20260723-badge-socket";
-import { toast } from "./toast.js?v=20260723-badge-socket";
-import { showModal } from "./modal.js?v=20260723-badge-socket";
-import { finishHistoryImport } from "./history-import.js?v=20260723-badge-socket";
-import { showFirstTutorial, showHelpModal } from "./help.js?v=20260723-badge-socket";
-import { confirmAndStart } from "./game-screen.js?v=20260723-badge-socket";
-import { soundToggleButton } from "./sound-toggle.js?v=20260723-badge-socket";
-import { burstAtElement } from "../fx/effects.js?v=20260723-badge-socket";
-import { shouldReduceMotion } from "../core/motion.js?v=20260723-badge-socket";
+import { playSfx } from "../audio/sound.js?v=20260723-high-contrast";
+import { toast } from "./toast.js?v=20260723-high-contrast";
+import { showModal } from "./modal.js?v=20260723-high-contrast";
+import { finishHistoryImport } from "./history-import.js?v=20260723-high-contrast";
+import { showFirstTutorial, showHelpModal } from "./help.js?v=20260723-high-contrast";
+import { confirmAndStart } from "./game-screen.js?v=20260723-high-contrast";
+import { soundToggleButton } from "./sound-toggle.js?v=20260723-high-contrast";
+import { burstAtElement } from "../fx/effects.js?v=20260723-high-contrast";
+import { shouldReduceMotion } from "../core/motion.js?v=20260723-high-contrast";
 import { icon } from "./icons.js";
-import { APP_VERSION } from "../config.js?v=20260723-badge-socket";
-import { localizedLevel, tr } from "../core/i18n.js?v=20260723-badge-socket";
-import { CARD_UNLOCK_PLAYS } from "./player-card.js?v=20260723-badge-socket";
+import { APP_VERSION } from "../config.js?v=20260723-high-contrast";
+import { SOURCE_HASH } from "../version.js?v=20260723-high-contrast";
+import { localizedLevel, tr } from "../core/i18n.js?v=20260723-high-contrast";
+import { CARD_UNLOCK_PLAYS } from "./player-card.js?v=20260723-high-contrast";
 
 let root = null;
 let legacyImportCheckDone = false;
@@ -364,7 +365,7 @@ function render() {
       menuBtn("gear", tr("設定", "Settings"), () => { playSfx("ui"); navigate("/settings"); }),
       playerCardMenuButton(menuBtn)
     ),
-    el("div", { class: "app-version", title: "DWORDle 2 version" }, `v${APP_VERSION}`)
+    el("div", { class: "app-version", title: "DWORDle 2 version" }, `v${APP_VERSION} (${SOURCE_HASH})`)
   );
   // お披露目は 1 回だけ。解錠音は錠前が開く瞬間（applyReveal 内）に鳴らすが、
   // reduce-motion 時は解錠演出がないのでここで即時に鳴らす

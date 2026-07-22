@@ -1,8 +1,8 @@
 // Three.js を遅延ロードするエフェクト窓口。
 // WebGL / Three.js が利用できない環境でも、ゲーム本体はクラシック表示で続行する。
 
-import { UI } from "../config.js?v=20260723-badge-socket";
-import { getSettings, setSetting } from "../core/settings.js?v=20260723-badge-socket";
+import { tileColorsFor } from "../config.js?v=20260723-high-contrast";
+import { getSettings, setSetting } from "../core/settings.js?v=20260723-high-contrast";
 
 let background = null;
 let bursts = null;
@@ -29,8 +29,8 @@ function fallBackToClassic(error) {
 export function initEffects() {
   if (initPromise) return initPromise;
   initPromise = Promise.all([
-    import("./background.js?v=20260723-badge-socket"),
-    import("./bursts.js?v=20260723-badge-socket"),
+    import("./background.js?v=20260723-high-contrast"),
+    import("./bursts.js?v=20260723-high-contrast"),
   ])
     .then(([backgroundModule, burstsModule]) => {
       backgroundModule.initBackground(fallBackToClassic);
@@ -88,7 +88,8 @@ export function activeTileFlightCount() {
 }
 
 export function colorForState(state) {
-  const colors = UI.tileColors[getSettings().theme] ?? UI.tileColors.cyber;
+  const { theme, highContrast } = getSettings();
+  const colors = tileColorsFor(theme, highContrast);
   const hex = { unused: colors.unused, used: colors.used, correct: colors.correct }[state] ?? "#ffffff";
   return Number.parseInt(hex.slice(1), 16);
 }

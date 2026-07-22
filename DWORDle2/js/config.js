@@ -12,6 +12,9 @@ export const UI = {
     cyber: { unused: "#3a4356", used: "#ffc233", correct: "#00e68a" },
     pop: { unused: "#a8b1bd", used: "#ffb628", correct: "#2dbd6e" },
   },
+  // ハイコントラスト設定時の判定色（全テーマ共通・本家 Wordle 準拠）。
+  // CSS の body.high-contrast の --tile-* 上書きと同期している。
+  tileColorsHighContrast: { used: "#85c0f9", correct: "#f5793a" },
   // 判定オープン演出
   revealIntervalMs: 180, // タイルを 1 枚ずつ開く間隔
   revealFlipMs: 420, // 1 枚のフリップ所要時間
@@ -20,6 +23,12 @@ export const UI = {
   popMs: 110, // 文字入力時のポップ
   toastMs: 2200, // トースト表示時間
 };
+
+// テーマ + ハイコントラスト設定から実際に使う判定色を得る（canvas 描画・パーティクル用）
+export function tileColorsFor(theme, highContrast) {
+  const base = UI.tileColors[theme] ?? UI.tileColors.cyber;
+  return highContrast ? { ...base, ...UI.tileColorsHighContrast } : base;
+}
 
 export const FX = {
   // Three.js 背景（cyber テーマ）

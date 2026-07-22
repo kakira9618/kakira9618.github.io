@@ -2,19 +2,20 @@
 // ルート: #/result/<mode>/<startTime>
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate, setViewMood } from "./app.js?v=20260723-badge-socket";
+import { registerScreen, navigate, setViewMood } from "./app.js?v=20260723-high-contrast";
 import { findGame, MODES } from "../core/records.js";
 import { Logic, CELL } from "../core/logic.js";
 import { pidLabel, isDailyPID } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260723-badge-socket";
-import { toast } from "./toast.js?v=20260723-badge-socket";
-import { confirmAndStart } from "./game-screen.js?v=20260723-badge-socket";
-import { soundToggleButton } from "./sound-toggle.js?v=20260723-badge-socket";
+import { playSfx } from "../audio/sound.js?v=20260723-high-contrast";
+import { toast } from "./toast.js?v=20260723-high-contrast";
+import { confirmAndStart } from "./game-screen.js?v=20260723-high-contrast";
+import { soundToggleButton } from "./sound-toggle.js?v=20260723-high-contrast";
 import { icon } from "./icons.js";
-import { downloadResultPNG } from "./snapshot.js?v=20260723-badge-socket";
-import { SHARE_URL } from "../config.js?v=20260723-badge-socket";
-import { tr } from "../core/i18n.js?v=20260723-badge-socket";
-import { rowAriaLabel } from "./a11y.js?v=20260723-badge-socket";
+import { downloadResultPNG } from "./snapshot.js?v=20260723-high-contrast";
+import { SHARE_URL } from "../config.js?v=20260723-high-contrast";
+import { getSettings } from "../core/settings.js?v=20260723-high-contrast";
+import { tr } from "../core/i18n.js?v=20260723-high-contrast";
+import { rowAriaLabel } from "./a11y.js?v=20260723-high-contrast";
 
 let root = null;
 
@@ -38,9 +39,13 @@ function buildShareText(record, logic, cleared, includeUrl = true) {
   const name = record.gameMode === "uso" ? tr("[嘘] DWORDlie2", "[LIE] DWORDlie2") : "DWORDle2";
   const countText = cleared ? `${record.guessWord.length}/${maxGuess}` : `X/${maxGuess}`;
   let text = `${name} ${seedLabel} ${countText}\n\n`;
+  // ハイコントラスト設定では絵文字も本家 Wordle と同じ 🟧 / 🟦 に置き換える
+  const highContrast = getSettings().highContrast;
+  const correctEmoji = highContrast ? "🟧" : "🟩";
+  const usedEmoji = highContrast ? "🟦" : "🟨";
   for (const row of results) {
     for (const s of row) {
-      text += s === CELL.CORRECT ? "🟩" : s === CELL.USED ? "🟨" : "⬜";
+      text += s === CELL.CORRECT ? correctEmoji : s === CELL.USED ? usedEmoji : "⬜";
     }
     text += "\n";
   }

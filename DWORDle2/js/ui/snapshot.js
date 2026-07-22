@@ -3,11 +3,11 @@
 // canvas に再レンダリングして PNG としてダウンロードする。
 // 見た目は現在のテーマ（cyber / classic）に合わせる。
 
-import { UI, SHARE_URL } from "../config.js?v=20260723-badge-socket";
+import { SHARE_URL, tileColorsFor } from "../config.js?v=20260723-high-contrast";
 import { MODES } from "../core/records.js";
 import { pidLabel } from "../core/problems.js";
 import { CELL } from "../core/logic.js";
-import { getSettings } from "../core/settings.js?v=20260723-badge-socket";
+import { getSettings } from "../core/settings.js?v=20260723-high-contrast";
 
 // レイアウト定数（すべて基準幅 720px に対する px）
 const SS = {
@@ -92,7 +92,7 @@ function drawGuessFlag(ctx, x, y, r, color) {
 // クラシックテーマ: 原作 GameResult のスクリーンショットを再現する。
 // #202020 の無地背景に盤面をそのまま描き、下に "Answer: XXX, YYY" を白字で置くだけ。
 function renderClassicCanvas(record, logic, displayRows) {
-  const tileColors = UI.tileColors.classic;
+  const tileColors = tileColorsFor("classic", getSettings().highContrast);
   const rows = record.guessWord.length;
   const gridH = rows * (SS.tile + SS.tileGap);
   const height = SS.pad + gridH + 104;
@@ -137,10 +137,10 @@ function renderClassicCanvas(record, logic, displayRows) {
 
 // record + logic + 表示用判定から PNG canvas を作る
 export function renderResultCanvas(record, logic, displayRows) {
-  const theme = getSettings().theme;
+  const { theme, highContrast } = getSettings();
   if (theme === "classic") return renderClassicCanvas(record, logic, displayRows);
   const st = THEME_STYLES[theme] ?? THEME_STYLES.cyber;
-  const tileColors = UI.tileColors[theme] ?? UI.tileColors.cyber;
+  const tileColors = tileColorsFor(theme, highContrast);
   const isUso = record.gameMode === "uso";
   const accent = isUso ? st.accentUso : st.accent;
   const cleared = record.clear;
