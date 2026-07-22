@@ -1062,6 +1062,12 @@ body.theme-cyber .modal {
   height: 34px;
   margin: -6px -6px 0 0;
 }
+.modal-close-glyph {
+  font-family: sans-serif;
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1;
+}
 /* × と重ならないようタイトルの右端を空ける */
 .modal-close-row + h2 {
   padding-right: 34px;

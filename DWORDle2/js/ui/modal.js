@@ -4,7 +4,6 @@ import { el, clear } from "./dom.js";
 import { playSfx } from "../audio/sound.js?v=20260723-pwa";
 import { tr } from "../core/i18n.js?v=20260723-pwa";
 import { logEvent } from "../core/activity.js?v=20260723-pwa";
-import { icon } from "./icons.js";
 
 const layer = () => document.getElementById("modal-layer");
 const openCloseFns = new Set(); // closeAllModals 用
@@ -69,7 +68,7 @@ export function showModal({ title, body, actions = [], onClose = null, closeIcon
           el(
             "button",
             { class: "icon-btn modal-close", "aria-label": tr("閉じる", "Close"), onclick: () => { playSfx("ui"); close(); } },
-            icon("x", 17)
+            el("span", { class: "modal-close-glyph", "aria-hidden": "true" }, "✗")
           )
         )
       : null,
