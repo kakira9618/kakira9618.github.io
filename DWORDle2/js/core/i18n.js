@@ -1,9 +1,18 @@
 // UI language helpers. The stored setting is the single source of truth.
+// language 設定は "system" | "ja" | "en"。"system"（既定）はブラウザの言語に連動し、
+// 日本語なら ja、それ以外はすべて en として扱う。
 
-import { getSettings } from "./settings.js?v=20260723-gate-silent";
+import { getSettings } from "./settings.js?v=20260723-lang-bgm";
+
+// ブラウザ / OS の言語設定から表示言語を決める
+function systemLanguage() {
+  return String(navigator.language ?? "").toLowerCase().startsWith("ja") ? "ja" : "en";
+}
 
 export function currentLanguage() {
-  return getSettings().language === "en" ? "en" : "ja";
+  const language = getSettings().language;
+  if (language === "en" || language === "ja") return language;
+  return systemLanguage();
 }
 
 export function isEnglish() {
@@ -15,7 +24,8 @@ export function tr(ja, en) {
 }
 
 export function syncDocumentLanguage(language = currentLanguage()) {
-  const english = language === "en";
+  const resolved = language === "en" || language === "ja" ? language : systemLanguage();
+  const english = resolved === "en";
   document.documentElement.lang = english ? "en" : "ja";
   document.title = english ? "DWORDle 2 | Wordle with two answers" : "DWORDle 2 | 答えが2つある Wordle";
   document

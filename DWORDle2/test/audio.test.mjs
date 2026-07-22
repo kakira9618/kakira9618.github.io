@@ -117,8 +117,8 @@ FakeAudioContext.holdNextResume = false;
 
 globalThis.window = { AudioContext: FakeAudioContext };
 
-const { setSetting } = await import("../js/core/settings.js?v=20260723-gate-silent");
-const { audioNeedsRecovery, playSfx, unlockAudio, setUsoMood, stopBgm, BGM_TRACKS } = await import("../js/audio/sound.js");
+const { setSetting } = await import("../js/core/settings.js?v=20260723-lang-bgm");
+const { audioNeedsRecovery, currentBgmTrackId, playSfx, unlockAudio, setUsoMood, stopBgm, BGM_TRACKS } = await import("../js/audio/sound.js");
 
 setSetting("bgm", false);
 playSfx("ui");
@@ -208,8 +208,8 @@ assert(
   BGM_TRACKS.some((track) => track.id === "bitter" && track.unlockAchievement === "rainbow"),
   "the Bitter Candy track should unlock together with the Pop theme (rainbow achievement)"
 );
-// クラシックテーマの表・裏の曲は初期状態で解放されていること
-for (const id of ["retro", "glitch"]) {
+// クラシックテーマの表・裏の曲（と旧・表の Letter Minuet）は初期状態で解放されていること
+for (const id of ["classic", "glitch", "retro"]) {
   assert(
     BGM_TRACKS.some((track) => track.id === id && !track.unlockAchievement),
     `the "${id}" track should be unlocked from the start`
@@ -252,11 +252,13 @@ assert(
   "uso mood on the Classic theme should schedule Letter Lament"
 );
 
-// クラシックテーマの表モードでは Letter Minuet が選ばれること
+// クラシックテーマの表モードでは Classic 8-bit が選ばれること
 const classicFreqs = scheduledAfter(() => setUsoMood(false));
+assert.equal(currentBgmTrackId(), "classic", "auto BGM should resolve to Classic 8-bit while the Classic theme is active");
+assert(classicFreqs.length > 0, "switching back to normal mood should reschedule BGM");
 assert(
-  classicFreqs.some((freq) => Math.abs(freq - bellHz(91)) < 0.01), // Letter Minuet のチェレスタ（G6）
-  "auto BGM should schedule Letter Minuet while the Classic theme is active"
+  !classicFreqs.some((freq) => Math.abs(freq - bellHz(91)) < 0.01), // Letter Minuet のチェレスタ（G6）は鳴らない
+  "the Classic theme's normal mode must no longer schedule Letter Minuet"
 );
 
 stopBgm();

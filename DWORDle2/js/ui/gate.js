@@ -5,12 +5,14 @@
 // 初回訪問でも「いきなり基本ルールモーダル」ではなく、まず扉絵で迎える体裁になる。
 
 import { el } from "./dom.js";
-import { getAppMode } from "./app.js?v=20260723-gate-silent";
-import { getSettings } from "../core/settings.js?v=20260723-gate-silent";
-import { unlockAudio } from "../audio/sound.js?v=20260723-gate-silent";
-import { muteAllSounds } from "./sound-toggle.js?v=20260723-gate-silent";
-import { shouldReduceMotion } from "../core/motion.js?v=20260723-gate-silent";
-import { tr } from "../core/i18n.js?v=20260723-gate-silent";
+import { getAppMode } from "./app.js?v=20260723-lang-bgm";
+import { APP_VERSION } from "../config.js?v=20260723-lang-bgm";
+import { SOURCE_HASH } from "../version.js?v=20260723-lang-bgm";
+import { getSettings } from "../core/settings.js?v=20260723-lang-bgm";
+import { unlockAudio } from "../audio/sound.js?v=20260723-lang-bgm";
+import { muteAllSounds } from "./sound-toggle.js?v=20260723-lang-bgm";
+import { shouldReduceMotion } from "../core/motion.js?v=20260723-lang-bgm";
+import { tr } from "../core/i18n.js?v=20260723-lang-bgm";
 
 // 退場フェードの長さ（CSS の #entry-gate transition と同期）
 const GATE_EXIT_MS = 340;
@@ -66,7 +68,9 @@ export function showEntryGate(onEnter) {
       ),
       startBtn,
       mutedBtn
-    )
+    ),
+    // 扉絵の段階でもバージョンとソースハッシュを確認できるようにする
+    el("div", { class: "app-version", title: "DWORDle 2 version" }, `v${APP_VERSION} (${SOURCE_HASH})`)
   );
   document.body.append(gate);
   requestAnimationFrame(() => startBtn.focus());

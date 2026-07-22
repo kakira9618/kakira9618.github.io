@@ -2,20 +2,20 @@
 // ルート: #/settings
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260723-gate-silent";
-import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js?v=20260723-gate-silent";
+import { registerScreen, navigate } from "./app.js?v=20260723-lang-bgm";
+import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js?v=20260723-lang-bgm";
 import { importFromLocalStorage, importFromText, scanLegacyHistory } from "../core/migrate.js";
 import { exportJSON } from "../core/records.js";
 import { removeKey } from "../core/store.js";
-import { getUnlocked } from "../core/achievements.js?v=20260723-gate-silent";
-import { BGM_TRACKS, playSfx } from "../audio/sound.js?v=20260723-gate-silent";
-import { toast } from "./toast.js?v=20260723-gate-silent";
-import { showModal, confirmModal } from "./modal.js?v=20260723-gate-silent";
+import { getUnlocked } from "../core/achievements.js?v=20260723-lang-bgm";
+import { BGM_TRACKS, playSfx } from "../audio/sound.js?v=20260723-lang-bgm";
+import { toast } from "./toast.js?v=20260723-lang-bgm";
+import { showModal, confirmModal } from "./modal.js?v=20260723-lang-bgm";
 import { icon } from "./icons.js";
-import { finishHistoryImport } from "./history-import.js?v=20260723-gate-silent";
-import { APP_VERSION } from "../config.js?v=20260723-gate-silent";
-import { SOURCE_HASH } from "../version.js?v=20260723-gate-silent";
-import { currentLanguage, isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js?v=20260723-gate-silent";
+import { finishHistoryImport } from "./history-import.js?v=20260723-lang-bgm";
+import { APP_VERSION } from "../config.js?v=20260723-lang-bgm";
+import { SOURCE_HASH } from "../version.js?v=20260723-lang-bgm";
+import { isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js?v=20260723-lang-bgm";
 import { isDebugMode, tryEnableDebugMode } from "../core/debug.js";
 
 let root = null;
@@ -255,23 +255,27 @@ function render() {
 
   const s = getSettings();
   const unlocked = getUnlocked();
+  // 言語は 日本語 / English / システム連動 の 3 択。
+  // active 判定は保存値そのもの（system 選択中に ja へ解決されても「システム」を光らせる）
+  const languageSetting = ["ja", "en", "system"].includes(s.language) ? s.language : "system";
   const languageSeg = el(
     "div",
-    { class: "seg", style: { width: "190px" }, role: "radiogroup", "aria-label": tr("言語", "Language") },
+    { class: "seg", style: { width: "280px" }, role: "radiogroup", "aria-label": tr("言語", "Language") },
     [
       ["ja", "日本語"],
       ["en", "English"],
+      ["system", tr("システム", "System")],
     ].map(([key, label]) =>
       el(
         "button",
         {
-          class: currentLanguage() === key ? "active" : "",
+          class: languageSetting === key ? "active" : "",
           role: "radio",
-          "aria-checked": String(currentLanguage() === key),
+          "aria-checked": String(languageSetting === key),
           onclick: () => {
             playSfx("ui");
             setSetting("language", key);
-            syncDocumentLanguage(key);
+            syncDocumentLanguage();
             render();
           },
         },
@@ -321,7 +325,11 @@ function render() {
       "div",
       { class: "card" },
       el("div", { style: { fontWeight: "800", marginBottom: "4px" } }, tr("表示", "Display")),
-      settingRow(tr("言語", "Language"), tr("UIの言語を設定", "Set the UI language"), languageSeg),
+      settingRow(
+        tr("言語", "Language"),
+        tr("UIの言語を設定。システムはブラウザの言語に合わせます", "Set the UI language. System follows your browser's language"),
+        languageSeg
+      ),
       settingRow(
         tr("テーマ", "Theme"),
         tr("UIや背景のテーマを設定", "Set the UI and background theme"),
@@ -329,7 +337,7 @@ function render() {
       ),
       settingRow(
         tr("ハイコントラスト配色", "High contrast colors"),
-        tr("判定色を 緑→オレンジ / 黄→青 に置き換えます（色覚特性向け）", "Replace green with orange and yellow with blue (for color vision accessibility)"),
+        tr("判定色を 緑→オレンジ / 黄→青 に置き換えます", "Replace green with orange and yellow with blue"),
         toggle("highContrast", tr("ハイコントラスト配色", "High contrast colors"))
       ),
       settingRow(

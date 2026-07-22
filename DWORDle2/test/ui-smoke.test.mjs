@@ -124,6 +124,7 @@ try {
   // 扉絵: ロゴ・音の説明・開始ボタンが表示され、通過するまで本来の画面は始まらない
   // （このページは音オフ設定でシードしているので「音はオフ」の文言になる）
   await page.locator("#entry-gate .entry-gate-start").waitFor();
+  await page.locator("#entry-gate .app-version").waitFor(); // 扉絵でもバージョンが分かる
   await page.getByText("音はオフに設定されています", { exact: false }).waitFor();
   assert.equal(
     await page.locator(".entry-gate-muted").count(),
@@ -135,7 +136,7 @@ try {
   await page.mouse.click(30, 200);
   assert.equal(
     await page.evaluate(async () => {
-      const mod = await import("./js/audio/sound.js?v=20260723-gate-silent");
+      const mod = await import("./js/audio/sound.js?v=20260723-lang-bgm");
       return mod.audioNeedsRecovery();
     }),
     true,
@@ -211,7 +212,7 @@ try {
   // ハイコントラスト配色: 設定 ON で全テーマの判定色が 緑→オレンジ / 黄→青 に置き換わる
   const normalTileCorrect = await page.evaluate(() => getComputedStyle(document.body).getPropertyValue("--tile-correct").trim());
   await page.evaluate(async () => {
-    const mod = await import("./js/core/settings.js?v=20260723-gate-silent");
+    const mod = await import("./js/core/settings.js?v=20260723-lang-bgm");
     mod.setSetting("highContrast", true);
   });
   assert.ok(
@@ -229,7 +230,7 @@ try {
     "high contrast should replace yellow with blue"
   );
   await page.evaluate(async () => {
-    const mod = await import("./js/core/settings.js?v=20260723-gate-silent");
+    const mod = await import("./js/core/settings.js?v=20260723-lang-bgm");
     mod.setSetting("highContrast", false);
   });
   assert.equal(
@@ -266,7 +267,7 @@ try {
   for (const label of ["ハイコントラスト配色", "キーボードヒント", "演出を軽くする", "効果音", "BGM"]) {
     await page.getByRole("switch", { name: label }).waitFor();
   }
-  for (const copy of ["UIの言語を設定", "UIや背景のテーマを設定", "パーティクルを完全にオフにします"]) {
+  for (const copy of ["UIの言語を設定。システムはブラウザの言語に合わせます", "UIや背景のテーマを設定", "パーティクルを完全にオフにします"]) {
     await page.getByText(copy, { exact: true }).waitFor();
   }
   assert.equal(await page.getByText("低スペック端末向け", { exact: false }).count(), 0);
@@ -297,7 +298,7 @@ try {
   assert.equal(normalPopVisuals.choiceColor, "rgb(74, 53, 80)");
 
   await page.evaluate(async () => {
-    const { setAppMode } = await import("./js/ui/app.js?v=20260723-gate-silent");
+    const { setAppMode } = await import("./js/ui/app.js?v=20260723-lang-bgm");
     setAppMode("uso");
   });
   await page.locator("body.theme-pop.mode-uso").waitFor();
@@ -357,12 +358,12 @@ try {
   await page.waitForURL(/#\/settings$/);
 
   await page.evaluate(async () => {
-    const { setAppMode } = await import("./js/ui/app.js?v=20260723-gate-silent");
+    const { setAppMode } = await import("./js/ui/app.js?v=20260723-lang-bgm");
     setAppMode("normal");
   });
   await page.locator("body.theme-pop.mode-normal").waitFor();
   await page.evaluate(async () => {
-    const { showHelpModal } = await import("./js/ui/help.js?v=20260723-gate-silent");
+    const { showHelpModal } = await import("./js/ui/help.js?v=20260723-lang-bgm");
     showHelpModal("normal");
   });
   const popHelp = page.getByRole("dialog", { name: "DWORDle 遊び方" });
@@ -503,6 +504,24 @@ try {
   ).waitFor();
   await replayDialog.getByRole("button", { name: "キャンセル" }).click();
 
+  // ハイコントラスト配色ではシェア文字列の絵文字も 🟧 / 🟦 になる（灰は ⬜ のまま）
+  await page.evaluate(async () => {
+    const mod = await import("./js/core/settings.js?v=20260723-lang-bgm");
+    mod.setSetting("highContrast", true);
+    navigator.clipboard.writeText = (text) => {
+      window.__copiedShareText = text;
+      return Promise.resolve();
+    };
+  });
+  await page.getByRole("button", { name: "コピー", exact: true }).click();
+  const hcShareText = await page.evaluate(() => window.__copiedShareText);
+  assert.ok(hcShareText.includes("🟧"), `high-contrast share text should use the orange emoji: ${hcShareText}`);
+  assert.ok(!hcShareText.includes("🟩") && !hcShareText.includes("🟨"), "high-contrast share text must not contain green/yellow emojis");
+  await page.evaluate(async () => {
+    const mod = await import("./js/core/settings.js?v=20260723-lang-bgm");
+    mod.setSetting("highContrast", false);
+  });
+
   await page.evaluate(() => { location.hash = "#/history"; });
   await page.waitForURL(/#\/history$/);
   const historyItem = page.locator("button.history-item").first();
@@ -601,13 +620,13 @@ try {
   );
   await shortPage.waitForTimeout(50);
   const flightsBeforeLeave = await shortPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260723-gate-silent")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260723-lang-bgm")).activeTileFlightCount()
   );
   assert.ok(flightsBeforeLeave > 0, "Tile gather animation should be active before leaving the game");
   await shortPage.getByRole("button", { name: "タイトルへ戻る" }).click();
   await shortPage.waitForURL(/#\/$/);
   const flightsAfterLeave = await shortPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260723-gate-silent")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260723-lang-bgm")).activeTileFlightCount()
   );
   assert.equal(flightsAfterLeave, 0, "Tile gather animation should be removed when leaving the game");
   await shortPage.close();
@@ -655,13 +674,13 @@ try {
   await reducedDialog.getByRole("button", { name: "スタート" }).click();
   await reducedPage.locator("#screen-game.active .row").last().waitFor();
   const reducedFlights = await reducedPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260723-gate-silent")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260723-lang-bgm")).activeTileFlightCount()
   );
   assert.equal(reducedFlights, 0, "Reduced motion should suppress tile gather flights");
   await reducedContext.close();
 
   await page.evaluate(async () => {
-    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260723-gate-silent");
+    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260723-lang-bgm");
     bgmUnlockCelebration([{ id: "queue-test-a", name: "Queue Test A", desc: "First unlock" }]);
     bgmUnlockCelebration([{ id: "queue-test-b", name: "Queue Test B", desc: "Second unlock" }]);
   });
@@ -692,7 +711,7 @@ try {
 
   // 2 曲以上の同時解放（履歴インポート等）は 1 枚のまとめカードで報告する
   await page.evaluate(async () => {
-    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260723-gate-silent");
+    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260723-lang-bgm");
     bgmUnlockCelebration([
       { id: "multi-a", name: "Multi Track A", desc: "" },
       { id: "multi-b", name: "Multi Track B", desc: "" },
@@ -709,7 +728,7 @@ try {
 
   // 実績解放セレブレーション: 単発は大型カード、3 個以上は 1 枚にまとめる
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-gate-silent");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-lang-bgm");
     achievementCelebration([
       { id: "smoke-single", icon: "trophy", color: "#ffd166", name: "スモーク実績", desc: "テスト用の実績です" },
     ]);
@@ -727,7 +746,7 @@ try {
   await page.locator(".ach-unlock").waitFor({ state: "detached" });
 
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-gate-silent");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-lang-bgm");
     achievementCelebration([
       { id: "smoke-a", icon: "star", color: "#ffd166", name: "実績A", desc: "" },
       { id: "smoke-b", icon: "gem", color: "#7ee8ff", name: "実績B", desc: "" },
@@ -749,7 +768,7 @@ try {
 
   // リストが溢れるときは下端フェードで続きを示し、最下部まで送るとフェードが消える
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-gate-silent");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-lang-bgm");
     achievementCelebration(
       Array.from({ length: 9 }, (_, i) => ({ id: `smoke-many-${i}`, icon: "star", color: "#ffd166", name: `実績${i + 1}`, desc: "" }))
     );
@@ -797,7 +816,7 @@ try {
   // 判定オープン中の先行入力: 次の 1 行分をバッファし、オープン完了後に自動で確定する
   await page.getByRole("dialog", { name: "基本ルール | DWORDle" }).getByRole("button", { name: "わかった" }).click();
   await page.evaluate(async () => {
-    const { setSetting } = await import("./js/core/settings.js?v=20260723-gate-silent");
+    const { setSetting } = await import("./js/core/settings.js?v=20260723-lang-bgm");
     setSetting("theme", "classic");
     setSetting("sfx", false);
     setSetting("bgm", false);
@@ -1165,7 +1184,7 @@ try {
     // 称号ラダー: 最上位は王（実績全解除 + 1000 プレイ）。多い方のモードの王になり、
     // 同数なら DWORDle。1000 未満は伝説のまま、実績未コンプはプレイ数ランクのまま。
     const ranks = await cardPage.evaluate(async () => {
-      const mod = await import("./js/ui/player-card.js?v=20260723-gate-silent");
+      const mod = await import("./js/ui/player-card.js?v=20260723-lang-bgm");
       const pick = (stats) => {
         const rank = mod.rankForStats(stats);
         return `${rank.id}:${rank.titleJa}`;
@@ -1219,8 +1238,8 @@ try {
     // カテゴリバッジ: 実績 9 カテゴリ + 隠しの計 10 個。この時点では実績未解除なのですべて未獲得
     const badgeInfo = await cardPage.evaluate(async () => {
       const [cardMod, achMod] = await Promise.all([
-        import("./js/ui/player-card.js?v=20260723-gate-silent"),
-        import("./js/core/achievements.js?v=20260723-gate-silent"),
+        import("./js/ui/player-card.js?v=20260723-lang-bgm"),
+        import("./js/core/achievements.js?v=20260723-lang-bgm"),
       ]);
       const states = cardMod.categoryBadgeStates();
       return {
@@ -1235,7 +1254,7 @@ try {
 
     // 実績を全解除すると 10 個すべて獲得になる
     await cardPage.evaluate(async () => {
-      const mod = await import("./js/core/achievements.js?v=20260723-gate-silent");
+      const mod = await import("./js/core/achievements.js?v=20260723-lang-bgm");
       const all = {};
       for (const a of mod.ACHIEVEMENTS) all[a.id] = 1750000000;
       localStorage.setItem("dwordle2.achievements", JSON.stringify(all));
@@ -1246,7 +1265,7 @@ try {
     await cardPage.waitForURL(/#\/card$/);
     await cardPage.locator(".player-card-canvas").waitFor();
     const earnedAll = await cardPage.evaluate(async () => {
-      const mod = await import("./js/ui/player-card.js?v=20260723-gate-silent");
+      const mod = await import("./js/ui/player-card.js?v=20260723-lang-bgm");
       return mod.categoryBadgeStates().every((b) => b.earned);
     });
     assert.ok(earnedAll, "unlocking every achievement must earn all 10 category badges");
@@ -1308,6 +1327,20 @@ try {
     );
   } finally {
     await moodContext.close();
+  }
+
+  // 言語のシステム連動: 設定が未保存（既定 system）なら navigator.language に従う
+  {
+    const sysJa = await browser.newPage({ locale: "ja-JP" });
+    await sysJa.goto(baseUrl, { waitUntil: "networkidle" });
+    await sysJa.getByRole("button", { name: "開始", exact: true }).waitFor();
+    assert.equal(await sysJa.evaluate(() => document.documentElement.lang), "ja", "a Japanese browser should get the Japanese UI by default");
+    await sysJa.close();
+    const sysEn = await browser.newPage({ locale: "en-US" });
+    await sysEn.goto(baseUrl, { waitUntil: "networkidle" });
+    await sysEn.getByRole("button", { name: "Start", exact: true }).waitFor();
+    assert.equal(await sysEn.evaluate(() => document.documentElement.lang), "en", "a non-Japanese browser should get the English UI by default");
+    await sysEn.close();
   }
 
   console.log("UIスモーク + a11yテスト: OK");

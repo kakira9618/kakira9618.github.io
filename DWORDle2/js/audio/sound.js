@@ -5,8 +5,8 @@
 //   曲の実体は TRACKS（テンポ・コード進行・1 小節のスケジューラ）に定義する。
 //   設定やモード切替時はバスをクロスフェードしてシームレスに移行する。
 
-import { AUDIO } from "../config.js?v=20260723-gate-silent";
-import { getSettings, onSettingsChange } from "../core/settings.js?v=20260723-gate-silent";
+import { AUDIO } from "../config.js?v=20260723-lang-bgm";
+import { getSettings, onSettingsChange } from "../core/settings.js?v=20260723-lang-bgm";
 
 let ctx = null;
 let masterGain = null;
@@ -43,11 +43,11 @@ export const BGM_TRACKS = [
     descEn: "The Cyber theme's uso-mode track: a dark, ominous drone",
   },
   {
-    id: "retro",
-    name: "Letter Minuet",
-    nameEn: "Letter Minuet",
-    desc: "クラシックテーマの表の曲。羽根ペンの手紙のような優雅なチェンバロのメヌエット",
-    descEn: "The Classic theme's normal-mode track: an elegant harpsichord minuet, like a letter penned with a quill",
+    id: "classic",
+    name: "Classic 8-bit",
+    nameEn: "Classic 8-bit",
+    desc: "クラシックテーマの表の曲。原作を思わせる軽快なチップチューン",
+    descEn: "The Classic theme's normal-mode track: an upbeat chiptune inspired by the original",
   },
   {
     id: "glitch",
@@ -87,14 +87,11 @@ export const BGM_TRACKS = [
     unlockLabelEn: "First Step",
   },
   {
-    id: "classic",
-    name: "Classic 8-bit",
-    nameEn: "Classic 8-bit",
-    desc: "原作を思わせる軽快なチップチューン",
-    descEn: "An upbeat chiptune inspired by the original",
-    unlockAchievement: "first-clear",
-    unlockLabel: "初勝利",
-    unlockLabelEn: "First Win",
+    id: "retro",
+    name: "Letter Minuet",
+    nameEn: "Letter Minuet",
+    desc: "羽根ペンの手紙のような優雅なチェンバロのメヌエット",
+    descEn: "An elegant harpsichord minuet, like a letter penned with a quill",
   },
   {
     id: "parade",
@@ -226,7 +223,7 @@ export function bgmTracksUnlockedBy(achievements) {
 // テーマごとの表 / 裏の既定曲。モード連動（auto）ではテーマとモードの両方から選ぶ。
 const THEME_TRACKS = {
   cyber: { normal: "normal", uso: "uso" },
-  classic: { normal: "retro", uso: "glitch" },
+  classic: { normal: "classic", uso: "glitch" },
   pop: { normal: "pop", uso: "bitter" },
 };
 
@@ -601,7 +598,7 @@ export function playSfx(name) {
 //
 // テーマごとに表 / 裏の専用曲を持つ（THEME_TRACKS 参照）。
 //   サイバー:   normal（明るいアンビエント）/ uso（遅く暗いドローン）
-//   クラシック: retro（チェンバロのメヌエット）/ glitch（ラメント・バスの暗いチェンバロ）
+//   クラシック: classic（原作風チップチューン）/ glitch（ラメント・バスの暗いチェンバロ）
 //   Pop:        pop（キャンディポップ）/ bitter（ダークなキャンディポップ）
 // lookahead 方式で小節単位にスケジュールし、トラックごとに専用バスへ流す。
 
