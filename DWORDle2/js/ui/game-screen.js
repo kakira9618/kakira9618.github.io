@@ -53,6 +53,8 @@ let seedHidden = false;
 let finishedRecord = null; // 終了後に結果画面へ渡す
 let gatherSession = 0;
 let pendingKeys = []; // 判定オープン中の先行入力（次の 1 行分だけ保持）
+let lastTouchKey = null; // pointerdown で確定したタッチ入力（合成 click の重複抑止用）
+let lastTouchKeyTime = 0;
 
 function build() {
   root = document.getElementById("screen-game");
@@ -143,10 +145,25 @@ function buildKeyboard() {
           class: `key ${k.length > 1 ? "wide" : ""}`,
           dataset: { key: k },
           "aria-label": k === "backspace" ? "Backspace" : k === "enter" ? "Enter" : k.toUpperCase(),
-          onclick: () => handleKey(k),
+          onclick: (event) => {
+            // タッチ/ペンの pointerdown ですでに処理済みのタップの合成 click は無視する
+            // （抑止が効かない環境での二重入力防止）。キーボード・支援技術の click は通す。
+            if (event.timeStamp - lastTouchKeyTime < 700 && lastTouchKey === k) return;
+            handleKey(k);
+          },
         },
         label
       );
+      // タッチ/ペンは押し下げた時点で、モーションが出たキーそのもので確定する（Gboard と同じ）。
+      // click（指を離した時点）で確定すると、iOS は離した位置の要素に click を飛ばすため
+      // R を押したのに E が入る、指を滑らせると入力が消える、といった食い違いが起きる。
+      btn.addEventListener("pointerdown", (event) => {
+        if (event.pointerType === "mouse") return; // マウスは従来どおり click で処理
+        event.preventDefault(); // 合成 click を抑止する
+        lastTouchKey = k;
+        lastTouchKeyTime = event.timeStamp;
+        handleKey(k);
+      });
       keyEls[k] = btn;
       row.append(btn);
     });
