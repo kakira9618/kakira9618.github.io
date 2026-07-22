@@ -211,6 +211,11 @@ try {
   const publicEntry = await page.evaluate(async () => {
     const assetPaths = ["/favicon.png", "/og.png", "/og-square.png", "/manifest.webmanifest"];
     const statuses = await Promise.all(assetPaths.map(async (assetPath) => (await fetch(assetPath)).status));
+    const manifestJson = await (await fetch("/manifest.webmanifest")).json();
+    const icons = manifestJson.icons ?? [];
+    const iconStatuses = await Promise.all(
+      icons.map(async (icon) => (await fetch(new URL(icon.src, location.href))).status)
+    );
     return {
       ogImage: document.querySelector('meta[property="og:image"]')?.content,
       ogDescription: document.querySelector('meta[property="og:description"]')?.content,
@@ -218,6 +223,8 @@ try {
       twitterImage: document.querySelector('meta[name="twitter:image"]')?.content,
       twitterDescription: document.querySelector('meta[name="twitter:description"]')?.content,
       manifest: document.querySelector('link[rel="manifest"]')?.getAttribute("href"),
+      iconSizes: icons.flatMap((icon) => String(icon.sizes ?? "").split(/\s+/)),
+      iconStatuses,
       statuses,
     };
   });
@@ -228,6 +235,14 @@ try {
   assert.equal(publicEntry.twitterDescription, "答えは2つ。盤面は1つ。新感覚Wordle！");
   assert.equal(publicEntry.manifest, "manifest.webmanifest");
   assert.deepEqual(publicEntry.statuses, [200, 200, 200, 200], "Public metadata assets should be served");
+  // Android Chrome の PWA インストール（WebAPK 生成）には 192x192 と 512x512 の
+  // アイコンが必須。欠けると「ホーム画面に追加」を押してもサイレントに失敗する。
+  assert.ok(publicEntry.iconSizes.includes("192x192"), "manifest に 192x192 アイコンが必要");
+  assert.ok(publicEntry.iconSizes.includes("512x512"), "manifest に 512x512 アイコンが必要");
+  assert.ok(
+    publicEntry.iconStatuses.length > 0 && publicEntry.iconStatuses.every((status) => status === 200),
+    "manifest の全アイコンが配信されること"
+  );
 
   // ハイコントラスト配色: 設定 ON で全テーマの判定色が 緑→オレンジ / 黄→青 に置き換わる
   const normalTileCorrect = await page.evaluate(() => getComputedStyle(document.body).getPropertyValue("--tile-correct").trim());

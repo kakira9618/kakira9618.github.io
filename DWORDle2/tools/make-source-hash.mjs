@@ -43,7 +43,16 @@ export async function computeSourceHash() {
 
 // オフラインでの完全動作に必要な全資産（OGP 画像などページ機能に関係しないものは除く）
 export async function listPrecacheAssets() {
-  const assets = ["./", "index.html", "manifest.webmanifest", "favicon.png"];
+  const assets = [
+    "./",
+    "index.html",
+    "manifest.webmanifest",
+    "favicon.png",
+    "icon-192.png",
+    "icon-512.png",
+    "icon-maskable-192.png",
+    "icon-maskable-512.png",
+  ];
   for (const dir of ["css", "js", "vendor"]) {
     assets.push(
       ...(await listFiles(path.join(root, dir))).map((full) => path.relative(root, full).split(path.sep).join("/"))
