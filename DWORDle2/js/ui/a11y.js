@@ -1,6 +1,6 @@
 // 判定タイルを色だけに依存せず読み上げるための共通ラベル。
 
-import { tr } from "../core/i18n.js?v=20260722-player-card";
+import { tr } from "../core/i18n.js?v=20260722-card-polish";
 
 export function feedbackName(state) {
   const names = {

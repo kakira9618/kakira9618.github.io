@@ -4,26 +4,31 @@
 // 通算 5 回プレイで解放（タイトルメニューの段階解放と同じ仕組み）。
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate, redirect } from "./app.js?v=20260722-player-card";
-import { getHistory, countPlays, dailyClearStreak } from "../core/records.js";
-import { ACHIEVEMENTS, getUnlocked } from "../core/achievements.js?v=20260722-player-card";
-import { getSettings, HIDDEN_THEMES } from "../core/settings.js?v=20260722-player-card";
-import { BGM_TRACKS, playSfx } from "../audio/sound.js?v=20260722-player-card";
+import { registerScreen, navigate, redirect } from "./app.js?v=20260722-card-polish";
+import { getHistory, countPlays } from "../core/records.js";
+import { ACHIEVEMENTS, getUnlocked } from "../core/achievements.js?v=20260722-card-polish";
+import { getSettings, HIDDEN_THEMES } from "../core/settings.js?v=20260722-card-polish";
+import { BGM_TRACKS, currentBgmTrackId, playSfx } from "../audio/sound.js?v=20260722-card-polish";
 import { loadJSON, saveJSON } from "../core/store.js";
 import { isDebugMode } from "../core/debug.js";
-import { toast } from "./toast.js?v=20260722-player-card";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-player-card";
-import { winBurst } from "../fx/effects.js?v=20260722-player-card";
-import { shouldReduceMotion } from "../core/motion.js?v=20260722-player-card";
+import { toast } from "./toast.js?v=20260722-card-polish";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-card-polish";
+import { winBurst } from "../fx/effects.js?v=20260722-card-polish";
+import { shouldReduceMotion } from "../core/motion.js?v=20260722-card-polish";
 import { icon, iconSvg } from "./icons.js";
-import { SHARE_URL } from "../config.js?v=20260722-player-card";
-import { tr } from "../core/i18n.js?v=20260722-player-card";
+import { announce } from "./a11y.js?v=20260722-card-polish";
+import { SHARE_URL } from "../config.js?v=20260722-card-polish";
+import { tr } from "../core/i18n.js?v=20260722-card-polish";
 
 // 解放しきい値（タイトルメニューの MENU_UNLOCKS と同じ値を参照させる）
 export const CARD_UNLOCK_PLAYS = 5;
 
 // 名前の最大文字数（カードの印字幅に収まる上限）
 export const NAME_MAX_CHARS = 12;
+
+// 昇格演出: カード着地アニメーションが落ち着いてから出すまでの時間と、演出の長さ
+const PROMO_DELAY_MS = 1000;
+const PROMO_OVERLAY_MS = 2600;
 
 // ---- カードのレイアウト・配色定数（描画座標は幅 1200 x 高さ 675 基準の px）----
 const CARD = {
@@ -33,44 +38,89 @@ const CARD = {
   radius: 34, // カード外形の角丸
   frameInset: 12, // 外周からランク色フレームまで
   frameWidth: 5,
-  pad: 76, // フレーム内の左右余白
+  pad: 64, // フレーム内の左右余白
   bgTop: "#0a0e1f",
   bgBottom: "#161038",
   fg: "#eef4ff",
   dim: "#8b9bbd",
   logoGrad: ["#00d5ff", "#7c5cff"], // DWORDle 2 ロゴの文字グラデーション
-  logoY: 108,
-  kickerY: 152, // "PLAYER CARD" の行
-  nameY: 260,
-  nameSize: 66,
-  titleY: 330, // 称号バッジの中心
-  dividerY: 384,
-  statRows: [448, 545], // 統計 2 行の値の基準線
-  statLabelGap: 38, // 値から下のラベルまで
-  favoritesY: 632, // お気に入り・初プレイ行（左寄せ）と URL・発行日（右寄せ）
-  footerY: 632,
-  miniTileSize: 26, // 右上の装飾ミニタイル列
-
+  logoY: 100,
+  kickerY: 143, // "PLAYER CARD" の行
+  playerLabelY: 210, // 名前の上の小ラベル "PLAYER"
+  nameY: 266,
+  nameSize: 64,
+  titleY: 352, // 称号バッジの中心
+  // 右側の大型ランクエンブレム(六角形 + リング + アイコン)。
+  // ランク名は名前下の称号バッジに統合したので、ここはシンボルだけ置く
+  emblem: {
+    cx: 972, // 中心 x
+    cy: 252, // 中心 y
+    hexR: 126, // 外側六角形の半径
+    ringR: 96, // 内側リングの半径
+    iconSize: 94,
+    glowR: 205, // 背後のグロー半径
+  },
+  // 統計セル（4 列 x 2 行のパネル。お気に入りテーマ / BGM も 1 セルとして大きく見せる）
+  stats: {
+    top: 428, // 1 行目セルの上端
+    cellH: 82,
+    gap: 12,
+    valueSize: 40,
+    textValueSize: 25, // テーマ名・曲名などテキスト値のセル（収まらなければさらに縮める）
+    labelSize: 15,
+    cellFill: "rgba(255, 255, 255, 0.045)",
+    cellStroke: "rgba(255, 255, 255, 0.09)",
+  },
+  footerDividerY: 622, // フッター上の細い区切り線
+  footerY: 644, // お気に入り（左）と URL・発行日（右）
+  cornerLen: 26, // 四隅の L 字アクセントの辺の長さ
+  cornerInset: 30, // 四隅アクセントのフレームからの距離
+  idEdgeX: 26, // プレイヤー ID の右端からの距離（縦書きで印字）
+  idSize: 12,
+  miniTileSize: 24, // 右上の装飾ミニタイル列
   miniTileGap: 8,
   miniTileColors: ["#00e68a", "#ffc233", "#3a4356", "#00e68a", "#ffc233"],
 };
 
 // ランク: 通算プレイ回数でフレーム色と称号が上がる。
-// 実績を全解除すると最上位 MASTER（虹フレーム）になる。
+// 実績を全解除すると MASTER（虹フレーム）になり、
+// さらに通算 1000 プレイに到達すると最上位 KING（王）になる。
+// 王の称号は多くプレイしている方のモードで決まる（同数なら DWORDle）。
 const RANKS = [
-  { min: 5, id: "BRONZE", frame: ["#f0a35e", "#9a5b2d"], accent: "#f0a35e", titleJa: "見習いWORDler", titleEn: "Apprentice WORDler", icon: "star" },
-  { min: 25, id: "SILVER", frame: ["#eef3fa", "#8fa3b8"], accent: "#c9d6e8", titleJa: "一人前WORDler", titleEn: "Seasoned WORDler", icon: "shield" },
-  { min: 75, id: "GOLD", frame: ["#ffe08a", "#d99a1b"], accent: "#ffd166", titleJa: "凄腕WORDler", titleEn: "Ace WORDler", icon: "swords" },
-  { min: 200, id: "PLATINUM", frame: ["#c5fff2", "#4fc3d8"], accent: "#8ee9dd", titleJa: "達人WORDler", titleEn: "Master WORDler", icon: "flame" },
-  { min: 500, id: "DIAMOND", frame: ["#b9e0ff", "#8a6bff"], accent: "#a8ccff", titleJa: "頂のWORDler", titleEn: "Peerless WORDler", icon: "crown" },
+  { min: 5, tier: 1, id: "BRONZE", frame: ["#f0a35e", "#9a5b2d"], accent: "#f0a35e", titleJa: "見習いWORDler", titleEn: "Apprentice WORDler", icon: "star" },
+  { min: 25, tier: 2, id: "SILVER", frame: ["#eef3fa", "#8fa3b8"], accent: "#c9d6e8", titleJa: "一人前WORDler", titleEn: "Seasoned WORDler", icon: "shield" },
+  { min: 75, tier: 3, id: "GOLD", frame: ["#ffe08a", "#d99a1b"], accent: "#ffd166", titleJa: "凄腕WORDler", titleEn: "Ace WORDler", icon: "swords" },
+  { min: 200, tier: 4, id: "PLATINUM", frame: ["#c5fff2", "#4fc3d8"], accent: "#8ee9dd", titleJa: "達人WORDler", titleEn: "Master WORDler", icon: "flame" },
+  { min: 500, tier: 5, id: "DIAMOND", frame: ["#b9e0ff", "#8a6bff"], accent: "#a8ccff", titleJa: "頂のWORDler", titleEn: "Peerless WORDler", icon: "gem" },
 ];
 const RANK_MASTER = {
+  tier: 6,
   id: "MASTER",
   frame: ["#ff5f8f", "#ffd166", "#00e68a", "#00d5ff", "#b45cff"],
   accent: "#ffd166",
   titleJa: "伝説のWORDler",
   titleEn: "Legendary WORDler",
-  icon: "gem",
+  icon: "trophy",
+};
+// KING に必要な通算プレイ回数（実績全解除も必要）
+export const KING_MIN_PLAYS = 1000;
+const RANK_KING_NORMAL = {
+  tier: 7,
+  id: "KING",
+  frame: ["#fff3c4", "#ffd166", "#00d5ff", "#ffd166", "#fff3c4"],
+  accent: "#ffd166",
+  titleJa: "DWORDleの王",
+  titleEn: "DWORDle King",
+  icon: "crown",
+};
+const RANK_KING_USO = {
+  tier: 7,
+  id: "KING",
+  frame: ["#ffb1c8", "#ff2b5e", "#b45cff", "#ff2b5e", "#ffb1c8"],
+  accent: "#ff5f8f",
+  titleJa: "DWORDlieの王",
+  titleEn: "DWORDlie King",
+  icon: "mask",
 };
 
 let root = null;
@@ -98,13 +148,17 @@ function collectStats() {
   }
   const plays = history.length;
   const wins = history.filter((g) => g.clear).length;
+  const usoPlays = history.filter((g) => g.gameMode === "uso").length;
+  const playSeconds = history.reduce((total, g) => total + Math.max(0, (g.endTime ?? g.startTime) - g.startTime), 0);
   return {
     plays,
     wins,
     winRate: plays ? Math.round((100 * wins) / plays) : 0,
+    normalPlays: plays - usoPlays,
+    usoPlays,
     playDays: days.length,
     maxStreak,
-    dailyStreak: dailyClearStreak(),
+    playMinutes: Math.round(playSeconds / 60),
     achUnlocked: Object.keys(getUnlocked()).length,
     achTotal: ACHIEVEMENTS.length,
     firstPlay: history.length ? history[0].startTime : null,
@@ -112,7 +166,12 @@ function collectStats() {
 }
 
 export function rankForStats(stats) {
-  if (stats.achTotal > 0 && stats.achUnlocked >= stats.achTotal) return RANK_MASTER;
+  const allAchievements = stats.achTotal > 0 && stats.achUnlocked >= stats.achTotal;
+  // 王: 実績全解除 + 通算 1000 プレイ。多い方のモードの王になる（同数は DWORDle）
+  if (allAchievements && stats.plays >= KING_MIN_PLAYS) {
+    return stats.usoPlays > stats.normalPlays ? RANK_KING_USO : RANK_KING_NORMAL;
+  }
+  if (allAchievements) return RANK_MASTER;
   let rank = RANKS[0];
   for (const r of RANKS) if (stats.plays >= r.min) rank = r;
   return rank;
@@ -125,8 +184,10 @@ function themeLabel(id) {
   return hidden ? tr(hidden.name, hidden.nameEn) : id;
 }
 
+// お気に入り BGM の表示名。「モード連動」は実際に再生される曲へ解決して表示する
 function bgmLabel(id) {
-  const track = BGM_TRACKS.find((t) => t.id === id) ?? BGM_TRACKS[0];
+  const actualId = id === "auto" ? currentBgmTrackId() : id;
+  const track = BGM_TRACKS.find((t) => t.id === actualId) ?? BGM_TRACKS[0];
   return tr(track.name, track.nameEn ?? track.name);
 }
 
@@ -135,6 +196,22 @@ const fmtDate = (unixSec) => {
   const pad = (n) => String(n).padStart(2, "0");
   return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())}`;
 };
+
+// 総プレイ時間の表示（xx:yy = 時間:分）
+const fmtPlayTime = (minutes) => `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, "0")}`;
+
+// プレイヤー ID: このブラウザで初めてカード機能に触れたときに乱数から一意に決め、
+// 以後は固定（16 進数 8 桁・大文字）。カードの右端に小さく印字される。
+export function getPlayerId() {
+  let id = loadJSON("playerId", null);
+  if (!/^[0-9A-F]{8}$/.test(id ?? "")) {
+    const bytes = new Uint8Array(4);
+    crypto.getRandomValues(bytes);
+    id = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("").toUpperCase();
+    saveJSON("playerId", id);
+  }
+  return id;
+}
 
 // ---- カード描画 ----
 
@@ -225,7 +302,22 @@ export async function renderPlayerCardCanvas(name) {
   const left = CARD.pad;
   const right = W - CARD.pad;
 
-  // ---- ヘッダ: ロゴ + PLAYER CARD + ランクピル + 装飾タイル ----
+  // 四隅の L 字アクセント（フレームの内側に小さな飾り角）
+  ctx.strokeStyle = rank.accent;
+  ctx.lineWidth = 2;
+  ctx.globalAlpha = 0.55;
+  const ci = CARD.cornerInset;
+  const cl = CARD.cornerLen;
+  for (const [cx, cy, dx, dy] of [[ci, ci, 1, 1], [W - ci, ci, -1, 1], [ci, H - ci, 1, -1], [W - ci, H - ci, -1, -1]]) {
+    ctx.beginPath();
+    ctx.moveTo(cx + dx * cl, cy);
+    ctx.lineTo(cx, cy);
+    ctx.lineTo(cx, cy + dy * cl);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  // ---- ヘッダ: ロゴ + PLAYER CARD + 装飾タイル ----
   ctx.textBaseline = "middle";
   ctx.textAlign = "left";
   ctx.font = '900 46px "Avenir Next", "Helvetica Neue", sans-serif';
@@ -244,121 +336,210 @@ export async function renderPlayerCardCanvas(name) {
   ctx.fillStyle = CARD.dim;
   drawSpaced(ctx, "P L A Y E R   C A R D", left, CARD.kickerY);
 
-  // ランクピル（右上）
-  ctx.font = '800 24px "Avenir Next", sans-serif';
-  const rankText = `${rank.id} RANK`;
-  const rankW = ctx.measureText(rankText).width;
-  const pillH = 46;
-  const pillW = rankW + 56;
-  const pillX = right - pillW;
-  const pillY = CARD.logoY - pillH / 2;
-  ctx.fillStyle = "rgba(255,255,255,0.05)";
-  roundRect(ctx, pillX, pillY, pillW, pillH, pillH / 2);
-  ctx.fill();
-  ctx.strokeStyle = frameGradient(ctx, rank);
-  ctx.lineWidth = 2.5;
-  roundRect(ctx, pillX, pillY, pillW, pillH, pillH / 2);
-  ctx.stroke();
-  ctx.fillStyle = rank.accent;
-  ctx.textAlign = "center";
-  ctx.fillText(rankText, pillX + pillW / 2, CARD.logoY + 1);
-
-  // 判定タイル風の装飾（ランクピルの下）
+  // 判定タイル風の装飾（右上）
   const tiles = CARD.miniTileColors;
   const tilesW = tiles.length * CARD.miniTileSize + (tiles.length - 1) * CARD.miniTileGap;
   tiles.forEach((color, i) => {
     ctx.fillStyle = color;
-    roundRect(ctx, right - tilesW + i * (CARD.miniTileSize + CARD.miniTileGap), CARD.kickerY + 8, CARD.miniTileSize, CARD.miniTileSize, 6);
+    roundRect(ctx, right - tilesW + i * (CARD.miniTileSize + CARD.miniTileGap), CARD.logoY - CARD.miniTileSize / 2, CARD.miniTileSize, CARD.miniTileSize, 6);
     ctx.fill();
   });
 
-  // ---- 名前 ----
+  // ---- 右側: 大型ランクエンブレム（グロー + 六角形 + リング + アイコン + ランクピル）----
+  const em = CARD.emblem;
+  const emblemGlow = ctx.createRadialGradient(em.cx, em.cy, 0, em.cx, em.cy, em.glowR);
+  emblemGlow.addColorStop(0, rank.accent);
+  emblemGlow.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.save();
+  ctx.globalAlpha = 0.22;
+  ctx.fillStyle = emblemGlow;
+  ctx.fillRect(em.cx - em.glowR, em.cy - em.glowR, em.glowR * 2, em.glowR * 2);
+  ctx.restore();
+
+  // 六角形（頂点を上に）。ランクのグラデーションで縁取る
+  const hexPath = (r) => {
+    ctx.beginPath();
+    for (let k = 0; k < 6; k++) {
+      const a = -Math.PI / 2 + (k * Math.PI) / 3;
+      const px = em.cx + Math.cos(a) * r;
+      const py = em.cy + Math.sin(a) * r;
+      if (k === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+  };
+  hexPath(em.hexR);
+  ctx.fillStyle = "rgba(255,255,255,0.035)";
+  ctx.fill();
+  ctx.strokeStyle = frameGradient(ctx, rank);
+  ctx.lineWidth = 3;
+  hexPath(em.hexR);
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(255,255,255,0.12)";
+  ctx.lineWidth = 1;
+  hexPath(em.hexR - 8);
+  ctx.stroke();
+
+  // 内側リングとアイコン
+  ctx.beginPath();
+  ctx.arc(em.cx, em.cy, em.ringR, 0, Math.PI * 2);
+  ctx.strokeStyle = rank.accent;
+  ctx.globalAlpha = 0.5;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+  try {
+    const img = await loadIconImage(rank.icon, em.iconSize, rank.accent);
+    ctx.shadowColor = rank.accent;
+    ctx.shadowBlur = 24;
+    ctx.drawImage(img, em.cx - em.iconSize / 2, em.cy - em.iconSize / 2, em.iconSize, em.iconSize);
+    ctx.shadowBlur = 0;
+  } catch {
+    // アイコン画像が作れない環境でもカード本体は成立させる
+  }
+
+  // ---- 左側: PLAYER ラベル + 名前 + 称号バッジ ----
+  const nameMaxW = em.cx - em.hexR - 40 - left; // エンブレムに被らない幅
   ctx.textAlign = "left";
+  ctx.font = '700 15px "Avenir Next", sans-serif';
+  ctx.fillStyle = CARD.dim;
+  drawSpaced(ctx, "P L A Y E R", left, CARD.playerLabelY);
+
   const displayName = name || "PLAYER";
   let nameSize = CARD.nameSize;
   do {
     ctx.font = `900 ${nameSize}px "Avenir Next", "Helvetica Neue", sans-serif`;
     nameSize -= 2;
-  } while (ctx.measureText(displayName).width > W - CARD.pad * 2 && nameSize > 24);
+  } while (ctx.measureText(displayName).width > nameMaxW && nameSize > 24);
   ctx.shadowColor = "rgba(124, 92, 255, 0.55)";
   ctx.shadowBlur = 26;
   ctx.fillStyle = CARD.fg;
   ctx.fillText(displayName, left, CARD.nameY);
   ctx.shadowBlur = 0;
+  // 名前の下のアクセントライン（名前の幅に沿って伸びる）
+  const nameW = Math.min(ctx.measureText(displayName).width, nameMaxW);
+  const nameLine = ctx.createLinearGradient(left, 0, left + nameW + 60, 0);
+  nameLine.addColorStop(0, rank.accent);
+  nameLine.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = nameLine;
+  ctx.fillRect(left, CARD.nameY + 44, nameW + 60, 2);
 
-  // ---- 称号バッジ ----
+  // ---- ランク + 称号の一体バッジ ----
+  // 左セグメントはランク色で塗って「GOLD RANK」、右セグメントにアイコン + 称号。
   const titleText = tr(rank.titleJa, rank.titleEn);
+  const rankText = `${rank.id} RANK`;
+  const badgeH = 56;
+  const badgeTop = CARD.titleY - badgeH / 2;
+  ctx.font = '800 21px "Avenir Next", sans-serif';
+  const rankSegW = ctx.measureText(rankText).width + 46;
   ctx.font = '800 28px "Avenir Next", sans-serif';
   const titleW = ctx.measureText(titleText).width;
-  const badgeIcon = 34;
-  const badgeH = 56;
-  const badgeW = badgeIcon + titleW + 62;
+  const badgeIcon = 32;
+  const badgeW = rankSegW + badgeIcon + titleW + 58;
+  // 土台とランク色セグメント（角丸の内側だけ塗るためクリップする）
   ctx.fillStyle = "rgba(255,255,255,0.06)";
-  roundRect(ctx, left, CARD.titleY - badgeH / 2, badgeW, badgeH, badgeH / 2);
+  roundRect(ctx, left, badgeTop, badgeW, badgeH, badgeH / 2);
   ctx.fill();
+  ctx.save();
+  roundRect(ctx, left, badgeTop, badgeW, badgeH, badgeH / 2);
+  ctx.clip();
+  const segGrad = ctx.createLinearGradient(left, 0, left + rankSegW, 0);
+  rank.frame.forEach((c, i) => segGrad.addColorStop(rank.frame.length === 1 ? 0 : i / (rank.frame.length - 1), c));
+  ctx.fillStyle = segGrad;
+  ctx.fillRect(left, badgeTop, rankSegW, badgeH);
+  ctx.restore();
   ctx.strokeStyle = rank.accent;
   ctx.lineWidth = 2;
-  roundRect(ctx, left, CARD.titleY - badgeH / 2, badgeW, badgeH, badgeH / 2);
+  roundRect(ctx, left, badgeTop, badgeW, badgeH, badgeH / 2);
   ctx.stroke();
+  // ランク名（塗りセグメントの上に暗色で）
+  ctx.font = '800 21px "Avenir Next", sans-serif';
+  ctx.fillStyle = "#101228";
+  ctx.textAlign = "center";
+  ctx.fillText(rankText, left + rankSegW / 2, CARD.titleY + 1);
+  // 称号（アイコン + テキスト）
   try {
     const img = await loadIconImage(rank.icon, badgeIcon, rank.accent);
-    ctx.drawImage(img, left + 20, CARD.titleY - badgeIcon / 2, badgeIcon, badgeIcon);
+    ctx.drawImage(img, left + rankSegW + 18, CARD.titleY - badgeIcon / 2, badgeIcon, badgeIcon);
   } catch {
     // アイコン画像が作れない環境でもカード本体は成立させる
   }
+  ctx.textAlign = "left";
+  ctx.font = '800 28px "Avenir Next", sans-serif';
   ctx.fillStyle = rank.accent;
-  ctx.fillText(titleText, left + badgeIcon + 34, CARD.titleY + 1);
+  ctx.fillText(titleText, left + rankSegW + 18 + badgeIcon + 12, CARD.titleY + 1);
 
-  // ---- 区切り線 ----
-  const divider = ctx.createLinearGradient(left, 0, right, 0);
-  divider.addColorStop(0, rank.accent);
-  divider.addColorStop(1, "rgba(255,255,255,0.06)");
-  ctx.fillStyle = divider;
-  ctx.fillRect(left, CARD.dividerY, right - left, 2);
-
-  // ---- 統計グリッド（3 列 x 2 行）----
+  // ---- 統計パネル（4 列 x 2 行のセル。テーマ / BGM もここで大きく見せる）----
+  const st = CARD.stats;
   const cells = [
     [String(stats.plays), tr("総プレイ", "Total plays")],
     [`${stats.winRate}%`, tr("勝率", "Win rate")],
     [String(stats.playDays), tr("プレイ日数", "Days played")],
     [String(stats.maxStreak), tr("MAXストリーク", "Max streak")],
     [`${stats.achUnlocked}/${stats.achTotal}`, tr("実績", "Achievements")],
-    [String(stats.dailyStreak), tr("デイリー連続クリア", "Daily streak")],
+    [fmtPlayTime(stats.playMinutes), tr("総プレイ時間", "Play time")],
+    [themeLabel(settings.theme), tr("お気に入りテーマ", "Favorite theme"), true],
+    [bgmLabel(settings.bgmTrack), tr("お気に入りBGM", "Favorite BGM"), true],
   ];
-  const colW = (right - left) / 3;
-  cells.forEach(([value, label], i) => {
-    const cx = left + (i % 3) * colW + colW / 2;
-    const cy = CARD.statRows[Math.floor(i / 3)];
-    ctx.textAlign = "center";
-    ctx.font = '800 46px "Avenir Next", sans-serif';
+  const cellW = (right - left - st.gap * 3) / 4;
+  cells.forEach(([value, label, isText], i) => {
+    const x = left + (i % 4) * (cellW + st.gap);
+    const y = st.top + Math.floor(i / 4) * (st.cellH + st.gap);
+    ctx.fillStyle = st.cellFill;
+    roundRect(ctx, x, y, cellW, st.cellH, 14);
+    ctx.fill();
+    ctx.strokeStyle = st.cellStroke;
+    ctx.lineWidth = 1;
+    roundRect(ctx, x, y, cellW, st.cellH, 14);
+    ctx.stroke();
+    // セル左端のアクセントバー
+    ctx.fillStyle = rank.accent;
+    ctx.globalAlpha = 0.6;
+    roundRect(ctx, x, y + 14, 3, st.cellH - 28, 1.5);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.textAlign = "left";
+    // テキスト値（テーマ名・曲名）は数値より小さく始め、収まるまで縮める
+    let valueSize = isText ? st.textValueSize : st.valueSize;
+    ctx.font = `800 ${valueSize}px "Avenir Next", sans-serif`;
+    while (isText && valueSize > 15 && ctx.measureText(value).width > cellW - 44) {
+      valueSize -= 1;
+      ctx.font = `800 ${valueSize}px "Avenir Next", sans-serif`;
+    }
     ctx.fillStyle = CARD.fg;
-    ctx.fillText(value, cx, cy);
-    ctx.font = '600 17px "Avenir Next", sans-serif';
+    ctx.fillText(value, x + 24, y + st.cellH / 2 - 9);
+    ctx.font = `600 ${st.labelSize}px "Avenir Next", sans-serif`;
     ctx.fillStyle = CARD.dim;
-    ctx.fillText(label, cx, cy + CARD.statLabelGap);
+    ctx.fillText(label, x + 24, y + st.cellH / 2 + 22);
   });
-  // 列の区切り（細線）
-  ctx.fillStyle = "rgba(255,255,255,0.07)";
-  for (let i = 1; i < 3; i++) {
-    ctx.fillRect(left + colW * i, CARD.statRows[0] - 40, 1, CARD.statRows[1] - CARD.statRows[0] + 66);
-  }
 
-  // ---- フッター: お気に入り / Member since / URL ----
+  // ---- フッター: 細い区切り線 + 初プレイ / URL / 発行日 ----
+  ctx.fillStyle = "rgba(255,255,255,0.08)";
+  ctx.fillRect(left, CARD.footerDividerY, right - left, 1);
   ctx.textAlign = "left";
-  ctx.font = '600 18px "Avenir Next", sans-serif';
+  ctx.font = '600 17px "Avenir Next", sans-serif';
   ctx.fillStyle = CARD.dim;
-  const favorites = tr(
-    `テーマ: ${themeLabel(settings.theme)} ／ BGM: ${bgmLabel(settings.bgmTrack)}`,
-    `Theme: ${themeLabel(settings.theme)} / BGM: ${bgmLabel(settings.bgmTrack)}`
-  );
-  const since = stats.firstPlay ? tr(`初プレイ ${fmtDate(stats.firstPlay)}`, `Since ${fmtDate(stats.firstPlay)}`) : "";
-  ctx.fillText(`${favorites}${since ? `   ・   ${since}` : ""}`, left, CARD.favoritesY);
+  if (stats.firstPlay) {
+    ctx.fillText(tr(`初プレイ ${fmtDate(stats.firstPlay)}`, `Since ${fmtDate(stats.firstPlay)}`), left, CARD.footerY);
+  }
   ctx.textAlign = "right";
   ctx.fillText(
     `${SHARE_URL.replace(/^https:\/\//, "")}   ・   ${fmtDate(Math.floor(Date.now() / 1000))}`,
     right,
     CARD.footerY
   );
+
+  // ---- プレイヤー ID（右端に縦書きで小さく印字）----
+  ctx.save();
+  ctx.translate(W - CARD.idEdgeX, H / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.font = `600 ${CARD.idSize}px "SF Mono", "Menlo", "Consolas", monospace`;
+  ctx.fillStyle = "rgba(139, 155, 189, 0.8)";
+  ctx.textAlign = "left";
+  const idText = `ID ${getPlayerId()}`;
+  const idWidth = [...idText].reduce((total, ch) => total + ctx.measureText(ch).width + 1.5, -1.5);
+  drawSpaced(ctx, idText, -idWidth / 2, 0);
+  ctx.restore();
 
   return cv;
 }
@@ -414,6 +595,38 @@ function sanitizeName(raw) {
     .replace(/[\u0000-\u001f\u007f]/g, "")
     .trim()
     .slice(0, NAME_MAX_CHARS);
+}
+
+// ランクアップ演出: カード着地後にフラッシュ + RANK UP スタンプ + 広がるリング + バースト。
+// reduce-motion 時はトーストと効果音だけにする。
+function celebratePromotion(stage, rank) {
+  const message = tr(`ランクアップ！ ${rank.id} RANK ─ ${rank.titleJa}`, `Rank up! ${rank.id} RANK — ${rank.titleEn}`);
+  if (shouldReduceMotion()) {
+    playSfx("achievementBig");
+    toast(message);
+    return;
+  }
+  setTimeout(() => {
+    const wrap = stage.querySelector(".player-card-wrap");
+    if (!wrap?.isConnected) return; // 演出前に画面を離れていたら出さない
+    playSfx("achievementBig");
+    winBurst([Number.parseInt(rank.accent.slice(1), 16), 0xffd166, 0xffffff]);
+    announce(message);
+    const overlay = el(
+      "div",
+      { class: "rank-up-overlay", "aria-hidden": "true", style: { "--rank-accent": rank.accent } },
+      el("span", { class: "rank-up-ring" }),
+      el(
+        "div",
+        { class: "rank-up-text" },
+        el("span", { class: "rank-up-kicker" }, "RANK UP!"),
+        el("span", { class: "rank-up-name" }, `${rank.id} RANK`),
+        el("span", { class: "rank-up-title" }, tr(rank.titleJa, rank.titleEn))
+      )
+    );
+    wrap.append(overlay);
+    setTimeout(() => overlay.remove(), PROMO_OVERLAY_MS);
+  }, PROMO_DELAY_MS);
 }
 
 async function drawInto(stage, name, { deal }) {
@@ -478,12 +691,17 @@ function render() {
 
   const issue = async (isFirst) => {
     const name = sanitizeName(nameInput.value);
-    saveJSON("playerCard", { name, issuedAt: Math.floor(Date.now() / 1000) });
+    const prev = getSavedCard();
+    const rank = rankForStats(collectStats());
+    saveJSON("playerCard", { ...prev, name, issuedAt: Math.floor(Date.now() / 1000), seenRankTier: rank.tier });
     await drawInto(stage, name, { deal: true });
     actions.hidden = false;
     if (isFirst) {
       playSfx("achievementBig");
       winBurst([0x00d5ff, 0xffd166, 0xb45cff]);
+    } else if (typeof prev?.seenRankTier === "number" && rank.tier > prev.seenRankTier) {
+      // 前回カードを見たときよりランクが上がっていたら昇格演出
+      celebratePromotion(stage, rank);
     }
   };
 

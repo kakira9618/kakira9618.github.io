@@ -2,16 +2,16 @@
 // ルート: #/history
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260722-player-card";
+import { registerScreen, navigate } from "./app.js?v=20260722-card-polish";
 import { getRecentGames, getStatistics, MODES } from "../core/records.js";
 import { Logic, CELL } from "../core/logic.js";
 import { pidLabel } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260722-player-card";
-import { showModal } from "./modal.js?v=20260722-player-card";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-player-card";
+import { playSfx } from "../audio/sound.js?v=20260722-card-polish";
+import { showModal } from "./modal.js?v=20260722-card-polish";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-card-polish";
 import { icon } from "./icons.js";
-import { currentLanguage, tr } from "../core/i18n.js?v=20260722-player-card";
-import { rowAriaLabel } from "./a11y.js?v=20260722-player-card";
+import { currentLanguage, tr } from "../core/i18n.js?v=20260722-card-polish";
+import { rowAriaLabel } from "./a11y.js?v=20260722-card-polish";
 
 let root = null;
 let filter = "all"; // "all" | "normal" | "uso"

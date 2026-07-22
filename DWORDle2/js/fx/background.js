@@ -6,9 +6,9 @@
 // classic テーマでは canvas ごと非表示になり、描画ループも止める。
 
 import * as THREE from "three";
-import { FX } from "../config.js?v=20260722-player-card";
-import { getSettings, onSettingsChange } from "../core/settings.js?v=20260722-player-card";
-import { onMotionPreferenceChange, shouldReduceMotion } from "../core/motion.js?v=20260722-player-card";
+import { FX } from "../config.js?v=20260722-card-polish";
+import { getSettings, onSettingsChange } from "../core/settings.js?v=20260722-card-polish";
+import { onMotionPreferenceChange, shouldReduceMotion } from "../core/motion.js?v=20260722-card-polish";
 
 let renderer = null;
 let scene = null;

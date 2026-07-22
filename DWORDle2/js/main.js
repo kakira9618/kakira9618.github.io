@@ -1,28 +1,28 @@
 // エントリポイント。画面登録・ルータ起動・3D 背景・音声の初期化。
 
-import { startRouter, initAppMode } from "./ui/app.js?v=20260722-player-card";
-import { initEffects } from "./fx/effects.js?v=20260722-player-card";
-import { initPopBackground } from "./fx/pop-background.js?v=20260722-player-card";
-import { audioNeedsRecovery, bgmTracksUnlockedBy, restartBgmIfReady, stopBgm, unlockAudio } from "./audio/sound.js?v=20260722-player-card";
-import { getSettings, onSettingsChange } from "./core/settings.js?v=20260722-player-card";
-import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js?v=20260722-player-card";
-import { syncDocumentLanguage, tr } from "./core/i18n.js?v=20260722-player-card";
-import { reconcileAchievementsOnce } from "./core/achievements.js?v=20260722-player-card";
-import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "./ui/game-screen.js?v=20260722-player-card";
+import { startRouter, initAppMode } from "./ui/app.js?v=20260722-card-polish";
+import { initEffects } from "./fx/effects.js?v=20260722-card-polish";
+import { initPopBackground } from "./fx/pop-background.js?v=20260722-card-polish";
+import { audioNeedsRecovery, bgmTracksUnlockedBy, restartBgmIfReady, stopBgm, unlockAudio } from "./audio/sound.js?v=20260722-card-polish";
+import { getSettings, onSettingsChange } from "./core/settings.js?v=20260722-card-polish";
+import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js?v=20260722-card-polish";
+import { syncDocumentLanguage, tr } from "./core/i18n.js?v=20260722-card-polish";
+import { reconcileAchievementsOnce } from "./core/achievements.js?v=20260722-card-polish";
+import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "./ui/game-screen.js?v=20260722-card-polish";
 import { onSaveError } from "./core/store.js";
-import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./ui/toast.js?v=20260722-player-card";
-import { hiddenThemesUnlockedBy } from "./core/settings.js?v=20260722-player-card";
+import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./ui/toast.js?v=20260722-card-polish";
+import { hiddenThemesUnlockedBy } from "./core/settings.js?v=20260722-card-polish";
 
 // 画面モジュール（import するだけで registerScreen される）
-import "./ui/title-screen.js?v=20260722-player-card";
-import "./ui/game-screen.js?v=20260722-player-card";
-import "./ui/result-screen.js?v=20260722-player-card";
-import "./ui/history-screen.js?v=20260722-player-card";
-import "./ui/problems-screen.js?v=20260722-player-card";
-import "./ui/achievements-screen.js?v=20260722-player-card";
-import "./ui/player-card.js?v=20260722-player-card";
-import "./ui/analysis-screen.js?v=20260722-player-card";
-import "./ui/settings-screen.js?v=20260722-player-card";
+import "./ui/title-screen.js?v=20260722-card-polish";
+import "./ui/game-screen.js?v=20260722-card-polish";
+import "./ui/result-screen.js?v=20260722-card-polish";
+import "./ui/history-screen.js?v=20260722-card-polish";
+import "./ui/problems-screen.js?v=20260722-card-polish";
+import "./ui/achievements-screen.js?v=20260722-card-polish";
+import "./ui/player-card.js?v=20260722-card-polish";
+import "./ui/analysis-screen.js?v=20260722-card-polish";
+import "./ui/settings-screen.js?v=20260722-card-polish";
 
 // 古い Android Chrome は dvh に未対応のため、実際の表示領域を CSS 変数で補う。
 // 対応ブラウザでは CSS 側の 100dvh が優先される。

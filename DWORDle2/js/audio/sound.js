@@ -5,8 +5,8 @@
 //   曲の実体は TRACKS（テンポ・コード進行・1 小節のスケジューラ）に定義する。
 //   設定やモード切替時はバスをクロスフェードしてシームレスに移行する。
 
-import { AUDIO } from "../config.js?v=20260722-player-card";
-import { getSettings, onSettingsChange } from "../core/settings.js?v=20260722-player-card";
+import { AUDIO } from "../config.js?v=20260722-card-polish";
+import { getSettings, onSettingsChange } from "../core/settings.js?v=20260722-card-polish";
 
 let ctx = null;
 let masterGain = null;
@@ -238,6 +238,12 @@ function selectedTrack() {
     return usoMood ? themeTracks.uso : themeTracks.normal;
   }
   return wanted;
+}
+
+// 現在の設定・モードで実際に再生される曲の id（「モード連動」の解決結果。
+// プレイヤーカード等、再生系の外から曲名を表示したいとき用）
+export function currentBgmTrackId() {
+  return selectedTrack();
 }
 
 function volumeGain(base, value) {

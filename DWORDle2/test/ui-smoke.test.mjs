@@ -210,7 +210,7 @@ try {
   assert.equal(normalPopVisuals.choiceColor, "rgb(74, 53, 80)");
 
   await page.evaluate(async () => {
-    const { setAppMode } = await import("./js/ui/app.js?v=20260722-player-card");
+    const { setAppMode } = await import("./js/ui/app.js?v=20260722-card-polish");
     setAppMode("uso");
   });
   await page.locator("body.theme-pop.mode-uso").waitFor();
@@ -270,12 +270,12 @@ try {
   await page.waitForURL(/#\/settings$/);
 
   await page.evaluate(async () => {
-    const { setAppMode } = await import("./js/ui/app.js?v=20260722-player-card");
+    const { setAppMode } = await import("./js/ui/app.js?v=20260722-card-polish");
     setAppMode("normal");
   });
   await page.locator("body.theme-pop.mode-normal").waitFor();
   await page.evaluate(async () => {
-    const { showHelpModal } = await import("./js/ui/help.js?v=20260722-player-card");
+    const { showHelpModal } = await import("./js/ui/help.js?v=20260722-card-polish");
     showHelpModal("normal");
   });
   const popHelp = page.getByRole("dialog", { name: "DWORDle 遊び方" });
@@ -488,13 +488,13 @@ try {
   );
   await shortPage.waitForTimeout(50);
   const flightsBeforeLeave = await shortPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260722-player-card")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260722-card-polish")).activeTileFlightCount()
   );
   assert.ok(flightsBeforeLeave > 0, "Tile gather animation should be active before leaving the game");
   await shortPage.getByRole("button", { name: "タイトルへ戻る" }).click();
   await shortPage.waitForURL(/#\/$/);
   const flightsAfterLeave = await shortPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260722-player-card")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260722-card-polish")).activeTileFlightCount()
   );
   assert.equal(flightsAfterLeave, 0, "Tile gather animation should be removed when leaving the game");
   await shortPage.close();
@@ -540,13 +540,13 @@ try {
   await reducedDialog.getByRole("button", { name: "スタート" }).click();
   await reducedPage.locator("#screen-game.active .row").last().waitFor();
   const reducedFlights = await reducedPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260722-player-card")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260722-card-polish")).activeTileFlightCount()
   );
   assert.equal(reducedFlights, 0, "Reduced motion should suppress tile gather flights");
   await reducedContext.close();
 
   await page.evaluate(async () => {
-    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260722-player-card");
+    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260722-card-polish");
     bgmUnlockCelebration([{ id: "queue-test-a", name: "Queue Test A", desc: "First unlock" }]);
     bgmUnlockCelebration([{ id: "queue-test-b", name: "Queue Test B", desc: "Second unlock" }]);
   });
@@ -577,7 +577,7 @@ try {
 
   // 2 曲以上の同時解放（履歴インポート等）は 1 枚のまとめカードで報告する
   await page.evaluate(async () => {
-    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260722-player-card");
+    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260722-card-polish");
     bgmUnlockCelebration([
       { id: "multi-a", name: "Multi Track A", desc: "" },
       { id: "multi-b", name: "Multi Track B", desc: "" },
@@ -594,7 +594,7 @@ try {
 
   // 実績解放セレブレーション: 単発は大型カード、3 個以上は 1 枚にまとめる
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-player-card");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-card-polish");
     achievementCelebration([
       { id: "smoke-single", icon: "trophy", color: "#ffd166", name: "スモーク実績", desc: "テスト用の実績です" },
     ]);
@@ -612,7 +612,7 @@ try {
   await page.locator(".ach-unlock").waitFor({ state: "detached" });
 
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-player-card");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-card-polish");
     achievementCelebration([
       { id: "smoke-a", icon: "star", color: "#ffd166", name: "実績A", desc: "" },
       { id: "smoke-b", icon: "gem", color: "#7ee8ff", name: "実績B", desc: "" },
@@ -634,7 +634,7 @@ try {
 
   // リストが溢れるときは下端フェードで続きを示し、最下部まで送るとフェードが消える
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-player-card");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-card-polish");
     achievementCelebration(
       Array.from({ length: 9 }, (_, i) => ({ id: `smoke-many-${i}`, icon: "star", color: "#ffd166", name: `実績${i + 1}`, desc: "" }))
     );
@@ -671,7 +671,7 @@ try {
   // 判定オープン中の先行入力: 次の 1 行分をバッファし、オープン完了後に自動で確定する
   await page.getByRole("dialog", { name: "基本ルール | DWORDle" }).getByRole("button", { name: "わかった" }).click();
   await page.evaluate(async () => {
-    const { setSetting } = await import("./js/core/settings.js?v=20260722-player-card");
+    const { setSetting } = await import("./js/core/settings.js?v=20260722-card-polish");
     setSetting("theme", "classic");
     setSetting("sfx", false);
     setSetting("bgm", false);
@@ -945,18 +945,21 @@ try {
       localStorage.setItem("dwordle2.playCount", "5");
       localStorage.setItem("dwordle2.menuUnlockSeen", "5");
       localStorage.setItem("dwordle2.achievements.reconcileVersion", "99");
-      const games = [];
-      for (let i = 0; i < 6; i++) {
-        games.push({
-          gameMode: "normal",
-          problemID: 200 + i,
-          startTime: 1750000000 + i * 86400,
-          endTime: 1750000300 + i * 86400,
-          guessWord: ["about", "crane"],
-          clear: i % 2 === 0,
-        });
+      // 履歴の初期シードは初回ロードのみ（リロード後にテスト側で増やした履歴を上書きしない）
+      if (!localStorage.getItem("dwordle2.history")) {
+        const games = [];
+        for (let i = 0; i < 6; i++) {
+          games.push({
+            gameMode: "normal",
+            problemID: 200 + i,
+            startTime: 1750000000 + i * 86400,
+            endTime: 1750000300 + i * 86400,
+            guessWord: ["about", "crane"],
+            clear: i % 2 === 0,
+          });
+        }
+        localStorage.setItem("dwordle2.history", JSON.stringify(games));
       }
-      localStorage.setItem("dwordle2.history", JSON.stringify(games));
     });
     await cardPage.goto(baseUrl, { waitUntil: "networkidle" });
     await cardPage.getByRole("button", { name: "プレイヤーカード", exact: true }).click();
@@ -978,6 +981,17 @@ try {
     await cardPage.getByRole("button", { name: "画像をシェア" }).waitFor();
     await cardPage.getByRole("button", { name: "画像を保存" }).waitFor();
 
+    // プレイヤー ID は 16 進 8 桁で発番され、以後固定される
+    const playerId = await cardPage.evaluate(() => JSON.parse(localStorage.getItem("dwordle2.playerId")));
+    assert.match(playerId, /^[0-9A-F]{8}$/, "the player ID must be 8 uppercase hex digits");
+
+    // カード画面は横スクロールしない（3D アニメのはみ出しは hidden で封じる）
+    assert.equal(
+      await cardPage.evaluate(() => getComputedStyle(document.querySelector("#screen-card .list-screen-body")).overflowX),
+      "hidden",
+      "the card screen body must not be horizontally scrollable"
+    );
+
     // 名前は保存され、再訪問時はカードが自動表示される
     await cardPage.reload({ waitUntil: "networkidle" });
     await cardPage.evaluate(() => { location.hash = "#/card"; });
@@ -993,6 +1007,63 @@ try {
       0,
       "an already issued card should be shown without the issue button"
     );
+    assert.equal(
+      await cardPage.evaluate(() => JSON.parse(localStorage.getItem("dwordle2.playerId"))),
+      playerId,
+      "the player ID must persist across reloads"
+    );
+
+    // 称号ラダー: 最上位は王（実績全解除 + 1000 プレイ）。多い方のモードの王になり、
+    // 同数なら DWORDle。1000 未満は伝説のまま、実績未コンプはプレイ数ランクのまま。
+    const ranks = await cardPage.evaluate(async () => {
+      const mod = await import("./js/ui/player-card.js?v=20260722-card-polish");
+      const pick = (stats) => {
+        const rank = mod.rankForStats(stats);
+        return `${rank.id}:${rank.titleJa}`;
+      };
+      const ach = { achUnlocked: 10, achTotal: 10 };
+      const noAch = { achUnlocked: 9, achTotal: 10 };
+      return {
+        kingNormal: pick({ ...ach, plays: 1000, normalPlays: 600, usoPlays: 400 }),
+        kingUso: pick({ ...ach, plays: 1000, normalPlays: 400, usoPlays: 600 }),
+        kingTie: pick({ ...ach, plays: 1000, normalPlays: 500, usoPlays: 500 }),
+        masterBelowKingPlays: pick({ ...ach, plays: 999, normalPlays: 999, usoPlays: 0 }),
+        diamondWithoutAllAchievements: pick({ ...noAch, plays: 1500, normalPlays: 0, usoPlays: 1500 }),
+      };
+    });
+    assert.equal(ranks.kingNormal, "KING:DWORDleの王", "mostly-DWORDle players should become the DWORDle king");
+    assert.equal(ranks.kingUso, "KING:DWORDlieの王", "mostly-DWORDlie players should become the DWORDlie king");
+    assert.equal(ranks.kingTie, "KING:DWORDleの王", "an even split should crown the DWORDle king");
+    assert.equal(ranks.masterBelowKingPlays, "MASTER:伝説のWORDler", "under 1000 plays should stay MASTER even with all achievements");
+    assert.equal(ranks.diamondWithoutAllAchievements, "DIAMOND:頂のWORDler", "the king requires every achievement, not just plays");
+
+    // 昇格演出: 前回カードを見たときよりランクが上がっていたら RANK UP 演出が 1 回だけ出る
+    await cardPage.evaluate(() => {
+      const games = JSON.parse(localStorage.getItem("dwordle2.history"));
+      for (let i = 0; i < 90; i++) {
+        games.push({
+          gameMode: "normal",
+          problemID: 5000 + i,
+          startTime: 1751000000 + i * 86400,
+          endTime: 1751000300 + i * 86400,
+          guessWord: ["about", "crane"],
+          clear: true,
+        });
+      }
+      localStorage.setItem("dwordle2.history", JSON.stringify(games));
+    });
+    await cardPage.reload({ waitUntil: "networkidle" });
+    await cardPage.evaluate(() => { location.hash = "#/card"; });
+    await cardPage.waitForURL(/#\/card$/);
+    await cardPage.locator(".rank-up-overlay").waitFor();
+    await cardPage.locator(".rank-up-overlay .rank-up-name").filter({ hasText: "GOLD RANK" }).waitFor();
+    // 一度見た昇格は次の表示では繰り返さない
+    await cardPage.reload({ waitUntil: "networkidle" });
+    await cardPage.evaluate(() => { location.hash = "#/card"; });
+    await cardPage.waitForURL(/#\/card$/);
+    await cardPage.locator(".player-card-canvas").waitFor();
+    await cardPage.waitForTimeout(1500);
+    assert.equal(await cardPage.locator(".rank-up-overlay").count(), 0, "the rank-up celebration must play only once per promotion");
   } finally {
     await cardContext.close();
   }

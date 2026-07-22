@@ -1,8 +1,8 @@
 // Three.js を遅延ロードするエフェクト窓口。
 // WebGL / Three.js が利用できない環境でも、ゲーム本体はクラシック表示で続行する。
 
-import { UI } from "../config.js?v=20260722-player-card";
-import { getSettings, setSetting } from "../core/settings.js?v=20260722-player-card";
+import { UI } from "../config.js?v=20260722-card-polish";
+import { getSettings, setSetting } from "../core/settings.js?v=20260722-card-polish";
 
 let background = null;
 let bursts = null;
@@ -29,8 +29,8 @@ function fallBackToClassic(error) {
 export function initEffects() {
   if (initPromise) return initPromise;
   initPromise = Promise.all([
-    import("./background.js?v=20260722-player-card"),
-    import("./bursts.js?v=20260722-player-card"),
+    import("./background.js?v=20260722-card-polish"),
+    import("./bursts.js?v=20260722-card-polish"),
   ])
     .then(([backgroundModule, burstsModule]) => {
       backgroundModule.initBackground(fallBackToClassic);
