@@ -2,19 +2,19 @@
 // ルート: #/result/<mode>/<startTime>
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260722-no-zoom";
+import { registerScreen, navigate } from "./app.js?v=20260722-wipe-card";
 import { findGame, MODES } from "../core/records.js";
 import { Logic, CELL } from "../core/logic.js";
 import { pidLabel, isDailyPID } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260722-no-zoom";
-import { toast } from "./toast.js?v=20260722-no-zoom";
-import { confirmAndStart } from "./game-screen.js?v=20260722-no-zoom";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-no-zoom";
+import { playSfx } from "../audio/sound.js?v=20260722-wipe-card";
+import { toast } from "./toast.js?v=20260722-wipe-card";
+import { confirmAndStart } from "./game-screen.js?v=20260722-wipe-card";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-wipe-card";
 import { icon } from "./icons.js";
-import { downloadResultPNG } from "./snapshot.js?v=20260722-no-zoom";
-import { SHARE_URL } from "../config.js?v=20260722-no-zoom";
-import { tr } from "../core/i18n.js?v=20260722-no-zoom";
-import { rowAriaLabel } from "./a11y.js?v=20260722-no-zoom";
+import { downloadResultPNG } from "./snapshot.js?v=20260722-wipe-card";
+import { SHARE_URL } from "../config.js?v=20260722-wipe-card";
+import { tr } from "../core/i18n.js?v=20260722-wipe-card";
+import { rowAriaLabel } from "./a11y.js?v=20260722-wipe-card";
 
 let root = null;
 

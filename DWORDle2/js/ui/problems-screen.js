@@ -4,16 +4,16 @@
 // ルート: #/problems
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate, getAppMode } from "./app.js?v=20260722-no-zoom";
+import { registerScreen, navigate, getAppMode } from "./app.js?v=20260722-wipe-card";
 import { buildProblemStatus, MODES } from "../core/records.js";
 import { LEVELS, isValidPID, pidLabel } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260722-no-zoom";
-import { showModal } from "./modal.js?v=20260722-no-zoom";
-import { confirmAndStart } from "./game-screen.js?v=20260722-no-zoom";
-import { toast } from "./toast.js?v=20260722-no-zoom";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-no-zoom";
+import { playSfx } from "../audio/sound.js?v=20260722-wipe-card";
+import { showModal } from "./modal.js?v=20260722-wipe-card";
+import { confirmAndStart } from "./game-screen.js?v=20260722-wipe-card";
+import { toast } from "./toast.js?v=20260722-wipe-card";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-wipe-card";
 import { icon } from "./icons.js";
-import { localizedLevel, tr } from "../core/i18n.js?v=20260722-no-zoom";
+import { localizedLevel, tr } from "../core/i18n.js?v=20260722-wipe-card";
 
 const BLOCK_SIZE = 100;
 

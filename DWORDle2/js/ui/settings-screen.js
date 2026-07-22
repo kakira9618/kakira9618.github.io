@@ -2,19 +2,19 @@
 // ルート: #/settings
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260722-no-zoom";
-import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js?v=20260722-no-zoom";
+import { registerScreen, navigate } from "./app.js?v=20260722-wipe-card";
+import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js?v=20260722-wipe-card";
 import { importFromLocalStorage, importFromText, scanLegacyHistory } from "../core/migrate.js";
 import { exportJSON } from "../core/records.js";
 import { removeKey } from "../core/store.js";
-import { getUnlocked } from "../core/achievements.js?v=20260722-no-zoom";
-import { BGM_TRACKS, playSfx } from "../audio/sound.js?v=20260722-no-zoom";
-import { toast } from "./toast.js?v=20260722-no-zoom";
-import { showModal, confirmModal } from "./modal.js?v=20260722-no-zoom";
+import { getUnlocked } from "../core/achievements.js?v=20260722-wipe-card";
+import { BGM_TRACKS, playSfx } from "../audio/sound.js?v=20260722-wipe-card";
+import { toast } from "./toast.js?v=20260722-wipe-card";
+import { showModal, confirmModal } from "./modal.js?v=20260722-wipe-card";
 import { icon } from "./icons.js";
-import { finishHistoryImport } from "./history-import.js?v=20260722-no-zoom";
-import { APP_VERSION } from "../config.js?v=20260722-no-zoom";
-import { currentLanguage, isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js?v=20260722-no-zoom";
+import { finishHistoryImport } from "./history-import.js?v=20260722-wipe-card";
+import { APP_VERSION } from "../config.js?v=20260722-wipe-card";
+import { currentLanguage, isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js?v=20260722-wipe-card";
 import { isDebugMode, tryEnableDebugMode } from "../core/debug.js";
 
 let root = null;
@@ -437,8 +437,8 @@ function render() {
             const ok = await confirmModal(
               tr("全データ削除", "Delete all data"),
               tr(
-                "DWORDle 2 のプレイ履歴・実績・設定をすべて削除します。\n旧作 DWORDle / DWORDlie のデータは削除されません。\nこの操作は取り消せません。本当に削除しますか？",
-                "This deletes all DWORDle 2 play history, achievements, and settings.\nData from the original DWORDle / DWORDlie will not be deleted.\nThis cannot be undone. Continue?"
+                "DWORDle 2 のプレイ履歴・実績・設定・プレイヤーカードをすべて削除します。\n旧作 DWORDle / DWORDlie のデータは削除されません。\nこの操作は取り消せません。本当に削除しますか？",
+                "This deletes all DWORDle 2 play history, achievements, settings, and your player card.\nData from the original DWORDle / DWORDlie will not be deleted.\nThis cannot be undone. Continue?"
               )
             );
             if (!ok) return;
@@ -457,6 +457,8 @@ function render() {
               "playCount", // タイトルメニューの段階解放も初期状態へ戻す
               "menuUnlockSeen",
               "soundRestore",
+              "playerCard", // プレイヤーカード（名前・発行情報・確認済みランク）
+              "playerId", // プレイヤー ID も新規プレイヤーとして発番し直す
             ]) {
               removeKey(key);
             }

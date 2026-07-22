@@ -4,18 +4,18 @@
 // ルート: #/analysis/<mode>/<startTime>
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260722-no-zoom";
+import { registerScreen, navigate } from "./app.js?v=20260722-wipe-card";
 import { findGame, MODES } from "../core/records.js";
 import { Logic } from "../core/logic.js";
 import { pidLabel } from "../core/problems.js";
-import { computeTruePatternIds, resultToPatternId, patternIdToStates } from "../core/analysis-core.js?v=20260722-no-zoom";
-import { checkOnEvent } from "../core/achievements.js?v=20260722-no-zoom";
-import { achievementCelebration } from "./toast.js?v=20260722-no-zoom";
-import { playSfx } from "../audio/sound.js?v=20260722-no-zoom";
-import { soundToggleButton } from "./sound-toggle.js?v=20260722-no-zoom";
+import { computeTruePatternIds, resultToPatternId, patternIdToStates } from "../core/analysis-core.js?v=20260722-wipe-card";
+import { checkOnEvent } from "../core/achievements.js?v=20260722-wipe-card";
+import { achievementCelebration } from "./toast.js?v=20260722-wipe-card";
+import { playSfx } from "../audio/sound.js?v=20260722-wipe-card";
+import { soundToggleButton } from "./sound-toggle.js?v=20260722-wipe-card";
 import { icon } from "./icons.js";
-import { currentLanguage, isEnglish, tr } from "../core/i18n.js?v=20260722-no-zoom";
-import { rowAriaLabel } from "./a11y.js?v=20260722-no-zoom";
+import { currentLanguage, isEnglish, tr } from "../core/i18n.js?v=20260722-wipe-card";
+import { rowAriaLabel } from "./a11y.js?v=20260722-wipe-card";
 
 let root = null;
 let worker = null;
@@ -147,7 +147,7 @@ function render(args) {
     record.gameMode === "uso" ? record.usoResults.map((r) => resultToPatternId(r)) : truePatternIds;
 
   if (worker) worker.terminate();
-  worker = new Worker(new URL("../core/analysis.worker.js?v=20260722-no-zoom", import.meta.url), { type: "module" });
+  worker = new Worker(new URL("../core/analysis.worker.js?v=20260722-wipe-card", import.meta.url), { type: "module" });
   worker.onmessage = (e) => {
     if (token !== renderToken) return; // 画面遷移後の古い結果
     const msg = e.data;

@@ -1,28 +1,28 @@
 // エントリポイント。画面登録・ルータ起動・3D 背景・音声の初期化。
 
-import { startRouter, initAppMode } from "./ui/app.js?v=20260722-no-zoom";
-import { initEffects } from "./fx/effects.js?v=20260722-no-zoom";
-import { initPopBackground } from "./fx/pop-background.js?v=20260722-no-zoom";
-import { audioNeedsRecovery, bgmTracksUnlockedBy, restartBgmIfReady, stopBgm, unlockAudio } from "./audio/sound.js?v=20260722-no-zoom";
-import { getSettings, onSettingsChange } from "./core/settings.js?v=20260722-no-zoom";
-import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js?v=20260722-no-zoom";
-import { syncDocumentLanguage, tr } from "./core/i18n.js?v=20260722-no-zoom";
-import { reconcileAchievementsOnce } from "./core/achievements.js?v=20260722-no-zoom";
-import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "./ui/game-screen.js?v=20260722-no-zoom";
+import { startRouter, initAppMode } from "./ui/app.js?v=20260722-wipe-card";
+import { initEffects } from "./fx/effects.js?v=20260722-wipe-card";
+import { initPopBackground } from "./fx/pop-background.js?v=20260722-wipe-card";
+import { audioNeedsRecovery, bgmTracksUnlockedBy, restartBgmIfReady, stopBgm, unlockAudio } from "./audio/sound.js?v=20260722-wipe-card";
+import { getSettings, onSettingsChange } from "./core/settings.js?v=20260722-wipe-card";
+import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js?v=20260722-wipe-card";
+import { syncDocumentLanguage, tr } from "./core/i18n.js?v=20260722-wipe-card";
+import { reconcileAchievementsOnce } from "./core/achievements.js?v=20260722-wipe-card";
+import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "./ui/game-screen.js?v=20260722-wipe-card";
 import { onSaveError } from "./core/store.js";
-import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./ui/toast.js?v=20260722-no-zoom";
-import { hiddenThemesUnlockedBy } from "./core/settings.js?v=20260722-no-zoom";
+import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./ui/toast.js?v=20260722-wipe-card";
+import { hiddenThemesUnlockedBy } from "./core/settings.js?v=20260722-wipe-card";
 
 // 画面モジュール（import するだけで registerScreen される）
-import "./ui/title-screen.js?v=20260722-no-zoom";
-import "./ui/game-screen.js?v=20260722-no-zoom";
-import "./ui/result-screen.js?v=20260722-no-zoom";
-import "./ui/history-screen.js?v=20260722-no-zoom";
-import "./ui/problems-screen.js?v=20260722-no-zoom";
-import "./ui/achievements-screen.js?v=20260722-no-zoom";
-import "./ui/player-card.js?v=20260722-no-zoom";
-import "./ui/analysis-screen.js?v=20260722-no-zoom";
-import "./ui/settings-screen.js?v=20260722-no-zoom";
+import "./ui/title-screen.js?v=20260722-wipe-card";
+import "./ui/game-screen.js?v=20260722-wipe-card";
+import "./ui/result-screen.js?v=20260722-wipe-card";
+import "./ui/history-screen.js?v=20260722-wipe-card";
+import "./ui/problems-screen.js?v=20260722-wipe-card";
+import "./ui/achievements-screen.js?v=20260722-wipe-card";
+import "./ui/player-card.js?v=20260722-wipe-card";
+import "./ui/analysis-screen.js?v=20260722-wipe-card";
+import "./ui/settings-screen.js?v=20260722-wipe-card";
 
 // 古い Android Chrome は dvh に未対応のため、実際の表示領域を CSS 変数で補う。
 // 対応ブラウザでは CSS 側の 100dvh が優先される。

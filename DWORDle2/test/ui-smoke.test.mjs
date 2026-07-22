@@ -217,7 +217,7 @@ try {
   assert.equal(normalPopVisuals.choiceColor, "rgb(74, 53, 80)");
 
   await page.evaluate(async () => {
-    const { setAppMode } = await import("./js/ui/app.js?v=20260722-no-zoom");
+    const { setAppMode } = await import("./js/ui/app.js?v=20260722-wipe-card");
     setAppMode("uso");
   });
   await page.locator("body.theme-pop.mode-uso").waitFor();
@@ -277,12 +277,12 @@ try {
   await page.waitForURL(/#\/settings$/);
 
   await page.evaluate(async () => {
-    const { setAppMode } = await import("./js/ui/app.js?v=20260722-no-zoom");
+    const { setAppMode } = await import("./js/ui/app.js?v=20260722-wipe-card");
     setAppMode("normal");
   });
   await page.locator("body.theme-pop.mode-normal").waitFor();
   await page.evaluate(async () => {
-    const { showHelpModal } = await import("./js/ui/help.js?v=20260722-no-zoom");
+    const { showHelpModal } = await import("./js/ui/help.js?v=20260722-wipe-card");
     showHelpModal("normal");
   });
   const popHelp = page.getByRole("dialog", { name: "DWORDle 遊び方" });
@@ -502,13 +502,13 @@ try {
   );
   await shortPage.waitForTimeout(50);
   const flightsBeforeLeave = await shortPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260722-no-zoom")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260722-wipe-card")).activeTileFlightCount()
   );
   assert.ok(flightsBeforeLeave > 0, "Tile gather animation should be active before leaving the game");
   await shortPage.getByRole("button", { name: "タイトルへ戻る" }).click();
   await shortPage.waitForURL(/#\/$/);
   const flightsAfterLeave = await shortPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260722-no-zoom")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260722-wipe-card")).activeTileFlightCount()
   );
   assert.equal(flightsAfterLeave, 0, "Tile gather animation should be removed when leaving the game");
   await shortPage.close();
@@ -554,13 +554,13 @@ try {
   await reducedDialog.getByRole("button", { name: "スタート" }).click();
   await reducedPage.locator("#screen-game.active .row").last().waitFor();
   const reducedFlights = await reducedPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260722-no-zoom")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260722-wipe-card")).activeTileFlightCount()
   );
   assert.equal(reducedFlights, 0, "Reduced motion should suppress tile gather flights");
   await reducedContext.close();
 
   await page.evaluate(async () => {
-    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260722-no-zoom");
+    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260722-wipe-card");
     bgmUnlockCelebration([{ id: "queue-test-a", name: "Queue Test A", desc: "First unlock" }]);
     bgmUnlockCelebration([{ id: "queue-test-b", name: "Queue Test B", desc: "Second unlock" }]);
   });
@@ -591,7 +591,7 @@ try {
 
   // 2 曲以上の同時解放（履歴インポート等）は 1 枚のまとめカードで報告する
   await page.evaluate(async () => {
-    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260722-no-zoom");
+    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260722-wipe-card");
     bgmUnlockCelebration([
       { id: "multi-a", name: "Multi Track A", desc: "" },
       { id: "multi-b", name: "Multi Track B", desc: "" },
@@ -608,7 +608,7 @@ try {
 
   // 実績解放セレブレーション: 単発は大型カード、3 個以上は 1 枚にまとめる
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-no-zoom");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-wipe-card");
     achievementCelebration([
       { id: "smoke-single", icon: "trophy", color: "#ffd166", name: "スモーク実績", desc: "テスト用の実績です" },
     ]);
@@ -626,7 +626,7 @@ try {
   await page.locator(".ach-unlock").waitFor({ state: "detached" });
 
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-no-zoom");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-wipe-card");
     achievementCelebration([
       { id: "smoke-a", icon: "star", color: "#ffd166", name: "実績A", desc: "" },
       { id: "smoke-b", icon: "gem", color: "#7ee8ff", name: "実績B", desc: "" },
@@ -648,7 +648,7 @@ try {
 
   // リストが溢れるときは下端フェードで続きを示し、最下部まで送るとフェードが消える
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-no-zoom");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260722-wipe-card");
     achievementCelebration(
       Array.from({ length: 9 }, (_, i) => ({ id: `smoke-many-${i}`, icon: "star", color: "#ffd166", name: `実績${i + 1}`, desc: "" }))
     );
@@ -672,6 +672,11 @@ try {
 
   await page.evaluate(() => { location.hash = "#/settings"; });
   await page.waitForURL(/#\/settings$/);
+  // プレイヤーカードのデータも全データ削除で消えることを確認するため事前に置く
+  await page.evaluate(() => {
+    localStorage.setItem("dwordle2.playerCard", JSON.stringify({ name: "テスト", issuedAt: 1, seenRankTier: 1 }));
+    localStorage.setItem("dwordle2.playerId", JSON.stringify("0123ABCD"));
+  });
   await page.getByRole("button", { name: "全データ削除" }).click();
   const deleteDialog = page.getByRole("dialog", { name: "全データ削除" });
   await deleteDialog.getByText("旧作 DWORDle / DWORDlie のデータは削除されません。").waitFor();
@@ -681,11 +686,16 @@ try {
   ]);
   assert.match(page.url(), /#\/$/, "Deleting all data should reload at the title route");
   await page.locator("#screen-title.active").waitFor();
+  const cardLeftovers = await page.evaluate(() => [
+    localStorage.getItem("dwordle2.playerCard"),
+    localStorage.getItem("dwordle2.playerId"),
+  ]);
+  assert.deepEqual(cardLeftovers, [null, null], "Deleting all data must also remove the player card name and player ID");
 
   // 判定オープン中の先行入力: 次の 1 行分をバッファし、オープン完了後に自動で確定する
   await page.getByRole("dialog", { name: "基本ルール | DWORDle" }).getByRole("button", { name: "わかった" }).click();
   await page.evaluate(async () => {
-    const { setSetting } = await import("./js/core/settings.js?v=20260722-no-zoom");
+    const { setSetting } = await import("./js/core/settings.js?v=20260722-wipe-card");
     setSetting("theme", "classic");
     setSetting("sfx", false);
     setSetting("bgm", false);
@@ -1030,7 +1040,7 @@ try {
     // 称号ラダー: 最上位は王（実績全解除 + 1000 プレイ）。多い方のモードの王になり、
     // 同数なら DWORDle。1000 未満は伝説のまま、実績未コンプはプレイ数ランクのまま。
     const ranks = await cardPage.evaluate(async () => {
-      const mod = await import("./js/ui/player-card.js?v=20260722-no-zoom");
+      const mod = await import("./js/ui/player-card.js?v=20260722-wipe-card");
       const pick = (stats) => {
         const rank = mod.rankForStats(stats);
         return `${rank.id}:${rank.titleJa}`;
