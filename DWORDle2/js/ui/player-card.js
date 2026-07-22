@@ -205,16 +205,10 @@ function bgmLabel(id) {
   return tr(track.name, track.nameEn ?? track.name);
 }
 
-const fmtDate = (unixSec) => {
-  const d = new Date(unixSec * 1000);
-  const pad = (n) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())}`;
-};
-
 // 総プレイ時間の表示（xx:yy = 時間:分）
 const fmtPlayTime = (minutes) => `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, "0")}`;
 
-// 初プレイ日の表示（ゼロ埋めなしの 2026/7/22 形式）
+// カード上の日付表示（ゼロ埋めなしの 2026/7/22 形式。初プレイ日・発行日で共通）
 const fmtDateShort = (unixSec) => {
   const d = new Date(unixSec * 1000);
   return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
@@ -525,7 +519,7 @@ export async function renderPlayerCardCanvas(name) {
   ctx.fillStyle = CARD.dim;
   ctx.textAlign = "right";
   ctx.fillText(
-    `${SHARE_URL.replace(/^https:\/\//, "")}   ・   ${fmtDate(Math.floor(Date.now() / 1000))}`,
+    `${SHARE_URL.replace(/^https:\/\//, "")}   ・   ${fmtDateShort(Math.floor(Date.now() / 1000))}`,
     right,
     CARD.footerY
   );
