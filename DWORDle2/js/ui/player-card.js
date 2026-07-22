@@ -50,19 +50,19 @@ const CARD = {
   logoGrad: ["#00d5ff", "#7c5cff"], // DWORDle 2 ロゴの文字グラデーション
   logoY: 100,
   kickerY: 143, // "PLAYER CARD" の行
-  playerLabelY: 210, // 名前の上の小ラベル "PLAYER"
-  nameY: 266,
+  playerLabelY: 178, // "PLAYER | 初プレイ日" の行（左上のタイル装飾に寄せる）
+  nameY: 234,
   nameSize: 64,
-  titleY: 352, // 称号バッジの中心
+  titleY: 320, // 称号バッジの中心
   // 右側の大型ランクエンブレム(六角形 + リング + アイコン)。
   // ロゴを右上へ移したぶん、名前〜称号バッジ帯の垂直中央に置いて安定させる
   emblem: {
     cx: 972, // 中心 x
-    cy: 296, // 中心 y
-    hexR: 118, // 外側六角形の半径
-    ringR: 90, // 内側リングの半径
-    iconSize: 88,
-    glowR: 190, // 背後のグロー半径
+    cy: 280, // 中心 y
+    hexR: 112, // 外側六角形の半径
+    ringR: 86, // 内側リングの半径
+    iconSize: 84,
+    glowR: 180, // 背後のグロー半径
   },
   // 統計セル（4 列 x 2 行のパネル。お気に入りテーマ / BGM も 1 セルとして大きく見せる）
   // セル内はラベル上・値下の 2 段（左のアクセントバーは廃止）
@@ -79,8 +79,8 @@ const CARD = {
     cellStroke: "rgba(255, 255, 255, 0.09)",
   },
   footerDividerY: 622, // フッター上の細い区切り線
-  footerY: 644, // 初プレイ（左・大きめ）と URL・発行日（右）
-  sinceSize: 21, // 初プレイ表示の文字サイズ
+  footerY: 644, // URL・発行日（右寄せ）
+  sinceSize: 17, // 初プレイ日（PLAYER ラベルの隣）の文字サイズ
   cornerLen: 26, // 四隅の L 字アクセントの辺の長さ
   cornerInset: 30, // 四隅アクセントのフレームからの距離
   idEdgeX: 26, // プレイヤー ID の右端からの距離（縦書きで印字）
@@ -401,12 +401,26 @@ export async function renderPlayerCardCanvas(name) {
     // アイコン画像が作れない環境でもカード本体は成立させる
   }
 
-  // ---- 左側: PLAYER ラベル + 名前 + 称号バッジ ----
+  // ---- 左側: 「PLAYER | 初プレイ日」 + 名前 + 称号バッジ ----
   const nameMaxW = em.cx - em.hexR - 40 - left; // エンブレムに被らない幅
   ctx.textAlign = "left";
   ctx.font = '700 15px "Avenir Next", sans-serif';
   ctx.fillStyle = CARD.dim;
-  drawSpaced(ctx, "P L A Y E R", left, CARD.playerLabelY);
+  const playerLabel = "P L A Y E R";
+  const playerLabelW = [...playerLabel].reduce((total, ch) => total + ctx.measureText(ch).width + 1.5, -1.5);
+  drawSpaced(ctx, playerLabel, left, CARD.playerLabelY);
+  if (stats.firstPlay) {
+    const sepX = left + playerLabelW + 16;
+    ctx.fillStyle = "rgba(139, 155, 189, 0.55)";
+    ctx.fillRect(sepX, CARD.playerLabelY - 8, 1.5, 16);
+    ctx.font = `700 ${CARD.sinceSize}px "Avenir Next", sans-serif`;
+    ctx.fillStyle = CARD.fg;
+    ctx.fillText(
+      tr(`${fmtDateShort(stats.firstPlay)}〜`, `Since ${fmtDateShort(stats.firstPlay)}`),
+      sepX + 16,
+      CARD.playerLabelY + 1
+    );
+  }
 
   const displayName = name || "PLAYER";
   let nameSize = CARD.nameSize;
@@ -504,15 +518,9 @@ export async function renderPlayerCardCanvas(name) {
     ctx.fillText(value, x + 20, y + st.valueOffsetY);
   });
 
-  // ---- フッター: 細い区切り線 + 初プレイ（大きめ） / URL / 発行日 ----
+  // ---- フッター: 細い区切り線 + URL / 発行日（右寄せ。初プレイ日は PLAYER 行へ移動）----
   ctx.fillStyle = "rgba(255,255,255,0.08)";
   ctx.fillRect(left, CARD.footerDividerY, right - left, 1);
-  ctx.textAlign = "left";
-  if (stats.firstPlay) {
-    ctx.font = `800 ${CARD.sinceSize}px "Avenir Next", sans-serif`;
-    ctx.fillStyle = CARD.fg;
-    ctx.fillText(tr(`${fmtDateShort(stats.firstPlay)}〜`, `Since ${fmtDateShort(stats.firstPlay)}`), left, CARD.footerY);
-  }
   ctx.font = '600 17px "Avenir Next", sans-serif';
   ctx.fillStyle = CARD.dim;
   ctx.textAlign = "right";
