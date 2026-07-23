@@ -327,5 +327,31 @@ assert(
   "a fresh-context unlock must not skip to bar 3"
 );
 
+// 全トラックで同じ検証: 「開始」経路（wasRunning=false の unlockAudio）の予約内容が、
+// 二重開始の起きない wasRunning=true の再開（= 必ず 1 小節目から）と周波数集合で一致すること。
+// ランダム要素のある曲も比較できるよう乱数は固定する。
+// （aurora は小節をまたいで持続する内部状態で旋律が変わる生成曲のため、集合比較の対象外）
+const originalRandom = Math.random;
+Math.random = () => 0.42;
+try {
+  for (const track of BGM_TRACKS.filter((t) => t.id !== "auto" && t.id !== "aurora")) {
+    setSetting("bgmTrack", track.id);
+    // 基準: running 状態での再開（1 小節目から）
+    rewindBgm();
+    const refBefore = FakeAudioContext.instance.startedFrequencies.length;
+    await unlockAudio({ restartBgm: true });
+    const refSet = new Set(FakeAudioContext.instance.startedFrequencies.slice(refBefore).map((f) => Math.round(f * 1000)));
+    // 検証対象: 新規（suspend 中の）context での unlock = 扉絵「開始」経路
+    FakeAudioContext.instance.state = "closed";
+    rewindBgm();
+    await unlockAudio({ restartBgm: true });
+    const gateSet = new Set(FakeAudioContext.instance.startedFrequencies.map((f) => Math.round(f * 1000)));
+    const extra = [...gateSet].filter((f) => !refSet.has(f));
+    assert.equal(extra.length, 0, `track "${track.id}" must start from bar 1 (extra freqs: ${extra.slice(0, 8).join(", ")})`);
+  }
+} finally {
+  Math.random = originalRandom;
+}
+
 stopBgm();
 console.log("音声テスト: OK");
