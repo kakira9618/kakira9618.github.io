@@ -2008,7 +2008,7 @@ body.reduce-motion .bar-grow {
   font-size: 12px;
   line-height: 1.55;
 }
-/* 冒頭カード内の用語説明（獲得情報量・期待情報量） */
+/* 冒頭カード内の用語説明（期待情報量・獲得情報量） */
 .analysis-terms {
   margin: 0;
   padding-left: 1.2em;

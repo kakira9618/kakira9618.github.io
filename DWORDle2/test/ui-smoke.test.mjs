@@ -708,6 +708,16 @@ try {
   await page.getByText("正解！").waitFor({ timeout: 30000 });
   const analysisSummary = await page.getByText(/答えの組は .* 通り/).textContent();
   assert.match(analysisSummary, /答えの組は 27,730 通り/, "Analysis should display unordered answer pairs");
+  assert.deepEqual(
+    await page.locator(".analysis-terms li b").allTextContents(),
+    ["期待情報量", "獲得情報量"],
+    "Analysis term definitions should explain expected information before information gained"
+  );
+  assert.deepEqual(
+    await page.locator(".turn-card").first().locator(".bar-label").allTextContents(),
+    ["残り候補", "期待情報量", "獲得情報量"],
+    "Turn bars should show expected information before information gained"
+  );
   const solvedCard = page.locator(".turn-card").filter({ hasText: "正解！" });
   assert.equal(await solvedCard.getByText("もっと絞れたかもしれない単語").count(), 0, "Winning Guess should not show suggestions");
   await assertNoSeriousA11yViolations("Analysis screen");

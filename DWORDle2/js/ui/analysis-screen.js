@@ -111,19 +111,19 @@ function render(args) {
         el(
           "li",
           {},
-          el("b", {}, tr("獲得情報量", "Information gained")),
+          el("b", {}, tr("期待情報量", "Expected information")),
           tr(
-            " … 判定を見た結果、答えの組が実際にどれだけ絞れたか。1 bit ごとに候補が半分になる。",
-            " — how much the feedback actually narrowed the answer pairs. Each bit halves the candidates."
+            " … 判定を見る前の時点で、その単語が平均してどれだけ絞れると見込めたか（手の強さの目安）。",
+            " — how much that word was expected to narrow the pairs on average, before seeing the feedback (a measure of Guess strength)."
           )
         ),
         el(
           "li",
           {},
-          el("b", {}, tr("期待情報量", "Expected information")),
+          el("b", {}, tr("獲得情報量", "Information gained")),
           tr(
-            " … 判定を見る前の時点で、その単語が平均してどれだけ絞れると見込めたか（手の強さの目安）。",
-            " — how much that word was expected to narrow the pairs on average, before seeing the feedback (a measure of Guess strength)."
+            " … 判定を見た結果、答えの組が実際にどれだけ絞れたか。1 bit ごとに候補が半分になる。",
+            " — how much the feedback actually narrowed the answer pairs. Each bit halves the candidates."
           )
         )
       )
@@ -275,30 +275,30 @@ function renderResult(body, record, logic, res) {
       el(
         "div",
         { class: "bar-wrap" },
-        el("div", { class: "bar-label" }, tr("獲得情報量", "Information gained")),
-        el(
-          "div",
-          { class: "bar-track" },
-          el("div", {
-            class: "bar-fill bar-grow",
-            style: { width: `${Math.min(100, (100 * turn.bitsGained) / Math.max(0.01, turn.maxBits))}%`, "--bar-index": t * 3 + 1 },
-          })
-        ),
-        el("div", { class: "bar-value" }, fmtBits(turn.bitsGained))
-      ),
-      el(
-        "div",
-        { class: "bar-wrap" },
         el("div", { class: "bar-label" }, tr("期待情報量", "Expected information")),
         el(
           "div",
           { class: "bar-track" },
           el("div", {
             class: "bar-fill bar-grow",
-            style: { width: `${Math.min(100, (100 * turn.expectedBits) / Math.max(0.01, turn.maxBits))}%`, opacity: 0.65, "--bar-index": t * 3 + 2 },
+            style: { width: `${Math.min(100, (100 * turn.expectedBits) / Math.max(0.01, turn.maxBits))}%`, opacity: 0.65, "--bar-index": t * 3 + 1 },
           })
         ),
         el("div", { class: "bar-value" }, fmtBits(turn.expectedBits))
+      ),
+      el(
+        "div",
+        { class: "bar-wrap" },
+        el("div", { class: "bar-label" }, tr("獲得情報量", "Information gained")),
+        el(
+          "div",
+          { class: "bar-track" },
+          el("div", {
+            class: "bar-fill bar-grow",
+            style: { width: `${Math.min(100, (100 * turn.bitsGained) / Math.max(0.01, turn.maxBits))}%`, "--bar-index": t * 3 + 2 },
+          })
+        ),
+        el("div", { class: "bar-value" }, fmtBits(turn.bitsGained))
       )
     );
 
