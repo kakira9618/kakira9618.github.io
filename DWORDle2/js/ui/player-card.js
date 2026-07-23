@@ -7,7 +7,8 @@ import { el, clear } from "./dom.js";
 import { registerScreen, navigate, redirect } from "./app.js?v=20260723-swup";
 import { getHistory, countPlays } from "../core/records.js";
 import { ACHIEVEMENTS, getUnlocked } from "../core/achievements.js?v=20260723-swup";
-import { getSettings, HIDDEN_THEMES } from "../core/settings.js?v=20260723-swup";
+import { HIDDEN_THEMES } from "../core/settings.js?v=20260723-swup";
+import { favoriteBgmTrackId, favoriteThemeId } from "../core/activity.js?v=20260723-swup";
 import { BGM_TRACKS, currentBgmTrackId, playSfx } from "../audio/sound.js?v=20260723-swup";
 import { loadJSON, saveJSON } from "../core/store.js";
 import { isDebugMode } from "../core/debug.js";
@@ -244,8 +245,8 @@ function themeLabel(id) {
 // お気に入り BGM の表示名。「モード連動」は実際に再生される曲へ解決して表示する
 function bgmLabel(id) {
   const actualId = id === "auto" ? currentBgmTrackId() : id;
-  const track = BGM_TRACKS.find((t) => t.id === actualId) ?? BGM_TRACKS[0];
-  return tr(track.name, track.nameEn ?? track.name);
+  const track = BGM_TRACKS.find((t) => t.id === actualId);
+  return track ? tr(track.name, track.nameEn ?? track.name) : "-";
 }
 
 // 総プレイ時間の表示（xx:yy = 時間:分）
@@ -296,7 +297,9 @@ async function loadIconImage(name, sizePx, color) {
 export async function renderPlayerCardCanvas(name) {
   const stats = collectStats();
   const rank = rankForStats(stats);
-  const settings = getSettings();
+  // お気に入り = 実際の使用時間が最長のテーマ / BGM（まだ記録が無ければ「-」）
+  const favoriteTheme = favoriteThemeId();
+  const favoriteBgm = favoriteBgmTrackId();
   const W = CARD.width;
   const H = CARD.height;
 
@@ -607,8 +610,8 @@ export async function renderPlayerCardCanvas(name) {
     [String(stats.maxStreak), "Max Streak"],
     [`${stats.achUnlocked}/${stats.achTotal}`, tr("実績", "Achievements")],
     [fmtPlayTime(stats.playMinutes), tr("総プレイ時間", "Play time")],
-    [themeLabel(settings.theme), tr("お気に入りテーマ", "Favorite theme"), true],
-    [bgmLabel(settings.bgmTrack), tr("お気に入りBGM", "Favorite BGM"), true],
+    [favoriteTheme ? themeLabel(favoriteTheme) : "-", tr("お気に入りテーマ", "Favorite theme"), true],
+    [favoriteBgm ? bgmLabel(favoriteBgm) : "-", tr("お気に入りBGM", "Favorite BGM"), true],
   ];
   const cellW = (right - left - st.gap * 3) / 4;
   cells.forEach(([value, label, isText], i) => {

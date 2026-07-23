@@ -6,6 +6,7 @@
 //     version: 1,
 //     counters: { "click:title:本日の問題": 5, "key:physical": 123, ... },  // 種別:ID → 累計回数
 //     screens: { title: { visits: 10, totalMs: 123456 }, ... },             // 画面ごとの訪問回数と滞在時間
+//     usage: { themes: { cyber: 123456, ... }, bgm: { normal: 123456, ... } }, // テーマ / BGM の累計使用時間（ms）
 //     events: [ [unix秒, 種別, ID], ... ]                                   // 直近の生イベント（リングバッファ）
 //   }
 // counters / screens は無制限に育っても小さい集計値。events は EVENT_LIMIT 件で古い方から捨てる。
@@ -13,7 +14,7 @@
 // 両言語のキーを見るか、counters ではなく screens / 専用カウンタを使うこと。
 
 import { loadJSON, saveJSON } from "./store.js";
-import { onSettingsChange } from "./settings.js?v=20260723-swup";
+import { getSettings, onSettingsChange } from "./settings.js?v=20260723-swup";
 
 // 生イベントの保持件数（1 件 ≈ 50 バイトなので 2000 件で約 100KB）
 const EVENT_LIMIT = 2000;
@@ -27,6 +28,8 @@ let dirty = false;
 let flushTimer = 0;
 let currentScreen = null; // trackScreen で更新（app.js から通知される）
 let screenEnteredAt = 0; // 滞在計測の起点。バックグラウンド中は 0（計測停止）
+let activeTheme = null; // 使用時間を計測中のテーマ（initActivity で開始）
+let themeSince = 0; // テーマ使用時間の計測起点。バックグラウンド中は 0（計測停止）
 
 function ensureLoaded() {
   if (data === null) {
@@ -34,6 +37,10 @@ function ensureLoaded() {
     if (!data || data.version !== 1) {
       data = { version: 1, counters: {}, screens: {}, events: [] };
     }
+    // usage は後から追加したフィールド（既存の保存データには無い）
+    data.usage ??= {};
+    data.usage.themes ??= {};
+    data.usage.bgm ??= {};
   }
   return data;
 }
@@ -81,6 +88,41 @@ function settleScreenTime() {
   scheduleFlush();
 }
 
+// 使用中テーマの経過時間を積み、計測の起点を進める
+function settleThemeTime() {
+  if (!activeTheme || !themeSince) return;
+  const activity = ensureLoaded();
+  activity.usage.themes[activeTheme] = (activity.usage.themes[activeTheme] ?? 0) + Math.max(0, Date.now() - themeSince);
+  themeSince = Date.now();
+  scheduleFlush();
+}
+
+// BGM の聴取時間を積む（sound.js の BGM ループが、実際に音が出ている間だけ呼ぶ）
+export function logBgmTime(trackId, ms) {
+  if (!trackId || !(ms > 0)) return;
+  const activity = ensureLoaded();
+  activity.usage.bgm[trackId] = (activity.usage.bgm[trackId] ?? 0) + ms;
+  scheduleFlush();
+}
+
+// 使用時間が最長の ID（= お気に入り）。まだ記録が無ければ null
+function longestUsage(totals) {
+  let best = null;
+  for (const [id, ms] of Object.entries(totals)) {
+    if (ms > 0 && (best === null || ms > totals[best])) best = id;
+  }
+  return best;
+}
+
+export function favoriteThemeId() {
+  settleThemeTime(); // 使用中テーマのぶんも反映してから比べる
+  return longestUsage(ensureLoaded().usage.themes);
+}
+
+export function favoriteBgmTrackId() {
+  return longestUsage(ensureLoaded().usage.bgm);
+}
+
 // 画面遷移の通知（app.js の show() から呼ばれる）。訪問回数と滞在時間を集計する
 export function trackScreen(name) {
   settleScreenTime();
@@ -123,18 +165,31 @@ export function initActivity() {
     if (!event.repeat) logCount("key:physical");
   });
 
-  // 設定変更（どの項目をいじったか）
-  onSettingsChange((settings, key) => logEvent("setting", key));
+  // テーマ使用時間の計測を開始（お気に入りテーマ = 最長使用テーマの材料）
+  activeTheme = getSettings().theme;
+  themeSince = document.hidden ? 0 : Date.now();
 
-  // 前面 / 背面の切り替え。背面中は画面滞在時間を数えない
+  // 設定変更（どの項目をいじったか）。テーマ変更は使用時間を清算してから切り替える
+  onSettingsChange((settings, key) => {
+    logEvent("setting", key);
+    if (key === "theme") {
+      settleThemeTime();
+      activeTheme = settings.theme;
+    }
+  });
+
+  // 前面 / 背面の切り替え。背面中は画面滞在・テーマ使用時間を数えない
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
       settleScreenTime();
+      settleThemeTime();
       screenEnteredAt = 0;
+      themeSince = 0;
       logCount("app:background");
       flush();
     } else {
       screenEnteredAt = Date.now();
+      themeSince = Date.now();
       logCount("app:foreground");
     }
   });
@@ -142,6 +197,7 @@ export function initActivity() {
   // ページを離れる直前に必ず書き出す
   addEventListener("pagehide", () => {
     settleScreenTime();
+    settleThemeTime();
     flush();
   });
 }
@@ -153,6 +209,7 @@ export function getActivity() {
     version: activity.version,
     counters: { ...activity.counters },
     screens: Object.fromEntries(Object.entries(activity.screens).map(([k, v]) => [k, { ...v }])),
+    usage: { themes: { ...activity.usage.themes }, bgm: { ...activity.usage.bgm } },
     events: activity.events.slice(),
   };
 }

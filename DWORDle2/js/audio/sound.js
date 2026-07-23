@@ -7,6 +7,11 @@
 
 import { AUDIO } from "../config.js?v=20260723-swup";
 import { getSettings, onSettingsChange } from "../core/settings.js?v=20260723-swup";
+import { logBgmTime } from "../core/activity.js?v=20260723-swup";
+
+// 背面タブのタイマー間引きで BGM ループの間隔が伸びたとき、
+// 実際に鳴っていた先読み分を大きく超えて聴取時間を数えないための上限
+const BGM_LISTEN_MAX_TICK_MS = 5000;
 
 let ctx = null;
 let masterGain = null;
@@ -16,6 +21,7 @@ let buses = new Map(); // trackId -> GainNode（遅延生成）
 let usoEcho = null; // uso 曲のフィードバックディレイ。バスごとに 1 つだけ作って全ノートで共有する
 let bgmRunning = false;
 let bgmTimer = null;
+let bgmListenAt = 0; // 聴取時間（お気に入り BGM の材料）の計上起点。停止中は 0
 let usoMood = false;
 
 // 設定画面と解放演出でも使う BGM カタログ。
@@ -1763,6 +1769,12 @@ const TRACKS = {
 
 function bgmLoop() {
   if (!bgmRunning) return;
+  // 聴取時間: 実際に音が出ている（コンテキストが running の）間だけ、選択中の曲へ積む
+  const now = Date.now();
+  if (bgmListenAt && ctx.state === "running") {
+    logBgmTime(selectedTrack(), Math.min(now - bgmListenAt, BGM_LISTEN_MAX_TICK_MS));
+  }
+  bgmListenAt = now;
   // 選択中トラックを先読みスケジュールする。切替時は旧バスをフェードアウトする。
   while (true) {
     const track = selectedTrack();
@@ -1801,6 +1813,7 @@ export function startBgm() {
 
 export function stopBgm() {
   bgmRunning = false;
+  bgmListenAt = 0; // 停止中は聴取時間を数えない（次の startBgm 後の tick が起点を取り直す）
   if (bgmTimer) clearTimeout(bgmTimer);
   bgmTimer = null;
   if (ctx && ctx.state !== "closed" && bgmGain) {

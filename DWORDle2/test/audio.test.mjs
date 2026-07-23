@@ -375,5 +375,24 @@ try {
   Math.random = originalRandom;
 }
 
+// 聴取時間: BGM が実際に鳴っている間、選択中の曲へ累計時間が積まれる（お気に入り BGM の材料）
+{
+  const { getActivity } = await import("../js/core/activity.js?v=20260723-swup");
+  setSetting("bgmTrack", "classic");
+  const before = getActivity().usage.bgm.classic ?? 0;
+  await new Promise((resolve) => setTimeout(resolve, 700)); // BGM ループ（300ms 周期）の 2 tick ぶん待つ
+  const after = getActivity().usage.bgm.classic ?? 0;
+  assert.ok(after > before, `listening time should accrue while the classic track plays (${before} -> ${after})`);
+}
+
 stopBgm();
+
+// 停止中は聴取時間が積まれない
+{
+  const { getActivity } = await import("../js/core/activity.js?v=20260723-swup");
+  const stopped = getActivity().usage.bgm.classic ?? 0;
+  await new Promise((resolve) => setTimeout(resolve, 400));
+  assert.equal(getActivity().usage.bgm.classic ?? 0, stopped, "listening time must not accrue after stopBgm");
+}
+
 console.log("音声テスト: OK");

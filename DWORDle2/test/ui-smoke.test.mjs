@@ -1425,6 +1425,19 @@ try {
       Object.keys(activity.counters).some((key) => key.startsWith("screen:")),
       "screen transitions should be tracked"
     );
+    // お気に入り集計: 使用中テーマの累計使用時間が積まれている（このページのテーマは cyber）
+    assert.ok(
+      activity.usage?.themes?.cyber > 0,
+      `theme usage time should be tracked (usage: ${JSON.stringify(activity.usage)})`
+    );
+    assert.equal(
+      await moodPage.evaluate(async () => {
+        const mod = await import("./js/core/activity.js?v=20260723-swup");
+        return mod.favoriteThemeId();
+      }),
+      "cyber",
+      "the favorite theme should be the most-used theme"
+    );
   } finally {
     await moodContext.close();
   }
