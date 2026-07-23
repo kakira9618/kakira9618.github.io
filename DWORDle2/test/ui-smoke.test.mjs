@@ -565,7 +565,7 @@ try {
     : null;
   assert.ok(
     guessedFlagBox && guessedLastTileBox
-      && guessedFlagGap >= 13
+      && guessedFlagGap >= 15
       && guessedFlagBox.width <= 23.5,
     `The guessed-answer flag should sit to the right of the tile row: ${JSON.stringify({ guessedFlagBox, guessedLastTileBox })}`
   );
@@ -573,6 +573,41 @@ try {
     await guessedAnswerRow.getAttribute("aria-label"),
     /あなたが当てた答え/,
     "The flag meaning should also be exposed to assistive technology"
+  );
+  const savedImageFlagPixels = await page.evaluate(async ({ guessedWord }) => {
+    const settings = await import("./js/core/settings.js?v=20260723-swup");
+    const { renderResultCanvas } = await import("./js/ui/snapshot.js?v=20260723-swup");
+    settings.setSetting("theme", "cyber");
+    const canvas = renderResultCanvas(
+      {
+        gameMode: "normal",
+        problemID: 1,
+        startTime: 1,
+        clear: true,
+        guessWord: [guessedWord],
+      },
+      { ans1: guessedWord, ans2: guessedWord === "claim" ? "spare" : "claim" },
+      [Array(5).fill("correct")]
+    );
+    const context = canvas.getContext("2d");
+    const countFlagPixels = (x, y, width, height) => {
+      const pixels = context.getImageData(x * 2, y * 2, width * 2, height * 2).data;
+      let count = 0;
+      for (let i = 0; i < pixels.length; i += 4) {
+        if (pixels[i] > 210 && pixels[i + 1] > 220 && pixels[i + 2] > 225) count++;
+      }
+      return count;
+    };
+    const counts = {
+      rightOfTiles: countFlagPixels(515, 306, 42, 45),
+      oldLeftPosition: countFlagPixels(126, 306, 32, 45),
+    };
+    settings.setSetting("theme", "classic");
+    return counts;
+  }, { guessedWord: answer });
+  assert.ok(
+    savedImageFlagPixels.rightOfTiles > 50 && savedImageFlagPixels.oldLeftPosition < 10,
+    `The saved-image flag should sit to the right of its answer row: ${JSON.stringify(savedImageFlagPixels)}`
   );
   assert.equal(await page.locator(".amark").count(), 0, "The old textual answer marker should be removed");
   await assertNoSeriousA11yViolations("Result screen");

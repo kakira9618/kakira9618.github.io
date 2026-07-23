@@ -2604,7 +2604,7 @@ body.reduce-motion *::after {
 .guess-flag-slot {
   position: absolute;
   top: 50%;
-  left: calc(100% + 14px);
+  left: calc(100% + 16px);
   transform: translateY(-50%);
   width: 23px;
   height: 33px;
@@ -2677,7 +2677,7 @@ body.reduce-motion *::after {
     font-size: 11px;
   }
   .guess-flag-slot {
-    left: calc(100% + 12px);
+    left: calc(100% + 14px);
     width: 22px;
   }
 }
