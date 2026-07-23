@@ -646,6 +646,10 @@ try {
     `The saved-image flag should sit to the right of its answer row: ${JSON.stringify(savedImageFlagPixels)}`
   );
   assert.equal(await page.locator(".amark").count(), 0, "The old textual answer marker should be removed");
+  const titleAction = page.getByRole("button", { name: "タイトルへ", exact: true });
+  await titleAction.waitFor();
+  assert.equal(await titleAction.evaluate((button) => button.classList.contains("btn-ghost")), false);
+  assert.equal(await titleAction.evaluate((button) => button.classList.contains("btn")), true);
   await assertNoSeriousA11yViolations("Result screen");
 
   await page.getByRole("button", { name: "もう一度", exact: true }).click();

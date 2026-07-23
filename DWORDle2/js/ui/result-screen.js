@@ -244,7 +244,7 @@ function render(args) {
       }),
       actionBtn("flask", tr("分析", "Analysis"), () => navigate(`/analysis/${record.gameMode}/${record.startTime}`)),
       actionBtn("retry", tr("もう一度", "Play again"), () => confirmAndStart(record.problemID, record.gameMode)),
-      el("button", { class: "btn btn-ghost", onclick: () => navigate("/") }, tr("タイトルへ", "Title"))
+      el("button", { class: "btn", onclick: () => navigate("/") }, tr("タイトルへ", "Title"))
     )
   );
 
