@@ -161,7 +161,7 @@ function render(args) {
       "div",
       { class: "hint" },
       tr(
-        `${fmtDateTime(record.startTime)} ・ ${record.guessWord.length} / ${maxGuess} 手${record.imported ? " ・ 旧作から移行" : ""}`,
+        `${fmtDateTime(record.startTime)} ・ ${record.guessWord.length} / ${maxGuess} 手${record.imported ? " ・ 移行" : ""}`,
         `${fmtDateTime(record.startTime)} · ${record.guessWord.length} / ${maxGuess} Guesses${record.imported ? " · Imported" : ""}`
       )
     ),

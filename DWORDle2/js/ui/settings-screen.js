@@ -146,8 +146,8 @@ function handleDebugEntryTap() {
 function showImportModal() {
   const ta = el("textarea", {
     placeholder: tr(
-      '旧作の履歴 JSON（{"version": ..., "16xxx": {...}} の形式）を貼り付け',
-      'Paste history JSON from the original games ({"version": ..., "16xxx": {...}})'
+      "旧作または DWORDle 2 の履歴 JSON を貼り付け",
+      "Paste history JSON from an original game or DWORDle 2"
     ),
   });
   let closeModal = () => {};
@@ -169,21 +169,21 @@ function showImportModal() {
     } catch (e) {
       const englishMessage = e.message === "JSON として読み取れませんでした"
         ? "Could not parse this as JSON"
-        : e.message === "DWORDle / DWORDlie の履歴形式ではないようです"
-          ? "This does not appear to be DWORDle / DWORDlie history data"
+        : e.message === "DWORDle / DWORDlie / DWORDle 2 の履歴形式ではないようです"
+          ? "This does not appear to be DWORDle / DWORDlie / DWORDle 2 history data"
           : "Could not import this history data";
       toast(tr(e.message, englishMessage));
     }
   };
   closeModal = showModal({
-    title: tr("旧作から履歴を移行", "Import history from original games"),
+    title: tr("履歴のインポート（移行）", "Import history (migration)"),
     body: [
       el(
         "p",
         { class: "hint" },
         tr(
-          "旧 DWORDle / DWORDlie のプレイ履歴を、現在の DWORDle 2 の履歴にマージします。既存の履歴は上書きされません。",
-          "Merge play history from the original DWORDle / DWORDlie into your current DWORDle 2 history. Existing records are never overwritten."
+          "旧 DWORDle / DWORDlie の履歴や DWORDle 2 のエクスポート JSON を、現在の履歴にマージします。既存の履歴は上書きされません。",
+          "Merge play history from the original DWORDle / DWORDlie or a DWORDle 2 export JSON into your current history. Existing records are never overwritten."
         )
       ),
       el(
@@ -431,7 +431,7 @@ function render() {
       { class: "card" },
       el("div", { style: { fontWeight: "800", marginBottom: "4px" } }, tr("データ", "Data")),
       el("div", { style: { display: "flex", flexDirection: "column", gap: "8px", marginTop: "8px" } },
-        el("button", { class: "btn", onclick: showImportModal }, icon("box"), tr("旧作から履歴を移行", "Import history from original games")),
+        el("button", { class: "btn", onclick: showImportModal }, icon("box"), tr("履歴をインポート（移行）", "Import history (migration)")),
         el("button", {
           class: "btn",
           onclick: () => {

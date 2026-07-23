@@ -1,4 +1,5 @@
-// 旧作 DWORDle / DWORDlie からのプレイ履歴移行。
+// プレイ履歴のインポート（移行）。旧作 DWORDle / DWORDlie の履歴に加え、
+// 本作のエクスポート JSON（端末間の移行用）も取り込める。
 //
 // 旧作は Tonyu2 ランタイム上で動いており、履歴は localStorage 上の仮想 FS
 // (/Tonyu/Projects/dwordle/history.json, history_2.json, ...) に保存されている。
@@ -7,7 +8,7 @@
 // 移行手段は 2 系統:
 //   1. 自動検出: 同一オリジン (kakira9618.github.io) に旧作がある場合、
 //      localStorage を走査して履歴らしき JSON を見つけて取り込む
-//   2. 手動: 旧作の履歴 JSON（クリップボードダンプ）を貼り付け
+//   2. 手動: 旧作の履歴 JSON（クリップボードダンプ）または本作のエクスポート JSON を貼り付け
 
 import { addImportedGames } from "./records.js";
 import { isValidPID } from "./problems.js";
@@ -127,5 +128,5 @@ export function importFromText(text, { withAchievements = true } = {}) {
     const records = convertHistoryFile(obj, "json", withAchievements);
     return { added: addImportedGames(records), total: records.length };
   }
-  throw new Error("DWORDle / DWORDlie の履歴形式ではないようです");
+  throw new Error("DWORDle / DWORDlie / DWORDle 2 の履歴形式ではないようです");
 }

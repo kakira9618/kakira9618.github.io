@@ -101,7 +101,7 @@ export const ACHIEVEMENTS = [
   { id: "weekend", cat: "calendar", icon: "calendar", color: "#a0d8ff", name: "週末DWORDler", desc: "土曜日と日曜日の両方でクリアする（別の週でもOK）" },
   // --- その他 ---
   { id: "analyst", cat: "misc", icon: "flask", color: "#66ffc2", name: "アナリスト", desc: "分析モードを使う" },
-  { id: "migrator", cat: "misc", icon: "box", color: "#d0a878", name: "引っ越し完了", desc: "旧作からプレイ履歴を移行する" },
+  { id: "migrator", cat: "misc", icon: "box", color: "#d0a878", name: "引っ越し完了", desc: "プレイ履歴をインポート（移行）する" },
   { id: "collector", cat: "misc", icon: "medal", color: "#ffcf5c", name: "実績ハンター", desc: "実績を 30 個解除する" },
 
   // --- 隠し実績（解放するまで内容非公開）---

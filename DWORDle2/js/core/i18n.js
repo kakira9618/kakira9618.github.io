@@ -85,7 +85,7 @@ const ACHIEVEMENT_EN = {
   "guesses-1000": ["A Thousand Words", "Make 1,000 Guesses total"],
   "uso-20": ["Lie Detector", "Win 20 DWORDlie games"],
   analyst: ["Analyst", "Use Analysis mode"],
-  migrator: ["Move Complete", "Import play history from the original games"],
+  migrator: ["Move Complete", "Import play history"],
   collector: ["Achievement Hunter", "Unlock 30 achievements"],
   "h-mirror": ["Mirror Word", "Guess a palindrome"],
   "h-phantom": ["Phantom Answer", "Get five green tiles with a word that is not an answer"],

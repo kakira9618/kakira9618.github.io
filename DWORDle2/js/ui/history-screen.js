@@ -364,7 +364,7 @@ function render() {
         : tr("条件に一致する履歴がありません。", "No history matches these filters."),
       el("br"),
       getRecentGames().length === 0
-        ? tr("旧作からの移行は「設定」からできます。", "You can import history from the original games in Settings.")
+        ? tr("履歴のインポート（移行）は「設定」からできます。", "You can import (migrate) history in Settings.")
         : tr("フィルタ条件を変更してください。", "Try changing the filters.")));
   }
   for (const g of visibleGames) {

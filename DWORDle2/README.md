@@ -43,8 +43,9 @@
   OGP / Twitter Card、Web App Manifestを搭載
 - **操作性**: 原作準拠のキー配置、マウスドラッグ / タッチスライドでの盤面スクロール、
   3D 集合中のタイルにも入力文字を即時反映。DWORDle のキーボードヒントは設定で切替可能
-- **履歴移行**: 旧 DWORDle / DWORDlie からプレイ履歴を移行
-  （初回は同じブラウザの両旧作を自動検出して提案、設定からの再検出または JSON 貼り付けにも対応）。
+- **履歴のインポート（移行）**: 旧 DWORDle / DWORDlie の履歴に加え、DWORDle 2 のエクスポート
+  JSON（端末間の移行用）も取り込める
+  （旧作については初回に同じブラウザから自動検出して提案、設定からの再検出または JSON 貼り付けにも対応）。
   既存履歴へマージし、履歴から判定できる実績も復元
 - UI のアイコンはすべて SVG（絵文字不使用）
 
@@ -80,7 +81,7 @@ js/core/              ロジック（UI 非依存・テスト対象）
   logic.js            判定・乱数（原作互換。変更禁止に近い）
   records.js          履歴・統計・進行中ゲーム
   achievements.js     実績 66 種の定義と判定
-  migrate.js          旧作からの履歴移行
+  migrate.js          履歴のインポート（旧作・本作エクスポート）
   analysis-core.js    分析計算（Worker と共用）
   analysis.worker.js  分析用 Web Worker
 js/ui/                画面（ハッシュルータ + 各 screen）
