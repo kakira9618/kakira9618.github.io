@@ -352,7 +352,7 @@ function render() {
         toggle("reduceFx", tr("演出を軽くする", "Reduce effects"))
       )
     ),
-    // FINAL ANSWER モード（50 回プレイ or デバッグモードで解放）。
+    // FINAL ANSWER モード（10 回プレイ or デバッグモードで解放）。
     // 未解放の間は「???」でしきい値だけを予告する（隠しテーマと同じ見せ方）。
     el(
       "div",

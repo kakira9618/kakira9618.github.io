@@ -355,7 +355,7 @@ export function bgmUnlockCelebration(tracks) {
   }
 }
 
-// ---- FINAL ANSWER モード解放（50 回プレイ到達） ----
+// ---- FINAL ANSWER モード解放（10 回プレイ到達） ----
 
 // 「設定に FINAL ANSWER が追加された」ことを大型カードで通知し、その場で ON にもできる。
 export function finalAnswerUnlockCelebration() {

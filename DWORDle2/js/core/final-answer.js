@@ -1,6 +1,6 @@
 // FINAL ANSWER モード（やり込み向けの追加推理タイム）の解放条件と状態。
 //
-// - 50 回プレイ（countPlays 基準。タイトルメニューの段階解放と同じ数え方）で解放。
+// - 10 回プレイ（countPlays 基準。タイトルメニューの段階解放と同じ数え方）で解放。
 //   デバッグモード中は一時的に解放される（リロードで元に戻る）。
 // - 解放時は一度だけ「設定に追加されました」ダイアログで通知する
 //   （claimFinalAnswerUnlockNotice が通知済みフラグを管理する）。
@@ -11,7 +11,7 @@ import { isDebugMode } from "./debug.js";
 import { getSettings } from "./settings.js?v=20260723-fa";
 import { loadJSON, saveJSON } from "./store.js";
 
-export const FINAL_ANSWER_UNLOCK_PLAYS = 50;
+export const FINAL_ANSWER_UNLOCK_PLAYS = 10;
 
 export function isFinalAnswerUnlocked() {
   return isDebugMode() || countPlays() >= FINAL_ANSWER_UNLOCK_PLAYS;

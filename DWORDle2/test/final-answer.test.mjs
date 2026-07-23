@@ -3,7 +3,7 @@
 //
 // - queryWordSingle / Logic.otherAnswer の判定
 // - レコードの v2 追加スキーマ（finalAnswer）の保存・再読込・インポート透過
-// - 解放条件（50 回プレイ / デバッグモード）と解放通知の一回性
+// - 解放条件（10 回プレイ / デバッグモード）と解放通知の一回性
 // - 隠し実績 4 種（h-double-clear / h-double-uso / h-double-oneshot / h-double-10）
 //
 // デバッグモードはプロセス内で解除できない（unlock が恒久スキップになる）ため、
@@ -101,18 +101,18 @@ const { tryEnableDebugMode } = await import("../js/core/debug.js");
   assert.deepEqual(imported.finalAnswer, { word: logic.ans1, success: true }, "インポートで finalAnswer が失われないはず");
 }
 
-// ---- 解放条件（50 回プレイ）と通知の一回性 ----
+// ---- 解放条件（10 回プレイ）と通知の一回性 ----
 {
   storage.clear();
   records._reload();
-  storage.set("dwordle2.playCount", "49");
-  assert.equal(fa.isFinalAnswerUnlocked(), false, "49 回では未解放のはず");
+  storage.set("dwordle2.playCount", "9");
+  assert.equal(fa.isFinalAnswerUnlocked(), false, "9 回では未解放のはず");
   assert.equal(fa.finalAnswerRemainingPlays(), 1);
   assert.equal(fa.claimFinalAnswerUnlockNotice(), false, "未解放では通知しないはず");
   assert.equal(storage.has("dwordle2.finalAnswerUnlockSeen"), false, "未解放時に通知済みフラグを立てないはず");
 
-  storage.set("dwordle2.playCount", "50");
-  assert.equal(fa.isFinalAnswerUnlocked(), true, "50 回で解放されるはず");
+  storage.set("dwordle2.playCount", "10");
+  assert.equal(fa.isFinalAnswerUnlocked(), true, "10 回で解放されるはず");
   assert.equal(fa.finalAnswerRemainingPlays(), 0);
   assert.equal(fa.isFinalAnswerEnabled(), false, "解放直後は設定 OFF のまま");
   setSetting("finalAnswer", true);

@@ -14,7 +14,7 @@ export const DEFAULT_SETTINGS = {
   keyboardHints: true, // DWORDle のキーボードを判定色で塗り分ける
   reduceFx: false, // 演出を軽くする（パーティクルを完全にオフ）
   randomLevel: 1, // ランダムプレイで前回選んだレベル
-  // FINAL ANSWER モード（50 回プレイで解放）。ON だとクリア後に追加推理タイムが入り、
+  // FINAL ANSWER モード（10 回プレイで解放）。ON だとクリア後に追加推理タイムが入り、
   // もう一つの答えを 1 回だけ推理できる（成功で DOUBLE CLEAR）。DWORDle / DWORDlie 共通。
   finalAnswer: false,
 };

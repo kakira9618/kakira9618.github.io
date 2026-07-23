@@ -713,6 +713,246 @@ try {
   );
   assert.equal(runtimeErrors.length, 0, `Runtime errors:\n${runtimeErrors.join("\n")}`);
 
+  // FINAL ANSWER 中の戻る操作: 確認後に棄権し、元のゲームだけを通常クリアとして記録する
+  {
+    const pid = 321;
+    const logic = new Logic(pid);
+    const startTime = 1_800_000_000;
+    const forfeitPage = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
+    await forfeitPage.addInitScript(
+      ({ unlockedAchievements, puzzleId, startedAt }) => {
+        localStorage.setItem("dwordle2.settings", JSON.stringify({
+          theme: "cyber",
+          sfx: false,
+          bgm: false,
+          language: "ja",
+          keyboardHints: true,
+          reduceFx: true,
+          finalAnswer: true,
+        }));
+        localStorage.setItem("dwordle2.mode", JSON.stringify("normal"));
+        localStorage.setItem("dwordle2.current.normal", JSON.stringify({
+          version: "2.0.0",
+          startTime: startedAt,
+          gameMode: "normal",
+          problemID: puzzleId,
+          guessWord: [],
+          usoResults: [],
+        }));
+        localStorage.setItem("dwordle2.history", "[]");
+        localStorage.setItem("dwordle2.achievements", JSON.stringify(unlockedAchievements));
+        localStorage.setItem("dwordle2.achievements.reconcileVersion", "99");
+        localStorage.setItem("dwordle2.legacyImportPrompted", "true");
+        localStorage.setItem("dwordle2.tutorialSeen", "true");
+        localStorage.setItem("dwordle2.playCount", "99");
+        localStorage.setItem("dwordle2.finalAnswerUnlockSeen", "true");
+        localStorage.setItem("dwordle2.menuUnlockSeen", "99");
+      },
+      { unlockedAchievements: unlocked, puzzleId: pid, startedAt: startTime }
+    );
+    await forfeitPage.goto(`${baseUrl}#/game`, { waitUntil: "networkidle" });
+    await passGate(forfeitPage);
+    await forfeitPage.locator("#screen-game.active .row").last().waitFor();
+    await forfeitPage.keyboard.type(logic.ans1);
+    await forfeitPage.keyboard.press("Enter");
+    await forfeitPage.locator("#screen-game.active .fa-row").waitFor({ timeout: 8000 });
+
+    await forfeitPage.getByRole("button", { name: "タイトルへ戻る" }).click();
+    const forfeitDialog = forfeitPage.getByRole("dialog", { name: "FINAL ANSWERを棄権しますか？" });
+    await forfeitDialog.getByText("棄権すると通常クリアとして履歴に記録されます。", { exact: false }).waitFor();
+    await forfeitDialog.getByRole("button", { name: "キャンセル" }).click();
+    await forfeitDialog.waitFor({ state: "detached" });
+    assert.match(forfeitPage.url(), /#\/game$/, "Cancelling the forfeit should keep FINAL ANSWER open");
+    assert.equal(await forfeitPage.locator("#screen-game.active .fa-row").count(), 1);
+
+    await forfeitPage.getByRole("button", { name: "タイトルへ戻る" }).click();
+    await forfeitPage.getByRole("dialog", { name: "FINAL ANSWERを棄権しますか？" })
+      .getByRole("button", { name: "OK", exact: true })
+      .click();
+    await forfeitPage.waitForURL(/#\/$/);
+    const forfeited = await forfeitPage.evaluate(() => {
+      const history = JSON.parse(localStorage.getItem("dwordle2.history") || "[]");
+      const record = history[0] ?? null;
+      return {
+        historyLength: history.length,
+        clear: record?.clear,
+        guesses: record?.guessWord,
+        hasFinalAnswer: record ? Object.prototype.hasOwnProperty.call(record, "finalAnswer") : null,
+        current: JSON.parse(localStorage.getItem("dwordle2.current.normal") || "null"),
+        playCount: Number(localStorage.getItem("dwordle2.playCount")),
+      };
+    });
+    assert.deepEqual(forfeited, {
+      historyLength: 1,
+      clear: true,
+      guesses: [logic.ans1],
+      hasFinalAnswer: false,
+      current: null,
+      playCount: 100,
+    }, "Forfeiting FINAL ANSWER should settle one ordinary clear");
+    assert.equal(await forfeitPage.getByText("つづきから", { exact: true }).count(), 0);
+    await forfeitPage.close();
+  }
+
+  // FINAL ANSWER 成功: 最後の 1 枚だけ溜め、結果・保存画像を通常盤面の下へ表示する
+  {
+    const pid = 322;
+    const logic = new Logic(pid);
+    const successPage = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
+    await successPage.addInitScript(
+      ({ unlockedAchievements, puzzleId }) => {
+        localStorage.setItem("dwordle2.settings", JSON.stringify({
+          theme: "cyber",
+          sfx: false,
+          bgm: false,
+          language: "ja",
+          keyboardHints: true,
+          reduceFx: false,
+          finalAnswer: true,
+        }));
+        localStorage.setItem("dwordle2.mode", JSON.stringify("normal"));
+        localStorage.setItem("dwordle2.current.normal", JSON.stringify({
+          version: "2.0.0",
+          startTime: 1_800_000_100,
+          gameMode: "normal",
+          problemID: puzzleId,
+          guessWord: [],
+          usoResults: [],
+        }));
+        localStorage.setItem("dwordle2.history", "[]");
+        localStorage.setItem("dwordle2.achievements", JSON.stringify(unlockedAchievements));
+        localStorage.setItem("dwordle2.achievements.reconcileVersion", "99");
+        localStorage.setItem("dwordle2.legacyImportPrompted", "true");
+        localStorage.setItem("dwordle2.tutorialSeen", "true");
+        localStorage.setItem("dwordle2.playCount", "99");
+        localStorage.setItem("dwordle2.finalAnswerUnlockSeen", "true");
+        localStorage.setItem("dwordle2.menuUnlockSeen", "99");
+      },
+      { unlockedAchievements: unlocked, puzzleId: pid }
+    );
+    await successPage.goto(`${baseUrl}#/game`, { waitUntil: "networkidle" });
+    await passGate(successPage);
+    await successPage.locator("#screen-game.active .row").last().waitFor();
+    await successPage.keyboard.type(logic.ans1);
+    await successPage.keyboard.press("Enter");
+    const finalRow = successPage.locator("#screen-game.active .fa-row");
+    await finalRow.waitFor({ timeout: 8000 });
+    await successPage.evaluate(() => {
+      const tiles = [...document.querySelectorAll("#screen-game.active .fa-row .tile")];
+      window.__finalAnswerRevealTimes = Array(tiles.length).fill(null);
+      const startedAt = performance.now();
+      tiles.forEach((tile, index) => {
+        const observer = new MutationObserver(() => {
+          if (window.__finalAnswerRevealTimes[index] !== null || !/state-/.test(tile.className)) return;
+          window.__finalAnswerRevealTimes[index] = performance.now() - startedAt;
+          observer.disconnect();
+        });
+        observer.observe(tile, { attributes: true, attributeFilter: ["class"] });
+      });
+    });
+    await successPage.keyboard.type(logic.ans2);
+    await successPage.keyboard.press("Enter");
+    await successPage.waitForFunction(
+      () => window.__finalAnswerRevealTimes?.every(Number.isFinite),
+      null,
+      { timeout: 10000 }
+    );
+    const revealTimes = await successPage.evaluate(() => window.__finalAnswerRevealTimes);
+    const earlyGaps = revealTimes.slice(1, 4).map((time, index) => time - revealTimes[index]);
+    const finalGap = revealTimes[4] - revealTimes[3];
+    assert.ok(
+      finalGap >= Math.max(...earlyGaps) + 250,
+      `The fifth FINAL ANSWER tile should open after an extra pause: ${JSON.stringify({ revealTimes, earlyGaps, finalGap })}`
+    );
+
+    await successPage.waitForURL(/#\/result\/normal\/\d+$/, { timeout: 12000 });
+    await successPage.getByText("DOUBLE CLEAR!", { exact: true }).waitFor();
+    const resultOrder = await successPage.locator("#screen-result .list-screen-body").evaluate((body) => {
+      const grid = body.querySelector(".result-grid");
+      const finalCard = body.querySelector(".fa-result");
+      return [...body.children].indexOf(grid) < [...body.children].indexOf(finalCard);
+    });
+    assert.equal(resultOrder, true, "FINAL ANSWER should appear below the ordinary Guess grid");
+    assert.equal(await successPage.locator(".answer-row .fa-crown").count(), 1);
+    assert.equal(await successPage.locator(".answer-row .fa-star").count(), 0, "The old FINAL ANSWER star should be removed");
+    const crownAnimation = await successPage.locator(".answer-row .fa-crown").evaluate((node) => {
+      const style = getComputedStyle(node);
+      return { name: style.animationName, timing: style.animationTimingFunction, iteration: style.animationIterationCount };
+    });
+    assert.deepEqual(crownAnimation, {
+      name: "faCrownRotate",
+      timing: "linear",
+      iteration: "infinite",
+    });
+    const doubleTitleStyle = await successPage.locator(".result-title.double").evaluate((node) => {
+      const style = getComputedStyle(node);
+      return {
+        background: style.backgroundImage,
+        animation: style.animationName,
+        timing: style.animationTimingFunction,
+      };
+    });
+    assert.match(doubleTitleStyle.background, /repeating-linear-gradient/);
+    assert.equal(doubleTitleStyle.animation, "faTitleShine");
+    assert.equal(doubleTitleStyle.timing, "linear");
+
+    const snapshotFinalAnswer = await successPage.evaluate(async () => {
+      const history = JSON.parse(localStorage.getItem("dwordle2.history") || "[]");
+      const record = history[0];
+      const { Logic } = await import("./js/core/logic.js");
+      const { renderResultCanvas } = await import("./js/ui/snapshot.js?v=20260723-fa");
+      const settings = await import("./js/core/settings.js?v=20260723-fa");
+      const gameLogic = new Logic(record.problemID);
+      const displayRows = record.guessWord.map((word) => gameLogic.queryWord(word));
+      const textCalls = [];
+      const originalFillText = CanvasRenderingContext2D.prototype.fillText;
+      CanvasRenderingContext2D.prototype.fillText = function (text, ...args) {
+        textCalls.push(String(text));
+        return originalFillText.call(this, text, ...args);
+      };
+      try {
+        const canvas = renderResultCanvas(record, gameLogic, displayRows);
+        const withoutFinal = { ...record };
+        delete withoutFinal.finalAnswer;
+        const ordinaryCanvas = renderResultCanvas(withoutFinal, gameLogic, displayRows);
+        const pixels = canvas.getContext("2d").getImageData(510 * 2, 374 * 2, 52 * 2, 42 * 2).data;
+        let goldCrownPixels = 0;
+        for (let i = 0; i < pixels.length; i += 4) {
+          if (pixels[i] > 230 && pixels[i + 1] > 170 && pixels[i + 1] < 240 && pixels[i + 2] < 150) {
+            goldCrownPixels++;
+          }
+        }
+        const cyberHasFinalLabel = textCalls.includes("FINAL ANSWER");
+        textCalls.length = 0;
+        settings.setSetting("theme", "classic");
+        const classicCanvas = renderResultCanvas(record, gameLogic, displayRows);
+        const classicHasFinalLabel = textCalls.includes("FINAL ANSWER");
+        const classicOrdinaryCanvas = renderResultCanvas(withoutFinal, gameLogic, displayRows);
+        settings.setSetting("theme", "cyber");
+        return {
+          cyberHeight: canvas.height,
+          ordinaryHeight: ordinaryCanvas.height,
+          classicHeight: classicCanvas.height,
+          classicOrdinaryHeight: classicOrdinaryCanvas.height,
+          cyberHasFinalLabel,
+          classicHasFinalLabel,
+          goldCrownPixels,
+        };
+      } finally {
+        CanvasRenderingContext2D.prototype.fillText = originalFillText;
+      }
+    });
+    assert.ok(
+      snapshotFinalAnswer.cyberHeight > snapshotFinalAnswer.ordinaryHeight
+        && snapshotFinalAnswer.classicHeight > snapshotFinalAnswer.classicOrdinaryHeight,
+      `FINAL ANSWER should extend saved images: ${JSON.stringify(snapshotFinalAnswer)}`
+    );
+    assert.equal(snapshotFinalAnswer.cyberHasFinalLabel, true);
+    assert.equal(snapshotFinalAnswer.classicHasFinalLabel, true);
+    assert.ok(snapshotFinalAnswer.goldCrownPixels > 20, "The saved image should draw a gold crown for the other answer");
+    await successPage.close();
+  }
+
   const shortPage = await browser.newPage({ viewport: { width: 393, height: 559 }, locale: "ja-JP" });
   await shortPage.addInitScript(() => {
     localStorage.setItem("dwordle2.settings", JSON.stringify({

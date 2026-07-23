@@ -114,7 +114,7 @@ function render(args) {
   // ラベルは左、正解を示す旗は右へ絶対配置し、有無で行がずれないようにする。
   const answerRow = (no, word) => {
     const matched = cleared && lastWord === word;
-    const finalMatched = doubleClear && faTarget === word; // FINAL ANSWER で当てた方は金の星
+    const finalMatched = doubleClear && faTarget === word; // FINAL ANSWER で当てた方は金の王冠
     return el(
       "div",
       {
@@ -146,8 +146,8 @@ function render(args) {
         : finalMatched
           ? el(
               "span",
-              { class: "guess-flag-slot", "aria-hidden": "true" },
-              el("span", { class: "fa-star" }, icon("star", 20))
+              { class: "fa-crown-slot", "aria-hidden": "true" },
+              el("span", { class: "fa-crown" }, icon("crown", 22))
             )
           : null
     );
@@ -213,8 +213,8 @@ function render(args) {
       )
     ),
     el("div", { class: "card answers-grid" }, answerRow(1, logic.ans1), answerRow(2, logic.ans2)),
-    finalAnswerCard,
     grid,
+    finalAnswerCard,
     el(
       "div",
       { class: "result-actions" },

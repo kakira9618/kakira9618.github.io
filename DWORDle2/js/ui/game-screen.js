@@ -57,6 +57,8 @@ let keyEls = {};
 let seedHidden = false;
 let finishedRecord = null; // 終了後に結果画面へ渡す
 let finalAnswerPhase = null; // FINAL ANSWER 進行状態 { clearedWord, target, attempt: { word, success } | null }
+let finalAnswerLeavePromptOpen = false;
+let finalAnswerFinishPending = false;
 let gatherSession = 0;
 let pendingKeys = []; // 判定オープン中の先行入力（次の 1 行分だけ保持）
 let lastTouchKey = null; // pointerdown で確定したタッチ入力（合成 click の重複抑止用）
@@ -78,7 +80,7 @@ function build() {
     { class: "header" },
     el(
       "button",
-      { class: "icon-btn", "aria-label": tr("タイトルへ戻る", "Back to title"), onclick: () => { playSfx("ui"); navigate("/"); } },
+      { class: "icon-btn", "aria-label": tr("タイトルへ戻る", "Back to title"), onclick: requestBackToTitle },
       icon("arrowLeft")
     ),
     headerTitleEl,
@@ -219,6 +221,39 @@ function toggleSeed() {
   updateHeader();
 }
 
+function isFinalAnswerActive() {
+  return state === "finalCutin" || state === "finalGuess" || state === "finalChecking";
+}
+
+async function requestBackToTitle() {
+  playSfx("ui");
+  if (!isFinalAnswerActive()) {
+    navigate("/");
+    return;
+  }
+  if (finalAnswerLeavePromptOpen) return;
+  finalAnswerLeavePromptOpen = true;
+  const { confirmModal } = await import("./modal.js?v=20260723-fa");
+  const forfeit = await confirmModal(
+    tr("FINAL ANSWERを棄権しますか？", "Forfeit FINAL ANSWER?"),
+    tr(
+      "棄権すると通常クリアとして履歴に記録されます。\nタイトルへ戻りますか？",
+      "Forfeiting records this game as a normal clear.\nReturn to the title?"
+    )
+  );
+  finalAnswerLeavePromptOpen = false;
+  if (!forfeit) {
+    if (finalAnswerFinishPending) {
+      finalAnswerFinishPending = false;
+      finishGame(true);
+    }
+    return;
+  }
+  finalAnswerFinishPending = false;
+  forfeitFinalAnswer();
+  navigate("/");
+}
+
 function updateHeader() {
   const mode = MODES[game.gameMode];
   headerTitleEl.textContent = mode.title;
@@ -275,6 +310,8 @@ function render() {
   pendingKeys = [];
   finishedRecord = null;
   finalAnswerPhase = null;
+  finalAnswerLeavePromptOpen = false;
+  finalAnswerFinishPending = false;
   resultFab.style.display = "none";
   rows = [];
   clear(boardEl);
@@ -577,7 +614,13 @@ function submitFinalAnswer() {
   const beginReveal = () => {
     if (session !== gatherSession) return;
     row.rowEl.classList.remove("fa-charging");
-    revealRow(row, word, result, () => finishGame(true));
+    revealRow(row, word, result, () => {
+      if (finalAnswerLeavePromptOpen) {
+        finalAnswerFinishPending = true;
+        return;
+      }
+      finishGame(true);
+    });
   };
   if (shouldReduceMotion()) {
     beginReveal();
@@ -603,6 +646,9 @@ function rejectGuess(message) {
 // （古い done が新しい盤面へ作用したり、離脱後に音や演出が鳴るのを防ぐ）。
 function revealRow(row, word, result, done) {
   const session = gatherSession;
+  const finalAnswerReveal = state === "finalChecking";
+  const revealDelay = (index) =>
+    index * UI.revealIntervalMs + (finalAnswerReveal && index === 4 ? FX.finalAnswer.lastTilePauseMs : 0);
   if (shouldReduceMotion()) {
     result.forEach((stateName, i) => {
       const tile = row.tiles[i];
@@ -636,13 +682,16 @@ function revealRow(row, word, result, done) {
         // GPUレイヤーとして扱い、画面外から戻した際に再描画が遅れる。
         tile.classList.remove("reveal", "filled");
       }, UI.revealFlipMs + 20);
-    }, i * UI.revealIntervalMs);
+    }, revealDelay(i));
   });
   setTimeout(() => {
     if (session !== gatherSession) return;
     announce(rowAriaLabel(word, result));
     done();
-  }, 5 * UI.revealIntervalMs + UI.revealFlipMs / 2 + UI.afterRevealPauseMs);
+  }, 5 * UI.revealIntervalMs
+    + (finalAnswerReveal ? FX.finalAnswer.lastTilePauseMs : 0)
+    + UI.revealFlipMs / 2
+    + UI.afterRevealPauseMs);
 }
 
 // ---- キーボード色 ----
@@ -674,46 +723,73 @@ function applyAllKeyStyles() {
 
 // ---- 終了処理 ----
 
+function persistFinishedGame({ includeFinalAnswer = true } = {}) {
+  const hadLostBefore = getHistory().some(
+    (g) => g.gameMode === game.gameMode && g.problemID === game.problemID && !g.clear
+  );
+  const record = addFinishedGame({
+    version: game.version,
+    startTime: game.startTime,
+    endTime: Math.floor(Date.now() / 1000),
+    gameMode: game.gameMode,
+    problemID: game.problemID,
+    guessWord: game.guessWord.slice(),
+    usoResults: game.gameMode === "uso" ? game.usoResults.slice() : undefined,
+    // 棄権・リロード復帰は通常クリアとして扱い、FINAL ANSWER の記録を付けない。
+    finalAnswer: includeFinalAnswer && finalAnswerPhase?.attempt
+      ? { word: finalAnswerPhase.attempt.word, success: finalAnswerPhase.attempt.success }
+      : undefined,
+  });
+  clearCurrentGame(game.gameMode);
+  finishedRecord = record;
+
+  const results = game.guessWord.map((w) => logic.queryWord(w));
+  const newly = checkOnGameFinish({
+    record,
+    results,
+    durationSec: record.endTime - record.startTime,
+    endDate: new Date(record.endTime * 1000),
+    maxGuess: MODES[game.gameMode].maxGuess,
+    hadLostBefore,
+  });
+  return { record, newly };
+}
+
+function showFinishUnlocks(newly) {
+  if (newly.length > 0) {
+    achievementCelebration(newly);
+    const bgmUnlocks = bgmTracksUnlockedBy(newly);
+    if (bgmUnlocks.length > 0) bgmUnlockCelebration(bgmUnlocks);
+    hiddenThemesUnlockedBy(newly).forEach(themeUnlockCelebration);
+  }
+  if (claimFinalAnswerUnlockNotice()) finalAnswerUnlockCelebration();
+}
+
+// FINAL ANSWER 中に画面を離れたら、追加推理は棄権し、元のゲームだけを通常クリアで確定する。
+function forfeitFinalAnswer() {
+  if (!isFinalAnswerActive()) return null;
+  state = "finish";
+  pendingKeys = [];
+  finalAnswerFinishPending = false;
+  cancelFinalAnswerFx();
+  const settled = persistFinishedGame({ includeFinalAnswer: false });
+  finalAnswerPhase = null;
+  announce(tr("FINAL ANSWERを棄権し、通常クリアとして記録しました。", "FINAL ANSWER forfeited. Recorded as a normal clear."));
+  queueMicrotask(() => showFinishUnlocks(settled.newly));
+  return settled.record;
+}
+
 function finishGame(justFinished) {
   state = "finish";
   pendingKeys = []; // 決着後に持ち越された先行入力は捨てる
+  finalAnswerFinishPending = false;
   updateHeader();
 
   const lastWord = game.guessWord[game.guessWord.length - 1];
   const cleared = logic.isGameClear(lastWord);
+  const { record, newly } = persistFinishedGame({ includeFinalAnswer: justFinished });
 
   if (justFinished) {
-    // 履歴へ保存
-    const hadLostBefore = getHistory().some(
-      (g) => g.gameMode === game.gameMode && g.problemID === game.problemID && !g.clear
-    );
-    const record = addFinishedGame({
-      version: game.version,
-      startTime: game.startTime,
-      endTime: Math.floor(Date.now() / 1000),
-      gameMode: game.gameMode,
-      problemID: game.problemID,
-      guessWord: game.guessWord.slice(),
-      usoResults: game.gameMode === "uso" ? game.usoResults.slice() : undefined,
-      // v2 追加スキーマ: FINAL ANSWER の追加推理（挑戦したときだけ付く）
-      finalAnswer: finalAnswerPhase?.attempt
-        ? { word: finalAnswerPhase.attempt.word, success: finalAnswerPhase.attempt.success }
-        : undefined,
-    });
-    clearCurrentGame(game.gameMode);
-    finishedRecord = record;
-
-    // 実績判定
-    const results = game.guessWord.map((w) => logic.queryWord(w));
-    const newly = checkOnGameFinish({
-      record,
-      results,
-      durationSec: record.endTime - record.startTime,
-      endDate: new Date(record.endTime * 1000),
-      maxGuess: MODES[game.gameMode].maxGuess,
-      hadLostBefore,
-    });
-
     const doubleCleared = Boolean(record.finalAnswer?.success);
     if (doubleCleared) {
       // 大成功: 専用ファンファーレ + 金色の DOUBLE CLEAR カットイン + 金色バースト
@@ -734,31 +810,12 @@ function finishGame(justFinished) {
     const session = gatherSession;
     setTimeout(() => {
       if (session === gatherSession) navigate(`/result/${record.gameMode}/${record.startTime}`);
-      if (newly.length > 0) {
-        achievementCelebration(newly);
-        const bgmUnlocks = bgmTracksUnlockedBy(newly);
-        if (bgmUnlocks.length > 0) {
-          bgmUnlockCelebration(bgmUnlocks);
-        }
-        hiddenThemesUnlockedBy(newly).forEach(themeUnlockCelebration);
-      }
-      // このプレイで 50 回に到達していたら FINAL ANSWER モードの解放を通知する
-      if (claimFinalAnswerUnlockNotice()) finalAnswerUnlockCelebration();
+      showFinishUnlocks(newly);
     }, doubleCleared ? FX.finalAnswer.resultDelayMs : cleared ? 1400 : 900);
   } else {
-    // リロード等で復帰した決着済みゲーム: 履歴に保存だけして結果ボタンを出す
-    const record = addFinishedGame({
-      version: game.version,
-      startTime: game.startTime,
-      endTime: Math.floor(Date.now() / 1000),
-      gameMode: game.gameMode,
-      problemID: game.problemID,
-      guessWord: game.guessWord.slice(),
-      usoResults: game.gameMode === "uso" ? game.usoResults.slice() : undefined,
-    });
-    clearCurrentGame(game.gameMode);
-    finishedRecord = record;
+    // リロード等で復帰した決着済みゲームも、棄権扱いの通常クリアとして完全に確定する。
     resultFab.style.display = "";
+    queueMicrotask(() => showFinishUnlocks(newly));
   }
 }
 
@@ -812,6 +869,8 @@ registerScreen("game", {
   },
   render,
   onLeave() {
+    // ブラウザの戻る操作やハッシュ遷移など、ヘッダーボタン以外の離脱も棄権として確定する。
+    if (isFinalAnswerActive()) forfeitFinalAnswer();
     gatherSession++;
     pendingKeys = [];
     cancelTileFlights();

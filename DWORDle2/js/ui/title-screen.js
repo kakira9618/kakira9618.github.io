@@ -475,7 +475,7 @@ function render() {
   } else {
     maybeOfferLegacyImport();
   }
-  // アプリ更新前から 50 回プレイに到達していた人にも、初回のタイトル表示で
+  // アプリ更新前から 10 回プレイに到達していた人にも、初回のタイトル表示で
   // FINAL ANSWER モードの解放を通知する（通常はゲーム終了時に通知される）。
   if (claimFinalAnswerUnlockNotice()) finalAnswerUnlockCelebration();
 }
