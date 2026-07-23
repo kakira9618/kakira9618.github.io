@@ -3215,9 +3215,17 @@ body.theme-pop.mode-uso .fa-cutin-band {
 /* ---- ゲーム画面: ヘッダ表示と追加推理の行 ---- */
 
 #screen-game .sub.fa-counter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 42px;
   color: var(--fa-gold);
+  font-size: 8.5px;
   font-weight: 900;
-  letter-spacing: 0.1em;
+  line-height: 1.05;
+  letter-spacing: 0.08em;
+  text-align: center;
   text-shadow: 0 0 10px rgba(255, 209, 102, 0.55);
 }
 body.theme-classic #screen-game .sub.fa-counter,
@@ -3359,14 +3367,15 @@ body.mode-uso .fa-double-ring { border-color: #ff8fae; }
 
 /* DOUBLE CLEAR! タイトル: 金のグラデーション + ゆっくり流れる輝き */
 .result-title.double {
-  background: repeating-linear-gradient(
-    90deg,
-    var(--fa-gold-deep) 0,
-    var(--fa-gold) 45px,
-    #fff8dc 90px,
-    var(--fa-gold) 135px,
-    var(--fa-gold-deep) 180px
+  background: linear-gradient(
+    100deg,
+    var(--fa-gold-deep) 0%,
+    var(--fa-gold) 30%,
+    #fff8dc 50%,
+    var(--fa-gold) 70%,
+    var(--fa-gold-deep) 100%
   );
+  background-size: 220% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -3375,8 +3384,8 @@ body.mode-uso .fa-double-ring { border-color: #ff8fae; }
 }
 body.reduce-motion .result-title.double { animation: none; }
 @keyframes faTitleShine {
-  from { background-position: 0 0; }
-  to { background-position: 180px 0; }
+  from { background-position: 120% 0; }
+  to { background-position: -100% 0; }
 }
 
 /* FINAL ANSWER の記録カード */
@@ -3407,28 +3416,15 @@ body.reduce-motion .result-title.double { animation: none; }
   font-size: 12px;
 }
 
-/* 答え行の金の王冠（FINAL ANSWER で当てた方） */
-.fa-crown-slot {
-  perspective: 80px;
-}
+/* 答え行の立体王冠。フラグと共通のスロット中心へ Canvas を揃える */
 .fa-crown {
-  display: grid;
-  place-items: center;
-  width: 100%;
-  height: 100%;
-  color: var(--fa-gold);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 36px;
+  height: 36px;
+  transform: translate(-50%, -50%);
   filter: drop-shadow(0 0 7px rgba(255, 209, 102, 0.85));
-  transform-style: preserve-3d;
-  animation: faCrownRotate 5.6s linear infinite;
-}
-.fa-crown svg {
-  width: 22px;
-  height: 22px;
-}
-body.reduce-motion .fa-crown { animation: none; }
-@keyframes faCrownRotate {
-  from { transform: rotateY(0deg); }
-  to { transform: rotateY(360deg); }
 }
 
 /* ---- 履歴 ---- */

@@ -193,7 +193,7 @@ try {
     `DWORDlie banner should sit immediately above the logo: ${JSON.stringify({ usoBannerBox, usoLogoBox })}`
   );
   await page.getByRole("button", { name: "表モードへ" }).click();
-  await page.getByText("答えは2つ、盤面は1つ。10 手以内に「どちらか」を当てろ。", { exact: true }).waitFor();
+  await page.getByText("答えは2つ、盤面は1つ。10手で「どちらか」を当てろ。", { exact: true }).waitFor();
   assert.equal(
     await page.getByText("答えが 2 つある Wordle。10 手以内に「どちらか」を当てろ。", { exact: true }).count(),
     0
@@ -352,7 +352,7 @@ try {
       { ans1: "point", ans2: "touch" },
       [Array(5).fill("correct")]
     );
-    const pixels = canvas.getContext("2d").getImageData(515 * 2, 306 * 2, 42 * 2, 45 * 2).data;
+    const pixels = canvas.getContext("2d").getImageData(515 * 2, 220 * 2, 42 * 2, 45 * 2).data;
     let savedBlackPixels = 0;
     for (let i = 0; i < pixels.length; i += 4) {
       if (pixels[i] < 30 && pixels[i + 1] < 30 && pixels[i + 2] < 30) savedBlackPixels++;
@@ -629,8 +629,8 @@ try {
       return count;
     };
     const counts = {
-      rightOfTiles: countFlagPixels(515, 306, 42, 45),
-      oldLeftPosition: countFlagPixels(126, 306, 32, 45),
+      rightOfTiles: countFlagPixels(515, 220, 42, 45),
+      oldLeftPosition: countFlagPixels(126, 220, 32, 45),
     };
     settings.setSetting("theme", "classic");
     return counts;
@@ -837,6 +837,26 @@ try {
     await successPage.keyboard.press("Enter");
     const finalRow = successPage.locator("#screen-game.active .fa-row");
     await finalRow.waitFor({ timeout: 8000 });
+    const finalHeader = await successPage.locator("#screen-game .header").evaluate((header) => {
+      const counter = header.querySelector(".fa-counter");
+      const title = header.querySelector(".title");
+      const counterStyle = getComputedStyle(counter);
+      return {
+        counterLines: [...counter.children].map((child) => child.textContent),
+        counterWidth: counter.getBoundingClientRect().width,
+        counterFontSize: Number.parseFloat(counterStyle.fontSize),
+        counterAlign: counterStyle.textAlign,
+        title: title.textContent,
+        titleClipped: title.scrollWidth > title.clientWidth + 1,
+      };
+    });
+    assert.deepEqual(finalHeader.counterLines, ["FINAL", "ANSWER"]);
+    assert.ok(
+      finalHeader.counterWidth <= 43 && finalHeader.counterFontSize <= 9 && finalHeader.counterAlign === "center",
+      `FINAL ANSWER header label should stay compact and centered: ${JSON.stringify(finalHeader)}`
+    );
+    assert.equal(finalHeader.title, "DWORDle");
+    assert.equal(finalHeader.titleClipped, false, "The compact FINAL ANSWER counter should leave the game title visible");
     await successPage.evaluate(() => {
       const tiles = [...document.querySelectorAll("#screen-game.active .fa-row .tile")];
       window.__finalAnswerRevealTimes = Array(tiles.length).fill(null);
@@ -860,8 +880,13 @@ try {
     const revealTimes = await successPage.evaluate(() => window.__finalAnswerRevealTimes);
     const earlyGaps = revealTimes.slice(1, 4).map((time, index) => time - revealTimes[index]);
     const finalGap = revealTimes[4] - revealTimes[3];
+    assert.equal(
+      await successPage.evaluate(async () => (await import("./js/config.js?v=20260723-fa")).FX.finalAnswer.lastTilePauseMs),
+      720,
+      "The final tile pause should be twice the former 360ms pause"
+    );
     assert.ok(
-      finalGap >= Math.max(...earlyGaps) + 250,
+      finalGap >= Math.max(...earlyGaps) + 550,
       `The fifth FINAL ANSWER tile should open after an extra pause: ${JSON.stringify({ revealTimes, earlyGaps, finalGap })}`
     );
 
@@ -873,26 +898,55 @@ try {
       return [...body.children].indexOf(grid) < [...body.children].indexOf(finalCard);
     });
     assert.equal(resultOrder, true, "FINAL ANSWER should appear below the ordinary Guess grid");
-    assert.equal(await successPage.locator(".answer-row .fa-crown").count(), 1);
+    const crown = successPage.locator(".answer-row .fa-crown");
+    assert.equal(await crown.count(), 1);
+    assert.equal(await crown.evaluate((node) => node.tagName), "CANVAS");
+    assert.equal(await crown.getAttribute("data-crown-points"), "16");
     assert.equal(await successPage.locator(".answer-row .fa-star").count(), 0, "The old FINAL ANSWER star should be removed");
-    const crownAnimation = await successPage.locator(".answer-row .fa-crown").evaluate((node) => {
-      const style = getComputedStyle(node);
-      return { name: style.animationName, timing: style.animationTimingFunction, iteration: style.animationIterationCount };
+    const crownGeometry = await successPage.evaluate(async () => {
+      const { CROWN_POINT_COUNT, crownPoints } = await import("./js/ui/crown.js?v=20260723-fa");
+      const points = crownPoints(0, 0, 0, 40);
+      const gaps = points.map((point, index) => {
+        const next = points[(index + 1) % points.length];
+        return (next.angle - point.angle + Math.PI * 2) % (Math.PI * 2);
+      });
+      return {
+        count: CROWN_POINT_COUNT,
+        gapSpread: Math.max(...gaps) - Math.min(...gaps),
+        rimYCount: new Set(points.map((point) => point.rimY.toFixed(3))).size,
+        spikeHeightCount: new Set(points.map((point) => (point.rimY - point.topY).toFixed(3))).size,
+      };
     });
-    assert.deepEqual(crownAnimation, {
-      name: "faCrownRotate",
-      timing: "linear",
-      iteration: "infinite",
+    assert.equal(crownGeometry.count, 16);
+    assert.ok(crownGeometry.gapSpread < 1e-10, "Crown points should be equally spaced by phase");
+    assert.ok(crownGeometry.rimYCount >= 5, "Crown points should occupy different y positions on an ellipse");
+    assert.equal(crownGeometry.spikeHeightCount, 2, "Crown points should alternate between two zigzag heights");
+    await successPage.waitForTimeout(80);
+    const crownFrameOne = await crown.evaluate((node) => node.toDataURL());
+    await successPage.waitForTimeout(180);
+    const crownFrameTwo = await crown.evaluate((node) => node.toDataURL());
+    assert.notEqual(crownFrameOne, crownFrameTwo, "The 3D crown should rotate on the result screen");
+    const markerCenters = await successPage.locator(".answers-grid").evaluate((answers) => {
+      const flag = answers.querySelector(".guess-flag-slot").getBoundingClientRect();
+      const crownSlot = answers.querySelector(".fa-crown-slot").getBoundingClientRect();
+      return { flag: flag.x + flag.width / 2, crown: crownSlot.x + crownSlot.width / 2 };
     });
+    assert.ok(
+      Math.abs(markerCenters.flag - markerCenters.crown) <= 0.5,
+      `The flag and crown should share the same x center: ${JSON.stringify(markerCenters)}`
+    );
     const doubleTitleStyle = await successPage.locator(".result-title.double").evaluate((node) => {
       const style = getComputedStyle(node);
       return {
         background: style.backgroundImage,
+        backgroundSize: style.backgroundSize,
         animation: style.animationName,
         timing: style.animationTimingFunction,
       };
     });
-    assert.match(doubleTitleStyle.background, /repeating-linear-gradient/);
+    assert.match(doubleTitleStyle.background, /^linear-gradient/);
+    assert.doesNotMatch(doubleTitleStyle.background, /repeating-linear-gradient/);
+    assert.equal(doubleTitleStyle.backgroundSize, "220% 100%");
     assert.equal(doubleTitleStyle.animation, "faTitleShine");
     assert.equal(doubleTitleStyle.timing, "linear");
 
@@ -906,36 +960,59 @@ try {
       const displayRows = record.guessWord.map((word) => gameLogic.queryWord(word));
       const textCalls = [];
       const originalFillText = CanvasRenderingContext2D.prototype.fillText;
-      CanvasRenderingContext2D.prototype.fillText = function (text, ...args) {
-        textCalls.push(String(text));
-        return originalFillText.call(this, text, ...args);
+      CanvasRenderingContext2D.prototype.fillText = function (text, x, y, ...args) {
+        textCalls.push({ text: String(text), x, y, fillStyle: this.fillStyle });
+        return originalFillText.call(this, text, x, y, ...args);
       };
       try {
+        const measureOrder = (calls, classic = false) => {
+          const answerIndex = calls.findIndex((call) => classic ? call.text.startsWith("Answer:") : call.text === "Word 1");
+          const finalIndex = calls.findIndex((call) => call.text === "FINAL ANSWER");
+          const guessIndex = classic
+            ? answerIndex + 1
+            : calls.findIndex((call, index) => index > calls.findIndex((item) => item.text === "Word 2") + 5 && call.text.length === 1);
+          return {
+            answerY: calls[answerIndex]?.y,
+            guessY: calls[guessIndex]?.y,
+            finalY: calls[finalIndex]?.y,
+          };
+        };
+
         const canvas = renderResultCanvas(record, gameLogic, displayRows);
+        const cyberCalls = [...textCalls];
         const withoutFinal = { ...record };
         delete withoutFinal.finalAnswer;
+        textCalls.length = 0;
         const ordinaryCanvas = renderResultCanvas(withoutFinal, gameLogic, displayRows);
-        const pixels = canvas.getContext("2d").getImageData(510 * 2, 374 * 2, 52 * 2, 42 * 2).data;
+        const pixels = canvas.getContext("2d").getImageData(500 * 2, 275 * 2, 70 * 2, 75 * 2).data;
         let goldCrownPixels = 0;
         for (let i = 0; i < pixels.length; i += 4) {
           if (pixels[i] > 230 && pixels[i + 1] > 170 && pixels[i + 1] < 240 && pixels[i + 2] < 150) {
             goldCrownPixels++;
           }
         }
-        const cyberHasFinalLabel = textCalls.includes("FINAL ANSWER");
         textCalls.length = 0;
         settings.setSetting("theme", "classic");
         const classicCanvas = renderResultCanvas(record, gameLogic, displayRows);
-        const classicHasFinalLabel = textCalls.includes("FINAL ANSWER");
+        const classicCalls = [...textCalls];
+        textCalls.length = 0;
         const classicOrdinaryCanvas = renderResultCanvas(withoutFinal, gameLogic, displayRows);
+
+        textCalls.length = 0;
+        settings.setSetting("theme", "pop");
+        renderResultCanvas(record, gameLogic, displayRows);
+        const popDoubleClear = textCalls.find((call) => call.text === "DOUBLE CLEAR!");
+        const popFinalAnswer = textCalls.find((call) => call.text === "FINAL ANSWER");
         settings.setSetting("theme", "cyber");
         return {
           cyberHeight: canvas.height,
           ordinaryHeight: ordinaryCanvas.height,
           classicHeight: classicCanvas.height,
           classicOrdinaryHeight: classicOrdinaryCanvas.height,
-          cyberHasFinalLabel,
-          classicHasFinalLabel,
+          cyberOrder: measureOrder(cyberCalls),
+          classicOrder: measureOrder(classicCalls, true),
+          popDoubleClearColor: popDoubleClear?.fillStyle,
+          popFinalAnswerColor: popFinalAnswer?.fillStyle,
           goldCrownPixels,
         };
       } finally {
@@ -947,9 +1024,27 @@ try {
         && snapshotFinalAnswer.classicHeight > snapshotFinalAnswer.classicOrdinaryHeight,
       `FINAL ANSWER should extend saved images: ${JSON.stringify(snapshotFinalAnswer)}`
     );
-    assert.equal(snapshotFinalAnswer.cyberHasFinalLabel, true);
-    assert.equal(snapshotFinalAnswer.classicHasFinalLabel, true);
+    assert.ok(
+      snapshotFinalAnswer.cyberOrder.answerY < snapshotFinalAnswer.cyberOrder.guessY
+        && snapshotFinalAnswer.cyberOrder.guessY < snapshotFinalAnswer.cyberOrder.finalY,
+      `Cyber saved image should order Answer, Guess history, FINAL ANSWER: ${JSON.stringify(snapshotFinalAnswer.cyberOrder)}`
+    );
+    assert.ok(
+      snapshotFinalAnswer.classicOrder.answerY < snapshotFinalAnswer.classicOrder.guessY
+        && snapshotFinalAnswer.classicOrder.guessY < snapshotFinalAnswer.classicOrder.finalY,
+      `Classic saved image should order Answer, Guess history, FINAL ANSWER: ${JSON.stringify(snapshotFinalAnswer.classicOrder)}`
+    );
+    assert.equal(snapshotFinalAnswer.popDoubleClearColor, "#713600");
+    assert.equal(snapshotFinalAnswer.popFinalAnswerColor, "#713600");
     assert.ok(snapshotFinalAnswer.goldCrownPixels > 20, "The saved image should draw a gold crown for the other answer");
+    await successPage.evaluate(async () => {
+      (await import("./js/ui/toast.js?v=20260723-fa")).finalAnswerUnlockCelebration();
+    });
+    const finalUnlockDialog = successPage.getByRole("dialog", { name: "FINAL ANSWER" });
+    await finalUnlockDialog.waitFor();
+    const finalUnlockCopy = await finalUnlockDialog.textContent();
+    assert.doesNotMatch(finalUnlockCopy, /[ー―]{2}/, "FINAL ANSWER unlock copy should not use a double dash");
+    await finalUnlockDialog.getByRole("button", { name: "あとで" }).click();
     await successPage.close();
   }
 

@@ -383,7 +383,7 @@ export function finalAnswerUnlockCelebration() {
             "div",
             { class: "bgm-unlock-desc", id: descId },
             tr(
-              "設定に「FINAL ANSWER」が追加されました。ONにすると、クリア後に追加推理タイムが発動。当てなかったもう一つの答えを 1 回のチャンスで見抜けば――大成功の DOUBLE CLEAR!（DWORDle / DWORDlie 共通。失敗しても通常クリアのまま）",
+              "設定に「FINAL ANSWER」が追加されました。ONにすると、クリア後に追加推理タイムが発動。当てなかったもう一つの答えを 1 回のチャンスで見抜けば、大成功の DOUBLE CLEAR!（DWORDle / DWORDlie 共通。失敗しても通常クリアのまま）",
               "A new “FINAL ANSWER” setting has been added. When ON, clearing a game triggers one extra deduction: name the other hidden answer in a single try for a DOUBLE CLEAR! (Applies to DWORDle & DWORDlie. Failing still counts as a normal clear.)"
             )
           ),

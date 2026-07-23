@@ -16,6 +16,7 @@ import { SHARE_URL } from "../config.js?v=20260723-fa";
 import { getSettings } from "../core/settings.js?v=20260723-fa";
 import { tr } from "../core/i18n.js?v=20260723-fa";
 import { rowAriaLabel } from "./a11y.js?v=20260723-fa";
+import { createRotatingCrownCanvas } from "./crown.js?v=20260723-fa";
 
 let root = null;
 
@@ -147,7 +148,7 @@ function render(args) {
           ? el(
               "span",
               { class: "fa-crown-slot", "aria-hidden": "true" },
-              el("span", { class: "fa-crown" }, icon("crown", 22))
+              createRotatingCrownCanvas()
             )
           : null
     );

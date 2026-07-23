@@ -259,9 +259,13 @@ function updateHeader() {
   headerTitleEl.textContent = mode.title;
   const inFinalAnswer = state === "finalCutin" || state === "finalGuess" || state === "finalChecking";
   counterEl.classList.toggle("fa-counter", inFinalAnswer);
-  counterEl.textContent = inFinalAnswer
-    ? "FINAL ANSWER"
-    : `${game.guessWord.length + (state === "finish" ? 0 : 1)} / ${mode.maxGuess}`;
+  if (inFinalAnswer) {
+    counterEl.replaceChildren(el("span", {}, "FINAL"), el("span", {}, "ANSWER"));
+    counterEl.setAttribute("aria-label", "FINAL ANSWER");
+  } else {
+    counterEl.textContent = `${game.guessWord.length + (state === "finish" ? 0 : 1)} / ${mode.maxGuess}`;
+    counterEl.removeAttribute("aria-label");
+  }
   const label = seedHidden ? "No.????" : pidLabel(game.problemID);
   // "Daily 2026-07-22" のような 2 語ラベルは 2 行 + 小さめの文字で表示し、
   // 狭い端末でもタイトルや右側のボタン群を削らずに収める
