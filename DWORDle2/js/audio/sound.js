@@ -323,6 +323,7 @@ function clearAudioContextReferences() {
   buses = new Map();
   nextBarTime = 0;
   barIndex = 0;
+  bgmScheduleStartBar = 0;
 }
 
 // タブ・ページを閉じるとき、鳴っている最中の音が AudioContext の破棄で途中切断され、
@@ -409,7 +410,6 @@ export function unlockAudio({ restartBgm = false } = {}) {
 
   // iOS Safari では resume() の Promise 完了後に初めて音源を作ると無音になることがある。
   // Promise は待たず、ユーザー操作の呼び出しスタック内でBGMを予約する。
-  const barIndexBeforeStart = barIndex;
   if (getSettings().bgm) {
     if (restartBgm) stopBgm();
     startBgm();
@@ -420,9 +420,11 @@ export function unlockAudio({ restartBgm = false } = {}) {
     if (!wasRunning) {
       // interrupted 中に予約時刻が過ぎた場合に備え、復帰時刻を基準に予約し直す。
       // 同期予約で進んだ小節位置だけが残ると 3 小節目から始まってしまうため、
-      // 開始時の位置へ戻してから予約し直す。
+      // 現在のスケジュールが始まった位置へ戻してから予約し直す。
+      // （resume 待ちの間に曲選択が小節位置を曲頭へ戻していることもあるため、
+      // このコールバック開始時点ではなくスケジュール開始位置を正とする。）
       stopBgm();
-      barIndex = barIndexBeforeStart;
+      barIndex = bgmScheduleStartBar;
       startBgm();
     } else if (!bgmRunning) {
       startBgm();
@@ -463,6 +465,7 @@ function refreshBgmMix(restartSchedule = false) {
     resetBgmBuses();
     nextBarTime = ctx.currentTime + 0.08;
     barIndex = 0;
+    bgmScheduleStartBar = 0;
     bgmLoop();
     return;
   }
@@ -664,6 +667,11 @@ const USO = {
 };
 let nextBarTime = 0;
 let barIndex = 0;
+// 現在の予約スケジュールが始まった小節位置。barIndex は予約のたびに進むため、
+// suspend 中の同期予約を破棄して予約し直すとき（unlockAudio の resume 完了
+// コールバック）はここまで巻き戻す。途中で曲選択などが barIndex をリセット
+// した場合も、最後にスケジュールを始めた位置が正になる。
+let bgmScheduleStartBar = 0;
 
 // 表モードの 1 小節
 function scheduleBarNormal(t0, chord, bar, bus) {
@@ -1775,6 +1783,7 @@ function bgmLoop() {
 // （音復帰の設定変更で BGM が先に走り出し、小節位置が進んでいることがあるため）。
 export function rewindBgm() {
   barIndex = 0;
+  bgmScheduleStartBar = 0;
 }
 
 export function startBgm() {
@@ -1786,6 +1795,7 @@ export function startBgm() {
   bgmGain.gain.setValueAtTime(bgmGain.gain.value, t);
   bgmGain.gain.linearRampToValueAtTime(bgmTargetGain(), t + 0.25);
   nextBarTime = ctx.currentTime + 0.1;
+  bgmScheduleStartBar = barIndex;
   bgmLoop();
 }
 

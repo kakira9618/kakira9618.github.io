@@ -327,6 +327,28 @@ assert(
   "a fresh-context unlock must not skip to bar 3"
 );
 
+// 中断からの復帰タップで BGM を選曲した場合（設定画面の BGM 選択と同じ経路）:
+// pointerdown の unlockAudio が resume を待つ間に、click の曲選択が小節位置を
+// 曲頭へ戻す。resume 完了コールバックが復帰前の古い小節位置で上書きすると、
+// 選んだ曲が途中の小節から始まってしまう不具合があった。
+// 実際に鳴るのはコールバックの再予約分だけ（旧バスは破棄される）なので、
+// その内容が Candy Pop の曲頭（1〜2 小節目）であることを確認する。
+freshContext.state = "interrupted";
+const pendingRecovery = unlockAudio({ restartBgm: true }); // pointerdown（await しない）
+setSetting("bgmTrack", "pop"); // click: 曲選択
+const beforeRecoveryCallback = freshContext.startedFrequencies.length;
+await pendingRecovery;
+await Promise.resolve();
+const recoveryFreqs = freshContext.startedFrequencies.slice(beforeRecoveryCallback);
+assert(
+  recoveryFreqs.some((freq) => Math.abs(freq - bassHz(33)) < 0.01), // 2 小節目 (Am) のベースルート
+  "selecting a track during audio recovery should schedule it from its first bars"
+);
+assert(
+  !recoveryFreqs.some((freq) => Math.abs(freq - bassHz(29)) < 0.01), // 3 小節目 (F) のベースルート
+  "selecting a track during audio recovery must not start it mid-track"
+);
+
 // 全トラックで同じ検証: 「開始」経路（wasRunning=false の unlockAudio）の予約内容が、
 // 二重開始の起きない wasRunning=true の再開（= 必ず 1 小節目から）と周波数集合で一致すること。
 // ランダム要素のある曲も比較できるよう乱数は固定する。
