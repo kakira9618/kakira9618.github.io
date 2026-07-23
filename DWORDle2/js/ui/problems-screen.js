@@ -227,15 +227,16 @@ function render() {
     const cells = [];
     for (let pid = s; pid <= e; pid++) {
       const st = statusOf(statusMap, pid);
+      const doubleClear = (statusMap.get(pid)?.doubleClears ?? 0) > 0;
       if (statusFilter !== "all" && st !== statusFilter) continue;
       cells.push(
         el(
           "button",
           {
-            class: `num-cell ${st === "unplayed" ? "" : st}`,
+            class: `num-cell ${st === "unplayed" ? "" : st} ${doubleClear ? "double-clear" : ""}`,
             "aria-label": tr(
-              `問題 ${pid}、${st === "cleared" ? "クリア済み" : st === "failed" ? "未クリア" : "未プレイ"}`,
-              `Puzzle ${pid}, ${st === "cleared" ? "cleared" : st === "failed" ? "failed" : "unplayed"}`
+              `問題 ${pid}、${doubleClear ? "DOUBLE CLEAR済み" : st === "cleared" ? "クリア済み" : st === "failed" ? "未クリア" : "未プレイ"}`,
+              `Puzzle ${pid}, ${doubleClear ? "DOUBLE CLEAR" : st === "cleared" ? "cleared" : st === "failed" ? "failed" : "unplayed"}`
             ),
             onclick: () => openProblemMenu(pid, statusMap),
           },
@@ -244,7 +245,17 @@ function render() {
       );
     }
     body.append(
-      el("div", { class: "progress-note" }, tr(`ブロック No.${s} - No.${e}`, `Block No.${s} - No.${e}`)),
+      el(
+        "div",
+        { class: "progress-note problem-block-head" },
+        el("span", {}, tr(`ブロック No.${s} - No.${e}`, `Block No.${s} - No.${e}`)),
+        el(
+          "span",
+          { class: "problem-double-legend" },
+          el("i", { class: "problem-double-swatch", "aria-hidden": "true" }),
+          "DOUBLE CLEAR"
+        )
+      ),
       cells.length
         ? el("div", { class: "num-grid" }, cells)
         : el("p", { class: "hint", style: { textAlign: "center" } }, tr("該当する問題がありません", "No matching puzzles"))

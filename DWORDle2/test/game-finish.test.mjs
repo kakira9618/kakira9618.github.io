@@ -59,6 +59,19 @@ function idsOf(newly) {
   return new Set(newly.map((achievement) => achievement.id));
 }
 
+// 旧「月間皆勤」の解除状態は、新しい「二週間皆勤」へ引き継ぐ。
+{
+  storage.clear();
+  storage.set("dwordle2.achievements", JSON.stringify({ "daily-streak-30": 1_700_000_000 }));
+  records._reload();
+  const migrated = await import(`../js/core/achievements.js?scenario=${++scenarioSerial}`);
+  assert.equal(migrated.getUnlocked()["daily-streak-14"], 1_700_000_000);
+  assert.equal(Object.hasOwn(migrated.getUnlocked(), "daily-streak-30"), false);
+  const persisted = JSON.parse(storage.get("dwordle2.achievements"));
+  assert.equal(persisted["daily-streak-14"], 1_700_000_000);
+  assert.equal(Object.hasOwn(persisted, "daily-streak-30"), false);
+}
+
 // 両方の答えと 1 文字も共有しない単語（判定が全部灰色になる）
 function allGrayWord(logic, exclude = new Set()) {
   const used = new Set([...logic.ans1, ...logic.ans2]);

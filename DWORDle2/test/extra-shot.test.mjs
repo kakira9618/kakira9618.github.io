@@ -73,6 +73,7 @@ const { tryEnableDebugMode } = await import("../js/core/debug.js");
   assert.equal(Object.hasOwn(loaded, "finalAnswer"), false, "新しい履歴に旧キーを保存しないはず");
   assert.equal(Object.hasOwn(JSON.parse(storage.get("dwordle2.history"))[0], "finalAnswer"), false);
   assert.equal(records.getStatistics("normal").doubleClear, 1, "統計の doubleClear が数えられるはず");
+  assert.equal(records.buildProblemStatus("normal").get(123)?.doubleClears, 1, "問題一覧にも DOUBLE CLEAR が集計されるはず");
   assert.equal(records.getStatistics("uso").doubleClear, 0);
 }
 

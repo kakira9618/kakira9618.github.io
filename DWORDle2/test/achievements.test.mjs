@@ -55,6 +55,13 @@ assert.equal(
 );
 assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "h-play-days-1095")?.desc, "通算 1095 日プレイする（約 3 年）");
 assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "h-play-days-1825")?.desc, "通算 1825 日プレイする（約 5 年）");
+assert.deepEqual(
+  {
+    name: ACHIEVEMENTS.find((achievement) => achievement.id === "daily-streak-14")?.name,
+    desc: ACHIEVEMENTS.find((achievement) => achievement.id === "daily-streak-14")?.desc,
+  },
+  { name: "二週間皆勤", desc: "デイリー問題を 14 日連続でクリアする" }
+);
 
 {
   const ids = achievementIdsFromHistory([clearRecord({ pid: 10000, guesses: 3, duration: 10 })]);
@@ -290,19 +297,27 @@ assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "h-play-days-
   );
   const ids = achievementIdsFromHistory(dailyRegular);
   assert(ids.has("daily-30"), "30 Daily clears should restore Daily Regular");
-  assert(ids.has("daily-streak-30"), "30 consecutive Daily clears should restore Perfect Month");
+  assert(ids.has("daily-streak-14"), "14+ consecutive Daily clears should restore Perfect Fortnight");
 }
 
 {
-  // 通算 30 回のデイリークリアでも、途中が抜けると連続 30 日にはならない
+  const fortnight = Array.from({ length: 14 }, (_, index) =>
+    clearRecord({ pid: 20260501 + index, startTime: 1_699_000_000 + index * 86400 })
+  );
+  assert(achievementIdsFromHistory(fortnight).has("daily-streak-14"), "14 consecutive Daily clears should restore Perfect Fortnight");
+  assert(!achievementIdsFromHistory(fortnight.slice(0, 13)).has("daily-streak-14"), "13 consecutive Daily clears must not restore Perfect Fortnight");
+}
+
+{
+  // 通算 30 回のデイリークリアでも、最長連続が 14 日未満なら二週間皆勤にはならない
   const dates = [];
-  for (let d = 1; d <= 15; d++) dates.push(20260600 + d); // 6/1-6/15
-  for (let d = 17; d <= 30; d++) dates.push(20260600 + d); // 6/17-6/30（6/16 が抜け）
-  dates.push(20260701);
+  for (let d = 1; d <= 13; d++) dates.push(20260600 + d); // 6/1-6/13
+  for (let d = 15; d <= 27; d++) dates.push(20260600 + d); // 6/15-6/27
+  for (let d = 1; d <= 4; d++) dates.push(20260700 + d); // 7/1-7/4
   const gapped = dates.map((pid, index) => clearRecord({ pid, startTime: 1_700_000_000 + index * 86400 }));
   const ids = achievementIdsFromHistory(gapped);
   assert(ids.has("daily-30"));
-  assert(!ids.has("daily-streak-30"), "a gapped Daily run must not restore Perfect Month");
+  assert(!ids.has("daily-streak-14"), "a gapped Daily run must not restore Perfect Fortnight");
 }
 
 {

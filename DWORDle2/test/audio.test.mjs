@@ -301,14 +301,15 @@ assert(
 );
 
 // ページを閉じるときのポップノイズ防止: pagehide でマスターが無音へフェードアウトし、
-// bfcache からの復帰（persisted な pageshow）でのみ元の音量へ戻ること
+// 画像保存UIなどから pageshow で戻ったら bfcache 判定にかかわらず元の音量へ戻ること
 const activeMasterGain = rebuiltContext.gains.find((gain) => gain.connections.includes(rebuiltContext.destination));
 windowListeners.get("pagehide")();
 assert.equal(activeMasterGain.gain.value, 0, "pagehide should fade the master gain out");
 windowListeners.get("pageshow")({ persisted: false });
-assert.equal(activeMasterGain.gain.value, 0, "a normal pageshow must not restore the master gain");
+assert.equal(activeMasterGain.gain.value, AUDIO.masterGain, "returning from a download UI should restore the master gain");
+windowListeners.get("pagehide")();
 windowListeners.get("pageshow")({ persisted: true });
-assert.equal(activeMasterGain.gain.value, AUDIO.masterGain, "pageshow from bfcache should restore the master gain");
+assert.equal(activeMasterGain.gain.value, AUDIO.masterGain, "pageshow from bfcache should also restore the master gain");
 
 // resume 前の新規 AudioContext への unlockAudio（扉絵「開始」と同じ経路）では、
 // suspend 中の同期予約を破棄して復帰時刻で予約し直す。このとき小節位置を開始時へ

@@ -101,7 +101,7 @@ const ACHIEVEMENT_EN = {
   "play-streak-3": ["Three Days Straight", "Play on 3 consecutive days"],
   "play-streak-7": ["One-Week Habit", "Play on 7 consecutive days"],
   "play-streak-14": ["Two-Week Fever", "Play on 14 consecutive days"],
-  "daily-streak-30": ["Perfect Month", "Clear Daily puzzles 30 days in a row"],
+  "daily-streak-14": ["Perfect Fortnight", "Clear Daily puzzles 14 days in a row"],
   "play-days-100": ["A Hundred Days", "Play on 100 different days"],
   "plays-30": ["Getting the Hang of It", "Finish 30 games total"],
   "plays-500": ["Master of the Board", "Finish 500 games total"],

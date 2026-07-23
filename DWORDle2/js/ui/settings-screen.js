@@ -22,6 +22,14 @@ import { isExtraShotUnlocked, extraShotRemainingPlays } from "../core/extra-shot
 let root = null;
 let debugEntryTaps = 0;
 let debugEntryResetTimer = null;
+let activeSettingsTab = "display";
+
+const SETTINGS_TABS = [
+  { key: "display", ja: "表示", en: "Display" },
+  { key: "gameplay", ja: "ゲーム", en: "Gameplay" },
+  { key: "sound", ja: "サウンド", en: "Sound" },
+  { key: "data", ja: "データ", en: "Data" },
+];
 
 function build() {
   root = document.getElementById("screen-settings");
@@ -29,6 +37,60 @@ function build() {
 
 function settingRow(l1, l2, control) {
   return el("div", { class: "setting-row" }, el("div", { class: "label" }, el("div", { class: "l1" }, l1), el("div", { class: "l2" }, l2)), control);
+}
+
+function activateSettingsTab(key, { focus = false } = {}) {
+  if (!SETTINGS_TABS.some((tab) => tab.key === key)) return;
+  activeSettingsTab = key;
+  for (const tab of root.querySelectorAll(".settings-tab")) {
+    const active = tab.dataset.settingsTab === key;
+    tab.classList.toggle("active", active);
+    tab.setAttribute("aria-selected", String(active));
+    tab.tabIndex = active ? 0 : -1;
+    if (active && focus) tab.focus();
+  }
+  for (const panel of root.querySelectorAll(".settings-category-card")) {
+    panel.hidden = panel.dataset.settingsPanel !== key;
+  }
+  const scroller = root.querySelector(".list-screen-body");
+  if (scroller) scroller.scrollTop = 0;
+}
+
+function settingsTabList() {
+  return el(
+    "div",
+    { class: "seg settings-tabs", role: "tablist", "aria-label": tr("設定カテゴリ", "Settings categories") },
+    SETTINGS_TABS.map((tab, index) =>
+      el(
+        "button",
+        {
+          id: `settings-tab-${tab.key}`,
+          class: `settings-tab ${activeSettingsTab === tab.key ? "active" : ""}`,
+          dataset: { settingsTab: tab.key },
+          role: "tab",
+          "aria-selected": String(activeSettingsTab === tab.key),
+          "aria-controls": `settings-panel-${tab.key}`,
+          tabindex: activeSettingsTab === tab.key ? "0" : "-1",
+          onclick: () => {
+            playSfx("ui");
+            activateSettingsTab(tab.key);
+          },
+          onkeydown: (event) => {
+            let nextIndex = null;
+            if (event.key === "ArrowRight") nextIndex = (index + 1) % SETTINGS_TABS.length;
+            if (event.key === "ArrowLeft") nextIndex = (index - 1 + SETTINGS_TABS.length) % SETTINGS_TABS.length;
+            if (event.key === "Home") nextIndex = 0;
+            if (event.key === "End") nextIndex = SETTINGS_TABS.length - 1;
+            if (nextIndex === null) return;
+            event.preventDefault();
+            playSfx("ui");
+            activateSettingsTab(SETTINGS_TABS[nextIndex].key, { focus: true });
+          },
+        },
+        isEnglish() ? tab.en : tab.ja
+      )
+    )
+  );
 }
 
 function toggle(key, label) {
@@ -322,9 +384,17 @@ function render() {
   const body = el(
     "div",
     { class: "list-screen-body" },
+    settingsTabList(),
     el(
       "div",
-      { class: "card" },
+      {
+        class: "card settings-category-card",
+        id: "settings-panel-display",
+        dataset: { settingsPanel: "display" },
+        role: "tabpanel",
+        "aria-labelledby": "settings-tab-display",
+        hidden: activeSettingsTab !== "display",
+      },
       el("div", { style: { fontWeight: "800", marginBottom: "4px" } }, tr("表示", "Display")),
       settingRow(
         tr("言語", "Language"),
@@ -356,7 +426,14 @@ function render() {
     // 未解放の間は「???」でしきい値だけを予告する（隠しテーマと同じ見せ方）。
     el(
       "div",
-      { class: "card" },
+      {
+        class: "card settings-category-card",
+        id: "settings-panel-gameplay",
+        dataset: { settingsPanel: "gameplay" },
+        role: "tabpanel",
+        "aria-labelledby": "settings-tab-gameplay",
+        hidden: activeSettingsTab !== "gameplay",
+      },
       el("div", { style: { fontWeight: "800", marginBottom: "4px" } }, tr("ゲームプレイ", "Gameplay")),
       isExtraShotUnlocked()
         ? settingRow(
@@ -398,7 +475,14 @@ function render() {
     ),
     el(
       "div",
-      { class: "card" },
+      {
+        class: "card settings-category-card",
+        id: "settings-panel-sound",
+        dataset: { settingsPanel: "sound" },
+        role: "tabpanel",
+        "aria-labelledby": "settings-tab-sound",
+        hidden: activeSettingsTab !== "sound",
+      },
       el("div", { style: { fontWeight: "800", marginBottom: "4px" } }, tr("サウンド", "Sound")),
       settingRow(
         tr("効果音", "Sound effects"),
@@ -473,7 +557,14 @@ function render() {
     ),
     el(
       "div",
-      { class: "card" },
+      {
+        class: "card settings-category-card",
+        id: "settings-panel-data",
+        dataset: { settingsPanel: "data" },
+        role: "tabpanel",
+        "aria-labelledby": "settings-tab-data",
+        hidden: activeSettingsTab !== "data",
+      },
       el("div", { style: { fontWeight: "800", marginBottom: "4px" } }, tr("データ", "Data")),
       el("div", { style: { display: "flex", flexDirection: "column", gap: "8px", marginTop: "8px" } },
         el("button", { class: "btn", onclick: showImportModal }, icon("box"), tr("履歴をインポート（移行）", "Import history (migration)")),

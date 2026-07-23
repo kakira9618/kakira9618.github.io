@@ -26,8 +26,8 @@ import { getHistory, getExtraShot } from "./records.js";
 import { CELL, Logic } from "./logic.js";
 import { isDebugMode } from "./debug.js";
 
-// v6: h-play-streak-365 → h-play-streak-30 の緩和を既存ユーザーの履歴にも適用する
-const RECONCILE_VERSION = 6;
+// v7: 月間皆勤（30 日）→ 二週間皆勤（14 日）の緩和を既存履歴にも適用する
+const RECONCILE_VERSION = 7;
 export const COLLECTOR_REQUIREMENT = 30;
 
 // 実績画面の見出しに使うカテゴリ。ACHIEVEMENTS はこの順に並べる
@@ -69,7 +69,7 @@ export const ACHIEVEMENTS = [
   { id: "play-streak-7", cat: "habit", icon: "calendar", color: "#88d8b8", name: "一週間の習慣", desc: "7 日連続でプレイする" },
   { id: "play-streak-14", cat: "habit", icon: "flame", color: "#ffb088", name: "二週間の熱中", desc: "14 日連続でプレイする" },
   { id: "daily-7", cat: "habit", icon: "flag", color: "#8fd88f", name: "週間皆勤", desc: "デイリー問題を 7 日連続でクリアする" },
-  { id: "daily-streak-30", cat: "habit", icon: "flag", color: "#68c888", name: "月間皆勤", desc: "デイリー問題を 30 日連続でクリアする" },
+  { id: "daily-streak-14", cat: "habit", icon: "flag", color: "#68c888", name: "二週間皆勤", desc: "デイリー問題を 14 日連続でクリアする" },
   { id: "daily-30", cat: "habit", icon: "calendar", color: "#7bd88f", name: "デイリー常連", desc: "デイリー問題を通算 30 回クリアする" },
   { id: "play-days-30", cat: "habit", icon: "footprints", color: "#c8ffb0", name: "継続は力なり", desc: "通算 30 日プレイする" },
   { id: "play-days-100", cat: "habit", icon: "footprints", color: "#b0e8a0", name: "百日の歩み", desc: "通算 100 日プレイする" },
@@ -138,6 +138,7 @@ onExternalChange("achievements", () => {
 // 旧バージョンで長期 Streak 実績を解除済みなら、後継の実績へ引き継ぐ。
 // h-play-streak-365（一年の誓い）は難しすぎたため 30 日連続（一ヶ月の誓い）へ緩和。
 const achievementIdMigrations = {
+  "daily-streak-30": "daily-streak-14",
   "h-play-streak-1095": "h-play-days-1095",
   "h-play-streak-1825": "h-play-days-1825",
   "h-play-streak-365": "h-play-streak-30",
@@ -361,7 +362,7 @@ function calendarAndCountIds(records) {
   if (playStreak >= 14) ids.add("play-streak-14");
   if (playStreak >= 30) ids.add("h-play-streak-30");
   if (dailyClearPids.length >= 30) ids.add("daily-30");
-  if (maxHistoricalDailyStreak(dailyClearPids) >= 30) ids.add("daily-streak-30");
+  if (maxHistoricalDailyStreak(dailyClearPids) >= 14) ids.add("daily-streak-14");
   if (games >= 30) ids.add("plays-30");
   if (games >= 300) ids.add("plays-300");
   if (games >= 500) ids.add("plays-500");

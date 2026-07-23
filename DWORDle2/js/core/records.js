@@ -156,18 +156,19 @@ export function clearCurrentGame(mode) {
 
 // ---- 問題ごとのプレイ状況（問題一覧モード用）----
 
-// mode の全履歴から PID -> { played, cleared, times: [startTime...] } を作る
+// mode の全履歴から PID -> { played, cleared, doubleClears, times: [startTime...] } を作る
 export function buildProblemStatus(mode) {
   const map = new Map();
   for (const g of ensureLoaded()) {
     if (g.gameMode !== mode) continue;
     let st = map.get(g.problemID);
     if (!st) {
-      st = { played: 0, cleared: 0, times: [] };
+      st = { played: 0, cleared: 0, doubleClears: 0, times: [] };
       map.set(g.problemID, st);
     }
     st.played++;
     if (g.clear) st.cleared++;
+    if (g.clear && getExtraShot(g)?.success) st.doubleClears++;
     st.times.push(g.startTime);
   }
   return map;

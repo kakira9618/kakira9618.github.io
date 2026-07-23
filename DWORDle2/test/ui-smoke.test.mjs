@@ -303,17 +303,31 @@ try {
   await passGate(page);
   await page.getByRole("button", { name: "設定" }).click();
   await page.waitForURL(/#\/settings$/);
+  const settingsTabs = page.getByRole("tab");
+  await settingsTabs.first().waitFor();
+  assert.deepEqual(await settingsTabs.allTextContents(), ["表示", "ゲーム", "サウンド", "データ"]);
+  assert.equal(await page.getByRole("tab", { name: "表示" }).getAttribute("aria-selected"), "true");
   const switches = page.getByRole("switch");
   await switches.first().waitFor();
-  // playCount=99 で EXTRA SHOT が解放済みのため、トグルは 6 個
-  assert.equal(await switches.count(), 6, "All settings switches should expose the switch role");
-  for (const label of ["ハイコントラスト配色", "キーボードヒント", "演出を軽くする", "EXTRA SHOT", "効果音", "BGM"]) {
+  assert.equal(await switches.count(), 3, "The Display tab should expose its three switches");
+  for (const label of ["ハイコントラスト配色", "キーボードヒント", "演出を軽くする"]) {
     await page.getByRole("switch", { name: label }).waitFor();
   }
   for (const copy of ["UIの言語を設定", "UIや背景のテーマを設定", "パーティクルを完全にオフにします"]) {
     await page.getByText(copy, { exact: true }).waitFor();
   }
   assert.equal(await page.getByText("低スペック端末向け", { exact: false }).count(), 0);
+  await page.getByRole("tab", { name: "ゲーム" }).click();
+  assert.equal(await switches.count(), 1, "The Gameplay tab should expose only EXTRA SHOT");
+  await page.getByRole("switch", { name: "EXTRA SHOT" }).waitFor();
+  await page.getByRole("tab", { name: "表示" }).click();
+
+  // 隠しテーマ「ポップ」: 実績「三色盛り」解放済みなので選択でき、body クラスに反映される
+  await page.getByRole("radio", { name: "ポップ", exact: true }).click();
+  await page.locator("body.theme-pop").waitFor();
+  await page.getByRole("tab", { name: "サウンド" }).click();
+  assert.equal(await switches.count(), 2, "The Sound tab should expose the SFX and BGM switches");
+  for (const label of ["効果音", "BGM"]) await page.getByRole("switch", { name: label }).waitFor();
   const bgmPickerMetrics = await page.locator(".bgm-picker").evaluate((node) => ({
     clientHeight: node.clientHeight,
     scrollHeight: node.scrollHeight,
@@ -322,10 +336,6 @@ try {
   assert.equal(bgmPickerMetrics.clientHeight, 320, "BGM picker should have a fixed 320px inner viewport");
   assert.ok(bgmPickerMetrics.scrollHeight > bgmPickerMetrics.clientHeight, "BGM choices should scroll inside their picker");
   assert.equal(bgmPickerMetrics.overflowY, "auto");
-
-  // 隠しテーマ「ポップ」: 実績「三色盛り」解放済みなので選択でき、body クラスに反映される
-  await page.getByRole("radio", { name: "ポップ", exact: true }).click();
-  await page.locator("body.theme-pop").waitFor();
   const normalPopVisuals = await page.evaluate(() => {
     const bodyStyle = getComputedStyle(document.body);
     const choice = document.querySelector(".bgm-choice:not(.locked):not(.active)");
@@ -394,6 +404,9 @@ try {
   assert.equal(usoPopVisuals.choiceColor, "rgb(255, 247, 252)");
   assert.notEqual(usoPopVisuals.pageBackground, normalPopVisuals.pageBackground);
   await assertNoSeriousA11yViolations("Pop DWORDlie settings");
+  await page.getByRole("tab", { name: "データ" }).click();
+  await page.getByRole("button", { name: "履歴をインポート（移行）" }).waitFor();
+  assert.equal(await page.getByRole("tabpanel").count(), 1, "Only the selected settings category should be exposed");
   await page.getByRole("button", { name: "タイトルへ戻る" }).click();
   await page.getByRole("button", { name: "遊び方" }).click();
   const usoPopHelp = page.getByRole("dialog", { name: "DWORDlie 遊び方" });
@@ -541,6 +554,7 @@ try {
   await popPuzzleDialog.getByRole("button", { name: "キャンセル" }).click();
   await page.getByRole("button", { name: "設定" }).click();
   await page.waitForURL(/#\/settings$/);
+  await page.getByRole("tab", { name: "表示" }).click();
   await page.getByRole("radio", { name: "クラシック", exact: true }).click();
   await page.locator("body.theme-classic").waitFor();
   // クラス切替直後は数フレームだけ旧テーマの文字色が残る（transition の過渡状態）。
@@ -1087,6 +1101,18 @@ try {
     const finalUnlockCopy = await finalUnlockDialog.textContent();
     assert.doesNotMatch(finalUnlockCopy, /[ー―]{2}/, "EXTRA SHOT unlock copy should not use a double dash");
     await finalUnlockDialog.getByRole("button", { name: "あとで" }).click();
+    await successPage.evaluate(() => { location.hash = "#/problems"; });
+    await successPage.waitForURL(/#\/problems$/);
+    await successPage.getByRole("button", { name: /問題 301 から 400/ }).click();
+    const doubleClearCell = successPage.getByRole("button", { name: "問題 322、DOUBLE CLEAR済み" });
+    await doubleClearCell.waitFor();
+    assert.equal(await doubleClearCell.evaluate((cell) => cell.classList.contains("double-clear")), true);
+    const doubleClearCellStyle = await doubleClearCell.evaluate((cell) => {
+      const style = getComputedStyle(cell);
+      return { background: style.backgroundImage, border: style.borderColor };
+    });
+    assert.match(doubleClearCellStyle.background, /linear-gradient/);
+    assert.notEqual(doubleClearCellStyle.border, "rgb(106, 170, 100)", "DOUBLE CLEAR should not use the ordinary clear color");
     await successPage.close();
   }
 
@@ -1318,6 +1344,7 @@ try {
 
   await page.evaluate(() => { location.hash = "#/settings"; });
   await page.waitForURL(/#\/settings$/);
+  await page.getByRole("tab", { name: "データ" }).click();
   // プレイヤーカードのデータも全データ削除で消えることを確認するため事前に置く
   await page.evaluate(() => {
     localStorage.setItem("dwordle2.playerCard", JSON.stringify({ name: "テスト", issuedAt: 1, seenRankTier: 1 }));
@@ -1445,7 +1472,9 @@ try {
     await freshPage.waitForURL(/#\/settings$/);
     const lockedTheme = freshPage.getByRole("radiogroup", { name: "テーマ" }).getByRole("radio", { name: "???" });
     assert.equal(await lockedTheme.getAttribute("aria-disabled"), "true");
+    await freshPage.getByRole("tab", { name: "サウンド" }).click();
     assert.equal(await freshPage.getByRole("radio", { name: "Grand Finale" }).getAttribute("aria-disabled"), "true");
+    await freshPage.getByRole("tab", { name: "表示" }).click();
 
     const debugEntry = freshPage.locator(".debug-entry");
     for (let i = 0; i < 5; i++) await debugEntry.click();
@@ -1468,9 +1497,11 @@ try {
     );
     const debugPop = freshPage.getByRole("radiogroup", { name: "テーマ" }).getByRole("radio", { name: "ポップ" });
     assert.equal(await debugPop.getAttribute("aria-disabled"), "false", "debug mode should unlock the hidden theme");
-    assert.equal(await freshPage.getByRole("radio", { name: "Grand Finale" }).getAttribute("aria-disabled"), "false", "debug mode should unlock hidden BGM");
     await debugPop.click();
+    await freshPage.getByRole("tab", { name: "サウンド" }).click();
+    assert.equal(await freshPage.getByRole("radio", { name: "Grand Finale" }).getAttribute("aria-disabled"), "false", "debug mode should unlock hidden BGM");
     await freshPage.getByRole("radio", { name: "Grand Finale" }).click();
+    await freshPage.getByRole("tab", { name: "表示" }).click();
     await freshPage.getByRole("radio", { name: "English" }).click();
     const englishPop = freshPage.getByRole("radiogroup", { name: "Theme" }).getByRole("radio", { name: "Pop", exact: true });
     assert.equal(await englishPop.count(), 1, "the Pop theme should use its English name in the English UI");
@@ -2099,6 +2130,7 @@ try {
     // オフラインでも画面遷移（設定）まで動く
     await swPage.getByRole("button", { name: "設定" }).click();
     await swPage.waitForURL(/#\/settings$/);
+    await swPage.getByRole("tab", { name: "サウンド" }).click();
     await swPage.getByRole("switch", { name: "BGM" }).waitFor();
     await swContext.setOffline(false);
     await swContext.close();

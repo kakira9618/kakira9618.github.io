@@ -351,8 +351,11 @@ function installUnloadFade() {
     masterGain.gain.setValueAtTime(masterGain.gain.value, t);
     masterGain.gain.linearRampToValueAtTime(0, t + UNLOAD_FADE_SEC);
   });
-  window.addEventListener?.("pageshow", (event) => {
-    if (!event?.persisted || !ctx || ctx.state !== "running" || !masterGain) return;
+  window.addEventListener?.("pageshow", () => {
+    // iOS Safari は画像保存の共有・ダウンロードUIから戻る際にも pagehide → pageshow を
+    // 発火するが、bfcache 復帰とは限らない。persisted に関係なく同じ AudioContext の
+    // マスター音量を戻し、保存後だけ音が消えたままになる状態を防ぐ。
+    if (!ctx || !masterGain) return;
     const t = ctx.currentTime;
     masterGain.gain.cancelScheduledValues(t);
     masterGain.gain.setValueAtTime(masterGain.gain.value, t);
