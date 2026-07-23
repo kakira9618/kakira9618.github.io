@@ -2,16 +2,16 @@
 // ルート: #/history
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260723-swup";
+import { registerScreen, navigate } from "./app.js?v=20260723-fa";
 import { getRecentGames, getStatistics, MODES } from "../core/records.js";
 import { Logic, CELL } from "../core/logic.js";
 import { pidLabel } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260723-swup";
-import { showModal } from "./modal.js?v=20260723-swup";
-import { soundToggleButton } from "./sound-toggle.js?v=20260723-swup";
+import { playSfx } from "../audio/sound.js?v=20260723-fa";
+import { showModal } from "./modal.js?v=20260723-fa";
+import { soundToggleButton } from "./sound-toggle.js?v=20260723-fa";
 import { icon } from "./icons.js";
-import { currentLanguage, tr } from "../core/i18n.js?v=20260723-swup";
-import { rowAriaLabel } from "./a11y.js?v=20260723-swup";
+import { currentLanguage, tr } from "../core/i18n.js?v=20260723-fa";
+import { rowAriaLabel } from "./a11y.js?v=20260723-fa";
 
 let root = null;
 let filter = "all"; // "all" | "normal" | "uso"
@@ -65,7 +65,11 @@ function showStats() {
         el("div", {}, el("b", {}, s.count), el("div", { class: "hint" }, "Played")),
         el("div", {}, el("b", {}, winPct), el("div", { class: "hint" }, "Win %")),
         el("div", {}, el("b", {}, s.currentStreak), el("div", { class: "hint" }, "Current Streak")),
-        el("div", {}, el("b", {}, s.maxStreak), el("div", { class: "hint" }, "Max Streak"))
+        el("div", {}, el("b", {}, s.maxStreak), el("div", { class: "hint" }, "Max Streak")),
+        // FINAL ANSWER 成功数。モード未解放・未成功の人には出さない（ネタバレ防止）
+        s.doubleClear > 0
+          ? el("div", { class: "stat-double" }, el("b", {}, s.doubleClear), el("div", { class: "hint" }, "Double Clear"))
+          : null
       ),
       el(
         "div",
@@ -369,21 +373,27 @@ function render() {
   }
   for (const g of visibleGames) {
     const maxGuess = MODES[g.gameMode].maxGuess;
+    const doubleClear = Boolean(g.finalAnswer?.success); // FINAL ANSWER 成功は金バッジ + 星
     body.append(
       el(
         "button",
         {
           class: "card tappable history-item",
           "aria-label": tr(
-            `${pidLabel(g.problemID)}、${MODES[g.gameMode].title}、${g.clear ? "成功" : "失敗"}、${g.guessWord.length} 手`,
-            `${pidLabel(g.problemID)}, ${MODES[g.gameMode].title}, ${g.clear ? "win" : "loss"}, ${g.guessWord.length} Guesses`
+            `${pidLabel(g.problemID)}、${MODES[g.gameMode].title}、${g.clear ? (doubleClear ? "ダブルクリア" : "成功") : "失敗"}、${g.guessWord.length} 手`,
+            `${pidLabel(g.problemID)}, ${MODES[g.gameMode].title}, ${g.clear ? (doubleClear ? "double clear" : "win") : "loss"}, ${g.guessWord.length} Guesses`
           ),
           onclick: () => {
             playSfx("ui");
             navigate(`/result/${g.gameMode}/${g.startTime}`);
           },
         },
-        el("div", { class: `badge ${g.clear ? "win" : "lose"}` }, g.clear ? `${g.guessWord.length}` : "X"),
+        el(
+          "div",
+          { class: `badge ${g.clear ? "win" : "lose"}${doubleClear ? " double" : ""}` },
+          g.clear ? `${g.guessWord.length}` : "X",
+          doubleClear ? el("span", { class: "badge-star", "aria-hidden": "true" }, "★") : null
+        ),
         el(
           "div",
           { class: "info" },

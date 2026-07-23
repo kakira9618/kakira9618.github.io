@@ -3,11 +3,11 @@
 // canvas に再レンダリングして PNG としてダウンロードする。
 // 見た目は現在のテーマ（cyber / classic）に合わせる。
 
-import { SHARE_URL, tileColorsFor } from "../config.js?v=20260723-swup";
+import { SHARE_URL, tileColorsFor } from "../config.js?v=20260723-fa";
 import { MODES } from "../core/records.js";
 import { pidLabel } from "../core/problems.js";
 import { CELL } from "../core/logic.js";
-import { getSettings } from "../core/settings.js?v=20260723-swup";
+import { getSettings } from "../core/settings.js?v=20260723-fa";
 
 // レイアウト定数（すべて基準幅 720px に対する px）
 const SS = {
@@ -20,6 +20,7 @@ const SS = {
   tileGap: 8,
   tileRadius: 10,
   footerSize: 18,
+  doubleClearColor: "#ffd166", // FINAL ANSWER 成功（DOUBLE CLEAR!）のタイトル色
 };
 
 const THEME_STYLES = {
@@ -206,15 +207,16 @@ export function renderResultCanvas(record, logic, displayRows) {
   const countText = cleared ? `${rows}/${maxGuess}` : `X/${maxGuess}`;
   ctx.fillText(`${pidLabel(record.problemID)}   ${dateStr}   ${countText}`, centerX, y);
 
-  // GAME CLEAR / OVER
+  // DOUBLE CLEAR! / GAME CLEAR / GAME OVER（DOUBLE CLEAR は金色で目立たせる）
   y += 52;
+  const doubleClear = Boolean(record.finalAnswer?.success);
   ctx.font = `900 ${SS.resultSize}px "Avenir Next", sans-serif`;
-  ctx.fillStyle = cleared ? st.clear : st.over;
-  if (st.glow) {
+  ctx.fillStyle = doubleClear ? SS.doubleClearColor : cleared ? st.clear : st.over;
+  if (st.glow || doubleClear) {
     ctx.shadowColor = ctx.fillStyle;
     ctx.shadowBlur = 30;
   }
-  ctx.fillText(cleared ? "GAME CLEAR" : "GAME OVER", centerX, y);
+  ctx.fillText(doubleClear ? "DOUBLE CLEAR!" : cleared ? "GAME CLEAR" : "GAME OVER", centerX, y);
   ctx.shadowBlur = 0;
 
   // 盤面グリッド

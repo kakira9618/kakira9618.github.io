@@ -121,8 +121,8 @@ globalThis.window = {
   addEventListener: (type, listener) => windowListeners.set(type, listener),
 };
 
-const { AUDIO } = await import("../js/config.js?v=20260723-swup");
-const { setSetting } = await import("../js/core/settings.js?v=20260723-swup");
+const { AUDIO } = await import("../js/config.js?v=20260723-fa");
+const { setSetting } = await import("../js/core/settings.js?v=20260723-fa");
 const { audioNeedsRecovery, currentBgmTrackId, playSfx, rewindBgm, unlockAudio, setUsoMood, stopBgm, BGM_TRACKS } = await import("../js/audio/sound.js");
 
 setSetting("bgm", false);
@@ -377,7 +377,7 @@ try {
 
 // 聴取時間: BGM が実際に鳴っている間、選択中の曲へ累計時間が積まれる（お気に入り BGM の材料）
 {
-  const { getActivity } = await import("../js/core/activity.js?v=20260723-swup");
+  const { getActivity } = await import("../js/core/activity.js?v=20260723-fa");
   setSetting("bgmTrack", "classic");
   const before = getActivity().usage.bgm.classic ?? 0;
   await new Promise((resolve) => setTimeout(resolve, 700)); // BGM ループ（300ms 周期）の 2 tick ぶん待つ
@@ -389,7 +389,7 @@ stopBgm();
 
 // 停止中は聴取時間が積まれない
 {
-  const { getActivity } = await import("../js/core/activity.js?v=20260723-swup");
+  const { getActivity } = await import("../js/core/activity.js?v=20260723-fa");
   const stopped = getActivity().usage.bgm.classic ?? 0;
   await new Promise((resolve) => setTimeout(resolve, 400));
   assert.equal(getActivity().usage.bgm.classic ?? 0, stopped, "listening time must not accrue after stopBgm");

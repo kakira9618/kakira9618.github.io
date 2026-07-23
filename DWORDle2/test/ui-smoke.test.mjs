@@ -101,6 +101,7 @@ await page.addInitScript(({ unlockedAchievements }) => {
   localStorage.setItem("dwordle2.legacyImportPrompted", "true");
   // タイトルメニューの段階解放を全開放した状態で UI を検証する
   localStorage.setItem("dwordle2.playCount", "99");
+  localStorage.setItem("dwordle2.finalAnswerUnlockSeen", "true");
   localStorage.setItem("dwordle2.menuUnlockSeen", "99");
 }, { unlockedAchievements: unlocked });
 await page.addInitScript({ path: axePath });
@@ -147,7 +148,7 @@ try {
   await page.mouse.click(30, 200);
   assert.equal(
     await page.evaluate(async () => {
-      const mod = await import("./js/audio/sound.js?v=20260723-swup");
+      const mod = await import("./js/audio/sound.js?v=20260723-fa");
       return mod.audioNeedsRecovery();
     }),
     true,
@@ -157,7 +158,7 @@ try {
   // 「開始」は音オフ設定からでも音を復帰する（音無しのまま入るのは「音無しで開始」の役割）
   assert.deepEqual(
     await page.evaluate(async () => {
-      const s = (await import("./js/core/settings.js?v=20260723-swup")).getSettings();
+      const s = (await import("./js/core/settings.js?v=20260723-fa")).getSettings();
       return { bgm: s.bgm, sfx: s.sfx };
     }),
     { bgm: true, sfx: true },
@@ -247,7 +248,7 @@ try {
   // ハイコントラスト配色: 設定 ON で全テーマの判定色が 緑→オレンジ / 黄→青 に置き換わる
   const normalTileCorrect = await page.evaluate(() => getComputedStyle(document.body).getPropertyValue("--tile-correct").trim());
   await page.evaluate(async () => {
-    const mod = await import("./js/core/settings.js?v=20260723-swup");
+    const mod = await import("./js/core/settings.js?v=20260723-fa");
     mod.setSetting("highContrast", true);
   });
   assert.ok(
@@ -265,7 +266,7 @@ try {
     "high contrast should replace yellow with blue"
   );
   await page.evaluate(async () => {
-    const mod = await import("./js/core/settings.js?v=20260723-swup");
+    const mod = await import("./js/core/settings.js?v=20260723-fa");
     mod.setSetting("highContrast", false);
   });
   assert.equal(
@@ -298,8 +299,9 @@ try {
   await page.waitForURL(/#\/settings$/);
   const switches = page.getByRole("switch");
   await switches.first().waitFor();
-  assert.equal(await switches.count(), 5, "All settings switches should expose the switch role");
-  for (const label of ["ハイコントラスト配色", "キーボードヒント", "演出を軽くする", "効果音", "BGM"]) {
+  // playCount=99 で FINAL ANSWER が解放済みのため、トグルは 6 個
+  assert.equal(await switches.count(), 6, "All settings switches should expose the switch role");
+  for (const label of ["ハイコントラスト配色", "キーボードヒント", "演出を軽くする", "FINAL ANSWER", "効果音", "BGM"]) {
     await page.getByRole("switch", { name: label }).waitFor();
   }
   for (const copy of ["UIの言語を設定", "UIや背景のテーマを設定", "パーティクルを完全にオフにします"]) {
@@ -333,7 +335,7 @@ try {
   assert.equal(normalPopVisuals.choiceColor, "rgb(74, 53, 80)");
 
   await page.evaluate(async () => {
-    const { setAppMode } = await import("./js/ui/app.js?v=20260723-swup");
+    const { setAppMode } = await import("./js/ui/app.js?v=20260723-fa");
     setAppMode("uso");
   });
   await page.locator("body.theme-pop.mode-uso").waitFor();
@@ -429,12 +431,12 @@ try {
   await page.waitForURL(/#\/settings$/);
 
   await page.evaluate(async () => {
-    const { setAppMode } = await import("./js/ui/app.js?v=20260723-swup");
+    const { setAppMode } = await import("./js/ui/app.js?v=20260723-fa");
     setAppMode("normal");
   });
   await page.locator("body.theme-pop.mode-normal").waitFor();
   await page.evaluate(async () => {
-    const { showHelpModal } = await import("./js/ui/help.js?v=20260723-swup");
+    const { showHelpModal } = await import("./js/ui/help.js?v=20260723-fa");
     showHelpModal("normal");
   });
   const popHelp = page.getByRole("dialog", { name: "DWORDle 遊び方" });
@@ -575,8 +577,8 @@ try {
     "The flag meaning should also be exposed to assistive technology"
   );
   const savedImageFlagPixels = await page.evaluate(async ({ guessedWord }) => {
-    const settings = await import("./js/core/settings.js?v=20260723-swup");
-    const { renderResultCanvas } = await import("./js/ui/snapshot.js?v=20260723-swup");
+    const settings = await import("./js/core/settings.js?v=20260723-fa");
+    const { renderResultCanvas } = await import("./js/ui/snapshot.js?v=20260723-fa");
     settings.setSetting("theme", "cyber");
     const canvas = renderResultCanvas(
       {
@@ -622,7 +624,7 @@ try {
 
   // ハイコントラスト配色ではシェア文字列の絵文字も 🟧 / 🟦 になる（灰は ⬜ のまま）
   await page.evaluate(async () => {
-    const mod = await import("./js/core/settings.js?v=20260723-swup");
+    const mod = await import("./js/core/settings.js?v=20260723-fa");
     mod.setSetting("highContrast", true);
     navigator.clipboard.writeText = (text) => {
       window.__copiedShareText = text;
@@ -634,7 +636,7 @@ try {
   assert.ok(hcShareText.includes("🟧"), `high-contrast share text should use the orange emoji: ${hcShareText}`);
   assert.ok(!hcShareText.includes("🟩") && !hcShareText.includes("🟨"), "high-contrast share text must not contain green/yellow emojis");
   await page.evaluate(async () => {
-    const mod = await import("./js/core/settings.js?v=20260723-swup");
+    const mod = await import("./js/core/settings.js?v=20260723-fa");
     mod.setSetting("highContrast", false);
   });
 
@@ -697,6 +699,7 @@ try {
     localStorage.setItem("dwordle2.legacyImportPrompted", "true");
     localStorage.setItem("dwordle2.tutorialSeen", "true");
     localStorage.setItem("dwordle2.playCount", "99");
+    localStorage.setItem("dwordle2.finalAnswerUnlockSeen", "true");
     localStorage.setItem("dwordle2.menuUnlockSeen", "99");
   });
   await shortPage.goto(baseUrl, { waitUntil: "networkidle" });
@@ -736,13 +739,13 @@ try {
   );
   await shortPage.waitForTimeout(50);
   const flightsBeforeLeave = await shortPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260723-swup")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260723-fa")).activeTileFlightCount()
   );
   assert.ok(flightsBeforeLeave > 0, "Tile gather animation should be active before leaving the game");
   await shortPage.getByRole("button", { name: "タイトルへ戻る" }).click();
   await shortPage.waitForURL(/#\/$/);
   const flightsAfterLeave = await shortPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260723-swup")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260723-fa")).activeTileFlightCount()
   );
   assert.equal(flightsAfterLeave, 0, "Tile gather animation should be removed when leaving the game");
   await shortPage.close();
@@ -754,6 +757,7 @@ try {
     localStorage.setItem("dwordle2.legacyImportPrompted", "true");
     localStorage.setItem("dwordle2.tutorialSeen", "true");
     localStorage.setItem("dwordle2.playCount", "99");
+    localStorage.setItem("dwordle2.finalAnswerUnlockSeen", "true");
     localStorage.setItem("dwordle2.menuUnlockSeen", "99");
   });
   await fallbackPage.route("**/vendor/three.module.min.js", (route) => route.abort("failed"));
@@ -779,6 +783,7 @@ try {
     localStorage.setItem("dwordle2.legacyImportPrompted", "true");
     localStorage.setItem("dwordle2.tutorialSeen", "true");
     localStorage.setItem("dwordle2.playCount", "99");
+    localStorage.setItem("dwordle2.finalAnswerUnlockSeen", "true");
     localStorage.setItem("dwordle2.menuUnlockSeen", "99");
   });
   await reducedPage.goto(baseUrl, { waitUntil: "networkidle" });
@@ -790,13 +795,13 @@ try {
   await reducedDialog.getByRole("button", { name: "スタート" }).click();
   await reducedPage.locator("#screen-game.active .row").last().waitFor();
   const reducedFlights = await reducedPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260723-swup")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260723-fa")).activeTileFlightCount()
   );
   assert.equal(reducedFlights, 0, "Reduced motion should suppress tile gather flights");
   await reducedContext.close();
 
   await page.evaluate(async () => {
-    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260723-swup");
+    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260723-fa");
     bgmUnlockCelebration([{ id: "queue-test-a", name: "Queue Test A", desc: "First unlock" }]);
     bgmUnlockCelebration([{ id: "queue-test-b", name: "Queue Test B", desc: "Second unlock" }]);
   });
@@ -827,7 +832,7 @@ try {
 
   // 2 曲以上の同時解放（履歴インポート等）は 1 枚のまとめカードで報告する
   await page.evaluate(async () => {
-    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260723-swup");
+    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260723-fa");
     bgmUnlockCelebration([
       { id: "multi-a", name: "Multi Track A", desc: "" },
       { id: "multi-b", name: "Multi Track B", desc: "" },
@@ -844,7 +849,7 @@ try {
 
   // 実績解放セレブレーション: 単発は大型カード、3 個以上は 1 枚にまとめる
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-swup");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-fa");
     achievementCelebration([
       { id: "smoke-single", icon: "trophy", color: "#ffd166", name: "スモーク実績", desc: "テスト用の実績です" },
     ]);
@@ -862,7 +867,7 @@ try {
   await page.locator(".ach-unlock").waitFor({ state: "detached" });
 
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-swup");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-fa");
     achievementCelebration([
       { id: "smoke-a", icon: "star", color: "#ffd166", name: "実績A", desc: "" },
       { id: "smoke-b", icon: "gem", color: "#7ee8ff", name: "実績B", desc: "" },
@@ -884,7 +889,7 @@ try {
 
   // リストが溢れるときは下端フェードで続きを示し、最下部まで送るとフェードが消える
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-swup");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260723-fa");
     achievementCelebration(
       Array.from({ length: 9 }, (_, i) => ({ id: `smoke-many-${i}`, icon: "star", color: "#ffd166", name: `実績${i + 1}`, desc: "" }))
     );
@@ -932,7 +937,7 @@ try {
   // 判定オープン中の先行入力: 次の 1 行分をバッファし、オープン完了後に自動で確定する
   await page.getByRole("dialog", { name: "基本ルール | DWORDle" }).getByRole("button", { name: "わかった" }).click();
   await page.evaluate(async () => {
-    const { setSetting } = await import("./js/core/settings.js?v=20260723-swup");
+    const { setSetting } = await import("./js/core/settings.js?v=20260723-fa");
     setSetting("theme", "classic");
     setSetting("sfx", false);
     setSetting("bgm", false);
@@ -1233,7 +1238,7 @@ try {
     await cardPage.getByRole("button", { name: "プレイヤーカード", exact: true }).click();
     await cardPage.waitForURL(/#\/card$/);
     await cardPage.evaluate(async () => {
-      const { setSetting } = await import("./js/core/settings.js?v=20260723-swup");
+      const { setSetting } = await import("./js/core/settings.js?v=20260723-fa");
       setSetting("theme", "pop");
     });
     await cardPage.locator("body.theme-pop.mode-normal").waitFor();
@@ -1314,7 +1319,7 @@ try {
     // 称号ラダー: 最上位は王（実績全解除 + 1000 プレイ）。多い方のモードの王になり、
     // 同数なら DWORDle。1000 未満は伝説のまま、実績未コンプはプレイ数ランクのまま。
     const ranks = await cardPage.evaluate(async () => {
-      const mod = await import("./js/ui/player-card.js?v=20260723-swup");
+      const mod = await import("./js/ui/player-card.js?v=20260723-fa");
       const pick = (stats) => {
         const rank = mod.rankForStats(stats);
         return `${rank.id}:${rank.titleJa}`;
@@ -1373,8 +1378,8 @@ try {
     // カテゴリバッジ: 実績 9 カテゴリ + 隠しの計 10 個。この時点では実績未解除なのですべて未獲得
     const badgeInfo = await cardPage.evaluate(async () => {
       const [cardMod, achMod] = await Promise.all([
-        import("./js/ui/player-card.js?v=20260723-swup"),
-        import("./js/core/achievements.js?v=20260723-swup"),
+        import("./js/ui/player-card.js?v=20260723-fa"),
+        import("./js/core/achievements.js?v=20260723-fa"),
       ]);
       const states = cardMod.categoryBadgeStates();
       return {
@@ -1389,7 +1394,7 @@ try {
 
     // 実績を全解除すると 10 個すべて獲得になる
     await cardPage.evaluate(async () => {
-      const mod = await import("./js/core/achievements.js?v=20260723-swup");
+      const mod = await import("./js/core/achievements.js?v=20260723-fa");
       const all = {};
       for (const a of mod.ACHIEVEMENTS) all[a.id] = 1750000000;
       localStorage.setItem("dwordle2.achievements", JSON.stringify(all));
@@ -1400,7 +1405,7 @@ try {
     await cardPage.waitForURL(/#\/card$/);
     await cardPage.locator(".player-card-canvas").waitFor();
     const earnedAll = await cardPage.evaluate(async () => {
-      const mod = await import("./js/ui/player-card.js?v=20260723-swup");
+      const mod = await import("./js/ui/player-card.js?v=20260723-fa");
       return mod.categoryBadgeStates().every((b) => b.earned);
     });
     assert.ok(earnedAll, "unlocking every achievement must earn all 10 category badges");
@@ -1417,6 +1422,7 @@ try {
       localStorage.setItem("dwordle2.tutorialSeen", "true");
       localStorage.setItem("dwordle2.legacyImportPrompted", "true");
       localStorage.setItem("dwordle2.playCount", "99");
+      localStorage.setItem("dwordle2.finalAnswerUnlockSeen", "true");
       localStorage.setItem("dwordle2.menuUnlockSeen", "99");
       localStorage.setItem("dwordle2.achievements.reconcileVersion", "99");
       localStorage.setItem("dwordle2.mode", JSON.stringify("normal"));
@@ -1467,7 +1473,7 @@ try {
     );
     assert.equal(
       await moodPage.evaluate(async () => {
-        const mod = await import("./js/core/activity.js?v=20260723-swup");
+        const mod = await import("./js/core/activity.js?v=20260723-fa");
         return mod.favoriteThemeId();
       }),
       "cyber",
@@ -1489,6 +1495,7 @@ try {
       localStorage.setItem("dwordle2.tutorialSeenUso", "true");
       localStorage.setItem("dwordle2.legacyImportPrompted", "true");
       localStorage.setItem("dwordle2.playCount", "99");
+      localStorage.setItem("dwordle2.finalAnswerUnlockSeen", "true");
       localStorage.setItem("dwordle2.menuUnlockSeen", "99");
       localStorage.setItem("dwordle2.achievements.reconcileVersion", "99");
     });
@@ -1522,6 +1529,7 @@ try {
       localStorage.setItem("dwordle2.tutorialSeen", "true");
       localStorage.setItem("dwordle2.legacyImportPrompted", "true");
       localStorage.setItem("dwordle2.playCount", "99");
+      localStorage.setItem("dwordle2.finalAnswerUnlockSeen", "true");
       localStorage.setItem("dwordle2.menuUnlockSeen", "99");
       localStorage.setItem("dwordle2.achievements.reconcileVersion", "99");
     });
@@ -1531,7 +1539,7 @@ try {
     await mutedStartPage.locator("#entry-gate").waitFor({ state: "detached" });
     assert.deepEqual(
       await mutedStartPage.evaluate(async () => {
-        const s = (await import("./js/core/settings.js?v=20260723-swup")).getSettings();
+        const s = (await import("./js/core/settings.js?v=20260723-fa")).getSettings();
         return { bgm: s.bgm, sfx: s.sfx };
       }),
       { bgm: false, sfx: false },
@@ -1548,6 +1556,7 @@ try {
       localStorage.setItem("dwordle2.tutorialSeen", "true");
       localStorage.setItem("dwordle2.legacyImportPrompted", "true");
       localStorage.setItem("dwordle2.playCount", "99");
+      localStorage.setItem("dwordle2.finalAnswerUnlockSeen", "true");
       localStorage.setItem("dwordle2.menuUnlockSeen", "99");
       localStorage.setItem("dwordle2.achievements.reconcileVersion", "99");
     });
@@ -1610,6 +1619,7 @@ try {
       localStorage.setItem("dwordle2.tutorialSeen", "true");
       localStorage.setItem("dwordle2.legacyImportPrompted", "true");
       localStorage.setItem("dwordle2.playCount", "99");
+      localStorage.setItem("dwordle2.finalAnswerUnlockSeen", "true");
       localStorage.setItem("dwordle2.menuUnlockSeen", "99");
       localStorage.setItem("dwordle2.achievements.reconcileVersion", "99");
     });

@@ -2,20 +2,20 @@
 // ルート: #/result/<mode>/<startTime>
 
 import { el, clear, fmtDateTime } from "./dom.js";
-import { registerScreen, navigate, setViewMood } from "./app.js?v=20260723-swup";
+import { registerScreen, navigate, setViewMood } from "./app.js?v=20260723-fa";
 import { findGame, MODES } from "../core/records.js";
-import { Logic, CELL } from "../core/logic.js";
+import { Logic, CELL, queryWordSingle } from "../core/logic.js";
 import { pidLabel, isDailyPID } from "../core/problems.js";
-import { playSfx } from "../audio/sound.js?v=20260723-swup";
-import { toast } from "./toast.js?v=20260723-swup";
-import { confirmAndStart } from "./game-screen.js?v=20260723-swup";
-import { soundToggleButton } from "./sound-toggle.js?v=20260723-swup";
+import { playSfx } from "../audio/sound.js?v=20260723-fa";
+import { toast } from "./toast.js?v=20260723-fa";
+import { confirmAndStart } from "./game-screen.js?v=20260723-fa";
+import { soundToggleButton } from "./sound-toggle.js?v=20260723-fa";
 import { icon } from "./icons.js";
-import { downloadResultPNG } from "./snapshot.js?v=20260723-swup";
-import { SHARE_URL } from "../config.js?v=20260723-swup";
-import { getSettings } from "../core/settings.js?v=20260723-swup";
-import { tr } from "../core/i18n.js?v=20260723-swup";
-import { rowAriaLabel } from "./a11y.js?v=20260723-swup";
+import { downloadResultPNG } from "./snapshot.js?v=20260723-fa";
+import { SHARE_URL } from "../config.js?v=20260723-fa";
+import { getSettings } from "../core/settings.js?v=20260723-fa";
+import { tr } from "../core/i18n.js?v=20260723-fa";
+import { rowAriaLabel } from "./a11y.js?v=20260723-fa";
 
 let root = null;
 
@@ -53,6 +53,9 @@ function buildShareText(record, logic, cleared, includeUrl = true) {
   if (cleared) {
     text += `You guessed Word ${logic.matchWordNo(record.guessWord[record.guessWord.length - 1])}!\n`;
   }
+  if (record.finalAnswer?.success) {
+    text += "FINAL ANSWER ⭐ DOUBLE CLEAR!!\n";
+  }
   if (includeUrl) text += SHARE_URL;
   return text;
 }
@@ -82,6 +85,11 @@ function render(args) {
   const cleared = record.clear;
   const results = displayResults(record, logic);
   const maxGuess = MODES[record.gameMode].maxGuess;
+  // FINAL ANSWER の記録（v2 追加スキーマ。旧レコードには存在しない）
+  const fa = record.finalAnswer;
+  const doubleClear = Boolean(fa?.success);
+  const faTarget = cleared ? logic.otherAnswer(lastWord) : null;
+  const faResult = fa && faTarget ? queryWordSingle(fa.word, faTarget) : null;
 
   const header = el(
     "div",
@@ -106,14 +114,15 @@ function render(args) {
   // ラベルは左、正解を示す旗は右へ絶対配置し、有無で行がずれないようにする。
   const answerRow = (no, word) => {
     const matched = cleared && lastWord === word;
+    const finalMatched = doubleClear && faTarget === word; // FINAL ANSWER で当てた方は金の星
     return el(
       "div",
       {
         class: "answer-row",
         role: "img",
         "aria-label": tr(
-          `Word ${no}: ${word.toUpperCase()}${matched ? "、あなたが当てた答え" : ""}`,
-          `Word ${no}: ${word.toUpperCase()}${matched ? ", your answer" : ""}`
+          `Word ${no}: ${word.toUpperCase()}${matched ? "、あなたが当てた答え" : finalMatched ? "、FINAL ANSWERで当てた答え" : ""}`,
+          `Word ${no}: ${word.toUpperCase()}${matched ? ", your answer" : finalMatched ? ", your FINAL ANSWER" : ""}`
         ),
       },
       el(
@@ -134,9 +143,43 @@ function render(args) {
               el("span", { class: "guess-flag-cloth" })
             )
           )
-        : null
+        : finalMatched
+          ? el(
+              "span",
+              { class: "guess-flag-slot", "aria-hidden": "true" },
+              el("span", { class: "fa-star" }, icon("star", 20))
+            )
+          : null
     );
   };
+
+  // FINAL ANSWER の追加推理の記録（挑戦した場合のみ。成功・失敗どちらも表示する）
+  const finalAnswerCard = fa && faResult
+    ? el(
+        "div",
+        { class: `card fa-result ${fa.success ? "success" : "fail"}` },
+        el("div", { class: "fa-result-head" }, "FINAL ANSWER"),
+        el(
+          "div",
+          {
+            class: "rrow",
+            role: "img",
+            "aria-label": tr(
+              `FINAL ANSWER: ${fa.word.toUpperCase()}、${fa.success ? "成功" : "失敗"}`,
+              `FINAL ANSWER: ${fa.word.toUpperCase()}, ${fa.success ? "success" : "miss"}`
+            ),
+          },
+          fa.word.split("").map((c, i) => el("div", { class: `rcell ${faResult[i]}`, "aria-hidden": "true" }, c))
+        ),
+        el(
+          "div",
+          { class: "hint" },
+          fa.success
+            ? tr("もう一つの答えも一発で見抜いた！", "You named the other answer in one shot!")
+            : tr("惜しい！もう一つの答えには届かなかった", "So close — the other answer slipped away")
+        )
+      )
+    : null;
 
   const grid = el(
     "div",
@@ -156,7 +199,11 @@ function render(args) {
   const body = el(
     "div",
     { class: "list-screen-body" },
-    el("div", { class: `result-title ${cleared ? "clear" : "over"}` }, cleared ? "GAME CLEAR" : "GAME OVER"),
+    el(
+      "div",
+      { class: `result-title ${doubleClear ? "double" : cleared ? "clear" : "over"}` },
+      doubleClear ? "DOUBLE CLEAR!" : cleared ? "GAME CLEAR" : "GAME OVER"
+    ),
     el(
       "div",
       { class: "hint" },
@@ -166,6 +213,7 @@ function render(args) {
       )
     ),
     el("div", { class: "card answers-grid" }, answerRow(1, logic.ans1), answerRow(2, logic.ans2)),
+    finalAnswerCard,
     grid,
     el(
       "div",

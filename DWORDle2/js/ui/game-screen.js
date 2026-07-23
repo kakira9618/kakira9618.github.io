@@ -1,26 +1,31 @@
 // ゲーム画面。盤面・キーボード・進行管理。
 //
 // 進行状態 (state): "guess" 入力受付 / "checking" 判定オープン中 / "finish" 終了
+//   FINAL ANSWER 有効時はクリア直後に "finalCutin"（カットイン中・入力不可）
+//   → "finalGuess"（追加推理の入力受付）→ "finalChecking"（追加推理の判定中）を経て "finish"。
 // 原作と同じく、Guess は確定するたびに保存され、リロードしても再開できる。
+// 追加推理タイムの途中でリロード・離脱した場合、チャンスは消滅して通常クリアで記録される。
 
 import { el, clear } from "./dom.js";
-import { APP_VERSION, UI, FX } from "../config.js?v=20260723-swup";
-import { Logic, CELL, usoConvert } from "../core/logic.js";
+import { APP_VERSION, UI, FX } from "../config.js?v=20260723-fa";
+import { Logic, CELL, usoConvert, queryWordSingle } from "../core/logic.js";
 import { MODES, saveCurrentGame, clearCurrentGame, getCurrentGame, addFinishedGame, isAlreadyPlayed, getHistory } from "../core/records.js";
 import { pidLabel } from "../core/problems.js";
-import { checkOnGameFinish } from "../core/achievements.js?v=20260723-swup";
-import { registerScreen, navigate, redirect, getAppMode, currentScreenName } from "./app.js?v=20260723-swup";
-import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./toast.js?v=20260723-swup";
-import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js?v=20260723-swup";
-import { hiddenThemesUnlockedBy } from "../core/settings.js?v=20260723-swup";
-import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/effects.js?v=20260723-swup";
-import { showHelpModal } from "./help.js?v=20260723-swup";
-import { soundToggleButton } from "./sound-toggle.js?v=20260723-swup";
+import { checkOnGameFinish } from "../core/achievements.js?v=20260723-fa";
+import { registerScreen, navigate, redirect, getAppMode, currentScreenName } from "./app.js?v=20260723-fa";
+import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration, finalAnswerUnlockCelebration } from "./toast.js?v=20260723-fa";
+import { isFinalAnswerEnabled, claimFinalAnswerUnlockNotice } from "../core/final-answer.js?v=20260723-fa";
+import { playFinalAnswerCutin, playDoubleClearCutin, cancelFinalAnswerFx } from "./final-answer-fx.js?v=20260723-fa";
+import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js?v=20260723-fa";
+import { hiddenThemesUnlockedBy } from "../core/settings.js?v=20260723-fa";
+import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/effects.js?v=20260723-fa";
+import { showHelpModal } from "./help.js?v=20260723-fa";
+import { soundToggleButton } from "./sound-toggle.js?v=20260723-fa";
 import { icon } from "./icons.js";
-import { tr } from "../core/i18n.js?v=20260723-swup";
-import { getSettings } from "../core/settings.js?v=20260723-swup";
-import { shouldReduceMotion } from "../core/motion.js?v=20260723-swup";
-import { announce, feedbackName, rowAriaLabel, tileAriaLabel } from "./a11y.js?v=20260723-swup";
+import { tr } from "../core/i18n.js?v=20260723-fa";
+import { getSettings } from "../core/settings.js?v=20260723-fa";
+import { shouldReduceMotion } from "../core/motion.js?v=20260723-fa";
+import { announce, feedbackName, rowAriaLabel, tileAriaLabel } from "./a11y.js?v=20260723-fa";
 
 const KEY_ROWS = [
   [..."qwertyuiop".split(""), "backspace"],
@@ -51,6 +56,7 @@ let buttonStates = {}; // キーボードの色状態 (normal モードのみ)
 let keyEls = {};
 let seedHidden = false;
 let finishedRecord = null; // 終了後に結果画面へ渡す
+let finalAnswerPhase = null; // FINAL ANSWER 進行状態 { clearedWord, target, attempt: { word, success } | null }
 let gatherSession = 0;
 let pendingKeys = []; // 判定オープン中の先行入力（次の 1 行分だけ保持）
 let lastTouchKey = null; // pointerdown で確定したタッチ入力（合成 click の重複抑止用）
@@ -216,7 +222,11 @@ function toggleSeed() {
 function updateHeader() {
   const mode = MODES[game.gameMode];
   headerTitleEl.textContent = mode.title;
-  counterEl.textContent = `${game.guessWord.length + (state === "finish" ? 0 : 1)} / ${mode.maxGuess}`;
+  const inFinalAnswer = state === "finalCutin" || state === "finalGuess" || state === "finalChecking";
+  counterEl.classList.toggle("fa-counter", inFinalAnswer);
+  counterEl.textContent = inFinalAnswer
+    ? "FINAL ANSWER"
+    : `${game.guessWord.length + (state === "finish" ? 0 : 1)} / ${mode.maxGuess}`;
   const label = seedHidden ? "No.????" : pidLabel(game.problemID);
   // "Daily 2026-07-22" のような 2 語ラベルは 2 行 + 小さめの文字で表示し、
   // 狭い端末でもタイトルや右側のボタン群を削らずに収める
@@ -264,6 +274,7 @@ function render() {
   inputBuffer = "";
   pendingKeys = [];
   finishedRecord = null;
+  finalAnswerPhase = null;
   resultFab.style.display = "none";
   rows = [];
   clear(boardEl);
@@ -392,8 +403,10 @@ function scrollToBottom() {
 
 function handleKey(k) {
   if (state === "checking") return queuePendingKey(k);
-  if (state !== "guess") return;
-  if (k === "enter") return submitGuess();
+  // カットイン・追加推理の判定中は先行入力も受けない（うっかり Enter で
+  // 1 回きりのチャンスを消費させないため、追加推理は必ず手入力で始める）
+  if (state !== "guess" && state !== "finalGuess") return;
+  if (k === "enter") return state === "finalGuess" ? submitFinalAnswer() : submitGuess();
   if (k === "backspace") {
     if (inputBuffer.length > 0) {
       playSfx("delete");
@@ -460,7 +473,7 @@ function overlayBlocksInput() {
 }
 
 export function handlePhysicalKey(e) {
-  if (currentScreenName() !== "game" || (state !== "guess" && state !== "checking")) return;
+  if (currentScreenName() !== "game" || (state !== "guess" && state !== "checking" && state !== "finalGuess")) return;
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   if (overlayBlocksInput()) return;
   const key = physicalGameKey(e);
@@ -499,7 +512,9 @@ function submitGuess() {
   state = "checking";
   revealRow(currentRow(), word, shownResult, () => {
     const maxGuess = MODES[game.gameMode].maxGuess;
-    if (logic.isGameClear(word) || game.guessWord.length >= maxGuess) {
+    if (logic.isGameClear(word) && isFinalAnswerEnabled()) {
+      beginFinalAnswer(word);
+    } else if (logic.isGameClear(word) || game.guessWord.length >= maxGuess) {
       finishGame(true);
     } else {
       state = "guess";
@@ -509,6 +524,69 @@ function submitGuess() {
       flushPendingKeys();
     }
   });
+}
+
+// ---- FINAL ANSWER（クリア後の追加推理タイム）----
+
+// クリアの判定オープン直後に呼ばれる。カットインを流してから追加推理の行を出す。
+function beginFinalAnswer(clearedWord) {
+  state = "finalCutin";
+  pendingKeys = []; // クリア判定中の先行入力は「次の通常 Guess」のつもりなので捨てる
+  inputBuffer = "";
+  finalAnswerPhase = { clearedWord, target: logic.otherAnswer(clearedWord), attempt: null };
+  updateHeader();
+  playSfx("finalAnswer");
+  announce(
+    tr(
+      "FINAL ANSWER。当てなかったもう一つの答えを、1 回だけ推理できます。",
+      "FINAL ANSWER. You get one guess at the other hidden answer."
+    )
+  );
+  const session = gatherSession;
+  playFinalAnswerCutin(game.gameMode === "uso").then(() => {
+    if (session !== gatherSession || state !== "finalCutin") return;
+    state = "finalGuess";
+    const row = addRow(true);
+    row.rowEl.classList.add("fa-row");
+    row.rowEl.setAttribute("aria-label", tr("FINAL ANSWER 入力", "FINAL ANSWER Guess"));
+    updateHeader();
+    scrollToBottom();
+  });
+}
+
+// 追加推理の確定。チャンスは 1 回だけで、成功なら DOUBLE CLEAR として記録される。
+function submitFinalAnswer() {
+  if (inputBuffer.length !== 5) {
+    return rejectGuess("Not enough letters");
+  }
+  const word = inputBuffer;
+  if (!logic.isValidWord(word)) {
+    return rejectGuess("Not in word list");
+  }
+  if (word === finalAnswerPhase.clearedWord) {
+    // 当てた方をもう一度入力してもチャンスは消費させず、打ち直しを促す
+    return rejectGuess(tr("それはさっき当てた答え！", "You already found that one!"));
+  }
+  const success = word === finalAnswerPhase.target;
+  finalAnswerPhase.attempt = { word, success };
+  state = "finalChecking";
+  // 判定は残る答え 1 語だけとの比較。DWORDlie でもここは真実を表示する（最後の開示）。
+  const result = queryWordSingle(word, finalAnswerPhase.target);
+  const row = currentRow();
+  const session = gatherSession;
+  const beginReveal = () => {
+    if (session !== gatherSession) return;
+    row.rowEl.classList.remove("fa-charging");
+    revealRow(row, word, result, () => finishGame(true));
+  };
+  if (shouldReduceMotion()) {
+    beginReveal();
+  } else {
+    // ドラムロールのタメ。タイルが小さく震え、太鼓が鳴り止んだ直後に判定が開く
+    playSfx("drumroll");
+    row.rowEl.classList.add("fa-charging");
+    setTimeout(beginReveal, FX.finalAnswer.drumrollMs);
+  }
 }
 
 function rejectGuess(message) {
@@ -617,6 +695,10 @@ function finishGame(justFinished) {
       problemID: game.problemID,
       guessWord: game.guessWord.slice(),
       usoResults: game.gameMode === "uso" ? game.usoResults.slice() : undefined,
+      // v2 追加スキーマ: FINAL ANSWER の追加推理（挑戦したときだけ付く）
+      finalAnswer: finalAnswerPhase?.attempt
+        ? { word: finalAnswerPhase.attempt.word, success: finalAnswerPhase.attempt.success }
+        : undefined,
     });
     clearCurrentGame(game.gameMode);
     finishedRecord = record;
@@ -632,7 +714,14 @@ function finishGame(justFinished) {
       hadLostBefore,
     });
 
-    if (cleared) {
+    const doubleCleared = Boolean(record.finalAnswer?.success);
+    if (doubleCleared) {
+      // 大成功: 専用ファンファーレ + 金色の DOUBLE CLEAR カットイン + 金色バースト
+      playSfx("doubleClear");
+      playDoubleClearCutin();
+      winBurst(FX.finalAnswer.burstColors);
+      announce(tr("大成功！DOUBLE CLEAR！両方の答えを当てました。", "DOUBLE CLEAR! You found both answers."));
+    } else if (cleared) {
       playSfx("win");
       winBurst([colorForState(CELL.CORRECT), colorForState(CELL.USED), 0x00d5ff]);
     } else {
@@ -653,7 +742,9 @@ function finishGame(justFinished) {
         }
         hiddenThemesUnlockedBy(newly).forEach(themeUnlockCelebration);
       }
-    }, cleared ? 1400 : 900);
+      // このプレイで 50 回に到達していたら FINAL ANSWER モードの解放を通知する
+      if (claimFinalAnswerUnlockNotice()) finalAnswerUnlockCelebration();
+    }, doubleCleared ? FX.finalAnswer.resultDelayMs : cleared ? 1400 : 900);
   } else {
     // リロード等で復帰した決着済みゲーム: 履歴に保存だけして結果ボタンを出す
     const record = addFinishedGame({
@@ -684,7 +775,7 @@ export async function confirmAndStart(pid, mode) {
   if (isAlreadyPlayed(pid, mode) || playedToday) {
     // 注意: 動的 import にも必ず ?v= トークンを付ける。素の URL だと古いキャッシュの
     // modal.js（旧トークンで sound.js を import する）が混ざり、BGM が二重再生される。
-    const { confirmModal } = await import("./modal.js?v=20260723-swup");
+    const { confirmModal } = await import("./modal.js?v=20260723-fa");
     const label = pidLabel(pid);
     const countNote = playedToday
       ? tr(
@@ -700,7 +791,7 @@ export async function confirmAndStart(pid, mode) {
   }
   const current = getCurrentGame(mode);
   if (current && current.guessWord.length > 0) {
-    const { confirmModal } = await import("./modal.js?v=20260723-swup");
+    const { confirmModal } = await import("./modal.js?v=20260723-fa");
     const ok = await confirmModal(
       tr("進行中のゲーム", "Game in progress"),
       tr(
@@ -724,6 +815,7 @@ registerScreen("game", {
     gatherSession++;
     pendingKeys = [];
     cancelTileFlights();
+    cancelFinalAnswerFx();
     rows.forEach((row) => {
       row.tiles.forEach((tile) => (tile.style.opacity = ""));
       row.gatherFlight = null;

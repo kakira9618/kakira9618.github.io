@@ -9,6 +9,9 @@
 //     usoResults: [["correct",...], ...]  // uso のみ（表示された嘘の判定）
 //     clear: boolean,                     // キャッシュ。guessWord から再計算可能
 //     imported: "auto" | "json" | undefined, // 旧作から移行したレコードの印
+//     finalAnswer: { word, success } | undefined, // v2 追加スキーマ: FINAL ANSWER の
+//       // 追加推理（クリア時のみ発生しうる）。success ならDOUBLE CLEAR。
+//       // 旧作・旧バージョンのレコードには存在しない（判定側は必ず optional 扱いする）。
 //   }
 
 import { loadJSON, saveJSON, onExternalChange } from "./store.js";
@@ -164,17 +167,19 @@ export function getStatistics(mode) {
 
   let count = 0;
   let win = 0;
+  let doubleClear = 0; // FINAL ANSWER 成功（DOUBLE CLEAR）の回数
   const times = [];
   for (const g of games) {
     count++;
     times.push(g.startTime);
     if (g.clear) {
       win++;
+      if (g.finalAnswer?.success) doubleClear++;
       if (hist[g.guessWord.length] !== undefined) hist[g.guessWord.length]++;
     }
   }
   if (count === 0) {
-    return { count: 0, win: 0, currentStreak: 0, maxStreak: 0, hist };
+    return { count: 0, win: 0, doubleClear: 0, currentStreak: 0, maxStreak: 0, hist };
   }
 
   // 連続プレイ日数（原作互換: プレイした日付列で隣接日差が 2 日未満なら継続）
@@ -187,7 +192,7 @@ export function getStatistics(mode) {
     else currentStreak = 1;
     maxStreak = Math.max(maxStreak, currentStreak);
   }
-  return { count, win, currentStreak, maxStreak, hist };
+  return { count, win, doubleClear, currentStreak, maxStreak, hist };
 }
 
 // 直近の勝敗から連勝数を数える（実績用）

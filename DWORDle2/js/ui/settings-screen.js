@@ -2,21 +2,22 @@
 // ルート: #/settings
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate } from "./app.js?v=20260723-swup";
-import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js?v=20260723-swup";
+import { registerScreen, navigate } from "./app.js?v=20260723-fa";
+import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js?v=20260723-fa";
 import { importFromLocalStorage, importFromText, scanLegacyHistory } from "../core/migrate.js";
 import { exportJSON } from "../core/records.js";
 import { removeKey } from "../core/store.js";
-import { getUnlocked } from "../core/achievements.js?v=20260723-swup";
-import { BGM_TRACKS, playSfx } from "../audio/sound.js?v=20260723-swup";
-import { toast } from "./toast.js?v=20260723-swup";
-import { showModal, confirmModal } from "./modal.js?v=20260723-swup";
+import { getUnlocked } from "../core/achievements.js?v=20260723-fa";
+import { BGM_TRACKS, playSfx } from "../audio/sound.js?v=20260723-fa";
+import { toast } from "./toast.js?v=20260723-fa";
+import { showModal, confirmModal } from "./modal.js?v=20260723-fa";
 import { icon } from "./icons.js";
-import { finishHistoryImport } from "./history-import.js?v=20260723-swup";
-import { APP_VERSION } from "../config.js?v=20260723-swup";
-import { SOURCE_HASH } from "../version.js?v=20260723-swup";
-import { isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js?v=20260723-swup";
+import { finishHistoryImport } from "./history-import.js?v=20260723-fa";
+import { APP_VERSION } from "../config.js?v=20260723-fa";
+import { SOURCE_HASH } from "../version.js?v=20260723-fa";
+import { isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js?v=20260723-fa";
 import { isDebugMode, tryEnableDebugMode } from "../core/debug.js";
+import { isFinalAnswerUnlocked, finalAnswerRemainingPlays } from "../core/final-answer.js?v=20260723-fa";
 
 let root = null;
 let debugEntryTaps = 0;
@@ -351,6 +352,50 @@ function render() {
         toggle("reduceFx", tr("演出を軽くする", "Reduce effects"))
       )
     ),
+    // FINAL ANSWER モード（50 回プレイ or デバッグモードで解放）。
+    // 未解放の間は「???」でしきい値だけを予告する（隠しテーマと同じ見せ方）。
+    el(
+      "div",
+      { class: "card" },
+      el("div", { style: { fontWeight: "800", marginBottom: "4px" } }, tr("ゲームプレイ", "Gameplay")),
+      isFinalAnswerUnlocked()
+        ? settingRow(
+            el("span", { class: "fa-setting-name" }, "FINAL ANSWER"),
+            tr(
+              "クリア後、もう一つの答えを1回だけ推理する追加チャレンジ（DWORDle / DWORDlie 共通）",
+              "After clearing, get one extra guess at the other answer (DWORDle & DWORDlie)"
+            ),
+            toggle("finalAnswer", "FINAL ANSWER")
+          )
+        : settingRow(
+            el("span", { class: "fa-setting-locked" }, icon("lock", 15), " ???"),
+            tr(
+              `あと${finalAnswerRemainingPlays()}回プレイで解放`,
+              finalAnswerRemainingPlays() === 1 ? "1 more play to unlock" : `${finalAnswerRemainingPlays()} more plays to unlock`
+            ),
+            el(
+              "button",
+              {
+                class: "icon-btn",
+                "aria-disabled": "true",
+                "aria-label": tr(
+                  `未解放の設定（あと${finalAnswerRemainingPlays()}回プレイで解放）`,
+                  `Locked setting (${finalAnswerRemainingPlays()} more plays to unlock)`
+                ),
+                onclick: () => {
+                  playSfx("locked");
+                  toast(
+                    tr(
+                      `あと${finalAnswerRemainingPlays()}回プレイで解放されます`,
+                      `Play ${finalAnswerRemainingPlays()} more to unlock`
+                    )
+                  );
+                },
+              },
+              icon("lock")
+            )
+          )
+    ),
     el(
       "div",
       { class: "card" },
@@ -470,6 +515,8 @@ function render() {
               "tutorialSeenUso",
               "playCount", // タイトルメニューの段階解放も初期状態へ戻す
               "menuUnlockSeen",
+              "finalAnswerUnlockSeen", // FINAL ANSWER モードの解放通知も再び出る状態に戻す
+
               "soundRestore",
               "playerCard", // プレイヤーカード（名前・発行情報・確認済みランク）
               "playerId", // プレイヤー ID も新規プレイヤーとして発番し直す

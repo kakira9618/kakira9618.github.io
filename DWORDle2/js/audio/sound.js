@@ -5,9 +5,9 @@
 //   曲の実体は TRACKS（テンポ・コード進行・1 小節のスケジューラ）に定義する。
 //   設定やモード切替時はバスをクロスフェードしてシームレスに移行する。
 
-import { AUDIO } from "../config.js?v=20260723-swup";
-import { getSettings, onSettingsChange } from "../core/settings.js?v=20260723-swup";
-import { logBgmTime } from "../core/activity.js?v=20260723-swup";
+import { AUDIO } from "../config.js?v=20260723-fa";
+import { getSettings, onSettingsChange } from "../core/settings.js?v=20260723-fa";
+import { logBgmTime } from "../core/activity.js?v=20260723-fa";
 
 // 背面タブのタイマー間引きで BGM ループの間隔が伸びたとき、
 // 実際に鳴っていた先読み分を大きく超えて聴取時間を数えないための上限
@@ -619,6 +619,52 @@ const SFX = {
     );
     tone({ freq: 2093, type: "sine", dur: 0.7, gain: 0.07, when: 0.46 });
     noise({ dur: 0.9, gain: 0.05, freq: 8500, when: 0.42 });
+  },
+  // FINAL ANSWER カットイン: 迫るライザー → 重い着地 → 緊張のマイナー和音 → 心音 2 連
+  finalAnswer: () => {
+    tone({ freq: 110, type: "sawtooth", dur: 0.55, gain: 0.12, slide: 550 });
+    noise({ dur: 0.5, gain: 0.08, freq: 1800, q: 0.8 });
+    // 着地の衝撃（低音ドロップ + ノイズバースト）
+    tone({ freq: 150, type: "sine", dur: 0.5, gain: 0.5, when: 0.55, slide: -105 });
+    noise({ dur: 0.18, gain: 0.28, freq: 900, q: 0.7, when: 0.55 });
+    // Am(add9) 風の緊張スタブ
+    [220, 261.63, 329.63, 493.88].forEach((f, i) =>
+      tone({ freq: f, type: "triangle", dur: 0.9, gain: 0.13, when: 0.62 + i * 0.03 })
+    );
+    // 追加推理タイム開始の鼓動
+    tone({ freq: 70, type: "sine", dur: 0.16, gain: 0.38, when: 1.3 });
+    tone({ freq: 64, type: "sine", dur: 0.2, gain: 0.32, when: 1.55 });
+  },
+  // FINAL ANSWER のドラムロール（判定オープン前のタメ）。小刻みなスネア連打が
+  // 徐々に強く・わずかに速くなり、締めの一打で止まる。全体の長さは
+  // config.js の FX.finalAnswer.drumrollMs（判定オープン開始）と同期している。
+  drumroll: () => {
+    let when = 0;
+    let interval = 0.075;
+    let hit = 0;
+    while (when < 1.45) {
+      noise({ dur: 0.035, gain: 0.05 + Math.min(0.13, hit * 0.006), freq: 2000, q: 1.3, when });
+      tone({ freq: 180, type: "triangle", dur: 0.03, gain: 0.04 + Math.min(0.09, hit * 0.004), when });
+      when += interval;
+      interval = Math.max(0.048, interval * 0.985);
+      hit++;
+    }
+    // 締めの一打（判定オープンの直前に響く）
+    noise({ dur: 0.12, gain: 0.28, freq: 1200, q: 0.9, when: 1.5 });
+    tone({ freq: 90, type: "sine", dur: 0.25, gain: 0.4, when: 1.5 });
+  },
+  // DOUBLE CLEAR 大成功ファンファーレ: win より一段派手な 2 オクターブ上昇 + 長い和音 + ベル
+  doubleClear: () => {
+    [523.25, 659.25, 783.99, 1046.5, 1318.5, 1568, 2093].forEach((f, i) => {
+      tone({ freq: f, type: "triangle", dur: 0.42, gain: 0.26, when: i * 0.085 });
+      tone({ freq: f * 2, type: "sine", dur: 0.3, gain: 0.09, when: i * 0.085 + 0.02 });
+    });
+    [1046.5, 1318.5, 1568, 2349.3].forEach((f, i) =>
+      tone({ freq: f, type: "sine", dur: 1.3, gain: 0.15, when: 0.68 + i * 0.02 })
+    );
+    noise({ dur: 1.2, gain: 0.06, freq: 9000, when: 0.7 });
+    tone({ freq: 2637, type: "sine", dur: 0.8, gain: 0.12, when: 1.2 });
+    tone({ freq: 3135.96, type: "sine", dur: 0.9, gain: 0.1, when: 1.35 });
   },
   ui: () => tone({ freq: 880, type: "sine", dur: 0.06, gain: 0.15 }),
   // 遊び方を開いたときの音（ページめくり風のスウッシュ + 問いかけるような上昇 2 音）

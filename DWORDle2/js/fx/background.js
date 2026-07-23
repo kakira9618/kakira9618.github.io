@@ -6,9 +6,9 @@
 // classic テーマでは canvas ごと非表示になり、描画ループも止める。
 
 import * as THREE from "three";
-import { FX } from "../config.js?v=20260723-swup";
-import { getSettings, onSettingsChange } from "../core/settings.js?v=20260723-swup";
-import { onMotionPreferenceChange, shouldReduceMotion } from "../core/motion.js?v=20260723-swup";
+import { FX } from "../config.js?v=20260723-fa";
+import { getSettings, onSettingsChange } from "../core/settings.js?v=20260723-fa";
+import { onMotionPreferenceChange, shouldReduceMotion } from "../core/motion.js?v=20260723-fa";
 
 let renderer = null;
 let scene = null;

@@ -133,6 +133,16 @@ export const FX = {
     edgeNormal: "rgba(0, 213, 255, 0.75)", // 枠の色（表）
     edgeUso: "rgba(255, 43, 94, 0.75)", // 枠の色（裏）
   },
+  // FINAL ANSWER（クリア後の追加推理タイム）の演出タイミング。
+  // CSS 側のアニメーション時間（style.css の「FINAL ANSWER」セクション）と同期している。
+  finalAnswer: {
+    cutinMs: 2100, // カットイン全体の長さ（この後に入力可能になる）
+    cutinReducedMs: 400, // reduce-motion 時の入力開始までの間
+    drumrollMs: 1700, // Enter からドラムロールのタメを置いて判定オープンが始まるまで（SFX drumroll と同期）
+    doubleClearMs: 2600, // DOUBLE CLEAR 演出の表示時間
+    resultDelayMs: 2900, // 成功時に結果画面へ進むまでの待ち（doubleClearMs より少し後）
+    burstColors: [0xffd166, 0xffe680, 0xffffff], // DOUBLE CLEAR の金色パーティクル
+  },
   // タイル開示時のパーティクルバースト
   burst: {
     countPerTile: { correct: 26, used: 16, unused: 7 },

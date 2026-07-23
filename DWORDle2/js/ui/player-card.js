@@ -4,22 +4,22 @@
 // 通算 5 回プレイで解放（タイトルメニューの段階解放と同じ仕組み）。
 
 import { el, clear } from "./dom.js";
-import { registerScreen, navigate, redirect } from "./app.js?v=20260723-swup";
+import { registerScreen, navigate, redirect } from "./app.js?v=20260723-fa";
 import { getHistory, countPlays } from "../core/records.js";
-import { ACHIEVEMENTS, getUnlocked } from "../core/achievements.js?v=20260723-swup";
-import { HIDDEN_THEMES } from "../core/settings.js?v=20260723-swup";
-import { favoriteBgmTrackId, favoriteThemeId } from "../core/activity.js?v=20260723-swup";
-import { BGM_TRACKS, currentBgmTrackId, playSfx } from "../audio/sound.js?v=20260723-swup";
+import { ACHIEVEMENTS, getUnlocked } from "../core/achievements.js?v=20260723-fa";
+import { HIDDEN_THEMES } from "../core/settings.js?v=20260723-fa";
+import { favoriteBgmTrackId, favoriteThemeId } from "../core/activity.js?v=20260723-fa";
+import { BGM_TRACKS, currentBgmTrackId, playSfx } from "../audio/sound.js?v=20260723-fa";
 import { loadJSON, saveJSON } from "../core/store.js";
 import { isDebugMode } from "../core/debug.js";
-import { toast } from "./toast.js?v=20260723-swup";
-import { soundToggleButton } from "./sound-toggle.js?v=20260723-swup";
-import { winBurst } from "../fx/effects.js?v=20260723-swup";
-import { shouldReduceMotion } from "../core/motion.js?v=20260723-swup";
+import { toast } from "./toast.js?v=20260723-fa";
+import { soundToggleButton } from "./sound-toggle.js?v=20260723-fa";
+import { winBurst } from "../fx/effects.js?v=20260723-fa";
+import { shouldReduceMotion } from "../core/motion.js?v=20260723-fa";
 import { icon, iconSvg } from "./icons.js";
-import { announce } from "./a11y.js?v=20260723-swup";
-import { SHARE_URL } from "../config.js?v=20260723-swup";
-import { tr } from "../core/i18n.js?v=20260723-swup";
+import { announce } from "./a11y.js?v=20260723-fa";
+import { SHARE_URL } from "../config.js?v=20260723-fa";
+import { tr } from "../core/i18n.js?v=20260723-fa";
 
 // 解放しきい値（タイトルメニューの MENU_UNLOCKS と同じ値を参照させる）
 export const CARD_UNLOCK_PLAYS = 5;
