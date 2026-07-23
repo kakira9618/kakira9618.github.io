@@ -218,9 +218,12 @@ try {
       icons.map(async (icon) => (await fetch(new URL(icon.src, location.href))).status)
     );
     return {
+      title: document.title,
+      ogTitle: document.querySelector('meta[property="og:title"]')?.content,
       ogImage: document.querySelector('meta[property="og:image"]')?.content,
       ogDescription: document.querySelector('meta[property="og:description"]')?.content,
       twitterCard: document.querySelector('meta[name="twitter:card"]')?.content,
+      twitterTitle: document.querySelector('meta[name="twitter:title"]')?.content,
       twitterImage: document.querySelector('meta[name="twitter:image"]')?.content,
       twitterDescription: document.querySelector('meta[name="twitter:description"]')?.content,
       manifest: document.querySelector('link[rel="manifest"]')?.getAttribute("href"),
@@ -229,9 +232,12 @@ try {
       statuses,
     };
   });
+  assert.equal(publicEntry.title, "DWORDle | 新感覚Wordle");
+  assert.equal(publicEntry.ogTitle, "DWORDle | 新感覚Wordle");
   assert.equal(publicEntry.ogImage, "https://kakira9618.github.io/DWORDle2/og.png");
   assert.equal(publicEntry.ogDescription, "答えは2つ。盤面は1つ。新感覚Wordle！");
   assert.equal(publicEntry.twitterCard, "summary_large_image");
+  assert.equal(publicEntry.twitterTitle, "DWORDle | 新感覚Wordle");
   assert.equal(publicEntry.twitterImage, "https://kakira9618.github.io/DWORDle2/og-square.png", "X には Summary で見切れない正方形版を渡す");
   assert.equal(publicEntry.twitterDescription, "答えは2つ。盤面は1つ。新感覚Wordle！");
   assert.equal(publicEntry.manifest, "manifest.webmanifest");

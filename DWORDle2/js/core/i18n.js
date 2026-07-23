@@ -27,7 +27,7 @@ export function syncDocumentLanguage(language = currentLanguage()) {
   const resolved = language === "en" || language === "ja" ? language : systemLanguage();
   const english = resolved === "en";
   document.documentElement.lang = english ? "en" : "ja";
-  document.title = english ? "DWORDle 2 | Wordle with two answers" : "DWORDle 2 | 答えが2つある Wordle";
+  document.title = "DWORDle | 新感覚Wordle";
   document
     .querySelector('meta[name="description"]')
     ?.setAttribute(
