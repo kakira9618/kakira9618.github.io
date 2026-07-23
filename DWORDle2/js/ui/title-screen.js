@@ -43,7 +43,13 @@ function randomPID(lo, hi, mode) {
 
 function numberPrompt(mode) {
   const suggestion = randomPID(PID.EASY_MIN, PID.EASY_MAX, mode);
-  const input = el("input", { type: "number", value: String(suggestion), min: "0", max: "39999" });
+  const input = el("input", {
+    type: "number",
+    value: String(suggestion),
+    min: "0",
+    max: "39999",
+    "aria-label": tr("問題番号", "Puzzle number"),
+  });
   showModal({
     title: tr("番号を指定してプレイ", "Play by puzzle number"),
     body: [

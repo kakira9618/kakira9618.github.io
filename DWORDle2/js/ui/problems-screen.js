@@ -271,6 +271,7 @@ function jumpPrompt() {
     placeholder: tr("問題番号 (例: 12345)", "Puzzle number (e.g. 12345)"),
     min: "1",
     max: "39999",
+    "aria-label": tr("問題番号", "Puzzle number"),
   });
   showModal({
     title: tr("番号へジャンプ", "Jump to number"),

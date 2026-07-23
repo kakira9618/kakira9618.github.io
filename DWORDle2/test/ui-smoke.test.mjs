@@ -631,7 +631,8 @@ try {
 
   await page.getByRole("button", { name: "番号を指定" }).click();
   const puzzleDialog = page.getByRole("dialog", { name: "番号を指定してプレイ" });
-  await puzzleDialog.locator('input[type="number"]').fill("1");
+  const puzzleNumberInput = puzzleDialog.getByRole("spinbutton", { name: "問題番号" });
+  await puzzleNumberInput.fill("1");
   // 入力欄の Enter で primary アクション（スタート）が確定する
   await page.keyboard.press("Enter");
   await page.waitForURL(/#\/game$/);
@@ -842,6 +843,11 @@ try {
   const block = page.locator("button.block-cell").first();
   await block.waitFor();
   await assertNoSeriousA11yViolations("Problems screen");
+  await page.locator("#screen-problems").getByRole("button", { name: "番号へジャンプ" }).click();
+  const jumpDialog = page.getByRole("dialog", { name: "番号へジャンプ" });
+  await jumpDialog.getByRole("spinbutton", { name: "問題番号" }).waitFor();
+  await assertNoSeriousA11yViolations("Jump-to-puzzle dialog");
+  await jumpDialog.getByRole("button", { name: "キャンセル" }).click();
   await block.focus();
   await page.keyboard.press("Enter");
   await page.locator("button.num-cell").first().waitFor();
