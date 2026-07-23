@@ -2101,6 +2101,9 @@ body.reduce-motion .bar-grow {
   padding: 13px 2px;
   border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
 }
+.settings-category-card > .setting-row:last-of-type {
+  border-bottom: none;
+}
 /* 3 択（言語・テーマ）はボタン列が固定幅のため、ラベルと横並びで収まらない
    狭い端末ではボタン列をラベルの下の行へ落とす
    （.label は flex: 1（basis 0）で折り返し判定に掛からないため、全幅にして明示的に折る） */

@@ -316,6 +316,14 @@ try {
   for (const copy of ["UIの言語を設定", "UIや背景のテーマを設定", "パーティクルを完全にオフにします"]) {
     await page.getByText(copy, { exact: true }).waitFor();
   }
+  const displayRowBorders = await page.locator("#settings-panel-display > .setting-row").evaluateAll((rows) =>
+    rows.map((row) => getComputedStyle(row).borderBottomStyle)
+  );
+  assert.deepEqual(
+    displayRowBorders,
+    ["solid", "solid", "solid", "solid", "none"],
+    "Settings should keep separators only between items, not below the final item"
+  );
   assert.equal(await page.getByText("低スペック端末向け", { exact: false }).count(), 0);
   await page.getByRole("tab", { name: "ゲーム" }).click();
   assert.equal(await switches.count(), 1, "The Gameplay tab should expose only EXTRA SHOT");
