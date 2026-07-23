@@ -1873,6 +1873,31 @@ body.theme-pop.mode-uso .rcell.unused { color: #fff; }
 .result-actions[hidden] {
   display: none;
 }
+/* アプリは最大 500px の 1 カラムで 6 ボタンは 1 行に収まらないため、
+   flex 折り返しだと幅も折り返し位置もバラバラになる。常に 3 列 × 2 行の
+   等幅グリッドで揃える（プレイヤーカードの 2 ボタンは対象外） */
+#screen-result .result-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+  max-width: 480px;
+}
+#screen-result .result-actions .btn {
+  padding: 13px 6px;
+  gap: 6px;
+  white-space: nowrap;
+}
+/* さらに狭い端末では「画像保存」等がはみ出さないよう文字とアイコンを一段縮める */
+@media (max-width: 374px) {
+  #screen-result .result-actions .btn {
+    font-size: 14px;
+    gap: 4px;
+  }
+  #screen-result .result-actions .btn .icon svg {
+    width: 16px;
+    height: 16px;
+  }
+}
 
 /* ---- 分析画面 ---- */
 .turn-card {
