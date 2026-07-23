@@ -796,6 +796,40 @@ try {
       historyFilterLayout.separator.bottom <= historyFilterLayout.guesses[0].bottom,
     `The Guess range separator should remain vertically centered: ${JSON.stringify(historyFilterLayout)}`
   );
+  const historyOverflowLayout = await page.locator("#screen-history .list-screen-body").evaluate(async (body) => {
+    const controls = body.querySelector(".history-controls");
+    const item = body.querySelector(".history-item");
+    const controlsHeightBefore = controls.getBoundingClientRect().height;
+    const clones = Array.from({ length: 30 }, () => {
+      const clone = item.cloneNode(true);
+      clone.tabIndex = -1;
+      clone.setAttribute("aria-hidden", "true");
+      body.append(clone);
+      return clone;
+    });
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    const result = {
+      controlsHeightBefore,
+      controlsHeightAfter: controls.getBoundingClientRect().height,
+      controlsFlexShrink: getComputedStyle(controls).flexShrink,
+      scrollable: body.scrollHeight > body.clientHeight,
+    };
+    clones.forEach((clone) => clone.remove());
+    return result;
+  });
+  assert.equal(
+    historyOverflowLayout.controlsFlexShrink,
+    "0",
+    `History controls must not shrink when the list overflows: ${JSON.stringify(historyOverflowLayout)}`
+  );
+  assert.ok(
+    historyOverflowLayout.controlsHeightAfter >= historyOverflowLayout.controlsHeightBefore - 1,
+    `History controls must retain their height when many entries are shown: ${JSON.stringify(historyOverflowLayout)}`
+  );
+  assert.ok(
+    historyOverflowLayout.scrollable,
+    `The history body should scroll instead of collapsing its controls: ${JSON.stringify(historyOverflowLayout)}`
+  );
   const historyItem = page.locator("button.history-item").first();
   await historyItem.waitFor();
   await assertNoSeriousA11yViolations("History screen");

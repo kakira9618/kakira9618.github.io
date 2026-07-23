@@ -1430,6 +1430,10 @@ body.theme-cyber .toast {
      （縦スクロールだけ許可） */
   touch-action: pan-y;
 }
+/* 履歴が画面高を超えても、検索カードや履歴行は縮めず一覧だけをスクロールする */
+#screen-history .list-screen-body > * {
+  flex-shrink: 0;
+}
 .card {
   background: var(--bg-panel);
   border: 1px solid var(--border);
