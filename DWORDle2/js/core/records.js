@@ -9,9 +9,9 @@
 //     usoResults: [["correct",...], ...]  // uso のみ（表示された嘘の判定）
 //     clear: boolean,                     // キャッシュ。guessWord から再計算可能
 //     imported: "auto" | "json" | undefined, // 旧作から移行したレコードの印
-//     finalAnswer: { word, success } | undefined, // v2 追加スキーマ: FINAL ANSWER の
+//     extraShot: { word, success } | undefined, // v2 追加スキーマ: EXTRA SHOT の
 //       // 追加推理（クリア時のみ発生しうる）。success ならDOUBLE CLEAR。
-//       // 旧作・旧バージョンのレコードには存在しない（判定側は必ず optional 扱いする）。
+//       // 旧キー finalAnswer は読込時に extraShot へ移行する。
 //   }
 
 import { loadJSON, saveJSON, onExternalChange } from "./store.js";
@@ -25,6 +25,21 @@ export const MODES = {
 
 let history = null; // startTime 昇順の配列（キャッシュ）
 
+// 旧バージョンの finalAnswer レコードも、その場で失わず EXTRA SHOT として扱う。
+export function getExtraShot(record) {
+  return record?.extraShot ?? record?.finalAnswer ?? null;
+}
+
+export function normalizeExtraShotRecord(record) {
+  if (!record || typeof record !== "object") return record;
+  const extraShot = getExtraShot(record);
+  if (!("finalAnswer" in record) && (extraShot === null || record.extraShot === extraShot)) return record;
+  const normalized = { ...record };
+  delete normalized.finalAnswer;
+  if (extraShot !== null) normalized.extraShot = extraShot;
+  return normalized;
+}
+
 // 別タブが履歴を書き換えたらキャッシュを捨て、次の保存で他タブの記録を巻き戻さないようにする
 onExternalChange("history", () => {
   history = null;
@@ -32,8 +47,11 @@ onExternalChange("history", () => {
 
 function ensureLoaded() {
   if (history === null) {
-    history = loadJSON("history", []);
+    const loaded = loadJSON("history", []);
+    history = loaded.map(normalizeExtraShotRecord);
     history.sort((a, b) => a.startTime - b.startTime);
+    // 一度読み込んだ旧履歴は新キーで保存し直す。以後のエクスポートも extraShot になる。
+    if (history.some((record, index) => record !== loaded[index])) persist();
   }
   return history;
 }
@@ -77,6 +95,7 @@ export function countPlays() {
 
 export function addFinishedGame(record) {
   ensureLoaded();
+  record = normalizeExtraShotRecord(record);
   // 追加前にカウンタを初期化しておく（履歴からの初期化で今回の分を二重に数えない）
   const playsBefore = countPlays();
   record.clear = computeClear(record);
@@ -94,7 +113,8 @@ export function addFinishedGame(record) {
 export function addImportedGames(records) {
   ensureLoaded();
   let added = 0;
-  for (const rec of records) {
+  for (let rec of records) {
+    rec = normalizeExtraShotRecord(rec);
     // (startTime, gameMode) は findGame・結果画面 URL のキーなので一意にする。
     // 別 problemID と衝突したら 1 秒ずつずらす。ずらした先に同じ problemID の
     // レコードが見つかった場合は、過去のインポートで移動済みの重複なのでスキップする。
@@ -167,14 +187,14 @@ export function getStatistics(mode) {
 
   let count = 0;
   let win = 0;
-  let doubleClear = 0; // FINAL ANSWER 成功（DOUBLE CLEAR）の回数
+  let doubleClear = 0; // EXTRA SHOT 成功（DOUBLE CLEAR）の回数
   const times = [];
   for (const g of games) {
     count++;
     times.push(g.startTime);
     if (g.clear) {
       win++;
-      if (g.finalAnswer?.success) doubleClear++;
+      if (getExtraShot(g)?.success) doubleClear++;
       if (hist[g.guessWord.length] !== undefined) hist[g.guessWord.length]++;
     }
   }

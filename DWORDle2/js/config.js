@@ -133,9 +133,9 @@ export const FX = {
     edgeNormal: "rgba(0, 213, 255, 0.75)", // 枠の色（表）
     edgeUso: "rgba(255, 43, 94, 0.75)", // 枠の色（裏）
   },
-  // FINAL ANSWER（クリア後の追加推理タイム）の演出タイミング。
-  // CSS 側のアニメーション時間（style.css の「FINAL ANSWER」セクション）と同期している。
-  finalAnswer: {
+  // EXTRA SHOT（クリア後の追加推理タイム）の演出タイミング。
+  // CSS 側のアニメーション時間（style.css の「EXTRA SHOT」セクション）と同期している。
+  extraShot: {
     cutinMs: 2100, // カットイン全体の長さ（この後に入力可能になる）
     cutinReducedMs: 400, // reduce-motion 時の入力開始までの間
     drumrollMs: 1700, // Enter からドラムロールのタメを置いて判定オープンが始まるまで（SFX drumroll と同期）
@@ -154,6 +154,9 @@ export const FX = {
     sizePx: 3.2,
   },
 };
+
+// 旧コード向けの互換エイリアス。新規コードは extraShot を使用する。
+FX.finalAnswer = FX.extraShot;
 
 export const AUDIO = {
   masterGain: 0.5,

@@ -14,9 +14,9 @@ export const DEFAULT_SETTINGS = {
   keyboardHints: true, // DWORDle のキーボードを判定色で塗り分ける
   reduceFx: false, // 演出を軽くする（パーティクルを完全にオフ）
   randomLevel: 1, // ランダムプレイで前回選んだレベル
-  // FINAL ANSWER モード（10 回プレイで解放）。ON だとクリア後に追加推理タイムが入り、
+  // EXTRA SHOT モード（10 回プレイで解放）。ON だとクリア後に追加推理タイムが入り、
   // もう一つの答えを 1 回だけ推理できる（成功で DOUBLE CLEAR）。DWORDle / DWORDlie 共通。
-  finalAnswer: false,
+  extraShot: false,
 };
 
 // 実績で解放される隠しテーマ。設定画面では解放まで「???」表示になる。
@@ -44,16 +44,25 @@ export function normalizeVolume(value) {
   return Math.round(Math.min(100, Math.max(0, numeric)));
 }
 
-let settings = { ...DEFAULT_SETTINGS, ...loadJSON("settings", {}) };
+const storedSettings = loadJSON("settings", {});
+const hadLegacyFinalAnswer = Object.prototype.hasOwnProperty.call(storedSettings, "finalAnswer");
+if (storedSettings.extraShot === undefined && hadLegacyFinalAnswer) {
+  storedSettings.extraShot = Boolean(storedSettings.finalAnswer);
+}
+delete storedSettings.finalAnswer;
+let settings = { ...DEFAULT_SETTINGS, ...storedSettings };
 settings.sfxVolume = normalizeVolume(settings.sfxVolume);
 settings.bgmVolume = normalizeVolume(settings.bgmVolume);
+if (hadLegacyFinalAnswer) saveJSON("settings", settings);
 const listeners = new Set();
 
 export function getSettings() {
-  return { ...settings };
+  // finalAnswer は旧コード向けの読取専用互換エイリアス。保存は extraShot のみ。
+  return { ...settings, finalAnswer: settings.extraShot };
 }
 
 export function setSetting(key, value) {
+  if (key === "finalAnswer") key = "extraShot";
   if (key === "sfxVolume" || key === "bgmVolume") value = normalizeVolume(value);
   if (settings[key] === value) return;
   settings = { ...settings, [key]: value };

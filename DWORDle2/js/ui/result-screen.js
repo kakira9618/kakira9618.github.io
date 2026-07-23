@@ -3,7 +3,7 @@
 
 import { el, clear, fmtDateTime } from "./dom.js";
 import { registerScreen, navigate, setViewMood } from "./app.js?v=20260723-fa";
-import { findGame, MODES } from "../core/records.js";
+import { findGame, MODES, getExtraShot } from "../core/records.js";
 import { Logic, CELL, queryWordSingle } from "../core/logic.js";
 import { pidLabel, isDailyPID } from "../core/problems.js";
 import { playSfx } from "../audio/sound.js?v=20260723-fa";
@@ -54,8 +54,8 @@ function buildShareText(record, logic, cleared, includeUrl = true) {
   if (cleared) {
     text += `You guessed Word ${logic.matchWordNo(record.guessWord[record.guessWord.length - 1])}!\n`;
   }
-  if (record.finalAnswer?.success) {
-    text += "FINAL ANSWER ⭐ DOUBLE CLEAR!!\n";
+  if (getExtraShot(record)?.success) {
+    text += "EXTRA SHOT ⭐ DOUBLE CLEAR!!\n";
   }
   if (includeUrl) text += SHARE_URL;
   return text;
@@ -86,8 +86,8 @@ function render(args) {
   const cleared = record.clear;
   const results = displayResults(record, logic);
   const maxGuess = MODES[record.gameMode].maxGuess;
-  // FINAL ANSWER の記録（v2 追加スキーマ。旧レコードには存在しない）
-  const fa = record.finalAnswer;
+  // EXTRA SHOT の記録。旧 finalAnswer レコードも同じ表示へ透過する。
+  const fa = getExtraShot(record);
   const doubleClear = Boolean(fa?.success);
   const faTarget = cleared ? logic.otherAnswer(lastWord) : null;
   const faResult = fa && faTarget ? queryWordSingle(fa.word, faTarget) : null;
@@ -115,15 +115,15 @@ function render(args) {
   // ラベルは左、正解を示す旗は右へ絶対配置し、有無で行がずれないようにする。
   const answerRow = (no, word) => {
     const matched = cleared && lastWord === word;
-    const finalMatched = doubleClear && faTarget === word; // FINAL ANSWER で当てた方は金の王冠
+    const extraMatched = doubleClear && faTarget === word; // EXTRA SHOT で当てた方は金の王冠
     return el(
       "div",
       {
         class: "answer-row",
         role: "img",
         "aria-label": tr(
-          `Word ${no}: ${word.toUpperCase()}${matched ? "、あなたが当てた答え" : finalMatched ? "、FINAL ANSWERで当てた答え" : ""}`,
-          `Word ${no}: ${word.toUpperCase()}${matched ? ", your answer" : finalMatched ? ", your FINAL ANSWER" : ""}`
+          `Word ${no}: ${word.toUpperCase()}${matched ? "、あなたが当てた答え" : extraMatched ? "、EXTRA SHOTで当てた答え" : ""}`,
+          `Word ${no}: ${word.toUpperCase()}${matched ? ", your answer" : extraMatched ? ", your EXTRA SHOT" : ""}`
         ),
       },
       el(
@@ -144,7 +144,7 @@ function render(args) {
               el("span", { class: "guess-flag-cloth" })
             )
           )
-        : finalMatched
+        : extraMatched
           ? el(
               "span",
               { class: "fa-crown-slot", "aria-hidden": "true" },
@@ -154,20 +154,20 @@ function render(args) {
     );
   };
 
-  // FINAL ANSWER の追加推理の記録（挑戦した場合のみ。成功・失敗どちらも表示する）
-  const finalAnswerCard = fa && faResult
+  // EXTRA SHOT の追加推理の記録（挑戦した場合のみ。成功・失敗どちらも表示する）
+  const extraShotCard = fa && faResult
     ? el(
         "div",
         { class: `card fa-result ${fa.success ? "success" : "fail"}` },
-        el("div", { class: "fa-result-head" }, "FINAL ANSWER"),
+        el("div", { class: "fa-result-head" }, "EXTRA SHOT"),
         el(
           "div",
           {
             class: "rrow",
             role: "img",
             "aria-label": tr(
-              `FINAL ANSWER: ${fa.word.toUpperCase()}、${fa.success ? "成功" : "失敗"}`,
-              `FINAL ANSWER: ${fa.word.toUpperCase()}, ${fa.success ? "success" : "miss"}`
+              `EXTRA SHOT: ${fa.word.toUpperCase()}、${fa.success ? "成功" : "失敗"}`,
+              `EXTRA SHOT: ${fa.word.toUpperCase()}, ${fa.success ? "success" : "miss"}`
             ),
           },
           fa.word.split("").map((c, i) => el("div", { class: `rcell ${faResult[i]}`, "aria-hidden": "true" }, c))
@@ -215,7 +215,7 @@ function render(args) {
     ),
     el("div", { class: "card answers-grid" }, answerRow(1, logic.ans1), answerRow(2, logic.ans2)),
     grid,
-    finalAnswerCard,
+    extraShotCard,
     el(
       "div",
       { class: "result-actions" },

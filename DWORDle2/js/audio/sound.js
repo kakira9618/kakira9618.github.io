@@ -620,8 +620,8 @@ const SFX = {
     tone({ freq: 2093, type: "sine", dur: 0.7, gain: 0.07, when: 0.46 });
     noise({ dur: 0.9, gain: 0.05, freq: 8500, when: 0.42 });
   },
-  // FINAL ANSWER カットイン: 迫るライザー → 重い着地 → 緊張のマイナー和音 → 心音 2 連
-  finalAnswer: () => {
+  // EXTRA SHOT カットイン: 迫るライザー → 重い着地 → 緊張のマイナー和音 → 心音 2 連
+  extraShot: () => {
     tone({ freq: 110, type: "sawtooth", dur: 0.55, gain: 0.12, slide: 550 });
     noise({ dur: 0.5, gain: 0.08, freq: 1800, q: 0.8 });
     // 着地の衝撃（低音ドロップ + ノイズバースト）
@@ -635,9 +635,9 @@ const SFX = {
     tone({ freq: 70, type: "sine", dur: 0.16, gain: 0.38, when: 1.3 });
     tone({ freq: 64, type: "sine", dur: 0.2, gain: 0.32, when: 1.55 });
   },
-  // FINAL ANSWER のドラムロール（判定オープン前のタメ）。小刻みなスネア連打が
+  // EXTRA SHOT のドラムロール（判定オープン前のタメ）。小刻みなスネア連打が
   // 徐々に強く・わずかに速くなり、締めの一打で止まる。全体の長さは
-  // config.js の FX.finalAnswer.drumrollMs（判定オープン開始）と同期している。
+  // config.js の FX.extraShot.drumrollMs（判定オープン開始）と同期している。
   drumroll: () => {
     let when = 0;
     let interval = 0.075;
@@ -675,6 +675,9 @@ const SFX = {
   },
   swoosh: () => noise({ dur: 0.25, gain: 0.12, freq: 1200 }),
 };
+
+// 旧コード向けの互換エイリアス。新規コードは extraShot を使用する。
+SFX.finalAnswer = SFX.extraShot;
 
 export function playSfx(name) {
   if (!getSettings().sfx) return;

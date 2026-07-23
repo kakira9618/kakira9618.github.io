@@ -355,10 +355,10 @@ export function bgmUnlockCelebration(tracks) {
   }
 }
 
-// ---- FINAL ANSWER モード解放（10 回プレイ到達） ----
+// ---- EXTRA SHOT モード解放（10 回プレイ到達） ----
 
-// 「設定に FINAL ANSWER が追加された」ことを大型カードで通知し、その場で ON にもできる。
-export function finalAnswerUnlockCelebration() {
+// 「設定に EXTRA SHOT が追加された」ことを大型カードで通知し、その場で ON にもできる。
+export function extraShotUnlockCelebration() {
   enqueueUnlockDialog(() => {
     playSfx("unlock");
     const titleId = `fa-unlock-title-${++unlockDialogSerial}`;
@@ -378,13 +378,13 @@ export function finalAnswerUnlockCelebration() {
           el("div", { class: "bgm-unlock-rays", "aria-hidden": "true" }),
           el("div", { class: "bgm-unlock-kicker" }, "NEW MODE UNLOCKED"),
           el("div", { class: "bgm-unlock-note", "aria-hidden": "true" }, icon("target", 38)),
-          el("div", { class: "bgm-unlock-title", id: titleId }, "FINAL ANSWER"),
+          el("div", { class: "bgm-unlock-title", id: titleId }, "EXTRA SHOT"),
           el(
             "div",
             { class: "bgm-unlock-desc", id: descId },
             tr(
-              "設定に「FINAL ANSWER」が追加されました。ONにすると、クリア後に追加推理タイムが発動。当てなかったもう一つの答えを 1 回のチャンスで見抜けば、大成功の DOUBLE CLEAR!（DWORDle / DWORDlie 共通。失敗しても通常クリアのまま）",
-              "A new “FINAL ANSWER” setting has been added. When ON, clearing a game triggers one extra deduction: name the other hidden answer in a single try for a DOUBLE CLEAR! (Applies to DWORDle & DWORDlie. Failing still counts as a normal clear.)"
+              "設定に「EXTRA SHOT」が追加されました。ONにすると、クリア後に追加推理タイムが発動。当てなかったもう一つの答えを 1 回のチャンスで見抜けば、大成功の DOUBLE CLEAR!（DWORDle / DWORDlie 共通。失敗しても通常クリアのまま）",
+              "A new “EXTRA SHOT” setting has been added. When ON, clearing a game triggers one extra deduction: name the other hidden answer in a single try for a DOUBLE CLEAR! (Applies to DWORDle & DWORDlie. Failing still counts as a normal clear.)"
             )
           ),
           el(
@@ -396,7 +396,7 @@ export function finalAnswerUnlockCelebration() {
               {
                 class: "btn btn-primary",
                 onclick: () => {
-                  setSetting("finalAnswer", true);
+                  setSetting("extraShot", true);
                   close({ selected: true });
                 },
               },
@@ -407,6 +407,9 @@ export function finalAnswerUnlockCelebration() {
     });
   });
 }
+
+// 旧コード向けの互換エイリアス。
+export const finalAnswerUnlockCelebration = extraShotUnlockCelebration;
 
 // ---- 隠しテーマ解放 ----
 

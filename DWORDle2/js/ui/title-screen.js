@@ -10,8 +10,8 @@ import { getSettings, setSetting } from "../core/settings.js?v=20260723-fa";
 import { loadJSON, saveJSON } from "../core/store.js";
 import { importFromLocalStorage, scanLegacyHistory } from "../core/migrate.js";
 import { playSfx } from "../audio/sound.js?v=20260723-fa";
-import { toast, finalAnswerUnlockCelebration } from "./toast.js?v=20260723-fa";
-import { claimFinalAnswerUnlockNotice } from "../core/final-answer.js?v=20260723-fa";
+import { toast, extraShotUnlockCelebration } from "./toast.js?v=20260723-fa";
+import { claimExtraShotUnlockNotice } from "../core/extra-shot.js?v=20260723-fa";
 import { showModal } from "./modal.js?v=20260723-fa";
 import { finishHistoryImport } from "./history-import.js?v=20260723-fa";
 import { showFirstTutorial, showHelpModal } from "./help.js?v=20260723-fa";
@@ -476,8 +476,8 @@ function render() {
     maybeOfferLegacyImport();
   }
   // アプリ更新前から 10 回プレイに到達していた人にも、初回のタイトル表示で
-  // FINAL ANSWER モードの解放を通知する（通常はゲーム終了時に通知される）。
-  if (claimFinalAnswerUnlockNotice()) finalAnswerUnlockCelebration();
+  // EXTRA SHOT モードの解放を通知する（通常はゲーム終了時に通知される）。
+  if (claimExtraShotUnlockNotice()) extraShotUnlockCelebration();
 }
 
 registerScreen("title", {

@@ -10,7 +10,7 @@ import { queryWordPair, usoConvert } from "../core/logic.js";
 import { currentLanguage } from "../core/i18n.js?v=20260723-fa";
 import { getSettings } from "../core/settings.js?v=20260723-fa";
 import { shouldReduceMotion } from "../core/motion.js?v=20260723-fa";
-import { isFinalAnswerUnlocked } from "../core/final-answer.js?v=20260723-fa";
+import { isExtraShotUnlocked } from "../core/extra-shot.js?v=20260723-fa";
 
 // 判定色の呼び名。ハイコントラスト設定では 緑→オレンジ / 黄→青 に置き換わる。
 // *Chip は凡例の 1 文字ラベル（日本語はオレンジを「橙」と略記）。
@@ -425,14 +425,14 @@ function buildExample(mode, language) {
 function localizedBody(mode, language) {
   const isEnglish = language === "en";
   const c = colorWords(isEnglish);
-  // FINAL ANSWER モード解放後だけ、追加ルールとして最後に説明する（未解放者にはネタバレしない）
-  const finalAnswerNote = isFinalAnswerUnlocked()
+  // EXTRA SHOT モード解放後だけ、追加ルールとして最後に説明する（未解放者にはネタバレしない）
+  const extraShotNote = isExtraShotUnlocked()
     ? el(
         "p",
         { class: "hint help-fa-note" },
         isEnglish
-          ? "FINAL ANSWER (Settings, optional): after you clear, you get exactly one extra guess at the other answer. Name it for a DOUBLE CLEAR — missing it still counts as a normal clear."
-          : "FINAL ANSWER（設定でON / 任意）: クリア後に 1 回だけ、もう一つの答えを推理する追加チャンスが発動します。当てれば大成功の DOUBLE CLEAR!（外しても通常クリアのままです）"
+          ? "EXTRA SHOT (Settings, optional): after you clear, you get exactly one extra guess at the other answer. Name it for a DOUBLE CLEAR — missing it still counts as a normal clear."
+          : "EXTRA SHOT（設定でON / 任意）: クリア後に 1 回だけ、もう一つの答えを推理する追加チャンスが発動します。当てれば大成功の DOUBLE CLEAR!（外しても通常クリアのままです）"
       )
     : null;
   if (mode === "uso") {
@@ -459,8 +459,8 @@ function localizedBody(mode, language) {
           ? "For every tile, one of the two colors other than its true feedback is chosen at random, independently of all other tiles. Even tiles with the same true feedback may therefore show different colors. Guess either answer within 15 tries. The keyboard does not change color because its feedback cannot be trusted."
           : "各タイルは、ほかの文字とは関係なく、本当の判定以外の 2 色からランダムに 1 色を選びます。そのため本当の判定が同じ文字同士でも、別の色を表示することがあります。15 回以内の試行で、2 つの正解単語の「どちらか」を当ててください。キーボードは色づきません（嘘なので）。"
       ),
-      finalAnswerNote,
-    ].filter(Boolean); // 未解放時は finalAnswerNote が null（DOM append に渡さない）
+      extraShotNote,
+    ].filter(Boolean); // 未解放時は extraShotNote が null（DOM append に渡さない）
   }
   return [
     el(
@@ -478,8 +478,8 @@ function localizedBody(mode, language) {
         ? `Guess either answer within 10 tries. Even five ${c.green} tiles may not be an exact answer; if so, the game continues.`
         : `10 回以内の試行で、2 つの正解単語の「どちらか」を当ててください。全部${c.green}であっても正解単語とは限りません（その場合ゲーム続行となります）。`
     ),
-    finalAnswerNote,
-  ].filter(Boolean); // 未解放時は finalAnswerNote が null（DOM append に渡さない）
+    extraShotNote,
+  ].filter(Boolean); // 未解放時は extraShotNote が null（DOM append に渡さない）
 }
 
 export function showHelpModal(mode, afterClose = null) {

@@ -1,21 +1,21 @@
 // ゲーム画面。盤面・キーボード・進行管理。
 //
 // 進行状態 (state): "guess" 入力受付 / "checking" 判定オープン中 / "finish" 終了
-//   FINAL ANSWER 有効時はクリア直後に "finalCutin"（カットイン中・入力不可）
-//   → "finalGuess"（追加推理の入力受付）→ "finalChecking"（追加推理の判定中）を経て "finish"。
+//   EXTRA SHOT 有効時はクリア直後に "extraCutin"（カットイン中・入力不可）
+//   → "extraGuess"（追加推理の入力受付）→ "extraChecking"（追加推理の判定中）を経て "finish"。
 // 原作と同じく、Guess は確定するたびに保存され、リロードしても再開できる。
 // 追加推理タイムの途中でリロード・離脱した場合、チャンスは消滅して通常クリアで記録される。
 
 import { el, clear } from "./dom.js";
 import { APP_VERSION, UI, FX } from "../config.js?v=20260723-fa";
 import { Logic, CELL, usoConvert, queryWordSingle } from "../core/logic.js";
-import { MODES, saveCurrentGame, clearCurrentGame, getCurrentGame, addFinishedGame, isAlreadyPlayed, getHistory } from "../core/records.js";
+import { MODES, saveCurrentGame, clearCurrentGame, getCurrentGame, addFinishedGame, isAlreadyPlayed, getHistory, getExtraShot } from "../core/records.js";
 import { pidLabel } from "../core/problems.js";
 import { checkOnGameFinish } from "../core/achievements.js?v=20260723-fa";
 import { registerScreen, navigate, redirect, getAppMode, currentScreenName } from "./app.js?v=20260723-fa";
-import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration, finalAnswerUnlockCelebration } from "./toast.js?v=20260723-fa";
-import { isFinalAnswerEnabled, claimFinalAnswerUnlockNotice } from "../core/final-answer.js?v=20260723-fa";
-import { playFinalAnswerCutin, playDoubleClearCutin, cancelFinalAnswerFx } from "./final-answer-fx.js?v=20260723-fa";
+import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration, extraShotUnlockCelebration } from "./toast.js?v=20260723-fa";
+import { isExtraShotEnabled, claimExtraShotUnlockNotice } from "../core/extra-shot.js?v=20260723-fa";
+import { playExtraShotCutin, playDoubleClearCutin, cancelExtraShotFx } from "./extra-shot-fx.js?v=20260723-fa";
 import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js?v=20260723-fa";
 import { hiddenThemesUnlockedBy } from "../core/settings.js?v=20260723-fa";
 import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/effects.js?v=20260723-fa";
@@ -56,9 +56,9 @@ let buttonStates = {}; // キーボードの色状態 (normal モードのみ)
 let keyEls = {};
 let seedHidden = false;
 let finishedRecord = null; // 終了後に結果画面へ渡す
-let finalAnswerPhase = null; // FINAL ANSWER 進行状態 { clearedWord, target, attempt: { word, success } | null }
-let finalAnswerLeavePromptOpen = false;
-let finalAnswerFinishPending = false;
+let extraShotPhase = null; // EXTRA SHOT 進行状態 { clearedWord, target, attempt: { word, success } | null }
+let extraShotLeavePromptOpen = false;
+let extraShotFinishPending = false;
 let gatherSession = 0;
 let pendingKeys = []; // 判定オープン中の先行入力（次の 1 行分だけ保持）
 let lastTouchKey = null; // pointerdown で確定したタッチ入力（合成 click の重複抑止用）
@@ -221,47 +221,47 @@ function toggleSeed() {
   updateHeader();
 }
 
-function isFinalAnswerActive() {
-  return state === "finalCutin" || state === "finalGuess" || state === "finalChecking";
+function isExtraShotActive() {
+  return state === "extraCutin" || state === "extraGuess" || state === "extraChecking";
 }
 
 async function requestBackToTitle() {
   playSfx("ui");
-  if (!isFinalAnswerActive()) {
+  if (!isExtraShotActive()) {
     navigate("/");
     return;
   }
-  if (finalAnswerLeavePromptOpen) return;
-  finalAnswerLeavePromptOpen = true;
+  if (extraShotLeavePromptOpen) return;
+  extraShotLeavePromptOpen = true;
   const { confirmModal } = await import("./modal.js?v=20260723-fa");
   const forfeit = await confirmModal(
-    tr("FINAL ANSWERを棄権しますか？", "Forfeit FINAL ANSWER?"),
+    tr("EXTRA SHOTを棄権しますか？", "Forfeit EXTRA SHOT?"),
     tr(
       "棄権すると通常クリアとして履歴に記録されます。\nタイトルへ戻りますか？",
       "Forfeiting records this game as a normal clear.\nReturn to the title?"
     )
   );
-  finalAnswerLeavePromptOpen = false;
+  extraShotLeavePromptOpen = false;
   if (!forfeit) {
-    if (finalAnswerFinishPending) {
-      finalAnswerFinishPending = false;
+    if (extraShotFinishPending) {
+      extraShotFinishPending = false;
       finishGame(true);
     }
     return;
   }
-  finalAnswerFinishPending = false;
-  forfeitFinalAnswer();
+  extraShotFinishPending = false;
+  forfeitExtraShot();
   navigate("/");
 }
 
 function updateHeader() {
   const mode = MODES[game.gameMode];
   headerTitleEl.textContent = mode.title;
-  const inFinalAnswer = state === "finalCutin" || state === "finalGuess" || state === "finalChecking";
-  counterEl.classList.toggle("fa-counter", inFinalAnswer);
-  if (inFinalAnswer) {
-    counterEl.replaceChildren(el("span", {}, "FINAL"), el("span", {}, "ANSWER"));
-    counterEl.setAttribute("aria-label", "FINAL ANSWER");
+  const inExtraShot = state === "extraCutin" || state === "extraGuess" || state === "extraChecking";
+  counterEl.classList.toggle("fa-counter", inExtraShot);
+  if (inExtraShot) {
+    counterEl.replaceChildren(el("span", {}, "EXTRA"), el("span", {}, "SHOT"));
+    counterEl.setAttribute("aria-label", "EXTRA SHOT");
   } else {
     counterEl.textContent = `${game.guessWord.length + (state === "finish" ? 0 : 1)} / ${mode.maxGuess}`;
     counterEl.removeAttribute("aria-label");
@@ -313,9 +313,9 @@ function render() {
   inputBuffer = "";
   pendingKeys = [];
   finishedRecord = null;
-  finalAnswerPhase = null;
-  finalAnswerLeavePromptOpen = false;
-  finalAnswerFinishPending = false;
+  extraShotPhase = null;
+  extraShotLeavePromptOpen = false;
+  extraShotFinishPending = false;
   resultFab.style.display = "none";
   rows = [];
   clear(boardEl);
@@ -446,8 +446,8 @@ function handleKey(k) {
   if (state === "checking") return queuePendingKey(k);
   // カットイン・追加推理の判定中は先行入力も受けない（うっかり Enter で
   // 1 回きりのチャンスを消費させないため、追加推理は必ず手入力で始める）
-  if (state !== "guess" && state !== "finalGuess") return;
-  if (k === "enter") return state === "finalGuess" ? submitFinalAnswer() : submitGuess();
+  if (state !== "guess" && state !== "extraGuess") return;
+  if (k === "enter") return state === "extraGuess" ? submitExtraShot() : submitGuess();
   if (k === "backspace") {
     if (inputBuffer.length > 0) {
       playSfx("delete");
@@ -514,7 +514,7 @@ function overlayBlocksInput() {
 }
 
 export function handlePhysicalKey(e) {
-  if (currentScreenName() !== "game" || (state !== "guess" && state !== "checking" && state !== "finalGuess")) return;
+  if (currentScreenName() !== "game" || (state !== "guess" && state !== "checking" && state !== "extraGuess")) return;
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   if (overlayBlocksInput()) return;
   const key = physicalGameKey(e);
@@ -553,8 +553,8 @@ function submitGuess() {
   state = "checking";
   revealRow(currentRow(), word, shownResult, () => {
     const maxGuess = MODES[game.gameMode].maxGuess;
-    if (logic.isGameClear(word) && isFinalAnswerEnabled()) {
-      beginFinalAnswer(word);
+    if (logic.isGameClear(word) && isExtraShotEnabled()) {
+      beginExtraShot(word);
     } else if (logic.isGameClear(word) || game.guessWord.length >= maxGuess) {
       finishGame(true);
     } else {
@@ -567,36 +567,36 @@ function submitGuess() {
   });
 }
 
-// ---- FINAL ANSWER（クリア後の追加推理タイム）----
+// ---- EXTRA SHOT（クリア後の追加推理タイム）----
 
 // クリアの判定オープン直後に呼ばれる。カットインを流してから追加推理の行を出す。
-function beginFinalAnswer(clearedWord) {
-  state = "finalCutin";
+function beginExtraShot(clearedWord) {
+  state = "extraCutin";
   pendingKeys = []; // クリア判定中の先行入力は「次の通常 Guess」のつもりなので捨てる
   inputBuffer = "";
-  finalAnswerPhase = { clearedWord, target: logic.otherAnswer(clearedWord), attempt: null };
+  extraShotPhase = { clearedWord, target: logic.otherAnswer(clearedWord), attempt: null };
   updateHeader();
-  playSfx("finalAnswer");
+  playSfx("extraShot");
   announce(
     tr(
-      "FINAL ANSWER。当てなかったもう一つの答えを、1 回だけ推理できます。",
-      "FINAL ANSWER. You get one guess at the other hidden answer."
+      "EXTRA SHOT。当てなかったもう一つの答えを、1 回だけ推理できます。",
+      "EXTRA SHOT. You get one guess at the other hidden answer."
     )
   );
   const session = gatherSession;
-  playFinalAnswerCutin(game.gameMode === "uso").then(() => {
-    if (session !== gatherSession || state !== "finalCutin") return;
-    state = "finalGuess";
+  playExtraShotCutin(game.gameMode === "uso").then(() => {
+    if (session !== gatherSession || state !== "extraCutin") return;
+    state = "extraGuess";
     const row = addRow(true);
     row.rowEl.classList.add("fa-row");
-    row.rowEl.setAttribute("aria-label", tr("FINAL ANSWER 入力", "FINAL ANSWER Guess"));
+    row.rowEl.setAttribute("aria-label", tr("EXTRA SHOT 入力", "EXTRA SHOT Guess"));
     updateHeader();
     scrollToBottom();
   });
 }
 
 // 追加推理の確定。チャンスは 1 回だけで、成功なら DOUBLE CLEAR として記録される。
-function submitFinalAnswer() {
+function submitExtraShot() {
   if (inputBuffer.length !== 5) {
     return rejectGuess("Not enough letters");
   }
@@ -604,23 +604,23 @@ function submitFinalAnswer() {
   if (!logic.isValidWord(word)) {
     return rejectGuess("Not in word list");
   }
-  if (word === finalAnswerPhase.clearedWord) {
+  if (word === extraShotPhase.clearedWord) {
     // 当てた方をもう一度入力してもチャンスは消費させず、打ち直しを促す
     return rejectGuess(tr("それはさっき当てた答え！", "You already found that one!"));
   }
-  const success = word === finalAnswerPhase.target;
-  finalAnswerPhase.attempt = { word, success };
-  state = "finalChecking";
+  const success = word === extraShotPhase.target;
+  extraShotPhase.attempt = { word, success };
+  state = "extraChecking";
   // 判定は残る答え 1 語だけとの比較。DWORDlie でもここは真実を表示する（最後の開示）。
-  const result = queryWordSingle(word, finalAnswerPhase.target);
+  const result = queryWordSingle(word, extraShotPhase.target);
   const row = currentRow();
   const session = gatherSession;
   const beginReveal = () => {
     if (session !== gatherSession) return;
     row.rowEl.classList.remove("fa-charging");
     revealRow(row, word, result, () => {
-      if (finalAnswerLeavePromptOpen) {
-        finalAnswerFinishPending = true;
+      if (extraShotLeavePromptOpen) {
+        extraShotFinishPending = true;
         return;
       }
       finishGame(true);
@@ -632,7 +632,7 @@ function submitFinalAnswer() {
     // ドラムロールのタメ。タイルが小さく震え、太鼓が鳴り止んだ直後に判定が開く
     playSfx("drumroll");
     row.rowEl.classList.add("fa-charging");
-    setTimeout(beginReveal, FX.finalAnswer.drumrollMs);
+    setTimeout(beginReveal, FX.extraShot.drumrollMs);
   }
 }
 
@@ -650,9 +650,9 @@ function rejectGuess(message) {
 // （古い done が新しい盤面へ作用したり、離脱後に音や演出が鳴るのを防ぐ）。
 function revealRow(row, word, result, done) {
   const session = gatherSession;
-  const finalAnswerReveal = state === "finalChecking";
+  const extraShotReveal = state === "extraChecking";
   const revealDelay = (index) =>
-    index * UI.revealIntervalMs + (finalAnswerReveal && index === 4 ? FX.finalAnswer.lastTilePauseMs : 0);
+    index * UI.revealIntervalMs + (extraShotReveal && index === 4 ? FX.extraShot.lastTilePauseMs : 0);
   if (shouldReduceMotion()) {
     result.forEach((stateName, i) => {
       const tile = row.tiles[i];
@@ -693,7 +693,7 @@ function revealRow(row, word, result, done) {
     announce(rowAriaLabel(word, result));
     done();
   }, 5 * UI.revealIntervalMs
-    + (finalAnswerReveal ? FX.finalAnswer.lastTilePauseMs : 0)
+    + (extraShotReveal ? FX.extraShot.lastTilePauseMs : 0)
     + UI.revealFlipMs / 2
     + UI.afterRevealPauseMs);
 }
@@ -727,7 +727,7 @@ function applyAllKeyStyles() {
 
 // ---- 終了処理 ----
 
-function persistFinishedGame({ includeFinalAnswer = true } = {}) {
+function persistFinishedGame({ includeExtraShot = true } = {}) {
   const hadLostBefore = getHistory().some(
     (g) => g.gameMode === game.gameMode && g.problemID === game.problemID && !g.clear
   );
@@ -739,9 +739,9 @@ function persistFinishedGame({ includeFinalAnswer = true } = {}) {
     problemID: game.problemID,
     guessWord: game.guessWord.slice(),
     usoResults: game.gameMode === "uso" ? game.usoResults.slice() : undefined,
-    // 棄権・リロード復帰は通常クリアとして扱い、FINAL ANSWER の記録を付けない。
-    finalAnswer: includeFinalAnswer && finalAnswerPhase?.attempt
-      ? { word: finalAnswerPhase.attempt.word, success: finalAnswerPhase.attempt.success }
+    // 棄権・リロード復帰は通常クリアとして扱い、EXTRA SHOT の記録を付けない。
+    extraShot: includeExtraShot && extraShotPhase?.attempt
+      ? { word: extraShotPhase.attempt.word, success: extraShotPhase.attempt.success }
       : undefined,
   });
   clearCurrentGame(game.gameMode);
@@ -766,19 +766,19 @@ function showFinishUnlocks(newly) {
     if (bgmUnlocks.length > 0) bgmUnlockCelebration(bgmUnlocks);
     hiddenThemesUnlockedBy(newly).forEach(themeUnlockCelebration);
   }
-  if (claimFinalAnswerUnlockNotice()) finalAnswerUnlockCelebration();
+  if (claimExtraShotUnlockNotice()) extraShotUnlockCelebration();
 }
 
-// FINAL ANSWER 中に画面を離れたら、追加推理は棄権し、元のゲームだけを通常クリアで確定する。
-function forfeitFinalAnswer() {
-  if (!isFinalAnswerActive()) return null;
+// EXTRA SHOT 中に画面を離れたら、追加推理は棄権し、元のゲームだけを通常クリアで確定する。
+function forfeitExtraShot() {
+  if (!isExtraShotActive()) return null;
   state = "finish";
   pendingKeys = [];
-  finalAnswerFinishPending = false;
-  cancelFinalAnswerFx();
-  const settled = persistFinishedGame({ includeFinalAnswer: false });
-  finalAnswerPhase = null;
-  announce(tr("FINAL ANSWERを棄権し、通常クリアとして記録しました。", "FINAL ANSWER forfeited. Recorded as a normal clear."));
+  extraShotFinishPending = false;
+  cancelExtraShotFx();
+  const settled = persistFinishedGame({ includeExtraShot: false });
+  extraShotPhase = null;
+  announce(tr("EXTRA SHOTを棄権し、通常クリアとして記録しました。", "EXTRA SHOT forfeited. Recorded as a normal clear."));
   queueMicrotask(() => showFinishUnlocks(settled.newly));
   return settled.record;
 }
@@ -786,20 +786,20 @@ function forfeitFinalAnswer() {
 function finishGame(justFinished) {
   state = "finish";
   pendingKeys = []; // 決着後に持ち越された先行入力は捨てる
-  finalAnswerFinishPending = false;
+  extraShotFinishPending = false;
   updateHeader();
 
   const lastWord = game.guessWord[game.guessWord.length - 1];
   const cleared = logic.isGameClear(lastWord);
-  const { record, newly } = persistFinishedGame({ includeFinalAnswer: justFinished });
+  const { record, newly } = persistFinishedGame({ includeExtraShot: justFinished });
 
   if (justFinished) {
-    const doubleCleared = Boolean(record.finalAnswer?.success);
+    const doubleCleared = Boolean(getExtraShot(record)?.success);
     if (doubleCleared) {
       // 大成功: 専用ファンファーレ + 金色の DOUBLE CLEAR カットイン + 金色バースト
       playSfx("doubleClear");
       playDoubleClearCutin();
-      winBurst(FX.finalAnswer.burstColors);
+      winBurst(FX.extraShot.burstColors);
       announce(tr("大成功！DOUBLE CLEAR！両方の答えを当てました。", "DOUBLE CLEAR! You found both answers."));
     } else if (cleared) {
       playSfx("win");
@@ -815,7 +815,7 @@ function finishGame(justFinished) {
     setTimeout(() => {
       if (session === gatherSession) navigate(`/result/${record.gameMode}/${record.startTime}`);
       showFinishUnlocks(newly);
-    }, doubleCleared ? FX.finalAnswer.resultDelayMs : cleared ? 1400 : 900);
+    }, doubleCleared ? FX.extraShot.resultDelayMs : cleared ? 1400 : 900);
   } else {
     // リロード等で復帰した決着済みゲームも、棄権扱いの通常クリアとして完全に確定する。
     resultFab.style.display = "";
@@ -874,11 +874,11 @@ registerScreen("game", {
   render,
   onLeave() {
     // ブラウザの戻る操作やハッシュ遷移など、ヘッダーボタン以外の離脱も棄権として確定する。
-    if (isFinalAnswerActive()) forfeitFinalAnswer();
+    if (isExtraShotActive()) forfeitExtraShot();
     gatherSession++;
     pendingKeys = [];
     cancelTileFlights();
-    cancelFinalAnswerFx();
+    cancelExtraShotFx();
     rows.forEach((row) => {
       row.tiles.forEach((tile) => (tile.style.opacity = ""));
       row.gatherFlight = null;

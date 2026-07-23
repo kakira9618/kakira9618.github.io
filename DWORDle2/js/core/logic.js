@@ -66,7 +66,7 @@ export class Logic {
     return 0;
   }
 
-  // FINAL ANSWER 用: word が答えの一方なら、もう一方の答えを返す
+  // EXTRA SHOT 用: word が答えの一方なら、もう一方の答えを返す
   otherAnswer(word) {
     if (word === this.ans1) return this.ans2;
     if (word === this.ans2) return this.ans1;
@@ -116,9 +116,9 @@ export function queryWordPair(word, ans1, ans2) {
   return result;
 }
 
-// 1 語だけを対象にした Wordle 標準の判定（FINAL ANSWER の追加推理用）。
+// 1 語だけを対象にした Wordle 標準の判定（EXTRA SHOT の追加推理用）。
 // 緑を先に確定し、残った文字から黄を左から順に消費する。
-// DWORDlie でも FINAL ANSWER は「真実の開示」なので嘘変換はかけない。
+// DWORDlie でも EXTRA SHOT は「真実の開示」なので嘘変換はかけない。
 export function queryWordSingle(word, ans) {
   const result = [CELL.UNUSED, CELL.UNUSED, CELL.UNUSED, CELL.UNUSED, CELL.UNUSED];
   const consumed = [0, 0, 0, 0, 0]; // ans の各文字を判定に使ったか

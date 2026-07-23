@@ -22,7 +22,7 @@
 
 import { loadJSON, saveJSON, onExternalChange } from "./store.js";
 import { isDailyPID, PID } from "./problems.js";
-import { getHistory } from "./records.js";
+import { getHistory, getExtraShot } from "./records.js";
 import { CELL, Logic } from "./logic.js";
 import { isDebugMode } from "./debug.js";
 
@@ -121,8 +121,8 @@ export const ACHIEVEMENTS = [
   { id: "h-play-streak-30", hidden: true, icon: "sunrise", color: "#ffd890", name: "一ヶ月の誓い", desc: "30 日連続でプレイする（1 日 1 回を 30 日）" },
   { id: "h-play-days-1095", hidden: true, icon: "mountain", color: "#a0d8e8", name: "千日修行", desc: "通算 1095 日プレイする（約 3 年）" },
   { id: "h-play-days-1825", hidden: true, icon: "crown", color: "#ffe060", name: "五年の伝説", desc: "通算 1825 日プレイする（約 5 年）" },
-  // FINAL ANSWER モード（クリア後の追加推理）関連
-  { id: "h-double-clear", hidden: true, icon: "target", color: "#ffd166", name: "両手に花", desc: "FINAL ANSWER に成功して DOUBLE CLEAR する" },
+  // EXTRA SHOT モード（クリア後の追加推理）関連
+  { id: "h-double-clear", hidden: true, icon: "target", color: "#ffd166", name: "両手に花", desc: "EXTRA SHOT に成功して DOUBLE CLEAR する" },
   { id: "h-double-uso", hidden: true, icon: "eye", color: "#ff9ad0", name: "すべてお見通し", desc: "DWORDlie で DOUBLE CLEAR する（嘘の判定だけから両方の答えを見抜く）" },
   { id: "h-double-oneshot", hidden: true, icon: "bolt", color: "#ffe680", name: "神の二手", desc: "1 手クリアから DOUBLE CLEAR する（合計 2 手で両方の答えを当てる）" },
   { id: "h-double-10", hidden: true, icon: "crown", color: "#ffcf5c", name: "二兎を得る者", desc: "DOUBLE CLEAR を通算 10 回達成する" },
@@ -499,8 +499,8 @@ export function achievementIdsFromHistory(records) {
     if (countable && isGuessWordChain(record.guessWord)) ids.add("h-alphabet");
     if (countable && guesses >= 3 && lettersUsed.size === guesses * 5) ids.add("h-noreuse");
 
-    // FINAL ANSWER（同日・同問題の再プレイは答えを知っているので判定しない）
-    if (countable && record.finalAnswer?.success) {
+    // EXTRA SHOT（同日・同問題の再プレイは答えを知っているので判定しない）
+    if (countable && getExtraShot(record)?.success) {
       ids.add("h-double-clear");
       if (mode === "uso") ids.add("h-double-uso");
       if (guesses === 1) ids.add("h-double-oneshot");
@@ -518,7 +518,7 @@ export function achievementIdsFromHistory(records) {
   if (wins >= 50) ids.add("wins-50");
   if (wins >= 100) ids.add("wins-100");
   if (usoWins >= 5) ids.add("uso-5");
-  if (countableGames.filter((g) => g.clear && g.finalAnswer?.success).length >= 10) ids.add("h-double-10");
+  if (countableGames.filter((g) => g.clear && getExtraShot(g)?.success).length >= 10) ids.add("h-double-10");
   if (words.size >= 1000) ids.add("h-lexicon");
   if (clearedZoromeCount(countableGames) >= 10) ids.add("h-zorome");
   if (maxHistoricalDailyStreak(dailyClears) >= 7) ids.add("daily-7");
@@ -654,13 +654,13 @@ export function checkOnGameFinish(ctx) {
       if (guesses >= 3 && lettersUsed.size === guesses * 5) unlock("h-noreuse", newly);
     }
 
-    // FINAL ANSWER（DOUBLE CLEAR）。答えを知った再プレイでの稼ぎ防止で初回プレイのみ判定
-    if (countablePlay && record.finalAnswer?.success) {
+    // EXTRA SHOT（DOUBLE CLEAR）。答えを知った再プレイでの稼ぎ防止で初回プレイのみ判定
+    if (countablePlay && getExtraShot(record)?.success) {
       unlock("h-double-clear", newly);
       if (isUso) unlock("h-double-uso", newly);
       if (guesses === 1) unlock("h-double-oneshot", newly);
     }
-    if (countableHistory.filter((g) => g.clear && g.finalAnswer?.success).length >= 10) {
+    if (countableHistory.filter((g) => g.clear && getExtraShot(g)?.success).length >= 10) {
       unlock("h-double-10", newly);
     }
   }

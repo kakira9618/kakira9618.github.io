@@ -3057,17 +3057,17 @@ body.reduce-motion .entry-gate-card {
 }
 
 /* ==========================================================================
-   FINAL ANSWER（クリア後の追加推理タイム）
+   EXTRA SHOT（クリア後の追加推理タイム）
    - 突入カットイン (.fa-cutin): テーマ×モードで帯・文字の配色/動きを出し分ける
    - 追加推理の行 (.fa-row) / ドラムロール中の震え (.fa-charging)
    - DOUBLE CLEAR セレブレーション (.fa-double)
    - 結果画面・履歴・設定の関連パーツ
-   時間系は js/config.js の FX.finalAnswer と同期している:
+   時間系は js/config.js の FX.extraShot と同期している:
      カットイン全体 2100ms / ドラムロール 1700ms / DOUBLE CLEAR 表示 2600ms
    ========================================================================== */
 
 :root {
-  /* FINAL ANSWER の共通アクセント（金）。DOUBLE CLEAR 系の配色はここから派生させる */
+  /* EXTRA SHOT の共通アクセント（金）。DOUBLE CLEAR 系の配色はここから派生させる */
   --fa-gold: #ffd166;
   --fa-gold-deep: #ff9a2e;
   --fa-gold-pale: #fff3c4;
@@ -3095,6 +3095,7 @@ body.reduce-motion .entry-gate-card {
 }
 .fa-cutin-band {
   position: relative;
+  top: clamp(-24px, -2.5vh, -14px);
   width: 135%;
   padding: clamp(18px, 4vh, 30px) 0;
   text-align: center;
@@ -3404,7 +3405,7 @@ body.reduce-motion .result-title.double { animation: none; }
   to { background-position: 0% 0; }
 }
 
-/* FINAL ANSWER の記録カード */
+/* EXTRA SHOT の記録カード */
 .fa-result {
   display: flex;
   flex-direction: column;

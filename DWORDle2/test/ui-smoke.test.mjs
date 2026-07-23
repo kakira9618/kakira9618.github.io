@@ -101,7 +101,7 @@ await page.addInitScript(({ unlockedAchievements }) => {
   localStorage.setItem("dwordle2.legacyImportPrompted", "true");
   // タイトルメニューの段階解放を全開放した状態で UI を検証する
   localStorage.setItem("dwordle2.playCount", "99");
-  localStorage.setItem("dwordle2.finalAnswerUnlockSeen", "true");
+  localStorage.setItem("dwordle2.extraShotUnlockSeen", "true");
   localStorage.setItem("dwordle2.menuUnlockSeen", "99");
 }, { unlockedAchievements: unlocked });
 await page.addInitScript({ path: axePath });
@@ -305,9 +305,9 @@ try {
   await page.waitForURL(/#\/settings$/);
   const switches = page.getByRole("switch");
   await switches.first().waitFor();
-  // playCount=99 で FINAL ANSWER が解放済みのため、トグルは 6 個
+  // playCount=99 で EXTRA SHOT が解放済みのため、トグルは 6 個
   assert.equal(await switches.count(), 6, "All settings switches should expose the switch role");
-  for (const label of ["ハイコントラスト配色", "キーボードヒント", "演出を軽くする", "FINAL ANSWER", "効果音", "BGM"]) {
+  for (const label of ["ハイコントラスト配色", "キーボードヒント", "演出を軽くする", "EXTRA SHOT", "効果音", "BGM"]) {
     await page.getByRole("switch", { name: label }).waitFor();
   }
   for (const copy of ["UIの言語を設定", "UIや背景のテーマを設定", "パーティクルを完全にオフにします"]) {
@@ -719,7 +719,7 @@ try {
   );
   assert.equal(runtimeErrors.length, 0, `Runtime errors:\n${runtimeErrors.join("\n")}`);
 
-  // FINAL ANSWER 中の戻る操作: 確認後に棄権し、元のゲームだけを通常クリアとして記録する
+  // EXTRA SHOT 中の戻る操作: 確認後に棄権し、元のゲームだけを通常クリアとして記録する
   {
     const pid = 321;
     const logic = new Logic(pid);
@@ -734,7 +734,7 @@ try {
           language: "ja",
           keyboardHints: true,
           reduceFx: true,
-          finalAnswer: true,
+          extraShot: true,
         }));
         localStorage.setItem("dwordle2.mode", JSON.stringify("normal"));
         localStorage.setItem("dwordle2.current.normal", JSON.stringify({
@@ -751,7 +751,7 @@ try {
         localStorage.setItem("dwordle2.legacyImportPrompted", "true");
         localStorage.setItem("dwordle2.tutorialSeen", "true");
         localStorage.setItem("dwordle2.playCount", "99");
-        localStorage.setItem("dwordle2.finalAnswerUnlockSeen", "true");
+        localStorage.setItem("dwordle2.extraShotUnlockSeen", "true");
         localStorage.setItem("dwordle2.menuUnlockSeen", "99");
       },
       { unlockedAchievements: unlocked, puzzleId: pid, startedAt: startTime }
@@ -764,15 +764,15 @@ try {
     await forfeitPage.locator("#screen-game.active .fa-row").waitFor({ timeout: 8000 });
 
     await forfeitPage.getByRole("button", { name: "タイトルへ戻る" }).click();
-    const forfeitDialog = forfeitPage.getByRole("dialog", { name: "FINAL ANSWERを棄権しますか？" });
+    const forfeitDialog = forfeitPage.getByRole("dialog", { name: "EXTRA SHOTを棄権しますか？" });
     await forfeitDialog.getByText("棄権すると通常クリアとして履歴に記録されます。", { exact: false }).waitFor();
     await forfeitDialog.getByRole("button", { name: "キャンセル" }).click();
     await forfeitDialog.waitFor({ state: "detached" });
-    assert.match(forfeitPage.url(), /#\/game$/, "Cancelling the forfeit should keep FINAL ANSWER open");
+    assert.match(forfeitPage.url(), /#\/game$/, "Cancelling the forfeit should keep EXTRA SHOT open");
     assert.equal(await forfeitPage.locator("#screen-game.active .fa-row").count(), 1);
 
     await forfeitPage.getByRole("button", { name: "タイトルへ戻る" }).click();
-    await forfeitPage.getByRole("dialog", { name: "FINAL ANSWERを棄権しますか？" })
+    await forfeitPage.getByRole("dialog", { name: "EXTRA SHOTを棄権しますか？" })
       .getByRole("button", { name: "OK", exact: true })
       .click();
     await forfeitPage.waitForURL(/#\/$/);
@@ -783,7 +783,7 @@ try {
         historyLength: history.length,
         clear: record?.clear,
         guesses: record?.guessWord,
-        hasFinalAnswer: record ? Object.prototype.hasOwnProperty.call(record, "finalAnswer") : null,
+        hasExtraShot: record ? Object.prototype.hasOwnProperty.call(record, "extraShot") : null,
         current: JSON.parse(localStorage.getItem("dwordle2.current.normal") || "null"),
         playCount: Number(localStorage.getItem("dwordle2.playCount")),
       };
@@ -792,15 +792,15 @@ try {
       historyLength: 1,
       clear: true,
       guesses: [logic.ans1],
-      hasFinalAnswer: false,
+      hasExtraShot: false,
       current: null,
       playCount: 100,
-    }, "Forfeiting FINAL ANSWER should settle one ordinary clear");
+    }, "Forfeiting EXTRA SHOT should settle one ordinary clear");
     assert.equal(await forfeitPage.getByText("つづきから", { exact: true }).count(), 0);
     await forfeitPage.close();
   }
 
-  // FINAL ANSWER 成功: 最後の 1 枚だけ溜め、結果・保存画像を通常盤面の下へ表示する
+  // EXTRA SHOT 成功: 最後の 1 枚だけ溜め、結果・保存画像を通常盤面の下へ表示する
   {
     const pid = 322;
     const logic = new Logic(pid);
@@ -814,7 +814,7 @@ try {
           language: "ja",
           keyboardHints: true,
           reduceFx: false,
-          finalAnswer: true,
+          extraShot: true,
         }));
         localStorage.setItem("dwordle2.mode", JSON.stringify("normal"));
         localStorage.setItem("dwordle2.current.normal", JSON.stringify({
@@ -831,7 +831,7 @@ try {
         localStorage.setItem("dwordle2.legacyImportPrompted", "true");
         localStorage.setItem("dwordle2.tutorialSeen", "true");
         localStorage.setItem("dwordle2.playCount", "99");
-        localStorage.setItem("dwordle2.finalAnswerUnlockSeen", "true");
+        localStorage.setItem("dwordle2.extraShotUnlockSeen", "true");
         localStorage.setItem("dwordle2.menuUnlockSeen", "99");
       },
       { unlockedAchievements: unlocked, puzzleId: pid }
@@ -856,21 +856,21 @@ try {
         titleClipped: title.scrollWidth > title.clientWidth + 1,
       };
     });
-    assert.deepEqual(finalHeader.counterLines, ["FINAL", "ANSWER"]);
+    assert.deepEqual(finalHeader.counterLines, ["EXTRA", "SHOT"]);
     assert.ok(
       finalHeader.counterWidth <= 43 && finalHeader.counterFontSize <= 9 && finalHeader.counterAlign === "center",
-      `FINAL ANSWER header label should stay compact and centered: ${JSON.stringify(finalHeader)}`
+      `EXTRA SHOT header label should stay compact and centered: ${JSON.stringify(finalHeader)}`
     );
     assert.equal(finalHeader.title, "DWORDle");
-    assert.equal(finalHeader.titleClipped, false, "The compact FINAL ANSWER counter should leave the game title visible");
+    assert.equal(finalHeader.titleClipped, false, "The compact EXTRA SHOT counter should leave the game title visible");
     await successPage.evaluate(() => {
       const tiles = [...document.querySelectorAll("#screen-game.active .fa-row .tile")];
-      window.__finalAnswerRevealTimes = Array(tiles.length).fill(null);
+      window.__extraShotRevealTimes = Array(tiles.length).fill(null);
       const startedAt = performance.now();
       tiles.forEach((tile, index) => {
         const observer = new MutationObserver(() => {
-          if (window.__finalAnswerRevealTimes[index] !== null || !/state-/.test(tile.className)) return;
-          window.__finalAnswerRevealTimes[index] = performance.now() - startedAt;
+          if (window.__extraShotRevealTimes[index] !== null || !/state-/.test(tile.className)) return;
+          window.__extraShotRevealTimes[index] = performance.now() - startedAt;
           observer.disconnect();
         });
         observer.observe(tile, { attributes: true, attributeFilter: ["class"] });
@@ -879,21 +879,21 @@ try {
     await successPage.keyboard.type(logic.ans2);
     await successPage.keyboard.press("Enter");
     await successPage.waitForFunction(
-      () => window.__finalAnswerRevealTimes?.every(Number.isFinite),
+      () => window.__extraShotRevealTimes?.every(Number.isFinite),
       null,
       { timeout: 10000 }
     );
-    const revealTimes = await successPage.evaluate(() => window.__finalAnswerRevealTimes);
+    const revealTimes = await successPage.evaluate(() => window.__extraShotRevealTimes);
     const earlyGaps = revealTimes.slice(1, 4).map((time, index) => time - revealTimes[index]);
     const finalGap = revealTimes[4] - revealTimes[3];
     assert.equal(
-      await successPage.evaluate(async () => (await import("./js/config.js?v=20260723-fa")).FX.finalAnswer.lastTilePauseMs),
+      await successPage.evaluate(async () => (await import("./js/config.js?v=20260723-fa")).FX.extraShot.lastTilePauseMs),
       720,
       "The final tile pause should be twice the former 360ms pause"
     );
     assert.ok(
       finalGap >= Math.max(...earlyGaps) + 550,
-      `The fifth FINAL ANSWER tile should open after an extra pause: ${JSON.stringify({ revealTimes, earlyGaps, finalGap })}`
+      `The fifth EXTRA SHOT tile should open after an extra pause: ${JSON.stringify({ revealTimes, earlyGaps, finalGap })}`
     );
 
     await successPage.waitForURL(/#\/result\/normal\/\d+$/, { timeout: 12000 });
@@ -903,13 +903,13 @@ try {
       const finalCard = body.querySelector(".fa-result");
       return [...body.children].indexOf(grid) < [...body.children].indexOf(finalCard);
     });
-    assert.equal(resultOrder, true, "FINAL ANSWER should appear below the ordinary Guess grid");
+    assert.equal(resultOrder, true, "EXTRA SHOT should appear below the ordinary Guess grid");
     const crown = successPage.locator(".answer-row .fa-crown");
     assert.equal(await crown.count(), 1);
     assert.equal(await crown.evaluate((node) => node.tagName), "CANVAS");
     assert.equal(await crown.getAttribute("data-crown-points"), "16");
     assert.equal(await crown.getAttribute("data-crown-verticals"), "8");
-    assert.equal(await successPage.locator(".answer-row .fa-star").count(), 0, "The old FINAL ANSWER star should be removed");
+    assert.equal(await successPage.locator(".answer-row .fa-star").count(), 0, "The old EXTRA SHOT star should be removed");
     const crownGeometry = await successPage.evaluate(async () => {
       const { CROWN_POINT_COUNT, CROWN_VALLEY_COUNT, crownPoints } = await import("./js/ui/crown.js?v=20260723-fa");
       const points = crownPoints(0, 0, 0, 40);
@@ -978,7 +978,7 @@ try {
       "DOUBLE CLEAR shine should run from 150% to 0% in one time cycle"
     );
 
-    const snapshotFinalAnswer = await successPage.evaluate(async () => {
+    const snapshotExtraShot = await successPage.evaluate(async () => {
       const history = JSON.parse(localStorage.getItem("dwordle2.history") || "[]");
       const record = history[0];
       const { Logic } = await import("./js/core/logic.js");
@@ -995,7 +995,7 @@ try {
       try {
         const measureOrder = (calls, classic = false) => {
           const answerIndex = calls.findIndex((call) => classic ? call.text.startsWith("Answer:") : call.text === "Word 1");
-          const finalIndex = calls.findIndex((call) => call.text === "FINAL ANSWER");
+          const finalIndex = calls.findIndex((call) => call.text === "EXTRA SHOT");
           const guessIndex = classic
             ? answerIndex + 1
             : calls.findIndex((call, index) => index > calls.findIndex((item) => item.text === "Word 2") + 5 && call.text.length === 1);
@@ -1009,7 +1009,7 @@ try {
         const canvas = renderResultCanvas(record, gameLogic, displayRows);
         const cyberCalls = [...textCalls];
         const withoutFinal = { ...record };
-        delete withoutFinal.finalAnswer;
+        delete withoutFinal.extraShot;
         textCalls.length = 0;
         const ordinaryCanvas = renderResultCanvas(withoutFinal, gameLogic, displayRows);
         const pixels = canvas.getContext("2d").getImageData(500 * 2, 275 * 2, 70 * 2, 75 * 2).data;
@@ -1030,7 +1030,7 @@ try {
         settings.setSetting("theme", "pop");
         renderResultCanvas(record, gameLogic, displayRows);
         const popDoubleClear = textCalls.find((call) => call.text === "DOUBLE CLEAR!");
-        const popFinalAnswer = textCalls.find((call) => call.text === "FINAL ANSWER");
+        const popExtraShot = textCalls.find((call) => call.text === "EXTRA SHOT");
         settings.setSetting("theme", "cyber");
         return {
           cyberHeight: canvas.height,
@@ -1040,7 +1040,7 @@ try {
           cyberOrder: measureOrder(cyberCalls),
           classicOrder: measureOrder(classicCalls, true),
           popDoubleClearColor: popDoubleClear?.fillStyle,
-          popFinalAnswerColor: popFinalAnswer?.fillStyle,
+          popExtraShotColor: popExtraShot?.fillStyle,
           goldCrownPixels,
         };
       } finally {
@@ -1048,30 +1048,30 @@ try {
       }
     });
     assert.ok(
-      snapshotFinalAnswer.cyberHeight > snapshotFinalAnswer.ordinaryHeight
-        && snapshotFinalAnswer.classicHeight > snapshotFinalAnswer.classicOrdinaryHeight,
-      `FINAL ANSWER should extend saved images: ${JSON.stringify(snapshotFinalAnswer)}`
+      snapshotExtraShot.cyberHeight > snapshotExtraShot.ordinaryHeight
+        && snapshotExtraShot.classicHeight > snapshotExtraShot.classicOrdinaryHeight,
+      `EXTRA SHOT should extend saved images: ${JSON.stringify(snapshotExtraShot)}`
     );
     assert.ok(
-      snapshotFinalAnswer.cyberOrder.answerY < snapshotFinalAnswer.cyberOrder.guessY
-        && snapshotFinalAnswer.cyberOrder.guessY < snapshotFinalAnswer.cyberOrder.finalY,
-      `Cyber saved image should order Answer, Guess history, FINAL ANSWER: ${JSON.stringify(snapshotFinalAnswer.cyberOrder)}`
+      snapshotExtraShot.cyberOrder.answerY < snapshotExtraShot.cyberOrder.guessY
+        && snapshotExtraShot.cyberOrder.guessY < snapshotExtraShot.cyberOrder.finalY,
+      `Cyber saved image should order Answer, Guess history, EXTRA SHOT: ${JSON.stringify(snapshotExtraShot.cyberOrder)}`
     );
     assert.ok(
-      snapshotFinalAnswer.classicOrder.answerY < snapshotFinalAnswer.classicOrder.guessY
-        && snapshotFinalAnswer.classicOrder.guessY < snapshotFinalAnswer.classicOrder.finalY,
-      `Classic saved image should order Answer, Guess history, FINAL ANSWER: ${JSON.stringify(snapshotFinalAnswer.classicOrder)}`
+      snapshotExtraShot.classicOrder.answerY < snapshotExtraShot.classicOrder.guessY
+        && snapshotExtraShot.classicOrder.guessY < snapshotExtraShot.classicOrder.finalY,
+      `Classic saved image should order Answer, Guess history, EXTRA SHOT: ${JSON.stringify(snapshotExtraShot.classicOrder)}`
     );
-    assert.equal(snapshotFinalAnswer.popDoubleClearColor, "#713600");
-    assert.equal(snapshotFinalAnswer.popFinalAnswerColor, "#713600");
-    assert.ok(snapshotFinalAnswer.goldCrownPixels > 20, "The saved image should draw a gold crown for the other answer");
+    assert.equal(snapshotExtraShot.popDoubleClearColor, "#713600");
+    assert.equal(snapshotExtraShot.popExtraShotColor, "#713600");
+    assert.ok(snapshotExtraShot.goldCrownPixels > 20, "The saved image should draw a gold crown for the other answer");
     await successPage.evaluate(async () => {
-      (await import("./js/ui/toast.js?v=20260723-fa")).finalAnswerUnlockCelebration();
+      (await import("./js/ui/toast.js?v=20260723-fa")).extraShotUnlockCelebration();
     });
-    const finalUnlockDialog = successPage.getByRole("dialog", { name: "FINAL ANSWER" });
+    const finalUnlockDialog = successPage.getByRole("dialog", { name: "EXTRA SHOT" });
     await finalUnlockDialog.waitFor();
     const finalUnlockCopy = await finalUnlockDialog.textContent();
-    assert.doesNotMatch(finalUnlockCopy, /[ー―]{2}/, "FINAL ANSWER unlock copy should not use a double dash");
+    assert.doesNotMatch(finalUnlockCopy, /[ー―]{2}/, "EXTRA SHOT unlock copy should not use a double dash");
     await finalUnlockDialog.getByRole("button", { name: "あとで" }).click();
     await successPage.close();
   }
@@ -1090,7 +1090,7 @@ try {
     localStorage.setItem("dwordle2.legacyImportPrompted", "true");
     localStorage.setItem("dwordle2.tutorialSeen", "true");
     localStorage.setItem("dwordle2.playCount", "99");
-    localStorage.setItem("dwordle2.finalAnswerUnlockSeen", "true");
+    localStorage.setItem("dwordle2.extraShotUnlockSeen", "true");
     localStorage.setItem("dwordle2.menuUnlockSeen", "99");
   });
   await shortPage.goto(baseUrl, { waitUntil: "networkidle" });
@@ -1148,7 +1148,7 @@ try {
     localStorage.setItem("dwordle2.legacyImportPrompted", "true");
     localStorage.setItem("dwordle2.tutorialSeen", "true");
     localStorage.setItem("dwordle2.playCount", "99");
-    localStorage.setItem("dwordle2.finalAnswerUnlockSeen", "true");
+    localStorage.setItem("dwordle2.extraShotUnlockSeen", "true");
     localStorage.setItem("dwordle2.menuUnlockSeen", "99");
   });
   await fallbackPage.route("**/vendor/three.module.min.js", (route) => route.abort("failed"));
@@ -1174,7 +1174,7 @@ try {
     localStorage.setItem("dwordle2.legacyImportPrompted", "true");
     localStorage.setItem("dwordle2.tutorialSeen", "true");
     localStorage.setItem("dwordle2.playCount", "99");
-    localStorage.setItem("dwordle2.finalAnswerUnlockSeen", "true");
+    localStorage.setItem("dwordle2.extraShotUnlockSeen", "true");
     localStorage.setItem("dwordle2.menuUnlockSeen", "99");
   });
   await reducedPage.goto(baseUrl, { waitUntil: "networkidle" });
@@ -1867,7 +1867,7 @@ try {
       localStorage.setItem("dwordle2.tutorialSeen", "true");
       localStorage.setItem("dwordle2.legacyImportPrompted", "true");
       localStorage.setItem("dwordle2.playCount", "99");
-      localStorage.setItem("dwordle2.finalAnswerUnlockSeen", "true");
+      localStorage.setItem("dwordle2.extraShotUnlockSeen", "true");
       localStorage.setItem("dwordle2.menuUnlockSeen", "99");
       localStorage.setItem("dwordle2.achievements.reconcileVersion", "99");
       localStorage.setItem("dwordle2.mode", JSON.stringify("normal"));
@@ -1940,7 +1940,7 @@ try {
       localStorage.setItem("dwordle2.tutorialSeenUso", "true");
       localStorage.setItem("dwordle2.legacyImportPrompted", "true");
       localStorage.setItem("dwordle2.playCount", "99");
-      localStorage.setItem("dwordle2.finalAnswerUnlockSeen", "true");
+      localStorage.setItem("dwordle2.extraShotUnlockSeen", "true");
       localStorage.setItem("dwordle2.menuUnlockSeen", "99");
       localStorage.setItem("dwordle2.achievements.reconcileVersion", "99");
     });
@@ -1974,7 +1974,7 @@ try {
       localStorage.setItem("dwordle2.tutorialSeen", "true");
       localStorage.setItem("dwordle2.legacyImportPrompted", "true");
       localStorage.setItem("dwordle2.playCount", "99");
-      localStorage.setItem("dwordle2.finalAnswerUnlockSeen", "true");
+      localStorage.setItem("dwordle2.extraShotUnlockSeen", "true");
       localStorage.setItem("dwordle2.menuUnlockSeen", "99");
       localStorage.setItem("dwordle2.achievements.reconcileVersion", "99");
     });
@@ -2001,7 +2001,7 @@ try {
       localStorage.setItem("dwordle2.tutorialSeen", "true");
       localStorage.setItem("dwordle2.legacyImportPrompted", "true");
       localStorage.setItem("dwordle2.playCount", "99");
-      localStorage.setItem("dwordle2.finalAnswerUnlockSeen", "true");
+      localStorage.setItem("dwordle2.extraShotUnlockSeen", "true");
       localStorage.setItem("dwordle2.menuUnlockSeen", "99");
       localStorage.setItem("dwordle2.achievements.reconcileVersion", "99");
     });
@@ -2064,7 +2064,7 @@ try {
       localStorage.setItem("dwordle2.tutorialSeen", "true");
       localStorage.setItem("dwordle2.legacyImportPrompted", "true");
       localStorage.setItem("dwordle2.playCount", "99");
-      localStorage.setItem("dwordle2.finalAnswerUnlockSeen", "true");
+      localStorage.setItem("dwordle2.extraShotUnlockSeen", "true");
       localStorage.setItem("dwordle2.menuUnlockSeen", "99");
       localStorage.setItem("dwordle2.achievements.reconcileVersion", "99");
     });

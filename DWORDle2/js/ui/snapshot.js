@@ -4,7 +4,7 @@
 // 見た目は現在のテーマ（cyber / classic）に合わせる。
 
 import { SHARE_URL, tileColorsFor } from "../config.js?v=20260723-fa";
-import { MODES } from "../core/records.js";
+import { MODES, getExtraShot } from "../core/records.js";
 import { pidLabel } from "../core/problems.js";
 import { CELL, queryWordSingle } from "../core/logic.js";
 import { getSettings } from "../core/settings.js?v=20260723-fa";
@@ -21,7 +21,7 @@ const SS = {
   tileGap: 8,
   tileRadius: 10,
   footerSize: 18,
-  doubleClearColor: "#ffd166", // FINAL ANSWER 成功（DOUBLE CLEAR!）のタイトル色
+  doubleClearColor: "#ffd166", // EXTRA SHOT 成功（DOUBLE CLEAR!）のタイトル色
 };
 
 const THEME_STYLES = {
@@ -34,7 +34,7 @@ const THEME_STYLES = {
     accentUso: "#ff2b5e",
     clear: "#00e68a",
     over: "#ff6a6a",
-    finalAccent: "#ffd166",
+    extraAccent: "#ffd166",
     tileBorder: "rgba(120,150,200,0.35)",
     glow: true,
   },
@@ -47,7 +47,7 @@ const THEME_STYLES = {
     accentUso: "#c83c3c",
     clear: "#6aaa64",
     over: "#d84343",
-    finalAccent: "#ffd166",
+    extraAccent: "#ffd166",
     tileBorder: "#555",
     glow: false,
   },
@@ -60,7 +60,7 @@ const THEME_STYLES = {
     accentUso: "#e0426a",
     clear: "#2dbd6e",
     over: "#e0426a",
-    finalAccent: "#713600",
+    extraAccent: "#713600",
     tileBorder: "rgba(255, 79, 158, 0.35)",
     glow: false,
   },
@@ -94,8 +94,8 @@ function drawGuessFlag(ctx, x, y, r, color) {
   ctx.restore();
 }
 
-function finalAnswerInfo(record, logic) {
-  const attempt = record.finalAnswer;
+function extraShotInfo(record, logic) {
+  const attempt = getExtraShot(record);
   const lastWord = record.guessWord[record.guessWord.length - 1];
   const target = attempt && lastWord ? logic.otherAnswer(lastWord) : null;
   if (!attempt?.word || !target) return null;
@@ -110,10 +110,10 @@ function finalAnswerInfo(record, logic) {
 // #202020 の無地背景に盤面をそのまま描き、下に "Answer: XXX, YYY" を白字で置くだけ。
 function renderClassicCanvas(record, logic, displayRows) {
   const tileColors = tileColorsFor("classic", getSettings().highContrast);
-  const faInfo = finalAnswerInfo(record, logic);
+  const extraInfo = extraShotInfo(record, logic);
   const rows = record.guessWord.length;
   const gridH = rows * (SS.tile + SS.tileGap);
-  const height = SS.pad + gridH + 104 + (faInfo ? 138 : 0);
+  const height = SS.pad + gridH + 104 + (extraInfo ? 138 : 0);
 
   const scale = 2;
   const cv = document.createElement("canvas");
@@ -132,7 +132,7 @@ function renderClassicCanvas(record, logic, displayRows) {
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
-  // 答え → 入力履歴 → FINAL ANSWER の順に並べる。
+  // 答え → 入力履歴 → EXTRA SHOT の順に並べる。
   ctx.fillStyle = "#ffffff";
   ctx.font = `700 26px "Helvetica Neue", "Avenir Next", sans-serif`;
   ctx.fillText(`Answer: ${logic.ans1.toUpperCase()}, ${logic.ans2.toUpperCase()}`, centerX, y);
@@ -152,15 +152,15 @@ function renderClassicCanvas(record, logic, displayRows) {
     y += SS.tile + SS.tileGap;
   }
 
-  if (faInfo) {
+  if (extraInfo) {
     y += 30;
-    ctx.fillStyle = faInfo.success ? SS.doubleClearColor : "#9a9a9a";
+    ctx.fillStyle = extraInfo.success ? SS.doubleClearColor : "#9a9a9a";
     ctx.font = `900 16px "Helvetica Neue", "Avenir Next", sans-serif`;
-    ctx.fillText("FINAL ANSWER", centerX, y);
+    ctx.fillText("EXTRA SHOT", centerX, y);
     y += 22;
     ctx.font = `800 ${SS.tile * 0.5}px "Helvetica Neue", "Avenir Next", sans-serif`;
     for (let i = 0; i < 5; i++) {
-      const stateName = faInfo.result[i];
+      const stateName = extraInfo.result[i];
       const x = gx0 + i * (SS.tile + SS.tileGap);
       ctx.fillStyle =
         stateName === CELL.CORRECT ? tileColors.correct :
@@ -168,9 +168,9 @@ function renderClassicCanvas(record, logic, displayRows) {
       roundRect(ctx, x, y, SS.tile, SS.tile, 5);
       ctx.fill();
       ctx.fillStyle = "#ffffff";
-      ctx.fillText(faInfo.word[i].toUpperCase(), x + SS.tile / 2, y + SS.tile / 2 + 1);
+      ctx.fillText(extraInfo.word[i].toUpperCase(), x + SS.tile / 2, y + SS.tile / 2 + 1);
     }
-    if (faInfo.success) {
+    if (extraInfo.success) {
       const flagPoleX = gx0 + gridW + 24;
       drawCrown3D(ctx, flagPoleX, y + SS.tile / 2 + 5, 34, Math.PI / 9, SS.doubleClearColor);
     }
@@ -189,13 +189,13 @@ export function renderResultCanvas(record, logic, displayRows) {
   const accent = isUso ? st.accentUso : st.accent;
   const flagColor = theme === "pop" && !isUso ? "#000000" : st.fg;
   const cleared = record.clear;
-  const faInfo = finalAnswerInfo(record, logic);
+  const extraInfo = extraShotInfo(record, logic);
   const maxGuess = MODES[record.gameMode].maxGuess;
 
   const rows = record.guessWord.length;
   const gridH = rows * (SS.tile + SS.tileGap);
   // ヘッダ部(タイトル+メタ+CLEAR表示) ≈ 220px、答え 2 行 + フッタ ≈ 190px
-  const height = 220 + gridH + 190 + (faInfo ? 142 : 0);
+  const height = 220 + gridH + 190 + (extraInfo ? 142 : 0);
 
   const scale = 2; // Retina 向けに 2 倍で描く
   const cv = document.createElement("canvas");
@@ -254,9 +254,9 @@ export function renderResultCanvas(record, logic, displayRows) {
 
   // DOUBLE CLEAR! / GAME CLEAR / GAME OVER（DOUBLE CLEAR は金色で目立たせる）
   y += 52;
-  const doubleClear = Boolean(faInfo?.success);
+  const doubleClear = Boolean(extraInfo?.success);
   ctx.font = `900 ${SS.resultSize}px "Avenir Next", sans-serif`;
-  ctx.fillStyle = doubleClear ? st.finalAccent : cleared ? st.clear : st.over;
+  ctx.fillStyle = doubleClear ? st.extraAccent : cleared ? st.clear : st.over;
   if (st.glow || (doubleClear && theme !== "pop")) {
     ctx.shadowColor = ctx.fillStyle;
     ctx.shadowBlur = 30;
@@ -264,7 +264,7 @@ export function renderResultCanvas(record, logic, displayRows) {
   ctx.fillText(doubleClear ? "DOUBLE CLEAR!" : cleared ? "GAME CLEAR" : "GAME OVER", centerX, y);
   ctx.shadowBlur = 0;
 
-  // 答え → 入力履歴 → FINAL ANSWER の順に並べる。
+  // 答え → 入力履歴 → EXTRA SHOT の順に並べる。
   y += 56;
   const gridW = 5 * SS.tile + 4 * SS.tileGap;
   const gx0 = centerX - gridW / 2;
@@ -273,8 +273,8 @@ export function renderResultCanvas(record, logic, displayRows) {
   const flagX = ax0 + gridW + 24;
   for (const [label, word] of [["Word 1", logic.ans1], ["Word 2", logic.ans2]]) {
     if (cleared && word === lastWord) drawGuessFlag(ctx, flagX, y + SS.tile / 2, 20, flagColor);
-    if (doubleClear && word === faInfo.target) {
-      drawCrown3D(ctx, flagX, y + SS.tile / 2 + 5, 34, Math.PI / 9, st.finalAccent);
+    if (doubleClear && word === extraInfo.target) {
+      drawCrown3D(ctx, flagX, y + SS.tile / 2 + 5, 34, Math.PI / 9, st.extraAccent);
     }
     ctx.font = `600 16px "Avenir Next", sans-serif`;
     ctx.fillStyle = st.dim;
@@ -318,8 +318,8 @@ export function renderResultCanvas(record, logic, displayRows) {
     y += SS.tile + SS.tileGap;
   }
 
-  // FINAL ANSWER は入力履歴の下に、結果画面と同じ独立カードで描く。
-  if (faInfo) {
+  // EXTRA SHOT は入力履歴の下に、結果画面と同じ独立カードで描く。
+  if (extraInfo) {
     const cardX = ax0 - 24;
     const cardY = y + 8;
     const cardW = gridW + 48;
@@ -327,18 +327,18 @@ export function renderResultCanvas(record, logic, displayRows) {
     ctx.fillStyle = "rgba(127,127,127,0.1)";
     roundRect(ctx, cardX, cardY, cardW, cardH, 12);
     ctx.fill();
-    ctx.strokeStyle = faInfo.success ? st.finalAccent : st.tileBorder;
+    ctx.strokeStyle = extraInfo.success ? st.extraAccent : st.tileBorder;
     ctx.lineWidth = 1.5;
     roundRect(ctx, cardX, cardY, cardW, cardH, 12);
     ctx.stroke();
 
-    ctx.fillStyle = faInfo.success ? st.finalAccent : st.dim;
+    ctx.fillStyle = extraInfo.success ? st.extraAccent : st.dim;
     ctx.font = `900 16px "Avenir Next", sans-serif`;
-    ctx.fillText("FINAL ANSWER", centerX, cardY + 18);
+    ctx.fillText("EXTRA SHOT", centerX, cardY + 18);
     const rowY = cardY + 34;
     ctx.font = `800 ${SS.tile * 0.5}px "Avenir Next", sans-serif`;
     for (let i = 0; i < 5; i++) {
-      const stateName = faInfo.result[i];
+      const stateName = extraInfo.result[i];
       const x = ax0 + i * (SS.tile + SS.tileGap);
       ctx.fillStyle =
         stateName === CELL.CORRECT ? tileColors.correct :
@@ -346,12 +346,12 @@ export function renderResultCanvas(record, logic, displayRows) {
       roundRect(ctx, x, rowY, SS.tile, SS.tile, SS.tileRadius);
       ctx.fill();
       ctx.fillStyle = theme === "cyber" && stateName !== CELL.UNUSED ? "#04120b" : "#ffffff";
-      ctx.fillText(faInfo.word[i].toUpperCase(), x + SS.tile / 2, rowY + SS.tile / 2 + 1);
+      ctx.fillText(extraInfo.word[i].toUpperCase(), x + SS.tile / 2, rowY + SS.tile / 2 + 1);
     }
     ctx.fillStyle = st.dim;
     ctx.font = `600 14px "Avenir Next", sans-serif`;
     ctx.fillText(
-      faInfo.success ? "The other answer, found in one shot!" : "The other answer slipped away.",
+      extraInfo.success ? "The other answer, found in one shot!" : "The other answer slipped away.",
       centerX,
       cardY + 104
     );

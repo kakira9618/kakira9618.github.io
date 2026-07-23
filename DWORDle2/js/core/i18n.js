@@ -113,7 +113,7 @@ const ACHIEVEMENT_EN = {
   "h-play-streak-30": ["A Month's Vow", "Play on 30 consecutive days"],
   "h-play-days-1095": ["Thousand-Day Training", "Play on 1,095 different days (about 3 years)"],
   "h-play-days-1825": ["Five-Year Legend", "Play on 1,825 different days (about 5 years)"],
-  "h-double-clear": ["Twin Triumph", "Succeed at FINAL ANSWER for a DOUBLE CLEAR"],
+  "h-double-clear": ["Twin Triumph", "Succeed at EXTRA SHOT for a DOUBLE CLEAR"],
   "h-double-uso": ["All-Seeing Eye", "Get a DOUBLE CLEAR in DWORDlie (see through the lies to both answers)"],
   "h-double-oneshot": ["Divine Double", "Turn a first-Guess clear into a DOUBLE CLEAR (both answers in 2 Guesses)"],
   "h-double-10": ["Catcher of Both Hares", "Achieve 10 DOUBLE CLEARs total"],
