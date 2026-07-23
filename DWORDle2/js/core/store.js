@@ -12,9 +12,19 @@ export function onSaveError(handler) {
   saveErrorHandler = handler;
 }
 
+// デバッグモード中の書き込み先（セッション限りのメモリオーバーレイ）。
+// 実データ（localStorage）は汚さず、読み出しはオーバーレイを優先する。
+// 単に保存を捨てると「保存 → 直後に読み出し」で成立している流れ
+// （進行中ゲームの保存 → ゲーム画面の再開読み込みなど）が壊れ、
+// デバッグ中にゲームを開始した瞬間タイトルへ戻される。
+// localStorage と同じ値渡しの意味論を保つため、JSON 文字列のまま持つ。
+// デバッグモードはリロードで解除されるので、オーバーレイも自然に消える。
+const debugOverlay = new Map();
+
 export function loadJSON(key, fallback) {
   try {
-    const raw = localStorage.getItem(PREFIX + key);
+    // オーバーレイはデバッグ中にしか書かれないので、有無の確認だけでよい
+    const raw = debugOverlay.has(key) ? debugOverlay.get(key) : localStorage.getItem(PREFIX + key);
     return raw === null ? fallback : JSON.parse(raw);
   } catch {
     return fallback;
@@ -22,8 +32,11 @@ export function loadJSON(key, fallback) {
 }
 
 export function saveJSON(key, value) {
-  // デバッグ中のプレイや設定変更はセッション内だけに留める。
-  if (isDebugMode()) return true;
+  // デバッグ中のプレイや設定変更はセッション内（オーバーレイ）だけに留める。
+  if (isDebugMode()) {
+    debugOverlay.set(key, JSON.stringify(value));
+    return true;
+  }
   try {
     localStorage.setItem(PREFIX + key, JSON.stringify(value));
     return true;
@@ -35,6 +48,8 @@ export function saveJSON(key, value) {
 }
 
 export function removeKey(key) {
+  // 全データ削除は明示操作なので、デバッグ中でも実データごと消す
+  debugOverlay.delete(key);
   localStorage.removeItem(PREFIX + key);
 }
 
