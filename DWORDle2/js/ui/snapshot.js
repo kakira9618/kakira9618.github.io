@@ -144,6 +144,7 @@ export function renderResultCanvas(record, logic, displayRows) {
   const tileColors = tileColorsFor(theme, highContrast);
   const isUso = record.gameMode === "uso";
   const accent = isUso ? st.accentUso : st.accent;
+  const flagColor = theme === "pop" && !isUso ? "#000000" : st.fg;
   const cleared = record.clear;
   const maxGuess = MODES[record.gameMode].maxGuess;
 
@@ -249,7 +250,7 @@ export function renderResultCanvas(record, logic, displayRows) {
   const ax0 = gx0;
   const flagX = ax0 + gridW + 20;
   for (const [label, word] of [["Word 1", logic.ans1], ["Word 2", logic.ans2]]) {
-    if (cleared && word === lastWord) drawGuessFlag(ctx, flagX, y + SS.tile / 2, 20, st.fg);
+    if (cleared && word === lastWord) drawGuessFlag(ctx, flagX, y + SS.tile / 2, 20, flagColor);
     ctx.font = `600 16px "Avenir Next", sans-serif`;
     ctx.fillStyle = st.dim;
     ctx.textAlign = "right";

@@ -333,6 +333,34 @@ try {
   assert.equal(normalPopVisuals.pageBackground, "rgb(255, 244, 248)");
   assert.match(normalPopVisuals.choiceBackground, /linear-gradient/, "Selectable Pop BGM rows should look like cards");
   assert.equal(normalPopVisuals.choiceColor, "rgb(74, 53, 80)");
+  const normalPopFlag = await page.evaluate(async () => {
+    const marker = document.createElement("span");
+    marker.className = "guess-flag";
+    document.body.append(marker);
+    const screenColor = getComputedStyle(marker).color;
+    marker.remove();
+
+    const { renderResultCanvas } = await import("./js/ui/snapshot.js?v=20260723-fa");
+    const canvas = renderResultCanvas(
+      {
+        gameMode: "normal",
+        problemID: 1,
+        startTime: 1,
+        clear: true,
+        guessWord: ["point"],
+      },
+      { ans1: "point", ans2: "touch" },
+      [Array(5).fill("correct")]
+    );
+    const pixels = canvas.getContext("2d").getImageData(515 * 2, 306 * 2, 42 * 2, 45 * 2).data;
+    let savedBlackPixels = 0;
+    for (let i = 0; i < pixels.length; i += 4) {
+      if (pixels[i] < 30 && pixels[i + 1] < 30 && pixels[i + 2] < 30) savedBlackPixels++;
+    }
+    return { screenColor, savedBlackPixels };
+  });
+  assert.equal(normalPopFlag.screenColor, "rgb(0, 0, 0)", "The Pop on-screen flag should be black");
+  assert.ok(normalPopFlag.savedBlackPixels > 50, "The Pop saved-image flag should also be black");
 
   await page.evaluate(async () => {
     const { setAppMode } = await import("./js/ui/app.js?v=20260723-fa");

@@ -2616,6 +2616,10 @@ body.reduce-motion *::after {
   filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.42));
   perspective: 80px;
 }
+body.theme-pop.mode-normal .guess-flag {
+  color: #000;
+  filter: drop-shadow(0 1px 1px rgba(255, 255, 255, 0.72));
+}
 .guess-flag-pole {
   position: absolute;
   left: 4px;
