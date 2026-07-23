@@ -4,6 +4,7 @@
 import { shouldReduceMotion } from "../core/motion.js?v=20260723-fa";
 
 export const CROWN_POINT_COUNT = 16;
+export const CROWN_VALLEY_COUNT = CROWN_POINT_COUNT / 2;
 const TAU = Math.PI * 2;
 const ROTATION_MS = 5600;
 
@@ -29,6 +30,7 @@ export function crownPoints(phase, centerX, centerY, size) {
     const rimY = centerY + depth * radiusY;
     const spikeHeight = size * (index % 2 === 0 ? 0.36 : 0.21);
     return {
+      index,
       angle,
       depth,
       x: centerX + Math.cos(angle) * radiusX,
@@ -69,7 +71,9 @@ export function drawCrown3D(ctx, centerX, centerY, size, phase = 0, color = "#ff
     strokeConnection(ctx, point, next, "baseY", "baseY", color, depth, size * 0.045);
     strokeConnection(ctx, point, next, "topY", "topY", color, depth, size * 0.055);
   }
-  for (const point of orderedPoints) {
+  // 上下を結ぶ縦線は、ギザギザの谷だけに置く。全頂点へ引くと柵のように
+  // 密集して見えるため、短い方の 8 頂点に限定する。
+  for (const point of orderedPoints.filter((point) => point.index % 2 === 1)) {
     strokeConnection(ctx, point, point, "topY", "baseY", color, point.depth, size * 0.045);
   }
   for (const point of orderedPoints) {
@@ -90,6 +94,7 @@ export function createRotatingCrownCanvas(color = "#ffd166") {
   const canvas = document.createElement("canvas");
   canvas.className = "fa-crown";
   canvas.dataset.crownPoints = String(CROWN_POINT_COUNT);
+  canvas.dataset.crownVerticals = String(CROWN_VALLEY_COUNT);
   canvas.setAttribute("aria-hidden", "true");
   canvas.width = Math.round(logicalSize * pixelRatio);
   canvas.height = Math.round(logicalSize * pixelRatio);

@@ -902,9 +902,10 @@ try {
     assert.equal(await crown.count(), 1);
     assert.equal(await crown.evaluate((node) => node.tagName), "CANVAS");
     assert.equal(await crown.getAttribute("data-crown-points"), "16");
+    assert.equal(await crown.getAttribute("data-crown-verticals"), "8");
     assert.equal(await successPage.locator(".answer-row .fa-star").count(), 0, "The old FINAL ANSWER star should be removed");
     const crownGeometry = await successPage.evaluate(async () => {
-      const { CROWN_POINT_COUNT, crownPoints } = await import("./js/ui/crown.js?v=20260723-fa");
+      const { CROWN_POINT_COUNT, CROWN_VALLEY_COUNT, crownPoints } = await import("./js/ui/crown.js?v=20260723-fa");
       const points = crownPoints(0, 0, 0, 40);
       const gaps = points.map((point, index) => {
         const next = points[(index + 1) % points.length];
@@ -912,12 +913,14 @@ try {
       });
       return {
         count: CROWN_POINT_COUNT,
+        verticalCount: CROWN_VALLEY_COUNT,
         gapSpread: Math.max(...gaps) - Math.min(...gaps),
         rimYCount: new Set(points.map((point) => point.rimY.toFixed(3))).size,
         spikeHeightCount: new Set(points.map((point) => (point.rimY - point.topY).toFixed(3))).size,
       };
     });
     assert.equal(crownGeometry.count, 16);
+    assert.equal(crownGeometry.verticalCount, 8, "Only the eight crown valleys should have vertical lines");
     assert.ok(crownGeometry.gapSpread < 1e-10, "Crown points should be equally spaced by phase");
     assert.ok(crownGeometry.rimYCount >= 5, "Crown points should occupy different y positions on an ellipse");
     assert.equal(crownGeometry.spikeHeightCount, 2, "Crown points should alternate between two zigzag heights");
@@ -927,13 +930,16 @@ try {
     const crownFrameTwo = await crown.evaluate((node) => node.toDataURL());
     assert.notEqual(crownFrameOne, crownFrameTwo, "The 3D crown should rotate on the result screen");
     const markerCenters = await successPage.locator(".answers-grid").evaluate((answers) => {
-      const flag = answers.querySelector(".guess-flag-slot").getBoundingClientRect();
-      const crownSlot = answers.querySelector(".fa-crown-slot").getBoundingClientRect();
-      return { flag: flag.x + flag.width / 2, crown: crownSlot.x + crownSlot.width / 2 };
+      const flagPole = answers.querySelector(".guess-flag-pole").getBoundingClientRect();
+      const crownCanvas = answers.querySelector(".fa-crown").getBoundingClientRect();
+      return {
+        flagPole: flagPole.x + flagPole.width / 2,
+        crown: crownCanvas.x + crownCanvas.width / 2,
+      };
     });
     assert.ok(
-      Math.abs(markerCenters.flag - markerCenters.crown) <= 0.5,
-      `The flag and crown should share the same x center: ${JSON.stringify(markerCenters)}`
+      Math.abs(markerCenters.flagPole - markerCenters.crown) <= 0.5,
+      `The flag pole and crown should share the same x center: ${JSON.stringify(markerCenters)}`
     );
     const doubleTitleStyle = await successPage.locator(".result-title.double").evaluate((node) => {
       const style = getComputedStyle(node);

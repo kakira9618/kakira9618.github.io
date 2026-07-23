@@ -171,8 +171,8 @@ function renderClassicCanvas(record, logic, displayRows) {
       ctx.fillText(faInfo.word[i].toUpperCase(), x + SS.tile / 2, y + SS.tile / 2 + 1);
     }
     if (faInfo.success) {
-      const flagCenterX = gx0 + gridW + 27.5;
-      drawCrown3D(ctx, flagCenterX, y + SS.tile / 2 + 5, 34, Math.PI / 9, SS.doubleClearColor);
+      const flagPoleX = gx0 + gridW + 20;
+      drawCrown3D(ctx, flagPoleX, y + SS.tile / 2 + 5, 34, Math.PI / 9, SS.doubleClearColor);
     }
   }
 
@@ -271,11 +271,10 @@ export function renderResultCanvas(record, logic, displayRows) {
   const lastWord = record.guessWord[rows - 1];
   const ax0 = gx0;
   const flagX = ax0 + gridW + 20;
-  const flagCenterX = flagX + 7.5;
   for (const [label, word] of [["Word 1", logic.ans1], ["Word 2", logic.ans2]]) {
     if (cleared && word === lastWord) drawGuessFlag(ctx, flagX, y + SS.tile / 2, 20, flagColor);
     if (doubleClear && word === faInfo.target) {
-      drawCrown3D(ctx, flagCenterX, y + SS.tile / 2 + 5, 34, Math.PI / 9, st.finalAccent);
+      drawCrown3D(ctx, flagX, y + SS.tile / 2 + 5, 34, Math.PI / 9, st.finalAccent);
     }
     ctx.font = `600 16px "Avenir Next", sans-serif`;
     ctx.fillStyle = st.dim;

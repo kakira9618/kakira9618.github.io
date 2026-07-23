@@ -3419,7 +3419,8 @@ body.reduce-motion .result-title.double { animation: none; }
 /* 答え行の立体王冠。フラグと共通のスロット中心へ Canvas を揃える */
 .fa-crown {
   position: absolute;
-  left: 50%;
+  /* フラグ軸はスロット左端から 5px（4px + 幅2pxの中央） */
+  left: 5px;
   top: 50%;
   width: 36px;
   height: 36px;
