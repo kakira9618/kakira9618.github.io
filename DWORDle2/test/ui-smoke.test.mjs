@@ -595,7 +595,7 @@ try {
     : null;
   assert.ok(
     guessedFlagBox && guessedLastTileBox
-      && guessedFlagGap >= 15
+      && guessedFlagGap >= 19
       && guessedFlagBox.width <= 23.5,
     `The guessed-answer flag should sit to the right of the tile row: ${JSON.stringify({ guessedFlagBox, guessedLastTileBox })}`
   );
@@ -932,22 +932,33 @@ try {
     const markerCenters = await successPage.locator(".answers-grid").evaluate((answers) => {
       const flagPole = answers.querySelector(".guess-flag-pole").getBoundingClientRect();
       const crownCanvas = answers.querySelector(".fa-crown").getBoundingClientRect();
+      const answerTiles = answers.querySelectorAll(".answer-row:first-child .rcell");
+      const lastTile = answerTiles[answerTiles.length - 1].getBoundingClientRect();
       return {
         flagPole: flagPole.x + flagPole.width / 2,
         crown: crownCanvas.x + crownCanvas.width / 2,
+        crownMargin: crownCanvas.x + crownCanvas.width / 2 - lastTile.right,
       };
     });
     assert.ok(
       Math.abs(markerCenters.flagPole - markerCenters.crown) <= 0.5,
       `The flag pole and crown should share the same x center: ${JSON.stringify(markerCenters)}`
     );
+    assert.ok(
+      markerCenters.crownMargin >= 24,
+      `Result markers should leave a clear margin to the right of the tiles: ${JSON.stringify(markerCenters)}`
+    );
     const doubleTitleStyle = await successPage.locator(".result-title.double").evaluate((node) => {
       const style = getComputedStyle(node);
+      const keyframes = [...document.styleSheets]
+        .flatMap((sheet) => [...sheet.cssRules])
+        .find((rule) => rule.type === CSSRule.KEYFRAMES_RULE && rule.name === "faTitleShine");
       return {
         background: style.backgroundImage,
         backgroundSize: style.backgroundSize,
         animation: style.animationName,
         timing: style.animationTimingFunction,
+        keyframePositions: [...keyframes.cssRules].map((rule) => `${rule.keyText}:${rule.style.backgroundPosition}`),
       };
     });
     assert.match(doubleTitleStyle.background, /^linear-gradient/);
@@ -955,6 +966,11 @@ try {
     assert.equal(doubleTitleStyle.backgroundSize, "220% 100%");
     assert.equal(doubleTitleStyle.animation, "faTitleShine");
     assert.equal(doubleTitleStyle.timing, "linear");
+    assert.deepEqual(
+      doubleTitleStyle.keyframePositions,
+      ["0%:100% 0px", "100%:0% 0px"],
+      "DOUBLE CLEAR shine should complete exactly one horizontal pass per time cycle"
+    );
 
     const snapshotFinalAnswer = await successPage.evaluate(async () => {
       const history = JSON.parse(localStorage.getItem("dwordle2.history") || "[]");

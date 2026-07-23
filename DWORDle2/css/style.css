@@ -2605,7 +2605,7 @@ body.reduce-motion *::after {
 .fa-crown-slot {
   position: absolute;
   top: 50%;
-  left: calc(100% + 16px);
+  left: calc(100% + 20px);
   transform: translateY(-50%);
   width: 23px;
   height: 33px;
@@ -2683,7 +2683,7 @@ body.theme-pop.mode-normal .guess-flag {
   }
   .guess-flag-slot,
   .fa-crown-slot {
-    left: calc(100% + 14px);
+    left: calc(100% + 18px);
     width: 22px;
   }
 }
@@ -3384,8 +3384,8 @@ body.mode-uso .fa-double-ring { border-color: #ff8fae; }
 }
 body.reduce-motion .result-title.double { animation: none; }
 @keyframes faTitleShine {
-  from { background-position: 120% 0; }
-  to { background-position: -100% 0; }
+  from { background-position: 100% 0; }
+  to { background-position: 0% 0; }
 }
 
 /* FINAL ANSWER の記録カード */
