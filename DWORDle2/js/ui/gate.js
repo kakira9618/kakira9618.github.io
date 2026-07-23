@@ -66,7 +66,7 @@ export function showEntryGate(onEnter) {
       el(
         "p",
         { class: "entry-gate-note" },
-        tr("このゲームは音が出ます（BGM・効果音）", "This game plays sound (BGM & sound effects)")
+        tr("このゲームは音が出ます", "This game plays sound")
       ),
       startBtn,
       mutedBtn,

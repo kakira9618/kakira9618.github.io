@@ -135,7 +135,7 @@ try {
   // （メッセージと 2 択は音設定にかかわらず固定。このページは音オフ設定でシード済み）
   await page.locator("#entry-gate .entry-gate-start").waitFor();
   await page.locator("#entry-gate .app-version").waitFor(); // 扉絵でもバージョンが分かる
-  await page.getByText("このゲームは音が出ます", { exact: false }).waitFor();
+  await page.getByText("このゲームは音が出ます", { exact: true }).waitFor();
   await page.locator("#entry-gate .entry-gate-muted").waitFor();
   assert.equal(
     await page.locator("#entry-gate .entry-gate-credit a").getAttribute("href"),
@@ -1526,7 +1526,7 @@ try {
       localStorage.setItem("dwordle2.achievements.reconcileVersion", "99");
     });
     await mutedStartPage.goto(baseUrl, { waitUntil: "networkidle" });
-    await mutedStartPage.getByText("このゲームは音が出ます", { exact: false }).waitFor();
+    await mutedStartPage.getByText("このゲームは音が出ます", { exact: true }).waitFor();
     await mutedStartPage.locator("#entry-gate .entry-gate-muted").click();
     await mutedStartPage.locator("#entry-gate").waitFor({ state: "detached" });
     assert.deepEqual(
