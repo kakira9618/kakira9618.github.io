@@ -329,7 +329,7 @@ function render() {
       { class: "tagline" },
       isUso
         ? tr("答えは 2 つ。判定は必ず嘘。15 手以内に見抜け。", "Two answers. Every clue lies. See through it in 15 Guesses.")
-        : tr("答えは2つ、盤面は1つ。10手で「どちらか」を当てろ。", "Wordle with two answers. Find either one in 10 Guesses.")
+        : tr("答えは2つ、盤面は1つ。10手で片方を当てろ。", "Wordle with two answers. Find either one in 10 Guesses.")
     ),
     el(
       "div",
