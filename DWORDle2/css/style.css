@@ -2754,18 +2754,24 @@ body.theme-pop.mode-normal .player-card-name-input::placeholder {
 /* カード本体: 3D で舞い込む → 光が走る → ふわふわ浮遊 */
 .player-card-stage {
   perspective: 1200px;
+  -webkit-perspective: 1200px;
 }
 .player-card-wrap {
   position: relative;
   border-radius: 14px;
   /* 発行時の光の帯（::after）やランクアップ演出をカードの外へはみ出させない */
   overflow: hidden;
+  isolation: isolate;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
 }
 /* スワイプ / ドラッグで指の方向にカードが少し傾く（「カードである」ことの提示）。
    遠近感は親 .player-card-stage の perspective を使う */
 .player-card-tilt {
   transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
   transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.3, 1);
+  will-change: transform;
   touch-action: pan-y; /* 横スワイプは傾き、縦は画面スクロールを優先 */
   /* ドラッグ中にカードや周辺の文字が選択状態にならないようにする */
   user-select: none;
@@ -2776,21 +2782,30 @@ body.theme-pop.mode-normal .player-card-name-input::placeholder {
   transition: transform 0.08s linear;
 }
 .player-card-canvas {
+  position: relative;
+  z-index: 0;
   display: block;
   width: 100%;
   height: auto;
   border-radius: 14px;
   box-shadow: 0 14px 40px rgba(0, 0, 0, 0.5);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
-.player-card-wrap.deal {
+.player-card-wrap.motion {
+  animation: playerCardFloat 6s ease-in-out 0.2s infinite alternate;
+  will-change: transform;
+}
+.player-card-wrap.motion.deal {
   animation:
     playerCardDeal 0.95s cubic-bezier(0.2, 0.9, 0.25, 1.12) both,
     playerCardFloat 6s ease-in-out 1.6s infinite alternate;
 }
-.player-card-wrap.deal::after {
+.player-card-wrap.motion::after {
   content: "";
   position: absolute;
   inset: 0;
+  z-index: 1;
   border-radius: inherit;
   pointer-events: none;
   background: linear-gradient(
@@ -2800,7 +2815,8 @@ body.theme-pop.mode-normal .player-card-name-input::placeholder {
     rgba(255, 255, 255, 0.08) 53%,
     transparent 68%
   );
-  transform: translateX(-130%);
+  transform: translate3d(-130%, 0, 1px);
+  will-change: transform;
   animation: playerCardShine 1.2s ease 0.65s both;
 }
 @keyframes playerCardDeal {
@@ -2818,7 +2834,7 @@ body.theme-pop.mode-normal .player-card-name-input::placeholder {
 }
 @keyframes playerCardShine {
   to {
-    transform: translateX(130%);
+    transform: translate3d(130%, 0, 1px);
   }
 }
 @keyframes playerCardFloat {
@@ -2829,8 +2845,8 @@ body.theme-pop.mode-normal .player-card-name-input::placeholder {
     transform: translateY(-6px) rotateX(1.6deg) rotateY(-2deg);
   }
 }
-body.reduce-motion .player-card-wrap.deal,
-body.reduce-motion .player-card-wrap.deal::after {
+body.reduce-motion .player-card-wrap.motion,
+body.reduce-motion .player-card-wrap.motion::after {
   animation: none;
   transform: none;
 }
@@ -3384,7 +3400,7 @@ body.mode-uso .fa-double-ring { border-color: #ff8fae; }
 }
 body.reduce-motion .result-title.double { animation: none; }
 @keyframes faTitleShine {
-  from { background-position: 100% 0; }
+  from { background-position: 150% 0; }
   to { background-position: 0% 0; }
 }
 

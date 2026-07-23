@@ -764,23 +764,25 @@ function celebratePromotion(stage, rank) {
 function attachCardTilt(tiltEl) {
   const clampDeg = (v) => Math.min(TILT_MAX_DEG, Math.max(-TILT_MAX_DEG, v));
   let pointerId = null;
-  let startX = 0;
-  let startY = 0;
+  const applyTilt = (clientX, clientY) => {
+    const rect = tiltEl.getBoundingClientRect();
+    const ry = clampDeg(((clientX - (rect.left + rect.width / 2)) / rect.width) * TILT_GAIN);
+    const rx = clampDeg((((rect.top + rect.height / 2) - clientY) / rect.height) * TILT_GAIN);
+    // translateZ(0) で Android Chrome でもタッチ中の 3D レイヤーを維持する。
+    tiltEl.style.transform = `translateZ(0) rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`;
+  };
   tiltEl.addEventListener("pointerdown", (event) => {
     if (shouldReduceMotion()) return;
     event.preventDefault(); // ドラッグで周囲のテキストが選択状態になるのを防ぐ
     pointerId = event.pointerId;
-    startX = event.clientX;
-    startY = event.clientY;
     tiltEl.classList.add("tilting");
     tiltEl.setPointerCapture?.(pointerId);
+    // 移動前のタッチでも、触れた位置へすぐ傾けて反応を明確にする。
+    applyTilt(event.clientX, event.clientY);
   });
   tiltEl.addEventListener("pointermove", (event) => {
     if (pointerId !== event.pointerId) return;
-    const rect = tiltEl.getBoundingClientRect();
-    const ry = clampDeg(((event.clientX - startX) / rect.width) * TILT_GAIN);
-    const rx = clampDeg(((startY - event.clientY) / rect.height) * TILT_GAIN);
-    tiltEl.style.transform = `rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`;
+    applyTilt(event.clientX, event.clientY);
   });
   const release = (event) => {
     if (pointerId === null || pointerId !== event.pointerId) return;
@@ -798,7 +800,14 @@ async function drawInto(stage, name, { deal }) {
   cv.className = "player-card-canvas";
   cv.setAttribute("role", "img");
   cv.setAttribute("aria-label", tr("プレイヤーカード画像", "Player card image"));
-  const wrap = el("div", { class: `player-card-wrap ${deal && !shouldReduceMotion() ? "deal" : ""}` }, cv);
+  const motionEnabled = !shouldReduceMotion();
+  const wrap = el(
+    "div",
+    {
+      class: `player-card-wrap${motionEnabled ? " motion" : ""}${deal && motionEnabled ? " deal" : ""}`,
+    },
+    cv
+  );
   const tilt = el("div", { class: "player-card-tilt" }, wrap);
   attachCardTilt(tilt);
   clear(stage).append(tilt);

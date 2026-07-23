@@ -968,8 +968,8 @@ try {
     assert.equal(doubleTitleStyle.timing, "linear");
     assert.deepEqual(
       doubleTitleStyle.keyframePositions,
-      ["0%:100% 0px", "100%:0% 0px"],
-      "DOUBLE CLEAR shine should complete exactly one horizontal pass per time cycle"
+      ["0%:150% 0px", "100%:0% 0px"],
+      "DOUBLE CLEAR shine should run from 150% to 0% in one time cycle"
     );
 
     const snapshotFinalAnswer = await successPage.evaluate(async () => {
@@ -1593,7 +1593,14 @@ try {
   }
 
   // プレイヤーカード: 5 プレイで解放。名前を保存してカードを発行し、canvas に描かれる
-  const cardContext = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
+  const cardContext = await browser.newContext({
+    viewport: { width: 393, height: 786 },
+    locale: "ja-JP",
+    userAgent: "Mozilla/5.0 (Linux; Android 12; Pixel 3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36",
+    hasTouch: true,
+    isMobile: true,
+    deviceScaleFactor: 1,
+  });
   const cardPage = await cardContext.newPage();
   try {
     await cardPage.addInitScript(() => {
@@ -1657,6 +1664,53 @@ try {
     assert.equal(painted.width, 2400, "the card image should be rendered at 2x width");
     assert.equal(painted.height, 1350, "the card image should be rendered at 2x height");
     assert.ok(painted.colorCount > 4, `the card should actually be painted (sampled colors: ${painted.colorCount})`);
+    const androidCardEffects = await cardPage.locator(".player-card-wrap").evaluate((wrap) => {
+      const wrapStyle = getComputedStyle(wrap);
+      const shineStyle = getComputedStyle(wrap, "::after");
+      const tiltStyle = getComputedStyle(wrap.parentElement);
+      return {
+        classes: [...wrap.classList],
+        wrapAnimations: wrapStyle.animationName.split(",").map((name) => name.trim()),
+        shineAnimation: shineStyle.animationName,
+        shineLayer: shineStyle.zIndex,
+        tiltTouchAction: tiltStyle.touchAction,
+        tiltWillChange: tiltStyle.willChange,
+      };
+    });
+    assert.ok(androidCardEffects.classes.includes("motion") && androidCardEffects.classes.includes("deal"));
+    assert.ok(androidCardEffects.wrapAnimations.includes("playerCardDeal"));
+    assert.ok(androidCardEffects.wrapAnimations.includes("playerCardFloat"));
+    assert.equal(androidCardEffects.shineAnimation, "playerCardShine");
+    assert.equal(androidCardEffects.shineLayer, "1");
+    assert.equal(androidCardEffects.tiltTouchAction, "pan-y");
+    assert.equal(androidCardEffects.tiltWillChange, "transform");
+
+    // Pixel 3 / Chrome 相当の実タッチで、触れた瞬間から tilt が反映される。
+    const tiltBox = await cardPage.locator(".player-card-tilt").boundingBox();
+    const cdp = await cardContext.newCDPSession(cardPage);
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [{ x: tiltBox.x + tiltBox.width * 0.8, y: tiltBox.y + tiltBox.height * 0.25 }],
+    });
+    await cardPage.waitForTimeout(60);
+    const activeTouchTilt = await cardPage.locator(".player-card-tilt").evaluate((tilt) => ({
+      active: tilt.classList.contains("tilting"),
+      transform: getComputedStyle(tilt).transform,
+    }));
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    assert.equal(activeTouchTilt.active, true);
+    assert.notEqual(activeTouchTilt.transform, "none", "Android touch should visibly tilt the player card");
+
+    // Android の自動補完などで input が再発火して静かに再描画されても、
+    // 常時の浮遊・きらめきは失われない。
+    await cardPage.getByLabel("プレイヤー名").dispatchEvent("input");
+    await cardPage.locator(".player-card-wrap.motion:not(.deal)").waitFor();
+    const redrawnEffects = await cardPage.locator(".player-card-wrap.motion:not(.deal)").evaluate((wrap) => ({
+      floatAnimation: getComputedStyle(wrap).animationName,
+      shineAnimation: getComputedStyle(wrap, "::after").animationName,
+    }));
+    assert.equal(redrawnEffects.floatAnimation, "playerCardFloat");
+    assert.equal(redrawnEffects.shineAnimation, "playerCardShine");
     await cardPage.getByRole("button", { name: "画像をシェア" }).waitFor();
     await cardPage.getByRole("button", { name: "画像を保存" }).waitFor();
 
