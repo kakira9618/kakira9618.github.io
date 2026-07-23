@@ -116,9 +116,8 @@ export function queryWordPair(word, ans1, ans2) {
   return result;
 }
 
-// 1 語だけを対象にした Wordle 標準の判定（EXTRA SHOT の追加推理用）。
+// 1 語だけを対象にした Wordle 標準の判定（旧 EXTRA SHOT 履歴の互換表示用）。
 // 緑を先に確定し、残った文字から黄を左から順に消費する。
-// DWORDlie でも EXTRA SHOT は「真実の開示」なので嘘変換はかけない。
 export function queryWordSingle(word, ans) {
   const result = [CELL.UNUSED, CELL.UNUSED, CELL.UNUSED, CELL.UNUSED, CELL.UNUSED];
   const consumed = [0, 0, 0, 0, 0]; // ans の各文字を判定に使ったか
@@ -152,4 +151,13 @@ export function usoConvert(state, random = Math.random) {
     r = Math.floor(random() * 3);
   } while (r === v);
   return order[r];
+}
+
+// 真の判定を、選択中のゲームモードで実際に見せる判定へ変換する。
+// DWORDle はそのまま、DWORDlie は全マスで必ず嘘をつく。
+// 通常 Guess と EXTRA SHOT の双方がこの関数を使い、判定規則のずれを防ぐ。
+export function displayResultForMode(trueResult, mode, random = Math.random) {
+  return mode === "uso"
+    ? trueResult.map((state) => usoConvert(state, random))
+    : trueResult.slice();
 }

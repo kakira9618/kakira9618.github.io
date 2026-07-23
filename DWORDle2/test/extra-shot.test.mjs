@@ -1,7 +1,7 @@
 // EXTRA SHOT モード（クリア後の追加推理タイム）のテスト。
 // 実行: node test/extra-shot.test.mjs
 //
-// - queryWordSingle / Logic.otherAnswer の判定
+// - モード準拠の判定 / 旧 queryWordSingle 互換 / Logic.otherAnswer
 // - レコードの追加スキーマ（extraShot）の保存・再読込・旧 finalAnswer 互換
 // - 解放条件（10 回プレイ / デバッグモード）と解放通知の一回性
 // - 隠し実績 4 種（h-double-clear / h-double-uso / h-double-oneshot / h-double-10）
@@ -18,7 +18,7 @@ globalThis.localStorage = {
   removeItem: (key) => storage.delete(key),
 };
 
-const { Logic, CELL, queryWordSingle } = await import("../js/core/logic.js");
+const { Logic, CELL, queryWordSingle, displayResultForMode } = await import("../js/core/logic.js");
 const records = await import("../js/core/records.js");
 const { importFromText } = await import("../js/core/migrate.js");
 const { DEFAULT_SETTINGS, getSettings, setSetting } = await import("../js/core/settings.js?v=20260723-fa");
@@ -45,6 +45,24 @@ const { tryEnableDebugMode } = await import("../js/core/debug.js");
   );
 }
 
+// ---- 通常 Guess と EXTRA SHOT で共用するモード別の表示判定 ----
+{
+  const trueResult = [CELL.UNUSED, CELL.USED, CELL.CORRECT];
+  assert.deepEqual(
+    displayResultForMode(trueResult, "normal"),
+    trueResult,
+    "DWORDle は両方の答えによる真の判定をそのまま表示するはず"
+  );
+  const randomValues = [0.4, 0.8, 0];
+  let randomIndex = 0;
+  const lieResult = displayResultForMode(trueResult, "uso", () => randomValues[randomIndex++]);
+  assert.deepEqual(lieResult, [CELL.USED, CELL.CORRECT, CELL.UNUSED]);
+  assert.ok(
+    lieResult.every((state, index) => state !== trueResult[index]),
+    "DWORDlie は EXTRA SHOT を含む全マスで必ず嘘を表示するはず"
+  );
+}
+
 // ---- Logic.otherAnswer ----
 {
   const logic = new Logic(123);
@@ -64,12 +82,17 @@ const { tryEnableDebugMode } = await import("../js/core/debug.js");
     gameMode: "normal",
     problemID: 123,
     guessWord: [logic.ans1],
-    extraShot: { word: logic.ans2, success: true },
+    extraShot: { word: logic.ans2, success: true, result: logic.queryWord(logic.ans2) },
   });
   assert.equal(saved.clear, true);
   records._reload(); // localStorage から読み直しても extraShot が残る
   const loaded = records.findGame(1_700_000_000, "normal");
-  assert.deepEqual(loaded.extraShot, { word: logic.ans2, success: true }, "extraShot が履歴に保存されるはず");
+  assert.deepEqual(
+    loaded.extraShot,
+    { word: logic.ans2, success: true, result: logic.queryWord(logic.ans2) },
+    "表示した EXTRA SHOT 判定も履歴に保存されるはず"
+  );
+  assert.deepEqual(records.getExtraShotResult(loaded, logic), logic.queryWord(logic.ans2));
   assert.equal(Object.hasOwn(loaded, "finalAnswer"), false, "新しい履歴に旧キーを保存しないはず");
   assert.equal(Object.hasOwn(JSON.parse(storage.get("dwordle2.history"))[0], "finalAnswer"), false);
   assert.equal(records.getStatistics("normal").doubleClear, 1, "統計の doubleClear が数えられるはず");
@@ -93,6 +116,11 @@ const { tryEnableDebugMode } = await import("../js/core/debug.js");
   records._reload();
   const migrated = records.findGame(1_700_000_800, "normal");
   assert.deepEqual(migrated.extraShot, { word: logic.ans2, success: true });
+  assert.deepEqual(
+    records.getExtraShotResult(migrated, logic),
+    queryWordSingle(logic.ans2, logic.ans2),
+    "result の無い旧履歴は当時の単一回答判定で表示するはず"
+  );
   assert.equal(Object.hasOwn(migrated, "finalAnswer"), false);
   const persisted = JSON.parse(storage.get("dwordle2.history"))[0];
   assert.deepEqual(persisted.extraShot, { word: logic.ans2, success: true });

@@ -1549,34 +1549,39 @@ body.theme-cyber .card.tappable:hover {
   padding: 11px 13px 13px;
   border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
 }
-/* 4 カラム構成: [開始日|終了日] [結果|手数min|手数max] [並べ替え(全幅)]。
-   アプリ幅は最大 500px のため、320px〜全幅でこの構成が崩れず収まる
-   （6 カラム 3 項目/行だと 380〜480px で日付入力が潰れて重なって見えるため） */
+/* 2 カラム構成。日付・結果・手数を小画面では必ず縦積みにし、
+   iOS Safari の date input 固有幅や Android Chrome のフォント差でも重ならないようにする。 */
 .history-filter-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   align-items: end;
 }
 .history-filter-field {
-  grid-column: span 2;
+  grid-column: span 1;
   display: flex;
   flex-direction: column;
   gap: 4px;
+  margin: 0;
+  padding: 0;
+  border: 0;
   min-width: 0;
   color: var(--fg-dim);
   font-size: 10.5px;
   font-weight: 700;
 }
-.history-filter-field.compact {
-  grid-column: span 1;
+.history-filter-field legend {
+  padding: 0;
 }
 .history-filter-field.sort {
-  grid-column: span 4;
+  grid-column: 1 / -1;
 }
 .history-filter-field input,
 .history-filter-field select {
+  box-sizing: border-box;
+  display: block;
   width: 100%;
+  max-width: 100%;
   min-width: 0;
   height: 36px;
   padding: 0 8px;
@@ -1589,6 +1594,24 @@ body.theme-cyber .card.tappable:hover {
 }
 .history-filter-field input::placeholder {
   color: var(--fg-dim);
+}
+.history-guess-range {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.history-range-separator {
+  color: var(--fg-dim);
+  font-size: 12px;
+  line-height: 1;
+  text-align: center;
+}
+@media (max-width: 430px) {
+  .history-filter-field {
+    grid-column: 1 / -1;
+  }
 }
 .history-control-foot {
   display: flex;
@@ -3328,6 +3351,23 @@ body.theme-pop #screen-game .sub.fa-counter {
 .row.fa-row.fa-charging .tile {
   animation: faRowPulse 0.5s ease-in-out infinite, faCharge 0.11s linear infinite;
 }
+.row.fa-row.fa-skippable {
+  position: relative;
+  cursor: pointer;
+}
+.row.fa-row.fa-skippable::after {
+  content: attr(data-skip-label);
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 4px);
+  transform: translateX(-50%);
+  color: var(--fg-dim);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  pointer-events: none;
+}
 @keyframes faCharge {
   0%, 100% { transform: translate(0, 0); }
   25% { transform: translate(0.7px, -0.6px); }
@@ -3489,6 +3529,13 @@ body.reduce-motion .result-title.double { animation: none; }
 }
 .fa-result .hint {
   font-size: 12px;
+}
+.fa-result .hint.fa-all-green-miss {
+  color: var(--fa-gold);
+  font-weight: 800;
+}
+body.theme-pop .fa-result .hint.fa-all-green-miss {
+  color: #713600;
 }
 
 /* 答え行の立体王冠。フラグと共通のスロット中心へ Canvas を揃える */

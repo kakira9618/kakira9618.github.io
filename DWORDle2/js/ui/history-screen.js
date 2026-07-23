@@ -119,20 +119,17 @@ function historyControls(total) {
     page = 1;
     render();
   };
-  const numberFilter = (key, label, placeholder) =>
-    el(
-      "label",
-      { class: "history-filter-field compact" },
-      el("span", {}, label),
-      el("input", {
-        type: "number",
-        min: "1",
-        max: "15",
-        value: filters[key],
-        placeholder,
-        onchange: (event) => update(key, event.target.value),
-      })
-    );
+  const guessInput = (key, label, placeholder) =>
+    el("input", {
+      type: "number",
+      min: "1",
+      max: "15",
+      inputmode: "numeric",
+      value: filters[key],
+      placeholder,
+      "aria-label": label,
+      onchange: (event) => update(key, event.target.value),
+    });
   const activeCount = [
     filters.dateFrom,
     filters.dateTo,
@@ -174,7 +171,7 @@ function historyControls(total) {
         { class: "history-filter-grid" },
         el(
           "label",
-          { class: "history-filter-field" },
+          { class: "history-filter-field history-date-field" },
           el("span", {}, tr("開始日", "Start date")),
           el("input", {
             type: "date",
@@ -184,7 +181,7 @@ function historyControls(total) {
         ),
         el(
           "label",
-          { class: "history-filter-field" },
+          { class: "history-filter-field history-date-field" },
           el("span", {}, tr("終了日", "End date")),
           el("input", {
             type: "date",
@@ -194,7 +191,7 @@ function historyControls(total) {
         ),
         el(
           "label",
-          { class: "history-filter-field" },
+          { class: "history-filter-field history-result-field" },
           el("span", {}, tr("結果", "Result")),
           selectControl(
             tr("結果", "Result"),
@@ -203,8 +200,18 @@ function historyControls(total) {
             (value) => update("result", value)
           )
         ),
-        numberFilter("guessesMin", tr("手数", "Guesses"), tr("最小", "Min")),
-        numberFilter("guessesMax", tr("〜", "to"), tr("最大", "Max")),
+        el(
+          "fieldset",
+          { class: "history-filter-field history-guesses-field" },
+          el("legend", {}, tr("手数", "Guesses")),
+          el(
+            "div",
+            { class: "history-guess-range" },
+            guessInput("guessesMin", tr("最小手数", "Minimum Guesses"), tr("最小", "Min")),
+            el("span", { class: "history-range-separator", "aria-hidden": "true" }, "〜"),
+            guessInput("guessesMax", tr("最大手数", "Maximum Guesses"), tr("最大", "Max"))
+          )
+        ),
         el(
           "label",
           { class: "history-filter-field sort" },

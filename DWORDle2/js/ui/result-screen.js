@@ -3,8 +3,8 @@
 
 import { el, clear, fmtDateTime } from "./dom.js";
 import { registerScreen, navigate, setViewMood } from "./app.js?v=20260723-fa";
-import { findGame, MODES, getExtraShot } from "../core/records.js";
-import { Logic, CELL, queryWordSingle } from "../core/logic.js";
+import { findGame, MODES, getExtraShot, getExtraShotResult } from "../core/records.js";
+import { Logic, CELL } from "../core/logic.js";
 import { pidLabel, isDailyPID } from "../core/problems.js";
 import { playSfx } from "../audio/sound.js?v=20260723-fa";
 import { toast } from "./toast.js?v=20260723-fa";
@@ -90,7 +90,11 @@ function render(args) {
   const fa = getExtraShot(record);
   const doubleClear = Boolean(fa?.success);
   const faTarget = cleared ? logic.otherAnswer(lastWord) : null;
-  const faResult = fa && faTarget ? queryWordSingle(fa.word, faTarget) : null;
+  const faResult = fa && faTarget ? getExtraShotResult(record, logic) : null;
+  const allGreenMiss =
+    record.gameMode === "normal" &&
+    fa?.success === false &&
+    faResult?.every((state) => state === CELL.CORRECT);
 
   const header = el(
     "div",
@@ -174,9 +178,14 @@ function render(args) {
         ),
         el(
           "div",
-          { class: "hint" },
+          { class: `hint ${allGreenMiss ? "fa-all-green-miss" : ""}` },
           fa.success
             ? tr("もう一つの答えも一発で見抜いた！", "You named the other answer in one shot!")
+            : allGreenMiss
+              ? tr(
+                  "全部緑。でも、もう一つの答えそのものではなかった！",
+                  "All green, but it wasn't the other answer itself!"
+                )
             : tr("惜しい！もう一つの答えには届かなかった", "So close — the other answer slipped away")
         )
       )

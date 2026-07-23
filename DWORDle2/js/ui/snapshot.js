@@ -4,9 +4,9 @@
 // 見た目は現在のテーマ（cyber / classic）に合わせる。
 
 import { SHARE_URL, tileColorsFor } from "../config.js?v=20260723-fa";
-import { MODES, getExtraShot } from "../core/records.js";
+import { MODES, getExtraShot, getExtraShotResult } from "../core/records.js";
 import { pidLabel } from "../core/problems.js";
-import { CELL, queryWordSingle } from "../core/logic.js";
+import { CELL } from "../core/logic.js";
 import { getSettings } from "../core/settings.js?v=20260723-fa";
 import { drawCrown3D } from "./crown.js?v=20260723-fa";
 
@@ -102,7 +102,7 @@ function extraShotInfo(record, logic) {
   return {
     ...attempt,
     target,
-    result: queryWordSingle(attempt.word, target),
+    result: getExtraShotResult(record, logic),
   };
 }
 
@@ -350,8 +350,17 @@ export function renderResultCanvas(record, logic, displayRows) {
     }
     ctx.fillStyle = st.dim;
     ctx.font = `600 14px "Avenir Next", sans-serif`;
+    const allGreenMiss =
+      record.gameMode === "normal" &&
+      !extraInfo.success &&
+      extraInfo.result.every((stateName) => stateName === CELL.CORRECT);
+    if (allGreenMiss) ctx.fillStyle = st.extraAccent;
     ctx.fillText(
-      extraInfo.success ? "The other answer, found in one shot!" : "The other answer slipped away.",
+      extraInfo.success
+        ? "The other answer, found in one shot!"
+        : allGreenMiss
+          ? "All green, but not the other answer!"
+          : "The other answer slipped away.",
       centerX,
       cardY + 104
     );

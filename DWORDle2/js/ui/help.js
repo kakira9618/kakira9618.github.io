@@ -431,8 +431,12 @@ function localizedBody(mode, language) {
         "p",
         { class: "hint help-fa-note" },
         isEnglish
-          ? "EXTRA SHOT (Settings, optional): after you clear, you get exactly one extra guess at the other answer. Name it for a DOUBLE CLEAR — missing it still counts as a normal clear."
-          : "EXTRA SHOT（設定でON / 任意）: クリア後に 1 回だけ、もう一つの答えを推理する追加チャンスが発動します。当てれば大成功の DOUBLE CLEAR!（外しても通常クリアのままです）"
+          ? mode === "uso"
+            ? "EXTRA SHOT (Settings, optional): after you clear, you get one guess at the other answer. Both answers still affect the feedback, and every tile keeps lying. Name the answer for a DOUBLE CLEAR; a miss remains a normal clear."
+            : "EXTRA SHOT (Settings, optional): after you clear, you get one guess at the other answer. Both answers still affect the feedback. Name the answer for a DOUBLE CLEAR; a miss remains a normal clear."
+          : mode === "uso"
+            ? "EXTRA SHOT（設定でON / 任意）: クリア後、もう一つの答えを 1 回だけ推理できます。判定には当てた答えも影響し、色も最後まで必ず嘘をつきます。当てれば DOUBLE CLEAR!（外しても通常クリア）"
+            : "EXTRA SHOT（設定でON / 任意）: クリア後、もう一つの答えを 1 回だけ推理できます。判定には当てた答えも引き続き影響します。当てれば DOUBLE CLEAR!（外しても通常クリア）"
       )
     : null;
   if (mode === "uso") {

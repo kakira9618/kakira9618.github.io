@@ -9,13 +9,14 @@
 //     usoResults: [["correct",...], ...]  // uso のみ（表示された嘘の判定）
 //     clear: boolean,                     // キャッシュ。guessWord から再計算可能
 //     imported: "auto" | "json" | undefined, // 旧作から移行したレコードの印
-//     extraShot: { word, success } | undefined, // v2 追加スキーマ: EXTRA SHOT の
+//     extraShot: { word, success, result? } | undefined, // v2 追加スキーマ: EXTRA SHOT の
 //       // 追加推理（クリア時のみ発生しうる）。success ならDOUBLE CLEAR。
+//       // result はその場で表示した判定。DWORDlie のランダムな嘘も再現するため保存する。
 //       // 旧キー finalAnswer は読込時に extraShot へ移行する。
 //   }
 
 import { loadJSON, saveJSON, onExternalChange } from "./store.js";
-import { Logic } from "./logic.js";
+import { Logic, CELL, queryWordSingle } from "./logic.js";
 import { isDailyPID } from "./problems.js";
 
 export const MODES = {
@@ -28,6 +29,25 @@ let history = null; // startTime 昇順の配列（キャッシュ）
 // 旧バージョンの finalAnswer レコードも、その場で失わず EXTRA SHOT として扱う。
 export function getExtraShot(record) {
   return record?.extraShot ?? record?.finalAnswer ?? null;
+}
+
+const FEEDBACK_STATES = new Set([CELL.UNUSED, CELL.USED, CELL.CORRECT]);
+
+// 新形式はプレイ時に表示した判定をそのまま返す。旧形式には result が無いため、
+// 当時の「残る答え 1 語だけで真の判定」という仕様を再現して互換表示する。
+export function getExtraShotResult(record, logic = new Logic(record.problemID)) {
+  const attempt = getExtraShot(record);
+  if (!attempt?.word) return null;
+  if (
+    Array.isArray(attempt.result) &&
+    attempt.result.length === 5 &&
+    attempt.result.every((state) => FEEDBACK_STATES.has(state))
+  ) {
+    return attempt.result.slice();
+  }
+  const lastWord = record.guessWord?.[record.guessWord.length - 1];
+  const target = lastWord ? logic.otherAnswer(lastWord) : null;
+  return target ? queryWordSingle(attempt.word, target) : null;
 }
 
 export function normalizeExtraShotRecord(record) {

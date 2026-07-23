@@ -8,7 +8,7 @@
 
 import { el, clear } from "./dom.js";
 import { APP_VERSION, UI, FX } from "../config.js?v=20260723-fa";
-import { Logic, CELL, usoConvert, queryWordSingle } from "../core/logic.js";
+import { Logic, CELL, displayResultForMode } from "../core/logic.js";
 import { MODES, saveCurrentGame, clearCurrentGame, getCurrentGame, addFinishedGame, isAlreadyPlayed, getHistory, getExtraShot } from "../core/records.js";
 import { pidLabel } from "../core/problems.js";
 import { checkOnGameFinish } from "../core/achievements.js?v=20260723-fa";
@@ -56,9 +56,10 @@ let buttonStates = {}; // キーボードの色状態 (normal モードのみ)
 let keyEls = {};
 let seedHidden = false;
 let finishedRecord = null; // 終了後に結果画面へ渡す
-let extraShotPhase = null; // EXTRA SHOT 進行状態 { clearedWord, target, attempt: { word, success } | null }
+let extraShotPhase = null; // { clearedWord, target, canSkip, attempt: { word, success, result } | null }
 let extraShotLeavePromptOpen = false;
 let extraShotFinishPending = false;
+let extraShotSkipReveal = null; // 2周目以降のタップによる判定演出スキップ
 let gatherSession = 0;
 let pendingKeys = []; // 判定オープン中の先行入力（次の 1 行分だけ保持）
 let lastTouchKey = null; // pointerdown で確定したタッチ入力（合成 click の重複抑止用）
@@ -316,6 +317,7 @@ function render() {
   extraShotPhase = null;
   extraShotLeavePromptOpen = false;
   extraShotFinishPending = false;
+  extraShotSkipReveal = null;
   resultFab.style.display = "none";
   rows = [];
   clear(boardEl);
@@ -543,7 +545,7 @@ function submitGuess() {
   }
 
   const trueResult = logic.queryWord(word);
-  const shownResult = game.gameMode === "uso" ? trueResult.map((s) => usoConvert(s)) : trueResult;
+  const shownResult = displayResultForMode(trueResult, game.gameMode);
 
   game.guessWord.push(word);
   if (game.gameMode === "uso") game.usoResults.push(shownResult);
@@ -574,7 +576,10 @@ function beginExtraShot(clearedWord) {
   state = "extraCutin";
   pendingKeys = []; // クリア判定中の先行入力は「次の通常 Guess」のつもりなので捨てる
   inputBuffer = "";
-  extraShotPhase = { clearedWord, target: logic.otherAnswer(clearedWord), attempt: null };
+  const canSkip = getHistory().some(
+    (record) => record.gameMode === game.gameMode && record.problemID === game.problemID
+  );
+  extraShotPhase = { clearedWord, target: logic.otherAnswer(clearedWord), canSkip, attempt: null };
   updateHeader();
   playSfx("extraShot");
   announce(
@@ -609,16 +614,26 @@ function submitExtraShot() {
     return rejectGuess(tr("それはさっき当てた答え！", "You already found that one!"));
   }
   const success = word === extraShotPhase.target;
-  extraShotPhase.attempt = { word, success };
+  const trueResult = logic.queryWord(word);
+  const result = displayResultForMode(trueResult, game.gameMode);
+  extraShotPhase.attempt = { word, success, result: result.slice() };
   state = "extraChecking";
-  // 判定は残る答え 1 語だけとの比較。DWORDlie でもここは真実を表示する（最後の開示）。
-  const result = queryWordSingle(word, extraShotPhase.target);
   const row = currentRow();
   const session = gatherSession;
+  let revealStarted = false;
+  let revealController = null;
+  let drumrollTimer = null;
+  const clearSkipAffordance = () => {
+    extraShotSkipReveal = null;
+    row.rowEl.classList.remove("fa-skippable");
+    delete row.rowEl.dataset.skipLabel;
+  };
   const beginReveal = () => {
-    if (session !== gatherSession) return;
+    if (revealStarted || session !== gatherSession) return;
+    revealStarted = true;
     row.rowEl.classList.remove("fa-charging");
-    revealRow(row, word, result, () => {
+    revealController = revealRow(row, word, result, () => {
+      clearSkipAffordance();
       if (extraShotLeavePromptOpen) {
         extraShotFinishPending = true;
         return;
@@ -626,13 +641,27 @@ function submitExtraShot() {
       finishGame(true);
     });
   };
+  if (extraShotPhase.canSkip && !shouldReduceMotion()) {
+    row.rowEl.classList.add("fa-skippable");
+    row.rowEl.dataset.skipLabel = tr("タップで判定をスキップ", "Tap to skip reveal");
+    extraShotSkipReveal = () => {
+      if (state !== "extraChecking" || session !== gatherSession) return false;
+      if (drumrollTimer !== null) clearTimeout(drumrollTimer);
+      beginReveal();
+      revealController?.skip();
+      return true;
+    };
+    row.rowEl.addEventListener("click", () => {
+      extraShotSkipReveal?.();
+    }, { once: true });
+  }
   if (shouldReduceMotion()) {
     beginReveal();
   } else {
     // ドラムロールのタメ。タイルが小さく震え、太鼓が鳴り止んだ直後に判定が開く
     playSfx("drumroll");
     row.rowEl.classList.add("fa-charging");
-    setTimeout(beginReveal, FX.extraShot.drumrollMs);
+    drumrollTimer = setTimeout(beginReveal, FX.extraShot.drumrollMs);
   }
 }
 
@@ -653,27 +682,40 @@ function revealRow(row, word, result, done) {
   const extraShotReveal = state === "extraChecking";
   const revealDelay = (index) =>
     index * UI.revealIntervalMs + (extraShotReveal && index === 4 ? FX.extraShot.lastTilePauseMs : 0);
-  if (shouldReduceMotion()) {
+  const timers = [];
+  let settled = false;
+  const schedule = (fn, delay) => {
+    const timer = setTimeout(fn, delay);
+    timers.push(timer);
+    return timer;
+  };
+  const applyResultImmediately = () => {
     result.forEach((stateName, i) => {
       const tile = row.tiles[i];
-      tile.classList.remove("reveal", "filled");
+      tile.classList.remove("reveal", "filled", "state-unused", "state-used", "state-correct");
       tile.classList.add(`state-${stateName}`);
       tile.setAttribute("aria-label", tileAriaLabel(word[i], stateName));
       if (game.gameMode === "normal") applyKeyStyle(word[i]);
     });
-    playSfx(result.includes(CELL.CORRECT) ? "revealCorrect" : result.includes(CELL.USED) ? "revealUsed" : "revealUnused");
+  };
+  const complete = () => {
+    if (settled || session !== gatherSession) return;
+    settled = true;
     announce(rowAriaLabel(word, result));
-    setTimeout(() => {
-      if (session === gatherSession) done();
-    }, 0);
-    return;
+    done();
+  };
+  if (shouldReduceMotion()) {
+    applyResultImmediately();
+    playSfx(result.includes(CELL.CORRECT) ? "revealCorrect" : result.includes(CELL.USED) ? "revealUsed" : "revealUnused");
+    schedule(complete, 0);
+    return { skip: complete };
   }
   result.forEach((stateName, i) => {
-    setTimeout(() => {
+    schedule(() => {
       if (session !== gatherSession) return;
       const tile = row.tiles[i];
       tile.classList.add("reveal");
-      setTimeout(() => {
+      schedule(() => {
         if (session !== gatherSession) return;
         tile.classList.add(`state-${stateName}`);
         tile.setAttribute("aria-label", tileAriaLabel(word[i], stateName));
@@ -681,21 +723,26 @@ function revealRow(row, word, result, done) {
         burstAtElement(tile, colorForState(stateName), FX.burst.countPerTile[stateName] ?? 7);
         if (game.gameMode === "normal") applyKeyStyle(word[i]);
       }, UI.revealFlipMs / 2);
-      setTimeout(() => {
+      schedule(() => {
         // forwards の3Dアニメーション状態を残すと、Safariが各タイルを恒久的な
         // GPUレイヤーとして扱い、画面外から戻した際に再描画が遅れる。
         tile.classList.remove("reveal", "filled");
       }, UI.revealFlipMs + 20);
     }, revealDelay(i));
   });
-  setTimeout(() => {
-    if (session !== gatherSession) return;
-    announce(rowAriaLabel(word, result));
-    done();
-  }, 5 * UI.revealIntervalMs
+  schedule(complete, 5 * UI.revealIntervalMs
     + (extraShotReveal ? FX.extraShot.lastTilePauseMs : 0)
     + UI.revealFlipMs / 2
     + UI.afterRevealPauseMs);
+  return {
+    skip() {
+      if (settled || session !== gatherSession) return;
+      timers.forEach(clearTimeout);
+      applyResultImmediately();
+      playSfx(result.includes(CELL.CORRECT) ? "revealCorrect" : result.includes(CELL.USED) ? "revealUsed" : "revealUnused");
+      complete();
+    },
+  };
 }
 
 // ---- キーボード色 ----
@@ -741,7 +788,11 @@ function persistFinishedGame({ includeExtraShot = true } = {}) {
     usoResults: game.gameMode === "uso" ? game.usoResults.slice() : undefined,
     // 棄権・リロード復帰は通常クリアとして扱い、EXTRA SHOT の記録を付けない。
     extraShot: includeExtraShot && extraShotPhase?.attempt
-      ? { word: extraShotPhase.attempt.word, success: extraShotPhase.attempt.success }
+      ? {
+          word: extraShotPhase.attempt.word,
+          success: extraShotPhase.attempt.success,
+          result: extraShotPhase.attempt.result.slice(),
+        }
       : undefined,
   });
   clearCurrentGame(game.gameMode);
@@ -775,6 +826,7 @@ function forfeitExtraShot() {
   state = "finish";
   pendingKeys = [];
   extraShotFinishPending = false;
+  extraShotSkipReveal = null;
   cancelExtraShotFx();
   const settled = persistFinishedGame({ includeExtraShot: false });
   extraShotPhase = null;
@@ -787,6 +839,7 @@ function finishGame(justFinished) {
   state = "finish";
   pendingKeys = []; // 決着後に持ち越された先行入力は捨てる
   extraShotFinishPending = false;
+  extraShotSkipReveal = null;
   updateHeader();
 
   const lastWord = game.guessWord[game.guessWord.length - 1];

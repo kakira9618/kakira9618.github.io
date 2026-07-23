@@ -76,6 +76,13 @@ const squareIhdrOffset = ogSquarePng.indexOf(Buffer.from("IHDR"));
 assert.notEqual(squareIhdrOffset, -1, "square OGP image should contain a PNG IHDR chunk");
 assert.equal(ogSquarePng.readUInt32BE(squareIhdrOffset + 4), 1200, "square OGP image width should be 1200px");
 assert.equal(ogSquarePng.readUInt32BE(squareIhdrOffset + 8), 1200, "square OGP image height should be 1200px");
+for (const [filename, size] of [["icon-192.png", 192], ["icon-512.png", 512], ["icon-maskable-192.png", 192], ["icon-maskable-512.png", 512]]) {
+  const png = await readFile(path.join(projectRoot, filename));
+  const offset = png.indexOf(Buffer.from("IHDR"));
+  assert.notEqual(offset, -1, `${filename} should contain a PNG IHDR chunk`);
+  assert.equal(png.readUInt32BE(offset + 4), size, `${filename} width`);
+  assert.equal(png.readUInt32BE(offset + 8), size, `${filename} height`);
+}
 
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
@@ -132,6 +139,48 @@ async function passGate(target) {
 
 try {
   await page.goto(baseUrl, { waitUntil: "networkidle" });
+  const iconSafeAreas = await page.evaluate(async () => {
+    const measure = (src) => new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = image.naturalWidth;
+        canvas.height = image.naturalHeight;
+        const context = canvas.getContext("2d");
+        context.drawImage(image, 0, 0);
+        const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+        const background = [...pixels.slice(0, 3)];
+        let minX = canvas.width;
+        let minY = canvas.height;
+        let maxX = -1;
+        let maxY = -1;
+        for (let y = 0; y < canvas.height; y++) {
+          for (let x = 0; x < canvas.width; x++) {
+            const index = (y * canvas.width + x) * 4;
+            const difference =
+              Math.abs(pixels[index] - background[0]) +
+              Math.abs(pixels[index + 1] - background[1]) +
+              Math.abs(pixels[index + 2] - background[2]);
+            if (difference <= 18) continue;
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x);
+            maxY = Math.max(maxY, y);
+          }
+        }
+        resolve({ src, minX, minY, right: canvas.width - 1 - maxX, bottom: canvas.height - 1 - maxY });
+      };
+      image.onerror = reject;
+      image.src = src;
+    });
+    return Promise.all([measure("icon-512.png"), measure("icon-maskable-512.png")]);
+  });
+  for (const safeArea of iconSafeAreas) {
+    assert.ok(
+      Math.min(safeArea.minX, safeArea.minY, safeArea.right, safeArea.bottom) >= 70,
+      `PWA icon artwork should stay inside a safe margin: ${JSON.stringify(safeArea)}`
+    );
+  }
   // 扉絵: ロゴ・音の説明・「開始 / 音無しで開始」の 2 択が表示され、通過するまで本来の画面は始まらない
   // （メッセージと 2 択は音設定にかかわらず固定。このページは音オフ設定でシード済み）
   await page.locator("#entry-gate .entry-gate-start").waitFor();
@@ -177,6 +226,8 @@ try {
   await usoTutorial.getByText("判定は必ず嘘をつく").waitFor();
   assert.equal(await usoTutorial.locator(".tutorial-point").count(), 2, "DWORDlie tutorial should show two rules");
   await usoTutorial.getByRole("button", { name: "わかった" }).click();
+  await page.getByText("判定は必ず嘘。15手以内に見抜け。", { exact: true }).waitFor();
+  assert.equal(await page.getByText(/答えは 2 つ。判定は必ず嘘/).count(), 0, "The DWORDlie menu tagline should stay concise");
   const usoLogoBox = await page.locator(".logo").boundingBox();
   assert.ok(
     normalLogoBox && usoLogoBox && Math.abs(normalLogoBox.y - usoLogoBox.y) <= 1,
@@ -702,6 +753,49 @@ try {
 
   await page.evaluate(() => { location.hash = "#/history"; });
   await page.waitForURL(/#\/history$/);
+  const historyModeTabs = page.locator("#screen-history > .seg");
+  for (const modeLabel of ["すべて", "DWORDle", "DWORDlie"]) {
+    await historyModeTabs.getByRole("button", { name: modeLabel, exact: true }).click();
+    await page.locator("#screen-history .history-controls-summary").waitFor();
+    assert.equal(
+      await page.locator("#screen-history .history-controls").count(),
+      1,
+      `Filters & sorting should be available in ${modeLabel}`
+    );
+  }
+  await historyModeTabs.getByRole("button", { name: "すべて", exact: true }).click();
+  await page.locator("#screen-history .history-controls-summary").click();
+  const historyFilterLayout = await page.locator("#screen-history .history-controls").evaluate((controls) => {
+    const box = (element) => {
+      const rect = element.getBoundingClientRect();
+      return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, width: rect.width };
+    };
+    const dates = [...controls.querySelectorAll('input[type="date"]')].map(box);
+    const guesses = [...controls.querySelectorAll('.history-guess-range input[type="number"]')].map(box);
+    const separator = box(controls.querySelector(".history-range-separator"));
+    const card = box(controls);
+    return { dates, guesses, separator, card };
+  });
+  assert.ok(
+    historyFilterLayout.dates[0].bottom <= historyFilterLayout.dates[1].top,
+    `Date fields should stack without overlap on mobile: ${JSON.stringify(historyFilterLayout)}`
+  );
+  for (const field of [...historyFilterLayout.dates, ...historyFilterLayout.guesses]) {
+    assert.ok(
+      field.left >= historyFilterLayout.card.left && field.right <= historyFilterLayout.card.right,
+      `History filter fields must stay inside the card: ${JSON.stringify(historyFilterLayout)}`
+    );
+  }
+  assert.ok(
+    historyFilterLayout.guesses[0].right <= historyFilterLayout.separator.left &&
+      historyFilterLayout.separator.right <= historyFilterLayout.guesses[1].left,
+    `The Guess range separator should stay between its inputs: ${JSON.stringify(historyFilterLayout)}`
+  );
+  assert.ok(
+    historyFilterLayout.separator.top >= historyFilterLayout.guesses[0].top &&
+      historyFilterLayout.separator.bottom <= historyFilterLayout.guesses[0].bottom,
+    `The Guess range separator should remain vertically centered: ${JSON.stringify(historyFilterLayout)}`
+  );
   const historyItem = page.locator("button.history-item").first();
   await historyItem.waitFor();
   await assertNoSeriousA11yViolations("History screen");
@@ -914,6 +1008,12 @@ try {
     });
     await successPage.keyboard.type(logic.ans2);
     await successPage.keyboard.press("Enter");
+    await successPage.locator("#screen-game.active .fa-row.fa-charging").waitFor();
+    assert.equal(
+      await finalRow.evaluate((row) => row.classList.contains("fa-skippable")),
+      false,
+      "The first play of a puzzle must keep the full EXTRA SHOT reveal"
+    );
     await successPage.waitForFunction(
       () => window.__extraShotRevealTimes?.every(Number.isFinite),
       null,
@@ -1078,6 +1178,7 @@ try {
           popDoubleClearColor: popDoubleClear?.fillStyle,
           popExtraShotColor: popExtraShot?.fillStyle,
           goldCrownPixels,
+          savedResult: record.extraShot?.result,
         };
       } finally {
         CanvasRenderingContext2D.prototype.fillText = originalFillText;
@@ -1100,6 +1201,7 @@ try {
     );
     assert.equal(snapshotExtraShot.popDoubleClearColor, "#713600");
     assert.equal(snapshotExtraShot.popExtraShotColor, "#713600");
+    assert.deepEqual(snapshotExtraShot.savedResult, Array(5).fill("correct"), "EXTRA SHOT feedback should be saved with the record");
     assert.ok(snapshotExtraShot.goldCrownPixels > 20, "The saved image should draw a gold crown for the other answer");
     await successPage.evaluate(async () => {
       (await import("./js/ui/toast.js?v=20260723-fa")).extraShotUnlockCelebration();
@@ -1122,6 +1224,144 @@ try {
     assert.match(doubleClearCellStyle.background, /linear-gradient/);
     assert.notEqual(doubleClearCellStyle.border, "rgb(106, 170, 100)", "DOUBLE CLEAR should not use the ordinary clear color");
     await successPage.close();
+  }
+
+  // 2 周目以降は判定演出をタップでスキップ可能。両回答を参照して全緑でも、
+  // もう一方の答えそのものではない場合は専用メッセージを表示する。
+  {
+    const pid = 1; // point / touch に対して pouch が「答えではない全緑」になる
+    const logic = new Logic(pid);
+    assert.deepEqual([logic.ans1, logic.ans2], ["point", "touch"]);
+    assert.deepEqual(logic.queryWord("pouch"), Array(5).fill("correct"));
+    const repeatPage = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
+    await repeatPage.addInitScript(
+      ({ puzzleId, answer, priorAnswer }) => {
+        localStorage.setItem("dwordle2.settings", JSON.stringify({
+          theme: "classic",
+          sfx: false,
+          bgm: false,
+          language: "ja",
+          keyboardHints: true,
+          reduceFx: false,
+          extraShot: true,
+        }));
+        localStorage.setItem("dwordle2.mode", JSON.stringify("normal"));
+        localStorage.setItem("dwordle2.current.normal", JSON.stringify({
+          version: "2.0.0",
+          startTime: 1_800_000_200,
+          gameMode: "normal",
+          problemID: puzzleId,
+          guessWord: [],
+          usoResults: [],
+        }));
+        localStorage.setItem("dwordle2.history", JSON.stringify([{
+          version: "2.0.0",
+          startTime: 1_799_999_000,
+          endTime: 1_799_999_060,
+          gameMode: "normal",
+          problemID: puzzleId,
+          guessWord: [priorAnswer],
+          clear: true,
+        }]));
+        localStorage.setItem("dwordle2.achievements", "{}");
+        localStorage.setItem("dwordle2.achievements.reconcileVersion", "99");
+        localStorage.setItem("dwordle2.legacyImportPrompted", "true");
+        localStorage.setItem("dwordle2.tutorialSeen", "true");
+        localStorage.setItem("dwordle2.playCount", "99");
+        localStorage.setItem("dwordle2.extraShotUnlockSeen", "true");
+        localStorage.setItem("dwordle2.menuUnlockSeen", "99");
+        localStorage.setItem("dwordle2.__smokeAnswer", answer);
+      },
+      { puzzleId: pid, answer: logic.ans1, priorAnswer: logic.ans2 }
+    );
+    await repeatPage.goto(`${baseUrl}#/game`, { waitUntil: "networkidle" });
+    await passGate(repeatPage);
+    await repeatPage.locator("#screen-game.active .row").last().waitFor();
+    await repeatPage.keyboard.type(logic.ans1);
+    await repeatPage.keyboard.press("Enter");
+    const repeatExtraRow = repeatPage.locator("#screen-game.active .fa-row");
+    await repeatExtraRow.waitFor({ timeout: 8000 });
+    await repeatPage.keyboard.type("pouch");
+    await repeatPage.keyboard.press("Enter");
+    await repeatExtraRow.locator(".tile").first().waitFor();
+    await repeatPage.locator("#screen-game.active .fa-row.fa-skippable.fa-charging").waitFor();
+    const skipStartedAt = Date.now();
+    await repeatExtraRow.click();
+    await repeatPage.waitForFunction(
+      () => document.querySelectorAll("#screen-game.active .fa-row .tile.state-correct").length === 5,
+      null,
+      { timeout: 1000 }
+    );
+    assert.ok(Date.now() - skipStartedAt < 800, "A repeat-play tap should skip the EXTRA SHOT reveal immediately");
+    await repeatPage.waitForURL(/#\/result\/normal\/\d+$/, { timeout: 8000 });
+    await repeatPage.getByText("全部緑。でも、もう一つの答えそのものではなかった！", { exact: true }).waitFor();
+    const savedMiss = await repeatPage.evaluate(() => {
+      const history = JSON.parse(localStorage.getItem("dwordle2.history") || "[]");
+      return history.at(-1)?.extraShot;
+    });
+    assert.deepEqual(savedMiss, { word: "pouch", success: false, result: Array(5).fill("correct") });
+    await repeatPage.close();
+  }
+
+  // DWORDlie の EXTRA SHOT も通常判定と同じく両回答を参照し、表示する全マスで嘘を貫く。
+  {
+    const pid = 323;
+    const logic = new Logic(pid);
+    const usoPage = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
+    await usoPage.addInitScript(({ puzzleId }) => {
+      localStorage.setItem("dwordle2.settings", JSON.stringify({
+        theme: "classic",
+        sfx: false,
+        bgm: false,
+        language: "ja",
+        keyboardHints: true,
+        reduceFx: true,
+        extraShot: true,
+      }));
+      localStorage.setItem("dwordle2.mode", JSON.stringify("uso"));
+      localStorage.setItem("dwordle2.current.uso", JSON.stringify({
+        version: "2.0.0",
+        startTime: 1_800_000_300,
+        gameMode: "uso",
+        problemID: puzzleId,
+        guessWord: [],
+        usoResults: [],
+      }));
+      localStorage.setItem("dwordle2.history", "[]");
+      localStorage.setItem("dwordle2.achievements", "{}");
+      localStorage.setItem("dwordle2.achievements.reconcileVersion", "99");
+      localStorage.setItem("dwordle2.legacyImportPrompted", "true");
+      localStorage.setItem("dwordle2.tutorialSeen", "true");
+      localStorage.setItem("dwordle2.tutorialSeenUso", "true");
+      localStorage.setItem("dwordle2.playCount", "99");
+      localStorage.setItem("dwordle2.extraShotUnlockSeen", "true");
+      localStorage.setItem("dwordle2.menuUnlockSeen", "99");
+    }, { puzzleId: pid });
+    await usoPage.goto(`${baseUrl}#/game`, { waitUntil: "networkidle" });
+    await passGate(usoPage);
+    await usoPage.locator("#screen-game.active .row").last().waitFor();
+    await usoPage.keyboard.type(logic.ans1);
+    await usoPage.keyboard.press("Enter");
+    await usoPage.locator("#screen-game.active .fa-row").waitFor({ timeout: 8000 });
+    await usoPage.keyboard.type(logic.ans2);
+    await usoPage.keyboard.press("Enter");
+    await usoPage.waitForURL(/#\/result\/uso\/\d+$/, { timeout: 10000 });
+    const usoExtra = await usoPage.evaluate(() => {
+      const record = JSON.parse(localStorage.getItem("dwordle2.history") || "[]")[0];
+      return {
+        attempt: record.extraShot,
+        tileStates: [...document.querySelectorAll("#screen-result .fa-result .rcell")].map((tile) =>
+          [...tile.classList].find((name) => ["unused", "used", "correct"].includes(name))
+        ),
+      };
+    });
+    assert.equal(usoExtra.attempt.success, true);
+    assert.ok(
+      usoExtra.attempt.result.every((state) => state !== "correct"),
+      `Every DWORDlie EXTRA SHOT tile should lie about the all-correct true result: ${JSON.stringify(usoExtra)}`
+    );
+    assert.deepEqual(usoExtra.tileStates, usoExtra.attempt.result, "The result screen should replay the saved lies exactly");
+    await usoPage.close();
   }
 
   const shortPage = await browser.newPage({ viewport: { width: 393, height: 559 }, locale: "ja-JP" });
