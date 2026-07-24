@@ -255,8 +255,24 @@ try {
   assert.equal(await page.getByRole("button", { name: "デイリー問題", exact: true }).count(), 0);
   await randomButton.waitFor();
   await randomButton.click();
-  const randomDialog = page.getByRole("dialog", { name: "ランダムにプレイ（難しさを選択）" });
+  const randomDialog = page.getByRole("dialog", { name: "ランダム（難しさを選択）" });
   await randomDialog.waitFor();
+  await randomDialog.getByText("Lv.4 難しい", { exact: false }).waitFor();
+  assert.equal(await randomDialog.getByText(/むずかしい/).count(), 0, "the title difficulty picker should use 難しい");
+  const randomLevelColumns = await randomDialog.locator(".random-level-option").evaluateAll((buttons) => ({
+    names: buttons.map((button) => button.querySelector(".random-level-name").getBoundingClientRect().x),
+    descriptions: buttons.map((button) => button.querySelector(".random-level-desc").getBoundingClientRect().x),
+    nameOverflows: buttons.map((button) => {
+      const name = button.querySelector(".random-level-name");
+      return name.scrollWidth > name.clientWidth + 1;
+    }),
+  }));
+  assert.ok(
+    Math.max(...randomLevelColumns.names) - Math.min(...randomLevelColumns.names) <= 1
+      && Math.max(...randomLevelColumns.descriptions) - Math.min(...randomLevelColumns.descriptions) <= 1
+      && randomLevelColumns.nameOverflows.every((overflow) => !overflow),
+    `random difficulty columns should align across every level: ${JSON.stringify(randomLevelColumns)}`
+  );
   assert.equal(await page.getByText("難易度を選ぶ", { exact: false }).count(), 0);
   assert.equal(await page.getByText("難易度を選択", { exact: false }).count(), 0);
   await randomDialog.getByRole("button", { name: "閉じる" }).click();
@@ -753,6 +769,29 @@ try {
     mod.setSetting("highContrast", false);
   });
 
+  // 結果フィルターで EXTRA SHOT 成功（DOUBLE CLEAR）だけを抽出できる。
+  await page.evaluate(async () => {
+    const [{ Logic: BrowserLogic }, records] = await Promise.all([
+      import("./js/core/logic.js"),
+      import("./js/core/records.js"),
+    ]);
+    const pid = 2;
+    const logic = new BrowserLogic(pid);
+    const startTime = Math.max(
+      Math.floor(Date.now() / 1000) - 10,
+      ...records.getHistory().map((record) => record.startTime + 1)
+    );
+    records.addFinishedGame({
+      version: "2.0.0",
+      startTime,
+      endTime: startTime + 20,
+      gameMode: "normal",
+      problemID: pid,
+      guessWord: [logic.ans1],
+      usoResults: [],
+      extraShot: { word: logic.ans2, success: true },
+    });
+  });
   await page.evaluate(() => { location.hash = "#/history"; });
   await page.waitForURL(/#\/history$/);
   const historyModeTabs = page.locator("#screen-history > .seg");
@@ -798,6 +837,21 @@ try {
       historyFilterLayout.separator.bottom <= historyFilterLayout.guesses[0].bottom,
     `The Guess range separator should remain vertically centered: ${JSON.stringify(historyFilterLayout)}`
   );
+  const historyResultFilter = page.getByLabel("結果", { exact: true });
+  assert.ok(
+    (await historyResultFilter.locator("option").allTextContents()).includes("DOUBLE CLEAR"),
+    "the result filter should include DOUBLE CLEAR"
+  );
+  await historyResultFilter.selectOption("double");
+  const doubleClearHistoryItems = page.locator("#screen-history .history-item");
+  await doubleClearHistoryItems.first().waitFor();
+  assert.equal(await doubleClearHistoryItems.count(), 1, "DOUBLE CLEAR should isolate successful EXTRA SHOT records");
+  assert.match(
+    await doubleClearHistoryItems.first().getAttribute("aria-label"),
+    /ダブルクリア/,
+    "the filtered record should be a DOUBLE CLEAR"
+  );
+  await page.getByLabel("結果", { exact: true }).selectOption("all");
   const historyOverflowLayout = await page.locator("#screen-history .list-screen-body").evaluate(async (body) => {
     const controls = body.querySelector(".history-controls");
     const item = body.querySelector(".history-item");
@@ -867,27 +921,39 @@ try {
   const dailyCalendar = page.locator(".daily-calendar-card");
   const levelTabs = page.locator(".problem-level-tabs");
   await dailyCalendar.waitFor();
-  const dailyCalendarDetails = page.locator("#daily-calendar-details");
-  assert.equal(await dailyCalendarDetails.isVisible(), false, "Daily calendar should be collapsed by default");
-  const openDailyCalendar = page.getByRole("button", { name: "Dailyカレンダーを開く" });
-  assert.equal(await openDailyCalendar.getAttribute("aria-expanded"), "false");
-  assert.ok(
-    (await dailyCalendar.boundingBox()).y < (await levelTabs.boundingBox()).y,
-    "Daily history should appear above the puzzle category tabs"
+  assert.deepEqual(
+    await levelTabs.getByRole("button").allTextContents(),
+    ["Daily", "やさしい", "ふつう", "やや難", "難しい", "マニア", "極"],
+    "Daily should be the first puzzle category and the hard label should use kanji"
   );
-  const todayDaily = page.locator("button.daily-calendar-today");
   assert.equal(
-    await todayDaily.getAttribute("aria-label"),
-    `今日のデイリー問題、${pidLabel(todayPID())}、未プレイ`,
-    "the puzzle list should feature today's dynamically resolved Daily puzzle"
+    await levelTabs.getByRole("button", { name: "Daily", exact: true }).evaluate((button) => button.classList.contains("active")),
+    true,
+    "Daily should be selected by default"
   );
+  assert.equal(
+    await levelTabs.getByRole("button").first().evaluate((button) => Number.parseFloat(getComputedStyle(button).fontSize) <= 11),
+    true,
+    "the seven category labels should use a compact font size"
+  );
+  const dailyCalendarBox = await dailyCalendar.boundingBox();
+  const levelTabsBox = await levelTabs.boundingBox();
+  assert.ok(
+    dailyCalendarBox.y >= levelTabsBox.y + levelTabsBox.height,
+    "the expanded Daily calendar should appear directly below the category tabs"
+  );
+  assert.equal(
+    await page.locator("#daily-calendar-details, .daily-calendar-toggle").count(),
+    0,
+    "the Daily calendar should be shown directly without collapse controls"
+  );
+  const todayDaily = page.locator("button.daily-calendar-day.today");
+  assert.match(await todayDaily.getAttribute("aria-label"), /今日、未プレイ$/, "today's Daily puzzle should be visible in the calendar");
   assert.equal(
     await page.locator("#screen-problems .problem-double-legend").count(),
     0,
     "the puzzle list should not show a standalone DOUBLE CLEAR legend"
   );
-  await openDailyCalendar.click();
-  assert.equal(await dailyCalendarDetails.isVisible(), true);
   await page.getByRole("button", { name: "前の月" }).click();
   await page.getByText(
     `${historicalDailyDate.getFullYear()}年${historicalDailyDate.getMonth() + 1}月`,
@@ -910,9 +976,9 @@ try {
     { exact: true }
   ).waitFor();
   assert.equal(
-    await historicalDailyDialog.getByRole("button", { name: /結果を見る/ }).count(),
+    await historicalDailyDialog.getByRole("button", { name: /^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2} のプレイ$/ }).count(),
     1,
-    "past Daily results should remain viewable"
+    "past Daily results should use the date-time play label and remain viewable"
   );
   await historicalDailyDialog.getByRole("button", { name: "閉じる" }).click();
   await page.getByRole("button", { name: "次の月" }).click();
@@ -923,12 +989,63 @@ try {
     true,
     "future Daily dates must all be disabled"
   );
-  await page.getByRole("button", { name: "Dailyカレンダーを閉じる" }).click();
-  assert.equal(await dailyCalendarDetails.isVisible(), false);
   await todayDaily.click();
   const dailyDialog = page.getByRole("dialog", { name: pidLabel(todayPID()) });
   await dailyDialog.waitFor();
   await dailyDialog.getByRole("button", { name: "閉じる" }).click();
+
+  // 今日のDailyをDWORDleだけでプレイ済みなら、DWORDlie側は「未プレイ」のまま。
+  // 開始時は矛盾した「プレイ済み」ではなく、別モードでの当日プレイだと明示する。
+  await page.evaluate(async ({ pid }) => {
+    const [{ Logic: BrowserLogic }, records, app] = await Promise.all([
+      import("./js/core/logic.js"),
+      import("./js/core/records.js"),
+      import("./js/ui/app.js?v=20260723-fa"),
+    ]);
+    const logic = new BrowserLogic(pid);
+    const startTime = Math.floor(Date.now() / 1000) - 30;
+    records.addFinishedGame({
+      version: "2.0.0",
+      startTime,
+      endTime: startTime + 20,
+      gameMode: "normal",
+      problemID: pid,
+      guessWord: [logic.ans1],
+      usoResults: [],
+    });
+    app.setAppMode("uso");
+    location.hash = "#/";
+  }, { pid: todayPID() });
+  await page.waitForURL(/#\/$/);
+  await page.evaluate(() => { location.hash = "#/problems"; });
+  await page.waitForURL(/#\/problems$/);
+  const usoTodayDaily = page.locator("button.daily-calendar-day.today");
+  assert.match(
+    await usoTodayDaily.getAttribute("aria-label"),
+    /今日、未プレイ$/,
+    "Daily status should remain mode-specific after playing only DWORDle"
+  );
+  await usoTodayDaily.click();
+  const usoDailyDialog = page.getByRole("dialog", { name: pidLabel(todayPID()) });
+  await usoDailyDialog.getByText("この問題はまだプレイしていません。", { exact: true }).waitFor();
+  await usoDailyDialog.getByRole("button", { name: "この問題をプレイ" }).click();
+  const crossModeDailyDialog = page.getByRole("dialog", { name: "別モードで本日プレイ済み" });
+  await crossModeDailyDialog.getByText(
+    `${pidLabel(todayPID())} は本日 DWORDle でプレイ済みですが、DWORDlie ではまだプレイしていません。`,
+    { exact: false }
+  ).waitFor();
+  await crossModeDailyDialog.getByRole("button", { name: "キャンセル" }).click();
+  await usoDailyDialog.getByRole("button", { name: "閉じる" }).click();
+  await page.evaluate(async () => {
+    const app = await import("./js/ui/app.js?v=20260723-fa");
+    app.setAppMode("normal");
+    location.hash = "#/";
+  });
+  await page.waitForURL(/#\/$/);
+  await page.evaluate(() => { location.hash = "#/problems"; });
+  await page.waitForURL(/#\/problems$/);
+
+  await page.locator(".problem-level-tabs").getByRole("button", { name: "やさしい", exact: true }).click();
   const block = page.locator("button.block-cell").first();
   await block.waitFor();
   await assertNoSeriousA11yViolations("Problems screen");
@@ -1344,6 +1461,7 @@ try {
     await finalUnlockDialog.getByRole("button", { name: "あとで" }).click();
     await successPage.evaluate(() => { location.hash = "#/problems"; });
     await successPage.waitForURL(/#\/problems$/);
+    await successPage.locator(".problem-level-tabs").getByRole("button", { name: "やさしい", exact: true }).click();
     await successPage.getByRole("button", { name: /問題 301 から 400/ }).click();
     const doubleClearCell = successPage.getByRole("button", { name: "問題 322、DOUBLE CLEAR済み" });
     await doubleClearCell.waitFor();
@@ -1871,7 +1989,7 @@ try {
     assert.equal(await lockedRandom.getAttribute("aria-disabled"), "true");
     await lockedRandom.click({ force: true });
     assert.equal(
-      await freshPage.getByRole("dialog", { name: "ランダムにプレイ（難しさを選択）" }).count(),
+      await freshPage.getByRole("dialog", { name: "ランダム（難しさを選択）" }).count(),
       0,
       "a locked menu item must not run its action when tapped"
     );
@@ -2251,6 +2369,19 @@ try {
     );
 
     // 拡大中の再ダブルタップで等倍 Tilt に戻る。
+    await cardPage.evaluate(() => {
+      const stage = document.querySelector(".player-card-stage");
+      const tilt = stage.querySelector(".player-card-tilt");
+      window.__zoomResetFirstPaintScale = null;
+      window.__zoomResetObserver = new MutationObserver(() => {
+        if (stage.classList.contains("is-zoomed")) return;
+        requestAnimationFrame(() => {
+          window.__zoomResetFirstPaintScale = new DOMMatrix(getComputedStyle(tilt).transform).a;
+          window.__zoomResetObserver.disconnect();
+        });
+      });
+      window.__zoomResetObserver.observe(stage, { attributes: true, attributeFilter: ["class"] });
+    });
     await cardPage.waitForTimeout(360);
     for (let i = 0; i < 2; i++) {
       await cdp.send("Input.dispatchTouchEvent", {
@@ -2260,6 +2391,17 @@ try {
       await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
       await cardPage.waitForTimeout(70);
     }
+    await cardPage.waitForFunction(() => Number.isFinite(window.__zoomResetFirstPaintScale));
+    const zoomResetFirstPaintScale = await cardPage.evaluate(() => {
+      const scale = window.__zoomResetFirstPaintScale;
+      delete window.__zoomResetFirstPaintScale;
+      delete window.__zoomResetObserver;
+      return scale;
+    });
+    assert.ok(
+      zoomResetFirstPaintScale > 0.99 && zoomResetFirstPaintScale < 1.01,
+      `removing the zoom viewport must not expose an enlarged card for one frame: ${zoomResetFirstPaintScale}`
+    );
     assert.equal(await cardPage.locator(".player-card-stage.is-zoomed").count(), 0);
     assert.equal(
       await cardPage.locator(".player-card-tilt").evaluate((tilt) => tilt.style.transform),
@@ -2362,6 +2504,7 @@ try {
       `Desktop drag should pan the zoomed card: ${JSON.stringify({ desktopZoomStart, desktopZoomPanned })}`
     );
     await cardPage.mouse.dblclick(desktopCenter.x, desktopCenter.y);
+    await cardPage.waitForFunction(() => !document.querySelector(".player-card-stage")?.classList.contains("is-zoomed"));
     assert.equal(await cardPage.locator(".player-card-stage.is-zoomed").count(), 0);
 
     // Android の自動補完などで input が再発火して静かに再描画されても、

@@ -900,14 +900,16 @@ function finishGame(justFinished) {
 // すでにプレイ済みなら確認してから開始する（原作の確認ダイアログ相当）
 export async function confirmAndStart(pid, mode) {
   const today = new Date().toDateString();
-  const playedToday = getHistory().some((record) => {
+  const playedTodayGames = getHistory().filter((record) => {
     if (record.problemID !== pid) return false;
     const endTime = Number(record.endTime);
     const startTime = Number(record.startTime);
     const playedAt = Number.isFinite(endTime) && endTime > 0 ? endTime : startTime;
     return Number.isFinite(playedAt) && new Date(playedAt * 1000).toDateString() === today;
   });
-  if (isAlreadyPlayed(pid, mode) || playedToday) {
+  const playedToday = playedTodayGames.length > 0;
+  const playedInCurrentMode = isAlreadyPlayed(pid, mode);
+  if (playedInCurrentMode || playedToday) {
     // 注意: 動的 import にも必ず ?v= トークンを付ける。素の URL だと古いキャッシュの
     // modal.js（旧トークンで sound.js を import する）が混ざり、BGM が二重再生される。
     const { confirmModal } = await import("./modal.js?v=20260723-fa");
@@ -918,9 +920,23 @@ export async function confirmAndStart(pid, mode) {
           "\n\nThis puzzle has already been played today. This play will not count toward play, win, or other count-based achievement totals, and will not be checked for secret achievements."
         )
       : "";
+    const onlyPlayedInOtherModeToday = playedToday && !playedInCurrentMode;
+    const playedModeTitles = [...new Set(playedTodayGames.map((record) => MODES[record.gameMode]?.title).filter(Boolean))];
+    const title = onlyPlayedInOtherModeToday
+      ? tr("別モードで本日プレイ済み", "Played today in another mode")
+      : tr("プレイ済みの問題", "Puzzle already played");
+    const message = onlyPlayedInOtherModeToday
+      ? tr(
+          `${label} は本日 ${playedModeTitles.join(" / ")} でプレイ済みですが、${MODES[mode].title} ではまだプレイしていません。\n${MODES[mode].title} でプレイしますか？\n\n※今回のプレイは、プレイ数・勝利数などのカウント系実績に加算されず、隠し実績の判定対象にもなりません。`,
+          `${label} was played today in ${playedModeTitles.join(" / ")}, but has not yet been played in ${MODES[mode].title}.\nPlay it in ${MODES[mode].title}?\n\nThis play will not count toward play, win, or other count-based achievement totals, and will not be checked for secret achievements.`
+        )
+      : tr(
+          `${label} はすでにプレイしています。\nもう一度プレイしますか？`,
+          `${label} has already been played.\nPlay it again?`
+        ) + countNote;
     const ok = await confirmModal(
-      tr("プレイ済みの問題", "Puzzle already played"),
-      tr(`${label} はすでにプレイしています。\nもう一度プレイしますか？`, `${label} has already been played.\nPlay it again?`) + countNote
+      title,
+      message
     );
     if (!ok) return false;
   }

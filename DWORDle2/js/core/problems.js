@@ -29,7 +29,7 @@ export const LEVELS = [
   { id: 1, key: "easy", name: "やさしい", nameEn: "Easy", desc: "だれでも知っている単語だけ", descEn: "Familiar everyday words", range: [PID.EASY_MIN, PID.EASY_MAX], topK: null },
   { id: 2, key: "common", name: "ふつう", nameEn: "Normal", desc: "よく見かける単語まで", descEn: "Commonly seen words", range: [20000, 24999], topK: 750 },
   { id: 3, key: "middle", name: "やや難", nameEn: "Tricky", desc: "少しひねった単語まで", descEn: "Some less obvious words", range: [25000, 29999], topK: 1800 },
-  { id: 4, key: "hard", name: "むずかしい", nameEn: "Hard", desc: "辞書で引くレベルの単語まで", descEn: "Words you may need to look up", range: [30000, 34999], topK: 4000 },
+  { id: 4, key: "hard", name: "難しい", nameEn: "Hard", desc: "辞書で引くレベルの単語まで", descEn: "Words you may need to look up", range: [30000, 34999], topK: 4000 },
   { id: 5, key: "mania", name: "マニア", nameEn: "Expert", desc: "英語マニア向けの単語まで", descEn: "For serious word enthusiasts", range: [35000, 39999], topK: 8000 },
   { id: 6, key: "extreme", name: "極", nameEn: "Extreme", desc: "全 14847 語。人智を超えろ", descEn: "All 14,847 words. Go beyond reason", range: [PID.HARD_MIN, PID.HARD_MAX], topK: Infinity },
 ];

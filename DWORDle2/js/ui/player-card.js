@@ -778,6 +778,8 @@ function attachCardGestures(stage, tiltEl) {
   let gestureRect = null;
   let tiltFrame = 0;
   let zoomFrame = 0;
+  let zoomResetTimer = 0;
+  let zoomResetting = false;
   let pendingPoint = null;
   let zoomed = false;
   let zoomScale = CARD_ZOOM_MIN;
@@ -819,7 +821,26 @@ function attachCardGestures(stage, tiltEl) {
     tiltEl.classList.remove("tilting");
     if (!zoomed) tiltEl.style.transform = "";
   };
+  const finishZoomReset = () => {
+    if (!zoomResetting) return;
+    zoomResetting = false;
+    clearTimeout(zoomResetTimer);
+    zoomResetTimer = 0;
+    tiltEl.removeEventListener("transitionend", onZoomResetTransitionEnd);
+    // タイマーやキーボード操作でトランジション途中に呼ばれても、拡大用のクリップを
+    // 外す時点では描画上も必ず等倍に確定させる。
+    tiltEl.classList.add("gesturing");
+    applyZoom();
+    getComputedStyle(tiltEl).transform;
+    tiltEl.style.transform = "";
+    updatePresentation();
+    tiltEl.classList.remove("gesturing");
+  };
+  const onZoomResetTransitionEnd = (event) => {
+    if (event.target === tiltEl && event.propertyName === "transform") finishZoomReset();
+  };
   const enterZoom = (clientX, clientY) => {
+    finishZoomReset();
     stopTilt();
     zoomed = true;
     zoomScale = CARD_ZOOM_INITIAL;
@@ -834,6 +855,8 @@ function attachCardGestures(stage, tiltEl) {
   const leaveZoom = ({ sound = true } = {}) => {
     if (zoomFrame) cancelAnimationFrame(zoomFrame);
     zoomFrame = 0;
+    const animateReset = !shouldReduceMotion()
+      && (zoomScale > CARD_ZOOM_MIN + 0.01 || Math.abs(panX) > 0.5 || Math.abs(panY) > 0.5);
     zoomed = false;
     zoomScale = CARD_ZOOM_MIN;
     panX = 0;
@@ -844,8 +867,17 @@ function attachCardGestures(stage, tiltEl) {
     // CSS 上で再スタートしないよう deal を消し、通常の浮遊だけへ戻す。
     tiltEl.querySelector(".player-card-wrap")?.classList.remove("deal");
     tiltEl.classList.remove("gesturing");
-    tiltEl.style.transform = "";
-    updatePresentation();
+    zoomResetting = true;
+    if (animateReset) {
+      // 拡大時とは逆に、まずクリップ内で 1 倍まで戻してから拡大コンテナを外す。
+      // 先に is-zoomed を外すと、縮小途中の大きいカードが一瞬外へ露出する。
+      applyZoom();
+      tiltEl.addEventListener("transitionend", onZoomResetTransitionEnd);
+      zoomResetTimer = setTimeout(finishZoomReset, 100);
+    } else {
+      // すでに等倍（ピンチイン完了時など）なら、補間を切って等倍を確定して即座に戻す。
+      finishZoomReset();
+    }
     if (sound) playSfx("ui");
   };
   const toggleZoom = (clientX, clientY) => {
@@ -930,6 +962,7 @@ function attachCardGestures(stage, tiltEl) {
   updatePresentation();
   tiltEl.addEventListener("pointerdown", (event) => {
     event.preventDefault();
+    if (zoomResetting) return;
     pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
     tiltEl.classList.add("gesturing");
     tiltEl.setPointerCapture?.(event.pointerId);

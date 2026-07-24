@@ -21,7 +21,7 @@ let page = 1;
 let filters = {
   dateFrom: "",
   dateTo: "",
-  result: "all", // "all" | "win" | "lose"
+  result: "all", // "all" | "win" | "lose" | "double"
   guessesMin: "",
   guessesMax: "",
   sort: "date-desc",
@@ -196,7 +196,12 @@ function historyControls(total) {
           selectControl(
             tr("結果", "Result"),
             filters.result,
-            [["all", tr("すべて", "All")], ["win", tr("成功", "Win")], ["lose", tr("失敗", "Loss")]],
+            [
+              ["all", tr("すべて", "All")],
+              ["win", tr("成功", "Win")],
+              ["lose", tr("失敗", "Loss")],
+              ["double", "DOUBLE CLEAR"],
+            ],
             (value) => update("result", value)
           )
         ),
@@ -260,6 +265,7 @@ function filteredGames() {
     if (game.startTime < from || game.startTime >= to) return false;
     if (filters.result === "win" && !game.clear) return false;
     if (filters.result === "lose" && game.clear) return false;
+    if (filters.result === "double" && !(game.clear && getExtraShot(game)?.success)) return false;
     return game.guessWord.length >= minGuesses && game.guessWord.length <= maxGuesses;
   });
 

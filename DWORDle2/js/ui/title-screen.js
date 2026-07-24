@@ -87,22 +87,28 @@ function numberPrompt(mode) {
 function randomPrompt(mode) {
   const lastLevel = getSettings().randomLevel;
   showModal({
-    title: tr("ランダムにプレイ（難しさを選択）", "Random puzzle — Choose difficulty"),
+    title: tr("ランダム（難しさを選択）", "Random (choose difficulty)"),
     body: LEVELS.map((lv) => {
       const localized = localizedLevel(lv);
       return el(
           "button",
           {
-            class: `btn ${lv.id === lastLevel ? "btn-primary" : ""}`,
-            style: { width: "100%", justifyContent: "space-between" },
+            class: `btn random-level-option ${lv.id === lastLevel ? "btn-primary" : ""}`,
             onclick: () => {
               playSfx("ui");
               setSetting("randomLevel", lv.id);
               confirmAndStart(randomPID(lv.range[0], lv.range[1], mode), mode);
             },
           },
-          el("span", {}, `Lv.${lv.id} ${localized.name}${lv.id === lastLevel ? tr("（前回）", " (last)") : ""}`),
-          el("span", { class: "hint" }, localized.desc)
+          el(
+            "span",
+            { class: "random-level-name" },
+            `Lv.${lv.id} ${localized.name}`,
+            lv.id === lastLevel
+              ? el("span", { class: "random-level-last" }, tr("（前回）", "(last)"))
+              : null
+          ),
+          el("span", { class: "hint random-level-desc" }, localized.desc)
         );
     }),
     actions: [{ label: tr("閉じる", "Close"), onClick: () => {} }],

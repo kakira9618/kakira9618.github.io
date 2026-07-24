@@ -22,11 +22,10 @@ const BLOCK_SIZE = 100;
 const SUPPORTS_COLOR_MIX = CSS.supports("color", "color-mix(in srgb, red 50%, white)");
 
 let root = null;
-let levelIdx = 0; // LEVELS のインデックス
+let levelIdx = -1; // -1 は Daily、0 以上は LEVELS のインデックス
 let blockStart = null; // ブロック表示中の先頭 No.（null なら ブロック一覧）
 let statusFilter = "all"; // "all" | "cleared" | "failed" | "unplayed"
 let dailyCalendarMonth = null; // year * 12 + month。null は今月
-let dailyCalendarExpanded = false;
 
 function build() {
   root = document.getElementById("screen-problems");
@@ -50,11 +49,10 @@ function openProblemMenu(pid, statusMap, { allowPlay = true } = {}) {
         "button",
         {
           class: "btn",
-          style: { width: "100%", justifyContent: "space-between" },
+          style: { width: "100%" },
           onclick: () => navigate(`/result/${mode}/${time}`),
         },
-        fmtDateTime(time),
-        tr("結果を見る →", "View result →")
+        tr(`${fmtDateTime(time)} のプレイ`, `Play on ${fmtDateTime(time)}`)
       )
     );
   showModal({
@@ -172,14 +170,9 @@ function dailyCalendar(statusMap) {
   while (cells.length % 7 !== 0) {
     cells.push(el("span", { class: "daily-calendar-day empty", "aria-hidden": "true" }));
   }
-  const todayState = dailyStatus(statusMap, todayPid);
-  const calendarDetails = el(
-    "div",
-    {
-      class: "daily-calendar-details",
-      id: "daily-calendar-details",
-      hidden: !dailyCalendarExpanded,
-    },
+  return el(
+    "section",
+    { class: "card daily-calendar-card", "aria-label": tr("Daily プレイ履歴", "Daily play history") },
     el(
       "div",
       { class: "daily-calendar-nav" },
@@ -225,51 +218,6 @@ function dailyCalendar(statusMap) {
     ),
     el("div", { class: "daily-calendar-grid" }, cells)
   );
-  return el(
-    "section",
-    { class: "card daily-calendar-card", "aria-label": tr("Daily プレイ履歴", "Daily play history") },
-    el(
-      "div",
-      { class: "daily-calendar-head" },
-      el(
-        "div",
-        { class: "daily-calendar-title" },
-        el("span", { class: "daily-calendar-icon", "aria-hidden": "true" }, icon("calendar", 20)),
-        el("strong", {}, "DAILY"),
-        el(
-          "button",
-          {
-            class: `daily-calendar-today ${todayState.status} ${todayState.doubleClear ? "double-clear" : ""}`,
-            "aria-label": tr(`今日のデイリー問題、${pidLabel(todayPid)}、${todayState.label}`, `Today's Daily puzzle, ${pidLabel(todayPid)}, ${todayState.label}`),
-            onclick: () => {
-              playSfx("ui");
-              openProblemMenu(todayPid, statusMap);
-            },
-          },
-          tr("今日", "Today"),
-          el("span", {}, todayState.label)
-        )
-      ),
-      el(
-        "button",
-        {
-          class: `icon-btn daily-calendar-toggle ${dailyCalendarExpanded ? "expanded" : ""}`,
-          "aria-expanded": String(dailyCalendarExpanded),
-          "aria-controls": "daily-calendar-details",
-          "aria-label": dailyCalendarExpanded
-            ? tr("Dailyカレンダーを閉じる", "Collapse Daily calendar")
-            : tr("Dailyカレンダーを開く", "Expand Daily calendar"),
-          onclick: () => {
-            playSfx("ui");
-            dailyCalendarExpanded = !dailyCalendarExpanded;
-            render();
-          },
-        },
-        icon("triangleDown", 17)
-      )
-    ),
-    calendarDetails
-  );
 }
 
 function render() {
@@ -277,8 +225,8 @@ function render() {
   clear(root);
   const mode = getAppMode();
   const statusMap = buildProblemStatus(mode);
-  const level = LEVELS[levelIdx];
-  const [lo, hi] = level.range;
+  const level = levelIdx >= 0 ? LEVELS[levelIdx] : null;
+  const [lo, hi] = level?.range ?? [null, null];
 
   const header = el(
     "div",
@@ -316,25 +264,45 @@ function render() {
   const levelSeg = el(
     "div",
     { class: "seg problem-level-tabs" },
-    LEVELS.map((lv, i) =>
+    [
       el(
         "button",
         {
-          class: i === levelIdx ? "active" : "",
+          class: levelIdx === -1 ? "active" : "",
           onclick: () => {
             playSfx("ui");
-            levelIdx = i;
+            levelIdx = -1;
             blockStart = null;
             render();
           },
         },
-        localizedLevel(lv).name
-      )
-    )
+        "Daily"
+      ),
+      ...LEVELS.map((lv, i) =>
+        el(
+          "button",
+          {
+            class: i === levelIdx ? "active" : "",
+            onclick: () => {
+              playSfx("ui");
+              levelIdx = i;
+              blockStart = null;
+              render();
+            },
+          },
+          localizedLevel(lv).name
+        )
+      ),
+    ]
   );
 
   const body = el("div", { class: "list-screen-body" });
-  body.append(dailyCalendar(statusMap), levelSeg);
+  body.append(levelSeg);
+  if (levelIdx === -1) {
+    body.append(dailyCalendar(statusMap));
+    root.append(header, body);
+    return;
+  }
 
   // 帯全体の進捗
   let clearedCount = 0;
