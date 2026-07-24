@@ -119,18 +119,14 @@ onMotionPreferenceChange(() => syncDisplayClasses());
 initAppMode();
 // Three.js は cyber テーマでしか使わないので、そのときだけ読み込む
 // （classic / pop では 680KB のダウンロードとパースを丸ごと省ける）。
-// さらに、初期化はメインスレッドが空くまで待つ: 682KB のパースと WebGLRenderer の構築は
-// 合わせて 0.5 秒以上スクリプトを占有し（Lighthouse 実測で background.js の scripting
-// 542ms）、初回描画の直後に走らせると LCP と操作可能になるまでの時間を押し上げる。
-// 背景は扉絵の後ろに出るものなので、数百 ms 遅れて現れても体験は変わらない。
+// さらに、取得を初回描画のあとまで遅らせる: 682KB のパース / WebGLRenderer の初期化は
+// メインスレッドを塞ぐため、即座に始めると扉絵の描画が約 700ms 後ろへずれる。
+// rAF 2 回で「最初のフレームを描き終えた次のフレーム」まで待つ。
+// requestIdleCallback への置き換えも試したが、扉絵の描画直後にメインスレッドが空くため
+// three.js の取得開始は約 1790ms で同じになり、FCP / LCP / TBT のいずれも変わらなかった
+// （CPU 4 倍 + Slow 4G で 5 回ずつ実測）。効果が無いぶん単純なこちらを使う。
 if (getSettings().theme === "cyber") {
-  const startEffects = () => void initEffects();
-  // requestIdleCallback は Safari 16.3 以前が未対応。無ければ次フレームの後に始める。
-  if (typeof requestIdleCallback === "function") {
-    requestIdleCallback(startEffects, { timeout: 2000 });
-  } else {
-    requestAnimationFrame(() => setTimeout(startEffects, 200));
-  }
+  requestAnimationFrame(() => requestAnimationFrame(() => void initEffects()));
 }
 initPopBackground();
 initActivity(); // 行動ログ（クリック・画面滞在・打鍵などを端末内に記録）
