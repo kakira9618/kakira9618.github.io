@@ -766,7 +766,7 @@ function celebratePromotion(stage, rank) {
 
 // 通常は 1 本指で Tilt、ダブルタップ後はピンチズーム + 1 本指パン。
 // 拡大中の再ダブルタップで等倍の Tilt に戻る。
-function attachCardGestures(stage, tiltEl, hint) {
+function attachCardGestures(stage, tiltEl) {
   const clampDeg = (v) => Math.min(TILT_MAX_DEG, Math.max(-TILT_MAX_DEG, v));
   const clampZoom = (v) => Math.min(CARD_ZOOM_MAX, Math.max(CARD_ZOOM_MIN, v));
   const pointers = new Map();
@@ -797,15 +797,6 @@ function attachCardGestures(stage, tiltEl, hint) {
             "Player card. Drag to tilt and double-tap or double-click for 3x zoom"
           )
     );
-    hint.textContent = zoomed
-      ? tr(
-          "ドラッグで移動、ピンチで拡大・縮小。ダブルタップ／ダブルクリックで戻ります",
-          "Drag to pan and pinch to zoom. Double-tap or double-click to return"
-        )
-      : tr(
-          "ドラッグで傾きます。ダブルタップ／ダブルクリックで3倍拡大できます",
-          "Drag to tilt. Double-tap or double-click for 3x zoom"
-        );
   };
   const constrainPan = () => {
     const rect = stage.getBoundingClientRect();
@@ -1026,7 +1017,7 @@ function attachCardGestures(stage, tiltEl, hint) {
   });
 }
 
-async function drawInto(stage, hint, name, { deal }) {
+async function drawInto(stage, name, { deal }) {
   const cv = await renderPlayerCardCanvas(name);
   cardCanvas = cv;
   cv.className = "player-card-canvas";
@@ -1042,7 +1033,7 @@ async function drawInto(stage, hint, name, { deal }) {
   );
   const tilt = el("div", { class: "player-card-tilt" }, wrap);
   clear(stage).append(tilt);
-  attachCardGestures(stage, tilt, hint);
+  attachCardGestures(stage, tilt);
 }
 
 function render() {
@@ -1078,14 +1069,6 @@ function render() {
   );
 
   const stage = el("div", { class: "player-card-stage" });
-  const viewHint = el(
-    "p",
-    { class: "hint player-card-view-hint", hidden: !saved },
-    tr(
-      "ドラッグで傾きます。ダブルタップ／ダブルクリックで3倍拡大できます",
-      "Drag to tilt. Double-tap or double-click for 3x zoom"
-    )
-  );
   const actions = el(
     "div",
     { class: "result-actions player-card-actions", hidden: true },
@@ -1108,8 +1091,7 @@ function render() {
     const prev = getSavedCard();
     const rank = rankForStats(collectStats());
     saveJSON("playerCard", { ...prev, name, issuedAt: Math.floor(Date.now() / 1000), seenRankTier: rank.tier });
-    await drawInto(stage, viewHint, name, { deal: true });
-    viewHint.hidden = false;
+    await drawInto(stage, name, { deal: true });
     actions.hidden = false;
     if (isFirst) {
       playSfx("achievementBig");
@@ -1134,7 +1116,7 @@ function render() {
     redrawTimer = setTimeout(() => {
       const name = sanitizeName(nameInput.value);
       saveJSON("playerCard", { ...getSavedCard(), name });
-      void drawInto(stage, viewHint, name, { deal: false });
+      void drawInto(stage, name, { deal: false });
     }, 350);
   });
 
@@ -1147,7 +1129,6 @@ function render() {
       el("label", { class: "player-card-name-label" }, tr("名前", "Name"), nameInput),
       el("p", { class: "hint" }, tr("名前はこの端末にだけ保存されます", "Your name is saved only on this device"))
     ),
-    viewHint,
     stage,
     actions,
     saved ? null : issueButton

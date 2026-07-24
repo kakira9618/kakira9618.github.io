@@ -2987,22 +2987,17 @@ body.theme-pop.mode-normal .player-card-name-input::placeholder {
 .player-card-form .hint {
   margin-top: 6px;
 }
-.player-card-view-hint {
-  min-height: 1.4em;
-  margin: 0;
-  text-align: center;
-}
-.player-card-view-hint[hidden] { display: none; }
 /* カード本体: 3D で舞い込む → 光が走る → ふわふわ浮遊 */
 .player-card-stage {
   min-width: 0;
+  border: 1px solid transparent;
+  border-radius: 14px;
   perspective: 1200px;
   -webkit-perspective: 1200px;
 }
 .player-card-stage.is-zoomed {
   overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: 14px;
+  border-color: var(--border);
   background: color-mix(in srgb, var(--bg-panel) 82%, black);
 }
 .player-card-wrap {

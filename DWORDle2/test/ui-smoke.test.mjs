@@ -2150,6 +2150,15 @@ try {
     assert.equal(androidCardEffects.shineLayer, "1");
     assert.equal(androidCardEffects.tiltTouchAction, "none");
     assert.equal(androidCardEffects.tiltWillChange, "transform");
+    const cardLayoutAtOneX = await cardPage.locator(".player-card-stage").evaluate((stage) => {
+      const canvas = stage.querySelector(".player-card-canvas");
+      return {
+        stageWidth: stage.offsetWidth,
+        stageHeight: stage.offsetHeight,
+        cardWidth: canvas.offsetWidth,
+        cardHeight: canvas.offsetHeight,
+      };
+    });
 
     // Pixel 3 / Chrome 相当の実タッチで、触れた瞬間から tilt が反映される。
     const tiltBox = await cardPage.locator(".player-card-tilt").boundingBox();
@@ -2185,7 +2194,6 @@ try {
       return {
         scale: new DOMMatrix(getComputedStyle(tilt).transform).a,
         wrapAnimation: getComputedStyle(stage.querySelector(".player-card-wrap")).animationName,
-        hint: stage.previousElementSibling?.textContent,
       };
     });
     assert.ok(
@@ -2193,7 +2201,6 @@ try {
       `Double-tap should zoom the card to 3x: ${JSON.stringify(zoomBeforePinch)}`
     );
     assert.equal(zoomBeforePinch.wrapAnimation, "none", "Zoom should keep the enlarged card still for reading");
-    assert.match(zoomBeforePinch.hint, /ピンチで拡大・縮小/);
 
     await cdp.send("Input.dispatchTouchEvent", {
       type: "touchStart",
@@ -2244,6 +2251,25 @@ try {
       animationAfterZoomReset.names,
       ["playerCardFloat"],
       "returning to 1x should resume only the normal floating animation"
+    );
+    const cardLayoutAfterZoomReset = await cardPage.locator(".player-card-stage").evaluate((stage) => {
+      const canvas = stage.querySelector(".player-card-canvas");
+      return {
+        stageWidth: stage.offsetWidth,
+        stageHeight: stage.offsetHeight,
+        cardWidth: canvas.offsetWidth,
+        cardHeight: canvas.offsetHeight,
+      };
+    });
+    assert.deepEqual(
+      cardLayoutAfterZoomReset,
+      cardLayoutAtOneX,
+      "returning to 1x must preserve the exact card and stage layout size"
+    );
+    assert.equal(
+      await cardPage.locator(".player-card-view-hint").count(),
+      0,
+      "the player-card screen should not show gesture instructions"
     );
 
     const playerCardTilt = cardPage.locator(".player-card-tilt");
