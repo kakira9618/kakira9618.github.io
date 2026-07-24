@@ -784,7 +784,9 @@ body.theme-cyber .icon-btn.menu-locked:hover {
   right: max(10px, env(safe-area-inset-right));
   bottom: max(8px, env(safe-area-inset-bottom));
   color: var(--fg-dim);
-  font: 700 10px/1 ui-monospace, "SFMono-Regular", Consolas, monospace;
+  /* 12px は「判読可能なフォントサイズ」の下限（Lighthouse のおすすめの方法）。
+     控えめな補助表示だが、下回る必要はないのでちょうど下限に合わせる */
+  font: 700 12px/1 ui-monospace, "SFMono-Regular", Consolas, monospace;
   letter-spacing: 0.08em;
   user-select: none;
 }
@@ -3278,7 +3280,7 @@ body.reduce-motion .player-card-wrap.motion::after {
 }
 .entry-gate-credit {
   color: var(--fg-dim);
-  font-size: 11px;
+  font-size: 12px; /* 判読可能なフォントサイズの下限（.app-version と同じ理由） */
   margin-top: 10px;
 }
 .entry-gate-credit a {
