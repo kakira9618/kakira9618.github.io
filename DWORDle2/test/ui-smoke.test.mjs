@@ -1383,12 +1383,12 @@ try {
         return originalFillText.call(this, text, x, y, ...args);
       };
       try {
-        const measureOrder = (calls, classic = false) => {
-          const answerIndex = calls.findIndex((call) => classic ? call.text.startsWith("Answer:") : call.text === "Word 1");
+        const measureOrder = (calls) => {
+          const answerIndex = calls.findIndex((call) => call.text === "Word 1");
           const finalIndex = calls.findIndex((call) => call.text === "EXTRA SHOT");
-          const guessIndex = classic
-            ? answerIndex + 1
-            : calls.findIndex((call, index) => index > calls.findIndex((item) => item.text === "Word 2") + 5 && call.text.length === 1);
+          const guessIndex = calls.findIndex(
+            (call, index) => index > calls.findIndex((item) => item.text === "Word 2") + 5 && call.text.length === 1
+          );
           return {
             answerY: calls[answerIndex]?.y,
             guessY: calls[guessIndex]?.y,
@@ -1413,6 +1413,8 @@ try {
         settings.setSetting("theme", "classic");
         const classicCanvas = renderResultCanvas(record, gameLogic, displayRows);
         const classicCalls = [...textCalls];
+        const classicBackground = [...classicCanvas.getContext("2d").getImageData(0, 0, 1, 1).data];
+        const classicTitle = classicCalls.find((call) => call.text === "DWORDle 2");
         textCalls.length = 0;
         const classicOrdinaryCanvas = renderResultCanvas(withoutFinal, gameLogic, displayRows);
 
@@ -1428,7 +1430,11 @@ try {
           classicHeight: classicCanvas.height,
           classicOrdinaryHeight: classicOrdinaryCanvas.height,
           cyberOrder: measureOrder(cyberCalls),
-          classicOrder: measureOrder(classicCalls, true),
+          classicOrder: measureOrder(classicCalls),
+          cyberLayout: cyberCalls.map(({ text, x, y }) => ({ text, x, y })),
+          classicLayout: classicCalls.map(({ text, x, y }) => ({ text, x, y })),
+          classicBackground,
+          classicTitleColor: classicTitle?.fillStyle,
           popDoubleClearColor: popDoubleClear?.fillStyle,
           popExtraShotColor: popExtraShot?.fillStyle,
           goldCrownPixels,
@@ -1443,6 +1449,18 @@ try {
         && snapshotExtraShot.classicHeight > snapshotExtraShot.classicOrdinaryHeight,
       `EXTRA SHOT should extend saved images: ${JSON.stringify(snapshotExtraShot)}`
     );
+    assert.equal(
+      snapshotExtraShot.classicHeight,
+      snapshotExtraShot.cyberHeight,
+      "Classic saved images should use the same canvas layout height as other themes"
+    );
+    assert.deepEqual(
+      snapshotExtraShot.classicLayout,
+      snapshotExtraShot.cyberLayout,
+      "Classic saved images should place every text element at the same coordinates as other themes"
+    );
+    assert.deepEqual(snapshotExtraShot.classicBackground, [32, 32, 32, 255]);
+    assert.equal(snapshotExtraShot.classicTitleColor, "#f2f2f2");
     assert.ok(
       snapshotExtraShot.cyberOrder.answerY < snapshotExtraShot.cyberOrder.guessY
         && snapshotExtraShot.cyberOrder.guessY < snapshotExtraShot.cyberOrder.finalY,

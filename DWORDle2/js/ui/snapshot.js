@@ -1,7 +1,7 @@
 // プレイ結果のスクリーンショット機能。
 // 画面のキャプチャではなく、必要事項（タイトル・No.・盤面・答え・URL）だけを
 // canvas に再レンダリングして PNG としてダウンロードする。
-// 見た目は現在のテーマ（cyber / classic）に合わせる。
+// コンテンツ配置は全テーマ共通で、配色・装飾だけを現在のテーマに合わせる。
 
 import { SHARE_URL, tileColorsFor } from "../config.js?v=20260723-fa";
 import { MODES, getExtraShot, getExtraShotResult } from "../core/records.js";
@@ -21,7 +21,6 @@ const SS = {
   tileGap: 8,
   tileRadius: 10,
   footerSize: 18,
-  doubleClearColor: "#ffd166", // EXTRA SHOT 成功（DOUBLE CLEAR!）のタイトル色
 };
 
 const THEME_STYLES = {
@@ -106,83 +105,9 @@ function extraShotInfo(record, logic) {
   };
 }
 
-// クラシックテーマ: 原作 GameResult のスクリーンショットを再現する。
-// #202020 の無地背景に盤面をそのまま描き、下に "Answer: XXX, YYY" を白字で置くだけ。
-function renderClassicCanvas(record, logic, displayRows) {
-  const tileColors = tileColorsFor("classic", getSettings().highContrast);
-  const extraInfo = extraShotInfo(record, logic);
-  const rows = record.guessWord.length;
-  const gridH = rows * (SS.tile + SS.tileGap);
-  const height = SS.pad + gridH + 104 + (extraInfo ? 138 : 0);
-
-  const scale = 2;
-  const cv = document.createElement("canvas");
-  cv.width = SS.width * scale;
-  cv.height = height * scale;
-  const ctx = cv.getContext("2d");
-  ctx.scale(scale, scale);
-
-  ctx.fillStyle = "#202020";
-  ctx.fillRect(0, 0, SS.width, height);
-
-  const centerX = SS.width / 2;
-  const gridW = 5 * SS.tile + 4 * SS.tileGap;
-  const gx0 = centerX - gridW / 2;
-  let y = SS.pad + 13;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-
-  // 答え → 入力履歴 → EXTRA SHOT の順に並べる。
-  ctx.fillStyle = "#ffffff";
-  ctx.font = `700 26px "Helvetica Neue", "Avenir Next", sans-serif`;
-  ctx.fillText(`Answer: ${logic.ans1.toUpperCase()}, ${logic.ans2.toUpperCase()}`, centerX, y);
-  y += 33;
-
-  ctx.font = `800 ${SS.tile * 0.5}px "Helvetica Neue", "Avenir Next", sans-serif`;
-  for (let r = 0; r < rows; r++) {
-    for (let i = 0; i < 5; i++) {
-      const s = displayRows[r][i];
-      const x = gx0 + i * (SS.tile + SS.tileGap);
-      ctx.fillStyle = s === CELL.CORRECT ? tileColors.correct : s === CELL.USED ? tileColors.used : tileColors.unused;
-      roundRect(ctx, x, y, SS.tile, SS.tile, 5);
-      ctx.fill();
-      ctx.fillStyle = "#ffffff";
-      ctx.fillText(record.guessWord[r][i].toUpperCase(), x + SS.tile / 2, y + SS.tile / 2 + 1);
-    }
-    y += SS.tile + SS.tileGap;
-  }
-
-  if (extraInfo) {
-    y += 30;
-    ctx.fillStyle = extraInfo.success ? SS.doubleClearColor : "#9a9a9a";
-    ctx.font = `900 16px "Helvetica Neue", "Avenir Next", sans-serif`;
-    ctx.fillText("EXTRA SHOT", centerX, y);
-    y += 22;
-    ctx.font = `800 ${SS.tile * 0.5}px "Helvetica Neue", "Avenir Next", sans-serif`;
-    for (let i = 0; i < 5; i++) {
-      const stateName = extraInfo.result[i];
-      const x = gx0 + i * (SS.tile + SS.tileGap);
-      ctx.fillStyle =
-        stateName === CELL.CORRECT ? tileColors.correct :
-          stateName === CELL.USED ? tileColors.used : tileColors.unused;
-      roundRect(ctx, x, y, SS.tile, SS.tile, 5);
-      ctx.fill();
-      ctx.fillStyle = "#ffffff";
-      ctx.fillText(extraInfo.word[i].toUpperCase(), x + SS.tile / 2, y + SS.tile / 2 + 1);
-    }
-    if (extraInfo.success) {
-      const flagPoleX = gx0 + gridW + 24;
-      drawCrown3D(ctx, flagPoleX, y + SS.tile / 2 + 5, 34, Math.PI / 9, SS.doubleClearColor);
-    }
-  }
-
-  return cv;
-}
-
 // record + logic + 表示用判定から PNG canvas を作る
 export function renderResultCanvas(record, logic, displayRows) {
   const { theme, highContrast } = getSettings();
-  if (theme === "classic") return renderClassicCanvas(record, logic, displayRows);
   const st = THEME_STYLES[theme] ?? THEME_STYLES.cyber;
   const tileColors = tileColorsFor(theme, highContrast);
   const isUso = record.gameMode === "uso";
