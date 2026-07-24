@@ -3029,6 +3029,10 @@ body.theme-pop.mode-normal .player-card-name-input::placeholder {
   transition: transform 0.06s linear;
   cursor: grab;
 }
+.player-card-stage.is-zoomed .player-card-tilt.gesturing {
+  /* ピンチ中は Safari の補間遅延で指より後ろを追わせず、rAF ごとの最新倍率へ直接合わせる。 */
+  transition: none;
+}
 .player-card-stage.is-zoomed .player-card-tilt:active {
   cursor: grabbing;
 }

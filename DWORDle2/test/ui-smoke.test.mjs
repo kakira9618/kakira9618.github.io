@@ -2209,6 +2209,18 @@ try {
         { id: 1, x: tapX + 28, y: tapY },
       ],
     });
+    const activePinchTransition = await cardPage.locator(".player-card-tilt").evaluate(
+      (tilt) => getComputedStyle(tilt).transitionDuration
+    );
+    assert.equal(activePinchTransition, "0s", "active pinch gestures should not use lagging CSS interpolation");
+    await cardPage.evaluate(() => {
+      const tilt = document.querySelector(".player-card-tilt");
+      window.__pinchStyleMutationCount = 0;
+      window.__pinchStyleObserver = new MutationObserver((records) => {
+        window.__pinchStyleMutationCount += records.length;
+      });
+      window.__pinchStyleObserver.observe(tilt, { attributes: true, attributeFilter: ["style"] });
+    });
     await cdp.send("Input.dispatchTouchEvent", {
       type: "touchMove",
       touchPoints: [
@@ -2217,13 +2229,25 @@ try {
       ],
     });
     await cardPage.waitForTimeout(80);
-    const scaleAfterPinch = await cardPage.locator(".player-card-tilt").evaluate(
-      (tilt) => new DOMMatrix(getComputedStyle(tilt).transform).a
-    );
+    const pinchFrameResult = await cardPage.locator(".player-card-tilt").evaluate((tilt) => {
+      window.__pinchStyleObserver.disconnect();
+      const result = {
+        scale: new DOMMatrix(getComputedStyle(tilt).transform).a,
+        styleMutations: window.__pinchStyleMutationCount,
+      };
+      delete window.__pinchStyleObserver;
+      delete window.__pinchStyleMutationCount;
+      return result;
+    });
     await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
     assert.ok(
-      scaleAfterPinch > zoomBeforePinch.scale + 0.5,
-      `Pinch should continuously increase the card scale: ${JSON.stringify({ zoomBeforePinch, scaleAfterPinch })}`
+      pinchFrameResult.scale > zoomBeforePinch.scale + 0.5,
+      `Pinch should continuously increase the card scale: ${JSON.stringify({ zoomBeforePinch, pinchFrameResult })}`
+    );
+    assert.equal(
+      pinchFrameResult.styleMutations,
+      1,
+      "two pointer updates in one frame should produce one transform write"
     );
 
     // 拡大中の再ダブルタップで等倍 Tilt に戻る。
@@ -2315,6 +2339,7 @@ try {
       y: playerCardStageBox.y + playerCardStageBox.height / 2,
     };
     await cardPage.mouse.dblclick(desktopCenter.x, desktopCenter.y);
+    await cardPage.waitForTimeout(80);
     const desktopZoomStart = await playerCardTilt.evaluate((tilt) => {
       const matrix = new DOMMatrix(getComputedStyle(tilt).transform);
       return { scale: matrix.a, x: matrix.e, y: matrix.f };

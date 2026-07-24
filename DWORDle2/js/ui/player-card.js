@@ -777,6 +777,7 @@ function attachCardGestures(stage, tiltEl) {
   let lastTap = null;
   let gestureRect = null;
   let tiltFrame = 0;
+  let zoomFrame = 0;
   let pendingPoint = null;
   let zoomed = false;
   let zoomScale = CARD_ZOOM_MIN;
@@ -831,6 +832,8 @@ function attachCardGestures(stage, tiltEl) {
     playSfx("ui");
   };
   const leaveZoom = ({ sound = true } = {}) => {
+    if (zoomFrame) cancelAnimationFrame(zoomFrame);
+    zoomFrame = 0;
     zoomed = false;
     zoomScale = CARD_ZOOM_MIN;
     panX = 0;
@@ -840,6 +843,7 @@ function attachCardGestures(stage, tiltEl) {
     // zoom 中は animation:none になるため、戻した瞬間に発行時の登場アニメーションが
     // CSS 上で再スタートしないよう deal を消し、通常の浮遊だけへ戻す。
     tiltEl.querySelector(".player-card-wrap")?.classList.remove("deal");
+    tiltEl.classList.remove("gesturing");
     tiltEl.style.transform = "";
     updatePresentation();
     if (sound) playSfx("ui");
@@ -885,6 +889,41 @@ function attachCardGestures(stage, tiltEl) {
       contentY: (midY - rect.height / 2 - panY) / zoomScale,
     };
   };
+  const updateZoomFromPointers = () => {
+    if (!zoomed) return;
+    if (pointers.size >= 2) {
+      if (!pinchStart) beginPinch();
+      const [a, b] = [...pointers.values()].slice(0, 2);
+      const rect = stage.getBoundingClientRect();
+      const midX = (a.x + b.x) / 2 - rect.left;
+      const midY = (a.y + b.y) / 2 - rect.top;
+      const distance = Math.max(1, Math.hypot(a.x - b.x, a.y - b.y));
+      zoomScale = clampZoom(pinchStart.scale * distance / pinchStart.distance);
+      panX = midX - rect.width / 2 - pinchStart.contentX * zoomScale;
+      panY = midY - rect.height / 2 - pinchStart.contentY * zoomScale;
+      applyZoom();
+      return;
+    }
+    if (pointers.size === 1 && panStart && pointers.has(primaryPointerId)) {
+      const point = pointers.get(primaryPointerId);
+      panX = panStart.panX + point.x - panStart.x;
+      panY = panStart.panY + point.y - panStart.y;
+      applyZoom();
+    }
+  };
+  const queueZoomUpdate = () => {
+    if (zoomFrame) return;
+    zoomFrame = requestAnimationFrame(() => {
+      zoomFrame = 0;
+      updateZoomFromPointers();
+    });
+  };
+  const flushZoomUpdate = () => {
+    if (!zoomFrame) return;
+    cancelAnimationFrame(zoomFrame);
+    zoomFrame = 0;
+    updateZoomFromPointers();
+  };
 
   stage.classList.remove("is-zoomed");
   tiltEl.tabIndex = 0;
@@ -892,6 +931,7 @@ function attachCardGestures(stage, tiltEl) {
   tiltEl.addEventListener("pointerdown", (event) => {
     event.preventDefault();
     pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    tiltEl.classList.add("gesturing");
     tiltEl.setPointerCapture?.(event.pointerId);
     if (pointers.size === 1) {
       primaryPointerId = event.pointerId;
@@ -938,22 +978,9 @@ function attachCardGestures(stage, tiltEl) {
     }
 
     if (zoomed) {
-      if (pointers.size >= 2) {
-        if (!pinchStart) beginPinch();
-        const [a, b] = [...pointers.values()].slice(0, 2);
-        const rect = stage.getBoundingClientRect();
-        const midX = (a.x + b.x) / 2 - rect.left;
-        const midY = (a.y + b.y) / 2 - rect.top;
-        const distance = Math.max(1, Math.hypot(a.x - b.x, a.y - b.y));
-        zoomScale = clampZoom(pinchStart.scale * distance / pinchStart.distance);
-        panX = midX - rect.width / 2 - pinchStart.contentX * zoomScale;
-        panY = midY - rect.height / 2 - pinchStart.contentY * zoomScale;
-        applyZoom();
-      } else if (panStart && primaryPointerId === event.pointerId) {
-        panX = panStart.panX + event.clientX - panStart.x;
-        panY = panStart.panY + event.clientY - panStart.y;
-        applyZoom();
-      }
+      // Safari は 2 本の pointermove を別々に発火するため、イベントごとに計算すると
+      // 「片方だけ新座標」の距離が交互に混ざる。1 描画フレームに集約して最新 2 点を読む。
+      queueZoomUpdate();
       event.preventDefault();
       return;
     }
@@ -964,10 +991,13 @@ function attachCardGestures(stage, tiltEl) {
   });
   const release = (event, cancelled = false) => {
     if (!pointers.has(event.pointerId)) return;
+    // pointerup が描画フレームより先に来ても、最後の移動量を落とさない。
+    flushZoomUpdate();
     const wasOnlyPointer = pointers.size === 1;
     const tap = !cancelled && wasOnlyPointer && primaryPointerId === event.pointerId
       && primaryStart && !primaryStart.moved && event.timeStamp - primaryStart.time <= CARD_DOUBLE_TAP_MS;
     pointers.delete(event.pointerId);
+    if (pointers.size === 0) tiltEl.classList.remove("gesturing");
     if (tiltEl.hasPointerCapture?.(event.pointerId)) tiltEl.releasePointerCapture(event.pointerId);
 
     if (zoomed && pointers.size >= 2) {
