@@ -1,30 +1,56 @@
 // エントリポイント。画面登録・ルータ起動・3D 背景・音声の初期化。
+//
+// 起動性能のための重要な約束: このファイルの静的 import は「扉絵を出すのに必要なもの」だけ。
+// ES Modules は依存グラフ全体を取得し終えるまで一行も実行しないため、ここに画面モジュールを
+// 静的 import すると、扉絵の描画がアプリ全体（242KB gz / 45 モジュール）の到着待ちになる。
+// 画面・実績・トーストは扉絵を出したあとに appReady が動的 import する
+// （扉絵到達 70KB gz / 19 モジュール。中位 Android 相当で約 1 秒短縮）。
 
 import { startRouter, initAppMode } from "./ui/app.js?v=20260723-fa";
 import { initEffects } from "./fx/effects.js?v=20260723-fa";
 import { initPopBackground } from "./fx/pop-background.js?v=20260723-fa";
 import { audioNeedsRecovery, bgmTracksUnlockedBy, restartBgmIfReady, stopBgm, unlockAudio } from "./audio/sound.js?v=20260723-fa";
-import { getSettings, onSettingsChange } from "./core/settings.js?v=20260723-fa";
+import { getSettings, onSettingsChange, hiddenThemesUnlockedBy } from "./core/settings.js?v=20260723-fa";
 import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js?v=20260723-fa";
 import { syncDocumentLanguage, tr } from "./core/i18n.js?v=20260723-fa";
-import { reconcileAchievementsOnce } from "./core/achievements.js?v=20260723-fa";
 import { initActivity } from "./core/activity.js?v=20260723-fa";
-import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "./ui/game-screen.js?v=20260723-fa";
 import { onSaveError } from "./core/store.js?v=20260723-fa";
-import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./ui/toast.js?v=20260723-fa";
-import { hiddenThemesUnlockedBy } from "./core/settings.js?v=20260723-fa";
 import { showEntryGate } from "./ui/gate.js?v=20260723-fa";
 
-// 画面モジュール（import するだけで registerScreen される）
-import "./ui/title-screen.js?v=20260723-fa";
-import "./ui/game-screen.js?v=20260723-fa";
-import "./ui/result-screen.js?v=20260723-fa";
-import "./ui/history-screen.js?v=20260723-fa";
-import "./ui/problems-screen.js?v=20260723-fa";
-import "./ui/achievements-screen.js?v=20260723-fa";
-import "./ui/player-card.js?v=20260723-fa";
-import "./ui/analysis-screen.js?v=20260723-fa";
-import "./ui/settings-screen.js?v=20260723-fa";
+// トーストは扉絵の critical path から外してある（保存エラー・SW 更新は稀で、即時性も要らない）
+function notify(message) {
+  void import("./ui/toast.js?v=20260723-fa")
+    .then((m) => m.toast(message))
+    .catch(() => {});
+}
+
+// 扉絵の裏でアプリ本体を読み込む。解決値は「履歴から復元された実績」。
+// 画面モジュールは import するだけで registerScreen される。
+const appReady = (async () => {
+  await Promise.all([
+    import("./ui/title-screen.js?v=20260723-fa"),
+    import("./ui/game-screen.js?v=20260723-fa"),
+    import("./ui/result-screen.js?v=20260723-fa"),
+    import("./ui/history-screen.js?v=20260723-fa"),
+    import("./ui/problems-screen.js?v=20260723-fa"),
+    import("./ui/achievements-screen.js?v=20260723-fa"),
+    import("./ui/player-card.js?v=20260723-fa"),
+    import("./ui/analysis-screen.js?v=20260723-fa"),
+    import("./ui/settings-screen.js?v=20260723-fa"),
+  ]);
+  // 物理キーボード（ゲーム画面が読み込まれてから登録する。扉絵の間は入力を受けない）
+  const { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } =
+    await import("./ui/game-screen.js?v=20260723-fa");
+  addEventListener("keydown", handlePhysicalKey);
+  addEventListener("keyup", handlePhysicalKeyUp);
+  addEventListener("blur", releaseKeyboardPresses);
+  // 履歴からの実績復元。重いのは初回（RECONCILE_VERSION 更新後）だけで、
+  // ここに置くことで扉絵の描画を塞がなくなる。
+  const { reconcileAchievementsOnce } = await import("./core/achievements.js?v=20260723-fa");
+  return reconcileAchievementsOnce();
+})();
+// 失敗の扱いは扉絵側（再読み込みを促して閉じない）。ここでは未処理リジェクト警告だけ抑える。
+appReady.catch(() => {});
 
 // 古い Android Chrome は dvh に未対応のため、実際の表示領域を CSS 変数で補う。
 // 対応ブラウザでは CSS 側の 100dvh が優先される。
@@ -67,7 +93,7 @@ if (/Android/i.test(navigator.userAgent)) document.body.classList.add("android-f
       if (document.getElementById("entry-gate")) {
         location.reload();
       } else {
-        toast(tr("新しいバージョンがあります。再読み込みで最新になります", "A new version is available. Reload to get the latest."));
+        notify(tr("新しいバージョンがあります。再読み込みで最新になります", "A new version is available. Reload to get the latest."));
       }
     });
   }
@@ -92,8 +118,13 @@ onMotionPreferenceChange(() => syncDisplayClasses());
 
 initAppMode();
 // Three.js は cyber テーマでしか使わないので、そのときだけ読み込む
-// （classic / pop では 680KB のダウンロードとパースを丸ごと省ける）
-if (getSettings().theme === "cyber") void initEffects();
+// （classic / pop では 680KB のダウンロードとパースを丸ごと省ける）。
+// さらに、取得を初回描画のあとまで遅らせる: 682KB のパース / WebGLRenderer の初期化は
+// メインスレッドを塞ぐため、即座に始めると扉絵の描画が約 700ms 後ろへずれる。
+// rAF 2 回で「最初のフレームを描き終えた次のフレーム」まで待つ。
+if (getSettings().theme === "cyber") {
+  requestAnimationFrame(() => requestAnimationFrame(() => void initEffects()));
+}
 initPopBackground();
 initActivity(); // 行動ログ（クリック・画面滞在・打鍵などを端末内に記録）
 
@@ -104,18 +135,13 @@ onSaveError(() => {
   const now = Date.now();
   if (now - lastSaveErrorToastAt < 10000) return;
   lastSaveErrorToastAt = now;
-  toast(
+  notify(
     tr(
       "データを保存できませんでした。ブラウザの保存領域を確認してください",
       "Could not save your data. Please check the browser's storage."
     )
   );
 });
-
-// 物理キーボード
-addEventListener("keydown", handlePhysicalKey);
-addEventListener("keyup", handlePhysicalKeyUp);
-addEventListener("blur", releaseKeyboardPresses);
 
 // 最初のユーザー操作で AudioContext を解錠（ブラウザの自動再生制限対策）
 const unlock = () => {
@@ -148,17 +174,23 @@ document.addEventListener("visibilitychange", () => {
 // 扉絵の間はグローバル解錠を止めており（上の unlock 参照）、
 // 「開始」タップのユーザー操作スタック内で gate.js が明示的に解錠して BGM を鳴らす。
 // 解放セレブレーションもゲート通過後に出す（ゲートの上に被せない・無音で流さない）。
-const recoveredAchievements = reconcileAchievementsOnce();
-showEntryGate(() => {
-  startRouter();
-  if (recoveredAchievements.length) {
-    setTimeout(() => {
-      achievementCelebration(recoveredAchievements);
-      const bgmUnlocks = bgmTracksUnlockedBy(recoveredAchievements);
-      if (bgmUnlocks.length) {
-        bgmUnlockCelebration(bgmUnlocks);
-      }
-      hiddenThemesUnlockedBy(recoveredAchievements).forEach(themeUnlockCelebration);
-    }, 350);
-  }
-});
+// ready を渡すと、扉絵は本体の読み込みが終わるまで退場を待つ（未完了なら読込表示になる）。
+showEntryGate(
+  async () => {
+    const recoveredAchievements = await appReady;
+    startRouter();
+    if (recoveredAchievements.length) {
+      setTimeout(async () => {
+        const { achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } =
+          await import("./ui/toast.js?v=20260723-fa");
+        achievementCelebration(recoveredAchievements);
+        const bgmUnlocks = bgmTracksUnlockedBy(recoveredAchievements);
+        if (bgmUnlocks.length) {
+          bgmUnlockCelebration(bgmUnlocks);
+        }
+        hiddenThemesUnlockedBy(recoveredAchievements).forEach(themeUnlockCelebration);
+      }, 350);
+    }
+  },
+  { ready: appReady }
+);

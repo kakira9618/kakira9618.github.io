@@ -3295,6 +3295,46 @@ body.reduce-motion .player-card-wrap.motion::after {
 body.reduce-motion .entry-gate-card {
   animation: none;
 }
+/* アプリ本体（動的 import）の読み込み待ち。通常はタップより先に終わっているので
+   見えないが、低速回線で即タップされたときだけスピナーが出る。
+   一瞬の点滅を避けるため、スピナーは 0.25 秒遅れてフェードインさせる */
+#entry-gate.waiting .entry-gate-start,
+#entry-gate.waiting .entry-gate-muted {
+  pointer-events: none;
+  opacity: 0.55;
+}
+#entry-gate.waiting .entry-gate-pressed {
+  opacity: 1; /* 押されたボタンだけ明るいまま残し、そこにスピナーを出す */
+}
+#entry-gate.waiting .entry-gate-pressed::after {
+  content: "";
+  width: 15px;
+  height: 15px;
+  margin-left: 10px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: entryGateSpin 0.7s linear infinite, entryGateSpinIn 0.01s linear 0.25s both;
+}
+body.reduce-motion #entry-gate.waiting .entry-gate-pressed::after {
+  animation: entryGateSpinIn 0.01s linear 0.25s both;
+}
+#entry-gate.load-failed .entry-gate-note {
+  color: var(--danger);
+}
+@keyframes entryGateSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes entryGateSpinIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
 
 /* ==========================================================================
    EXTRA SHOT（クリア後の追加推理タイム）

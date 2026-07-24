@@ -48,7 +48,11 @@ function wordsForTopK(topK) {
       const rank = rankOfIndex.get(i);
       return rank !== undefined && rank < topK;
     });
-    topKCache.set(topK, Object.freeze(list));
+    // Object.freeze してはいけない。凍結した配列は V8 で低速な要素種別に落ち、
+    // Logic#pickAns の candWords.slice() が 35 倍遅くなる（8000 語で 0.006ms → 0.21ms）。
+    // 起動時の実績再集計は履歴 1 件ごとに new Logic() するため、履歴 3000 件で
+    // 34ms → 577ms まで悪化する。呼び出し側は必ずコピーしてから触ること。
+    topKCache.set(topK, list);
   }
   return topKCache.get(topK);
 }
