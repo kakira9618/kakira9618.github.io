@@ -2,23 +2,27 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<title>DWORDle 2 OGP (square)</title>
+<title>DWORDle 2 OGP (square icon)</title>
 <style>
-  /* 1200x1200 の正方形 OGP 画像（X の Summary カード用。twitter:image が参照する）。
+  /* 1200x1200 の正方形アイコン（X の Summary カード用。twitter:image が参照する）。
      tools/make-og.mjs がスクリーンショットして og-square.png に保存する。
-     コンセプトは og.html と同じ（巨大な斜めタイル + タイトル）。
-     ロゴとタグラインは中央の帯（上下 300px を除く範囲）に収め、
-     summary_large_image で 2:1 に切り抜かれても欠けないようにする。 */
+     favicon.png / icon-512.png と同じ意匠を大きいキャンバスで描き直したもので、
+     配色は原作 Wordle 準拠のクラシック配色（js/config.js の UI.tileColors.classic と同じ）。
+     ベタ塗りなので PNG が最も小さくなる（写真的な og.html は JPEG で書き出す）。
+
+     ジオメトリ・書体は favicon.png のラスタ実測から逆算した値をそのまま入れてある:
+       - 帯とキャップの太さは一辺の 6.25%（favicon.png 実測: 16/256）
+       - D / 2 のインク位置は favicon.png と一致（D: 左18% 上20.7% 幅49.2% 高55.9%、
+         2: 左68.4% 上4.7% 幅19.9% 高24.2%）
+       - 書体は Futura 700。favicon.png のグリフ縦横比（D 0.880 / 2 0.822）と
+         一致する唯一の候補で、macOS 標準搭載。別 OS で再生成すると別の字面になるので注意。
+     left / top は「文字のインク位置」ではなく CSS ボックス位置なので、
+     Futura のサイドベアリング分だけずれた値になっている（触るなら再計測すること）。 */
   :root {
-    --bg: #05070f;
-    --correct: #00e68a;
-    --used: #ffc233;
-    --unused: #3a4356;
-    --accent: #00d5ff;
-    --accent-2: #ff00e5;
-    --tile-size: 218px;
-    --tile-gap: 20px;
-    --board-rotate: -9deg;
+    --correct: #6aaa64; /* 地の緑 */
+    --used: #c9b458;    /* L 字の帯 */
+    --unused: #787c7e;  /* 帯の両端のキャップ */
+    --unit: 6.25%;      /* 帯とキャップの太さ */
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -26,137 +30,46 @@
     height: 1200px;
     overflow: hidden;
     position: relative;
-    background: var(--bg);
-    font-family: "Avenir Next", "Helvetica Neue", "Hiragino Sans", sans-serif;
-  }
-
-  /* 大きくふわっとした光（星は置かない） */
-  .glow {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(6px);
-    pointer-events: none;
-  }
-  .glow.g1 { left: -180px; top: -220px; width: 820px; height: 820px;
-    background: radial-gradient(circle, rgba(0, 213, 255, 0.20), transparent 68%); }
-  .glow.g2 { right: -160px; top: -260px; width: 900px; height: 900px;
-    background: radial-gradient(circle, rgba(150, 80, 255, 0.20), transparent 68%); }
-  .glow.g3 { right: -260px; bottom: -360px; width: 980px; height: 980px;
-    background: radial-gradient(circle, rgba(255, 0, 229, 0.16), transparent 68%); }
-
-  /* 巨大タイル盤面: 斜めに傾け、右上コーナーに一部だけ覗かせる（対称にしない）。
-     下段の全緑 POUCH 行が右上を横切るように大きくはみ出させる */
-  .board {
-    position: absolute;
-    left: 1%;
-    top: 17%;
-    transform: rotate(var(--board-rotate));
-    display: grid;
-    gap: var(--tile-gap);
-  }
-  .row { display: flex; gap: var(--tile-gap); }
-  .tile {
-    width: var(--tile-size);
-    height: var(--tile-size);
-    border-radius: 26px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 132px;
-    font-weight: 900;
-    color: #e8f6ff;
-    background: rgba(14, 20, 38, 0.85);
-    border: 4px solid rgba(0, 213, 255, 0.35);
-  }
-  .tile.unused { background: var(--unused); border-color: var(--unused); color: #aab6cc; }
-  .tile.used { background: var(--used); border-color: var(--used); color: #241a02; }
-  .tile.correct {
     background: var(--correct);
-    border-color: var(--correct);
-    color: #04120b;
-    box-shadow: 0 0 60px rgba(0, 230, 138, 0.55);
-  }
-  .row.dim { opacity: 0.82; }
-
-  /* タイトルを読ませるための左下寄りのシェード */
-  .shade {
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(92% 70% at 26% 62%,
-      rgba(5, 7, 15, 0.94) 0%,
-      rgba(5, 7, 15, 0.72) 40%,
-      rgba(5, 7, 15, 0.26) 66%,
-      rgba(5, 7, 15, 0) 84%);
+    font-family: Futura, "Avenir Next", "Helvetica Neue", Helvetica, sans-serif;
   }
 
-  /* 左寄せのコピー。中央の帯（上下 300px を除く範囲）に収め、
-     summary_large_image の 2:1 切り抜きでも欠けないようにする */
-  .copy {
+  /* L 字の帯（右辺 + 下辺）。両端はキャップの分だけ空ける */
+  .bar {
     position: absolute;
-    left: 84px;
-    top: 54%;
-    transform: translateY(-50%);
-    text-align: left;
+    background: var(--used);
   }
-  .logo {
-    font-size: 150px;
-    font-weight: 900;
-    letter-spacing: 0.06em;
+  .bar.right { top: var(--unit); right: 0; bottom: 0; width: var(--unit); }
+  .bar.bottom { left: var(--unit); right: 0; bottom: 0; height: var(--unit); }
+
+  /* 帯の両端のキャップ */
+  .cap {
+    position: absolute;
+    width: var(--unit);
+    height: var(--unit);
+    background: var(--unused);
+  }
+  .cap.tr { top: 0; right: 0; }
+  .cap.bl { left: 0; bottom: 0; }
+
+  /* 白い D²。D と 2 は独立に配置する（肩付き文字の位置を favicon と揃えるため） */
+  .glyph {
+    position: absolute;
+    color: #fff;
+    font-weight: 700;
     line-height: 1;
-    background: linear-gradient(180deg, #fff 15%, var(--accent) 55%, var(--accent-2) 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    filter: drop-shadow(0 6px 26px rgba(0, 0, 0, 0.85)) drop-shadow(0 0 26px rgba(0, 213, 255, 0.4));
+    white-space: pre;
   }
-  .logo .two { font-size: 0.62em; vertical-align: super; }
-  .tagline {
-    margin-top: 40px;
-    font-size: 58px;
-    font-weight: 800;
-    color: #e8f6ff;
-    letter-spacing: 0.04em;
-    text-shadow: 0 4px 22px rgba(0, 0, 0, 0.9);
-  }
-  .tagline .num { font-size: 1.25em; }
-  .tagline .num.two { color: var(--used); }
-  .tagline .num.one { color: var(--correct); }
+  .glyph.d { left: 145.7px; top: 128.3px; font-size: 890px; }
+  .glyph.two { left: 809.9px; top: 13.3px; font-size: 375px; }
 </style>
 </head>
 <body>
-  <div class="glow g1"></div>
-  <div class="glow g2"></div>
-  <div class="glow g3"></div>
-
-  <div class="board">
-    <div class="row dim">
-      <div class="tile used">P</div>
-      <div class="tile unused">O</div>
-      <div class="tile unused">I</div>
-      <div class="tile used">N</div>
-      <div class="tile unused">T</div>
-    </div>
-    <div class="row dim">
-      <div class="tile used">T</div>
-      <div class="tile correct">O</div>
-      <div class="tile unused">U</div>
-      <div class="tile used">C</div>
-      <div class="tile correct">H</div>
-    </div>
-    <div class="row">
-      <div class="tile correct">P</div>
-      <div class="tile correct">O</div>
-      <div class="tile correct">U</div>
-      <div class="tile correct">C</div>
-      <div class="tile correct">H</div>
-    </div>
-  </div>
-
-  <div class="shade"></div>
-
-  <div class="copy">
-    <div class="logo">DWORDle<span class="two"> 2</span></div>
-    <div class="tagline">答えは<span class="num two">2</span>つ。盤面は<span class="num one">1</span>つ。</div>
-  </div>
+  <div class="bar right"></div>
+  <div class="bar bottom"></div>
+  <div class="cap tr"></div>
+  <div class="cap bl"></div>
+  <div class="glyph d">D</div>
+  <div class="glyph two">2</div>
 </body>
 </html>

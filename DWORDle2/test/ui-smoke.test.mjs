@@ -16,6 +16,7 @@ const mimeTypes = {
   ".css": "text/css; charset=utf-8",
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
+  ".jpg": "image/jpeg",
   ".json": "application/json; charset=utf-8",
   ".mjs": "text/javascript; charset=utf-8",
   ".png": "image/png",
@@ -44,11 +45,21 @@ await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
 const address = server.address();
 const baseUrl = `http://127.0.0.1:${address.port}/`;
 const unlocked = Object.fromEntries(ACHIEVEMENTS.map((achievement) => [achievement.id, 1]));
-const ogPng = await readFile(path.join(projectRoot, "og.png"));
-const ihdrOffset = ogPng.indexOf(Buffer.from("IHDR"));
-assert.notEqual(ihdrOffset, -1, "OGP image should contain a PNG IHDR chunk");
-assert.equal(ogPng.readUInt32BE(ihdrOffset + 4), 1200, "OGP image width should be 1200px");
-assert.equal(ogPng.readUInt32BE(ihdrOffset + 8), 630, "OGP image height should be 630px");
+// 横長 OGP は JPEG（グラデーション主体なので PNG より桁違いに軽い）。
+// JPEG のサイズは SOF0/SOF2 マーカー（FFC0 / FFC2）に入っている。
+const ogJpg = await readFile(path.join(projectRoot, "og.jpg"));
+{
+  let sof = -1;
+  for (let i = 2; i < ogJpg.length - 9; i++) {
+    if (ogJpg[i] === 0xff && (ogJpg[i + 1] === 0xc0 || ogJpg[i + 1] === 0xc2)) {
+      sof = i;
+      break;
+    }
+  }
+  assert.notEqual(sof, -1, "OGP image should be a JPEG with an SOF marker");
+  assert.equal(ogJpg.readUInt16BE(sof + 7), 1200, "OGP image width should be 1200px");
+  assert.equal(ogJpg.readUInt16BE(sof + 5), 630, "OGP image height should be 630px");
+}
 // バージョン表示のソースハッシュが最新か（ソース変更後の tools/make-source-hash.mjs 実行忘れを検出）
 {
   const { computeSourceHash } = await import("../tools/make-source-hash.mjs");
@@ -71,12 +82,21 @@ assert.equal(ogPng.readUInt32BE(ihdrOffset + 8), 630, "OGP image height should b
   }
 }
 
-// X の Summary カード用の正方形版（twitter:image が参照する）
+// X の Summary カード用の正方形アイコン（twitter:image が参照する）。
+// favicon.png と同じ意匠をベタ塗りで描いているので PNG が最小になる。
 const ogSquarePng = await readFile(path.join(projectRoot, "og-square.png"));
 const squareIhdrOffset = ogSquarePng.indexOf(Buffer.from("IHDR"));
 assert.notEqual(squareIhdrOffset, -1, "square OGP image should contain a PNG IHDR chunk");
 assert.equal(ogSquarePng.readUInt32BE(squareIhdrOffset + 4), 1200, "square OGP image width should be 1200px");
 assert.equal(ogSquarePng.readUInt32BE(squareIhdrOffset + 8), 1200, "square OGP image height should be 1200px");
+// OGP 画像はシェア・クロールのたびに転送される。300KB を超えるとプレビューを
+// 出さないクライアント（WhatsApp など）があるので、書き出し設定の劣化を検出する。
+for (const [filename, bytes] of [["og.jpg", ogJpg.length], ["og-square.png", ogSquarePng.length]]) {
+  assert.ok(
+    bytes <= 300 * 1024,
+    `${filename} が ${Math.round(bytes / 1024)}KB。OGP 画像は 300KB 以下に保つ（node tools/make-og.mjs の書き出し設定を確認）`
+  );
+}
 for (const [filename, size] of [["icon-192.png", 192], ["icon-512.png", 512], ["icon-maskable-192.png", 192], ["icon-maskable-512.png", 512]]) {
   const png = await readFile(path.join(projectRoot, filename));
   const offset = png.indexOf(Buffer.from("IHDR"));
@@ -278,7 +298,7 @@ try {
   await randomDialog.getByRole("button", { name: "閉じる" }).click();
   await assertNoSeriousA11yViolations("Title screen");
   const publicEntry = await page.evaluate(async () => {
-    const assetPaths = ["/favicon.png", "/og.png", "/og-square.png", "/manifest.webmanifest"];
+    const assetPaths = ["/favicon.png", "/og.jpg", "/og-square.png", "/manifest.webmanifest"];
     const statuses = await Promise.all(assetPaths.map(async (assetPath) => (await fetch(assetPath)).status));
     const manifestJson = await (await fetch("/manifest.webmanifest")).json();
     const icons = manifestJson.icons ?? [];
@@ -302,11 +322,11 @@ try {
   });
   assert.equal(publicEntry.title, "DWORDle | 新感覚Wordle");
   assert.equal(publicEntry.ogTitle, "DWORDle | 新感覚Wordle");
-  assert.equal(publicEntry.ogImage, "https://kakira9618.github.io/DWORDle2/og.png");
+  assert.equal(publicEntry.ogImage, "https://kakira9618.github.io/DWORDle2/og.jpg");
   assert.equal(publicEntry.ogDescription, "答えは2つ。盤面は1つ。新感覚Wordle！");
-  assert.equal(publicEntry.twitterCard, "summary_large_image");
+  assert.equal(publicEntry.twitterCard, "summary", "正方形アイコンを切り抜かれずに出すため summary を使う");
   assert.equal(publicEntry.twitterTitle, "DWORDle | 新感覚Wordle");
-  assert.equal(publicEntry.twitterImage, "https://kakira9618.github.io/DWORDle2/og-square.png", "X には Summary で見切れない正方形版を渡す");
+  assert.equal(publicEntry.twitterImage, "https://kakira9618.github.io/DWORDle2/og-square.png", "X には正方形アイコンを渡す");
   assert.equal(publicEntry.twitterDescription, "答えは2つ。盤面は1つ。新感覚Wordle！");
   assert.equal(publicEntry.manifest, "manifest.webmanifest");
   assert.deepEqual(publicEntry.statuses, [200, 200, 200, 200], "Public metadata assets should be served");
