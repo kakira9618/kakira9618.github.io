@@ -15,9 +15,9 @@
 //       // 旧キー finalAnswer は読込時に extraShot へ移行する。
 //   }
 
-import { loadJSON, saveJSON, onExternalChange } from "./store.js";
-import { Logic, CELL, queryWordSingle } from "./logic.js";
-import { isDailyPID } from "./problems.js";
+import { loadJSON, saveJSON, onExternalChange } from "./store.js?v=20260723-fa";
+import { Logic, CELL, queryWordSingle } from "./logic.js?v=20260723-fa";
+import { isDailyPID } from "./problems.js?v=20260723-fa";
 
 export const MODES = {
   normal: { key: "normal", title: "DWORDle", maxGuess: 10 },
@@ -198,6 +198,12 @@ export function isAlreadyPlayed(pid, mode) {
   return ensureLoaded().some((g) => g.gameMode === mode && g.problemID === pid);
 }
 
+// ローカル日付を「1970-01-01 からの通し番号」に変換する（ロケール非依存の日付比較用）
+export function localDayNumber(epochSec) {
+  const d = new Date(epochSec * 1000);
+  return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
+}
+
 // ---- 統計（原作 RecordManager.getStatistics の考え方を踏襲、モード別に集計）----
 
 export function getStatistics(mode) {
@@ -224,15 +230,18 @@ export function getStatistics(mode) {
   }
 
   // 連続プレイ日数（原作互換: プレイした日付列で隣接日差が 2 日未満なら継続）
-  const days = Array.from(new Set(times.sort((a, b) => a - b).map((t) => new Date(t * 1000).toLocaleDateString())));
+  // 日付はロケール文字列にせず「ローカル日付の通し番号」で比較する
+  // （toLocaleDateString() は en-GB / de-DE などで new Date() に戻せず NaN になるため）
+  const days = Array.from(new Set(times.map(localDayNumber))).sort((a, b) => a - b);
   let currentStreak = 1;
   let maxStreak = 1;
   for (let i = 1; i < days.length; i++) {
-    const diff = (new Date(days[i]) - new Date(days[i - 1])) / 86400000;
-    if (diff < 2) currentStreak++;
+    if (days[i] - days[i - 1] < 2) currentStreak++;
     else currentStreak = 1;
     maxStreak = Math.max(maxStreak, currentStreak);
   }
+  // 最終プレイが今日/昨日でなければ連続は途切れている（dailyClearStreak と同じ考え方）
+  if (localDayNumber(Math.floor(Date.now() / 1000)) - days[days.length - 1] >= 2) currentStreak = 0;
   return { count, win, doubleClear, currentStreak, maxStreak, hist };
 }
 

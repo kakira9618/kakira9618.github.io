@@ -10,7 +10,7 @@ import { syncDocumentLanguage, tr } from "./core/i18n.js?v=20260723-fa";
 import { reconcileAchievementsOnce } from "./core/achievements.js?v=20260723-fa";
 import { initActivity } from "./core/activity.js?v=20260723-fa";
 import { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } from "./ui/game-screen.js?v=20260723-fa";
-import { onSaveError } from "./core/store.js";
+import { onSaveError } from "./core/store.js?v=20260723-fa";
 import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./ui/toast.js?v=20260723-fa";
 import { hiddenThemesUnlockedBy } from "./core/settings.js?v=20260723-fa";
 import { showEntryGate } from "./ui/gate.js?v=20260723-fa";
@@ -86,11 +86,14 @@ syncDocumentLanguage();
 onSettingsChange((settings, key) => {
   if (key === "theme" || key === "reduceFx" || key === "highContrast") syncDisplayClasses(settings);
   if (key === "language") syncDocumentLanguage(settings.language);
+  if (key === "theme" && settings.theme === "cyber") void initEffects(); // 後から cyber に切り替えたら遅延初期化
 });
 onMotionPreferenceChange(() => syncDisplayClasses());
 
 initAppMode();
-void initEffects();
+// Three.js は cyber テーマでしか使わないので、そのときだけ読み込む
+// （classic / pop では 680KB のダウンロードとパースを丸ごと省ける）
+if (getSettings().theme === "cyber") void initEffects();
 initPopBackground();
 initActivity(); // 行動ログ（クリック・画面滞在・打鍵などを端末内に記録）
 

@@ -13,7 +13,7 @@
 // ID にはボタンのラベル文字列を使うため表示言語で変わり得る。称号の判定条件に使うときは
 // 両言語のキーを見るか、counters ではなく screens / 専用カウンタを使うこと。
 
-import { loadJSON, saveJSON } from "./store.js";
+import { loadJSON, saveJSON } from "./store.js?v=20260723-fa";
 import { getSettings, onSettingsChange } from "./settings.js?v=20260723-fa";
 
 // 生イベントの保持件数（1 件 ≈ 50 バイトなので 2000 件で約 100KB）

@@ -3,20 +3,20 @@
 // カードのデザインはテーマによらず共通（ダーク + ランク色のフレーム）。
 // 通算 5 回プレイで解放（タイトルメニューの段階解放と同じ仕組み）。
 
-import { el, clear } from "./dom.js";
+import { el, clear } from "./dom.js?v=20260723-fa";
 import { registerScreen, navigate, redirect } from "./app.js?v=20260723-fa";
-import { getHistory, countPlays } from "../core/records.js";
+import { getHistory, countPlays, localDayNumber } from "../core/records.js?v=20260723-fa";
 import { ACHIEVEMENTS, getUnlocked } from "../core/achievements.js?v=20260723-fa";
 import { HIDDEN_THEMES } from "../core/settings.js?v=20260723-fa";
 import { favoriteBgmTrackId, favoriteThemeId } from "../core/activity.js?v=20260723-fa";
 import { BGM_TRACKS, currentBgmTrackId, playSfx } from "../audio/sound.js?v=20260723-fa";
-import { loadJSON, saveJSON } from "../core/store.js";
-import { isDebugMode } from "../core/debug.js";
+import { loadJSON, saveJSON } from "../core/store.js?v=20260723-fa";
+import { isDebugMode } from "../core/debug.js?v=20260723-fa";
 import { toast } from "./toast.js?v=20260723-fa";
 import { soundToggleButton } from "./sound-toggle.js?v=20260723-fa";
 import { winBurst } from "../fx/effects.js?v=20260723-fa";
 import { shouldReduceMotion } from "../core/motion.js?v=20260723-fa";
-import { icon, iconSvg } from "./icons.js";
+import { icon, iconSvg } from "./icons.js?v=20260723-fa";
 import { announce } from "./a11y.js?v=20260723-fa";
 import { SHARE_URL } from "../config.js?v=20260723-fa";
 import { tr } from "../core/i18n.js?v=20260723-fa";
@@ -198,14 +198,13 @@ function build() {
 
 function collectStats() {
   const history = getHistory();
-  // プレイした日付列（ローカル日付で重複除去、昇順）
-  const days = Array.from(new Set(history.map((g) => new Date(g.startTime * 1000).toLocaleDateString())));
-  days.sort((a, b) => new Date(a) - new Date(b));
+  // プレイした日付列（ローカル日付の通し番号で重複除去、昇順。ロケール非依存）
+  const days = Array.from(new Set(history.map((g) => localDayNumber(g.startTime)))).sort((a, b) => a - b);
   // 連続プレイ日数の最大（records.getStatistics と同じ「隣接日差が 2 日未満なら継続」）
   let maxStreak = 0;
   let streak = 0;
   for (let i = 0; i < days.length; i++) {
-    const diff = i === 0 ? Infinity : (new Date(days[i]) - new Date(days[i - 1])) / 86400000;
+    const diff = i === 0 ? Infinity : days[i] - days[i - 1];
     streak = diff < 2 ? streak + 1 : 1;
     maxStreak = Math.max(maxStreak, streak);
   }

@@ -4,9 +4,9 @@ import {
   COLLECTOR_REQUIREMENT,
   achievementCountableRecords,
   achievementIdsFromHistory,
-} from "../js/core/achievements.js";
-import { Logic, queryWordPair } from "../js/core/logic.js";
-import { ALL_WORDS } from "../js/data/words.js";
+} from "../js/core/achievements.js?v=20260723-fa";
+import { Logic, queryWordPair } from "../js/core/logic.js?v=20260723-fa";
+import { ALL_WORDS } from "../js/data/words.js?v=20260723-fa";
 
 function clearRecord({
   pid = 1,

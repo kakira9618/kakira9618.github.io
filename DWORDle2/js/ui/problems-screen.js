@@ -3,16 +3,16 @@
 // 2 段ドリルダウンで一覧・選択しやすくしている。
 // ルート: #/problems
 
-import { el, clear, fmtDateTime } from "./dom.js";
+import { el, clear, fmtDateTime } from "./dom.js?v=20260723-fa";
 import { registerScreen, navigate, getAppMode } from "./app.js?v=20260723-fa";
-import { buildProblemStatus, MODES } from "../core/records.js";
-import { LEVELS, isDailyPID, isValidPID, pidLabel, todayPID } from "../core/problems.js";
+import { buildProblemStatus, MODES } from "../core/records.js?v=20260723-fa";
+import { LEVELS, isDailyPID, isValidPID, pidLabel, todayPID } from "../core/problems.js?v=20260723-fa";
 import { playSfx } from "../audio/sound.js?v=20260723-fa";
 import { showModal } from "./modal.js?v=20260723-fa";
 import { confirmAndStart } from "./game-screen.js?v=20260723-fa";
 import { toast } from "./toast.js?v=20260723-fa";
 import { soundToggleButton } from "./sound-toggle.js?v=20260723-fa";
-import { icon } from "./icons.js";
+import { icon } from "./icons.js?v=20260723-fa";
 import { localizedLevel, tr } from "../core/i18n.js?v=20260723-fa";
 
 const BLOCK_SIZE = 100;

@@ -3,17 +3,17 @@
 // 計算は Worker (js/core/analysis.worker.js) で行う。
 // ルート: #/analysis/<mode>/<startTime>
 
-import { el, clear } from "./dom.js";
+import { el, clear } from "./dom.js?v=20260723-fa";
 import { registerScreen, navigate, setViewMood } from "./app.js?v=20260723-fa";
-import { findGame, MODES } from "../core/records.js";
-import { Logic } from "../core/logic.js";
-import { pidLabel } from "../core/problems.js";
+import { findGame, MODES } from "../core/records.js?v=20260723-fa";
+import { Logic } from "../core/logic.js?v=20260723-fa";
+import { pidLabel } from "../core/problems.js?v=20260723-fa";
 import { computeTruePatternIds, resultToPatternId, patternIdToStates } from "../core/analysis-core.js?v=20260723-fa";
 import { checkOnEvent } from "../core/achievements.js?v=20260723-fa";
 import { achievementCelebration } from "./toast.js?v=20260723-fa";
 import { playSfx } from "../audio/sound.js?v=20260723-fa";
 import { soundToggleButton } from "./sound-toggle.js?v=20260723-fa";
-import { icon } from "./icons.js";
+import { icon } from "./icons.js?v=20260723-fa";
 import { currentLanguage, isEnglish, tr } from "../core/i18n.js?v=20260723-fa";
 import { rowAriaLabel } from "./a11y.js?v=20260723-fa";
 

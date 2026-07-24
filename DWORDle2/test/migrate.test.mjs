@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { Logic } from "../js/core/logic.js";
+import { Logic } from "../js/core/logic.js?v=20260723-fa";
 
 const storage = new Map();
 globalThis.localStorage = {
@@ -39,9 +39,9 @@ storage.set(
   })
 );
 
-const { scanLegacyHistory, importFromLocalStorage } = await import("../js/core/migrate.js");
-const { getHistory } = await import("../js/core/records.js");
-const { achievementIdsFromHistory } = await import("../js/core/achievements.js");
+const { scanLegacyHistory, importFromLocalStorage } = await import("../js/core/migrate.js?v=20260723-fa");
+const { getHistory } = await import("../js/core/records.js?v=20260723-fa");
+const { achievementIdsFromHistory } = await import("../js/core/achievements.js?v=20260723-fa");
 
 assert.equal(scanLegacyHistory().length, 2, "both original games should be detected");
 assert.equal(importFromLocalStorage(), 2);
@@ -56,7 +56,7 @@ assert(achievementIds.has("uso-clear"));
 
 // ---- (startTime, gameMode) の衝突: 別 problemID は 1 秒ずらして共存し、再インポートは冪等 ----
 {
-  const { addImportedGames } = await import("../js/core/records.js");
+  const { addImportedGames } = await import("../js/core/records.js?v=20260723-fa");
   const makeImported = (problemID) => {
     const logic = new Logic(problemID);
     return {
@@ -76,7 +76,7 @@ assert(achievementIds.has("uso-clear"));
 
 // ---- 壊れたレコードの除外: No.0（デイリーエイリアス）や不正な Guess は取り込まない ----
 {
-  const { importFromText } = await import("../js/core/migrate.js");
+  const { importFromText } = await import("../js/core/migrate.js?v=20260723-fa");
   const before = getHistory().length;
   const { added } = await (async () => importFromText(JSON.stringify({
     app: "dwordle2",
@@ -93,7 +93,7 @@ assert(achievementIds.has("uso-clear"));
 
 // ---- 実績を解除しないインポート: noAchievements が付き、実績判定から恒久的に除外される ----
 {
-  const { importFromText } = await import("../js/core/migrate.js");
+  const { importFromText } = await import("../js/core/migrate.js?v=20260723-fa");
   const logic = new Logic(11);
   const { added } = importFromText(
     JSON.stringify({
@@ -127,7 +127,7 @@ assert(achievementIds.has("uso-clear"));
 
 // ---- 段階解放のプレイ回数: インポートは数えず、同じ問題の再プレイは数える ----
 {
-  const { addFinishedGame, countPlays } = await import("../js/core/records.js");
+  const { addFinishedGame, countPlays } = await import("../js/core/records.js?v=20260723-fa");
   assert.equal(countPlays(), 1, "imported records must not count toward menu unlock plays");
   const logic = new Logic(7);
   const play = () =>

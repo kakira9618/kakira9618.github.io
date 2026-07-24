@@ -5,9 +5,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { chromium } from "playwright";
-import { Logic } from "../js/core/logic.js";
-import { ACHIEVEMENTS } from "../js/core/achievements.js";
-import { pidLabel, todayPID } from "../js/core/problems.js";
+import { Logic } from "../js/core/logic.js?v=20260723-fa";
+import { ACHIEVEMENTS } from "../js/core/achievements.js?v=20260723-fa";
+import { pidLabel, todayPID } from "../js/core/problems.js?v=20260723-fa";
 
 const require = createRequire(import.meta.url);
 const axePath = require.resolve("axe-core/axe.min.js");
@@ -52,7 +52,7 @@ assert.equal(ogPng.readUInt32BE(ihdrOffset + 8), 630, "OGP image height should b
 // バージョン表示のソースハッシュが最新か（ソース変更後の tools/make-source-hash.mjs 実行忘れを検出）
 {
   const { computeSourceHash } = await import("../tools/make-source-hash.mjs");
-  const { SOURCE_HASH } = await import("../js/version.js");
+  const { SOURCE_HASH } = await import("../js/version.js?v=20260723-fa");
   assert.equal(
     SOURCE_HASH,
     await computeSourceHash(),
@@ -772,8 +772,8 @@ try {
   // 結果フィルターで EXTRA SHOT 成功（DOUBLE CLEAR）だけを抽出できる。
   await page.evaluate(async () => {
     const [{ Logic: BrowserLogic }, records] = await Promise.all([
-      import("./js/core/logic.js"),
-      import("./js/core/records.js"),
+      import("./js/core/logic.js?v=20260723-fa"),
+      import("./js/core/records.js?v=20260723-fa"),
     ]);
     const pid = 2;
     const logic = new BrowserLogic(pid);
@@ -902,8 +902,8 @@ try {
     + historicalDailyDate.getDate();
   await page.evaluate(async ({ pid }) => {
     const [{ Logic }, records] = await Promise.all([
-      import("./js/core/logic.js"),
-      import("./js/core/records.js"),
+      import("./js/core/logic.js?v=20260723-fa"),
+      import("./js/core/records.js?v=20260723-fa"),
     ]);
     const logic = new Logic(pid);
     records.addFinishedGame({
@@ -998,8 +998,8 @@ try {
   // 開始時は矛盾した「プレイ済み」ではなく、別モードでの当日プレイだと明示する。
   await page.evaluate(async ({ pid }) => {
     const [{ Logic: BrowserLogic }, records, app] = await Promise.all([
-      import("./js/core/logic.js"),
-      import("./js/core/records.js"),
+      import("./js/core/logic.js?v=20260723-fa"),
+      import("./js/core/records.js?v=20260723-fa"),
       import("./js/ui/app.js?v=20260723-fa"),
     ]);
     const logic = new BrowserLogic(pid);
@@ -1371,7 +1371,7 @@ try {
     const snapshotExtraShot = await successPage.evaluate(async () => {
       const history = JSON.parse(localStorage.getItem("dwordle2.history") || "[]");
       const record = history[0];
-      const { Logic } = await import("./js/core/logic.js");
+      const { Logic } = await import("./js/core/logic.js?v=20260723-fa");
       const { renderResultCanvas } = await import("./js/ui/snapshot.js?v=20260723-fa");
       const settings = await import("./js/core/settings.js?v=20260723-fa");
       const gameLogic = new Logic(record.problemID);

@@ -1,0 +1,22 @@
+import { chromium } from "playwright";
+import { spawn } from "node:child_process";
+const srv = spawn("python3", ["-m", "http.server", "8744"], { cwd: process.cwd() });
+await new Promise((r) => setTimeout(r, 1200));
+const browser = await chromium.launch({ headless: true });
+const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
+const page = await ctx.newPage();
+await page.addInitScript(() => localStorage.setItem("dwordle2.settings", JSON.stringify({ theme: "classic", sfx: false, bgm: false, language: "ja" })));
+const three = [];
+page.on("request", (q) => { if (/three/.test(q.url())) three.push(1); });
+await page.goto("http://localhost:8744/");
+await page.waitForTimeout(1500);
+console.log("初期(classic) three:", three.length);
+await page.evaluate(async () => (await import("/js/core/settings.js?v=20260723-fa")).setSetting("theme", "cyber"));
+await page.waitForTimeout(3000);
+console.log("cyber切替後 three:", three.length);
+console.log("背景canvas:", await page.evaluate(() => {
+  const c = document.querySelector("canvas");
+  return c ? `${c.id || c.className} ${c.width}x${c.height}` : "なし";
+}));
+await page.screenshot({ path: "/private/tmp/claude-501/-Users-kakira-kakira9618-github-io/5e692719-0ad6-4dab-88b1-b7e61eaf5130/scratchpad/cyber.png" });
+await browser.close(); srv.kill();

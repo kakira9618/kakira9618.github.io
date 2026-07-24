@@ -4,9 +4,9 @@
 // コンテンツ配置は全テーマ共通で、配色・装飾だけを現在のテーマに合わせる。
 
 import { SHARE_URL, tileColorsFor } from "../config.js?v=20260723-fa";
-import { MODES, getExtraShot, getExtraShotResult } from "../core/records.js";
-import { pidLabel } from "../core/problems.js";
-import { CELL } from "../core/logic.js";
+import { MODES, getExtraShot, getExtraShotResult } from "../core/records.js?v=20260723-fa";
+import { pidLabel } from "../core/problems.js?v=20260723-fa";
+import { CELL } from "../core/logic.js?v=20260723-fa";
 import { getSettings } from "../core/settings.js?v=20260723-fa";
 import { drawCrown3D } from "./crown.js?v=20260723-fa";
 

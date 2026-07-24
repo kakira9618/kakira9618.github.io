@@ -1,16 +1,16 @@
 // 結果画面。ゲーム終了直後にも、履歴・問題一覧からも開ける。
 // ルート: #/result/<mode>/<startTime>
 
-import { el, clear, fmtDateTime } from "./dom.js";
+import { el, clear, fmtDateTime } from "./dom.js?v=20260723-fa";
 import { registerScreen, navigate, setViewMood } from "./app.js?v=20260723-fa";
-import { findGame, MODES, getExtraShot, getExtraShotResult } from "../core/records.js";
-import { Logic, CELL } from "../core/logic.js";
-import { pidLabel, isDailyPID } from "../core/problems.js";
+import { findGame, MODES, getExtraShot, getExtraShotResult } from "../core/records.js?v=20260723-fa";
+import { Logic, CELL } from "../core/logic.js?v=20260723-fa";
+import { pidLabel, isDailyPID } from "../core/problems.js?v=20260723-fa";
 import { playSfx } from "../audio/sound.js?v=20260723-fa";
 import { toast } from "./toast.js?v=20260723-fa";
 import { confirmAndStart } from "./game-screen.js?v=20260723-fa";
 import { soundToggleButton } from "./sound-toggle.js?v=20260723-fa";
-import { icon } from "./icons.js";
+import { icon } from "./icons.js?v=20260723-fa";
 import { downloadResultPNG } from "./snapshot.js?v=20260723-fa";
 import { SHARE_URL } from "../config.js?v=20260723-fa";
 import { getSettings } from "../core/settings.js?v=20260723-fa";

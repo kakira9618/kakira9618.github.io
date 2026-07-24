@@ -1,14 +1,14 @@
 // タイトル画面。モード選択・問題選択の入り口。
 // 右上のマスクボタンで DWORDlie（裏モード）に切り替わる。
 
-import { el, clear } from "./dom.js";
+import { el, clear } from "./dom.js?v=20260723-fa";
 import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260723-fa";
-import { countPlays, getCurrentGame, getHistory, isAlreadyPlayed } from "../core/records.js";
-import { isDebugMode } from "../core/debug.js";
-import { LEVELS, todayPID, isValidPID, pidLabel, PID } from "../core/problems.js";
+import { countPlays, getCurrentGame, getHistory, isAlreadyPlayed } from "../core/records.js?v=20260723-fa";
+import { isDebugMode } from "../core/debug.js?v=20260723-fa";
+import { LEVELS, todayPID, isValidPID, pidLabel, PID } from "../core/problems.js?v=20260723-fa";
 import { getSettings, setSetting } from "../core/settings.js?v=20260723-fa";
-import { loadJSON, saveJSON } from "../core/store.js";
-import { importFromLocalStorage, scanLegacyHistory } from "../core/migrate.js";
+import { loadJSON, saveJSON } from "../core/store.js?v=20260723-fa";
+import { importFromLocalStorage, scanLegacyHistory } from "../core/migrate.js?v=20260723-fa";
 import { playSfx } from "../audio/sound.js?v=20260723-fa";
 import { toast, extraShotUnlockCelebration } from "./toast.js?v=20260723-fa";
 import { claimExtraShotUnlockNotice } from "../core/extra-shot.js?v=20260723-fa";
@@ -19,7 +19,7 @@ import { confirmAndStart } from "./game-screen.js?v=20260723-fa";
 import { soundToggleButton } from "./sound-toggle.js?v=20260723-fa";
 import { burstAtElement } from "../fx/effects.js?v=20260723-fa";
 import { shouldReduceMotion } from "../core/motion.js?v=20260723-fa";
-import { icon } from "./icons.js";
+import { icon } from "./icons.js?v=20260723-fa";
 import { APP_VERSION } from "../config.js?v=20260723-fa";
 import { SOURCE_HASH } from "../version.js?v=20260723-fa";
 import { localizedLevel, tr } from "../core/i18n.js?v=20260723-fa";

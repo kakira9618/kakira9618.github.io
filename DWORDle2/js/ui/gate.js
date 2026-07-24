@@ -9,7 +9,7 @@
 // 「音無しで開始」は音を止めたまま入る。
 // 初回訪問でも「いきなり基本ルールモーダル」ではなく、まず扉絵で迎える体裁になる。
 
-import { el } from "./dom.js";
+import { el } from "./dom.js?v=20260723-fa";
 import { getAppMode } from "./app.js?v=20260723-fa";
 import { APP_VERSION } from "../config.js?v=20260723-fa";
 import { SOURCE_HASH } from "../version.js?v=20260723-fa";

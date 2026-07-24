@@ -6,11 +6,11 @@
 // 原作と同じく、Guess は確定するたびに保存され、リロードしても再開できる。
 // 追加推理タイムの途中でリロード・離脱した場合、チャンスは消滅して通常クリアで記録される。
 
-import { el, clear } from "./dom.js";
+import { el, clear } from "./dom.js?v=20260723-fa";
 import { APP_VERSION, UI, FX } from "../config.js?v=20260723-fa";
-import { Logic, CELL, displayResultForMode } from "../core/logic.js";
-import { MODES, saveCurrentGame, clearCurrentGame, getCurrentGame, addFinishedGame, isAlreadyPlayed, getHistory, getExtraShot } from "../core/records.js";
-import { pidLabel } from "../core/problems.js";
+import { Logic, CELL, displayResultForMode } from "../core/logic.js?v=20260723-fa";
+import { MODES, saveCurrentGame, clearCurrentGame, getCurrentGame, addFinishedGame, isAlreadyPlayed, getHistory, getExtraShot } from "../core/records.js?v=20260723-fa";
+import { pidLabel } from "../core/problems.js?v=20260723-fa";
 import { checkOnGameFinish } from "../core/achievements.js?v=20260723-fa";
 import { registerScreen, navigate, redirect, getAppMode, currentScreenName } from "./app.js?v=20260723-fa";
 import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration, extraShotUnlockCelebration } from "./toast.js?v=20260723-fa";
@@ -21,7 +21,7 @@ import { hiddenThemesUnlockedBy } from "../core/settings.js?v=20260723-fa";
 import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/effects.js?v=20260723-fa";
 import { showHelpModal } from "./help.js?v=20260723-fa";
 import { soundToggleButton } from "./sound-toggle.js?v=20260723-fa";
-import { icon } from "./icons.js";
+import { icon } from "./icons.js?v=20260723-fa";
 import { tr } from "../core/i18n.js?v=20260723-fa";
 import { getSettings } from "../core/settings.js?v=20260723-fa";
 import { shouldReduceMotion } from "../core/motion.js?v=20260723-fa";

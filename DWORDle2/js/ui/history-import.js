@@ -1,6 +1,6 @@
 // 履歴インポート後のキャッシュ更新・実績復元・通知を各画面で共通化する。
 
-import { _reload } from "../core/records.js";
+import { _reload } from "../core/records.js?v=20260723-fa";
 import { checkOnEvent, reconcileAchievementsFromHistory } from "../core/achievements.js?v=20260723-fa";
 import { bgmTracksUnlockedBy } from "../audio/sound.js?v=20260723-fa";
 import { hiddenThemesUnlockedBy } from "../core/settings.js?v=20260723-fa";

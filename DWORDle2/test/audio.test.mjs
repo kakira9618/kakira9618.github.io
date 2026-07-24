@@ -123,7 +123,7 @@ globalThis.window = {
 
 const { AUDIO } = await import("../js/config.js?v=20260723-fa");
 const { setSetting } = await import("../js/core/settings.js?v=20260723-fa");
-const { audioNeedsRecovery, currentBgmTrackId, playSfx, rewindBgm, unlockAudio, setUsoMood, stopBgm, BGM_TRACKS } = await import("../js/audio/sound.js");
+const { audioNeedsRecovery, currentBgmTrackId, playSfx, rewindBgm, unlockAudio, setUsoMood, stopBgm, BGM_TRACKS } = await import("../js/audio/sound.js?v=20260723-fa");
 
 setSetting("bgm", false);
 playSfx("ui");

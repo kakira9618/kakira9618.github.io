@@ -20,11 +20,11 @@
 //   hadLostBefore, // この問題で過去に敗北していたか
 // }
 
-import { loadJSON, saveJSON, onExternalChange } from "./store.js";
-import { isDailyPID, PID } from "./problems.js";
-import { getHistory, getExtraShot } from "./records.js";
-import { CELL, Logic } from "./logic.js";
-import { isDebugMode } from "./debug.js";
+import { loadJSON, saveJSON, onExternalChange } from "./store.js?v=20260723-fa";
+import { isDailyPID, PID } from "./problems.js?v=20260723-fa";
+import { getHistory, getExtraShot } from "./records.js?v=20260723-fa";
+import { CELL, Logic } from "./logic.js?v=20260723-fa";
+import { isDebugMode } from "./debug.js?v=20260723-fa";
 
 // v7: 月間皆勤（30 日）→ 二週間皆勤（14 日）の緩和を既存履歴にも適用する
 const RECONCILE_VERSION = 7;

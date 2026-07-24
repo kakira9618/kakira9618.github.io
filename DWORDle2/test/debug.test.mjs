@@ -7,10 +7,10 @@ globalThis.localStorage = {
   removeItem: (key) => data.delete(key),
 };
 
-const { ACHIEVEMENTS, getUnlocked } = await import("../js/core/achievements.js");
-const { getSettings, setSetting } = await import("../js/core/settings.js");
-const { isDebugMode, tryEnableDebugMode } = await import("../js/core/debug.js");
-const { loadJSON, removeKey, saveJSON } = await import("../js/core/store.js");
+const { ACHIEVEMENTS, getUnlocked } = await import("../js/core/achievements.js?v=20260723-fa");
+const { getSettings, setSetting } = await import("../js/core/settings.js?v=20260723-fa");
+const { isDebugMode, tryEnableDebugMode } = await import("../js/core/debug.js?v=20260723-fa");
+const { loadJSON, removeKey, saveJSON } = await import("../js/core/store.js?v=20260723-fa");
 
 setSetting("theme", "classic");
 const savedBeforeDebug = data.get("dwordle2.settings");

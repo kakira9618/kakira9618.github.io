@@ -428,6 +428,9 @@ function applyTheme(theme) {
 }
 
 let lastFrameAt = 0;
+// 毎フレーム色を作り直すと GC 圧になるので、使い回し用のインスタンスを持つ
+const gridBase = new THREE.Color();
+const horizonBase = new THREE.Color();
 
 function loop(now = performance.now()) {
   if (!running) return;
@@ -468,11 +471,11 @@ function loop(now = performance.now()) {
     // ---- じわじわ変わる空 ----
     // グリッドと地平線の色相を長い周期でゆっくり揺らす
     const hueShift = Math.sin(t * cfg.hueDriftSpeed) * cfg.hueDriftAmp;
-    const gridBase = new THREE.Color(uso ? cfg.gridColorUso : cfg.gridColor);
+    gridBase.set(uso ? cfg.gridColorUso : cfg.gridColor);
     gridBase.offsetHSL(hueShift, 0, 0);
     grid1.material.color.copy(gridBase);
     grid2.material.color.copy(gridBase);
-    const horizonBase = new THREE.Color(uso ? cfg.horizonColorUso : cfg.horizonColor);
+    horizonBase.set(uso ? cfg.horizonColorUso : cfg.horizonColor);
     horizonBase.offsetHSL(hueShift, 0, 0.01 * Math.sin(t * 0.09));
     horizon.material.color.copy(horizonBase);
 

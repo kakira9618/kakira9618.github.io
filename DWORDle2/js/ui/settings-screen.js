@@ -1,22 +1,22 @@
 // 設定画面。テーマ・サウンド・履歴の移行 / エクスポート / 削除。
 // ルート: #/settings
 
-import { el, clear } from "./dom.js";
+import { el, clear } from "./dom.js?v=20260723-fa";
 import { registerScreen, navigate } from "./app.js?v=20260723-fa";
 import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js?v=20260723-fa";
-import { importFromLocalStorage, importFromText, scanLegacyHistory } from "../core/migrate.js";
-import { exportJSON } from "../core/records.js";
-import { removeKey } from "../core/store.js";
+import { importFromLocalStorage, importFromText, scanLegacyHistory } from "../core/migrate.js?v=20260723-fa";
+import { exportJSON } from "../core/records.js?v=20260723-fa";
+import { removeKey } from "../core/store.js?v=20260723-fa";
 import { getUnlocked } from "../core/achievements.js?v=20260723-fa";
 import { BGM_TRACKS, playSfx } from "../audio/sound.js?v=20260723-fa";
 import { toast } from "./toast.js?v=20260723-fa";
 import { showModal, confirmModal } from "./modal.js?v=20260723-fa";
-import { icon } from "./icons.js";
+import { icon } from "./icons.js?v=20260723-fa";
 import { finishHistoryImport } from "./history-import.js?v=20260723-fa";
 import { APP_VERSION } from "../config.js?v=20260723-fa";
 import { SOURCE_HASH } from "../version.js?v=20260723-fa";
 import { isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js?v=20260723-fa";
-import { isDebugMode, tryEnableDebugMode } from "../core/debug.js";
+import { isDebugMode, tryEnableDebugMode } from "../core/debug.js?v=20260723-fa";
 import { isExtraShotUnlocked, extraShotRemainingPlays } from "../core/extra-shot.js?v=20260723-fa";
 
 let root = null;

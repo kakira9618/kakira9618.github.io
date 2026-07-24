@@ -6,8 +6,8 @@
 // - queryWord: 緑（両答えのどちらかと位置一致）→ 黄（両答えの未消費文字に存在）
 //   の順で、ans1 のフラグを優先して消費する
 
-import { ALL_WORDS } from "../data/words.js";
-import { candidateWordsForPID, isDailyPID } from "./problems.js";
+import { ALL_WORDS } from "../data/words.js?v=20260723-fa";
+import { candidateWordsForPID, isDailyPID } from "./problems.js?v=20260723-fa";
 
 export const CELL = {
   GUESSING: "guessing",

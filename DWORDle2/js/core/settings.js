@@ -1,6 +1,6 @@
 // 設定管理。変更は即 localStorage に保存され、リスナーに通知される。
 
-import { loadJSON, saveJSON } from "./store.js";
+import { loadJSON, saveJSON } from "./store.js?v=20260723-fa";
 
 export const DEFAULT_SETTINGS = {
   theme: "cyber", // "cyber"（ネオン3D演出）| "classic"（原作風フラット表示）| "pop"（隠し: キャンディポップ）
