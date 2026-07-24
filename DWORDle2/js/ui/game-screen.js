@@ -186,6 +186,7 @@ function installBoardDragScroll() {
   let startY = 0;
   let startScroll = 0;
   let dragging = false;
+  let suppressClick = false;
 
   boardScrollEl.addEventListener("pointerdown", (e) => {
     if (e.button !== 0 || e.target.closest("button")) return;
@@ -200,6 +201,7 @@ function installBoardDragScroll() {
     if (!dragging && Math.abs(delta) < 5) return;
     if (!dragging) {
       dragging = true;
+      suppressClick = true;
       boardScrollEl.setPointerCapture(pointerId);
       boardScrollEl.classList.add("dragging");
     }
@@ -212,9 +214,20 @@ function installBoardDragScroll() {
     pointerId = null;
     dragging = false;
     boardScrollEl.classList.remove("dragging");
+    // pointerup 直後の合成 click だけを抑止し、次の本当のタップは通す。
+    setTimeout(() => { suppressClick = false; }, 0);
   };
   boardScrollEl.addEventListener("pointerup", stop);
   boardScrollEl.addEventListener("pointercancel", stop);
+  // EXTRA SHOT のスキップ対象は入力行だけでなく盤面スクロール領域全体。
+  // ヘッダー・メニュー・キーボードはこの要素の外なので対象にならない。
+  boardScrollEl.addEventListener("click", () => {
+    if (suppressClick) {
+      suppressClick = false;
+      return;
+    }
+    extraShotSkipReveal?.();
+  });
 }
 
 function toggleSeed() {
@@ -318,6 +331,7 @@ function render() {
   extraShotLeavePromptOpen = false;
   extraShotFinishPending = false;
   extraShotSkipReveal = null;
+  boardScrollEl.classList.remove("extra-shot-skippable");
   resultFab.style.display = "none";
   rows = [];
   clear(boardEl);
@@ -625,8 +639,7 @@ function submitExtraShot() {
   let drumrollTimer = null;
   const clearSkipAffordance = () => {
     extraShotSkipReveal = null;
-    row.rowEl.classList.remove("fa-skippable");
-    delete row.rowEl.dataset.skipLabel;
+    boardScrollEl.classList.remove("extra-shot-skippable");
   };
   const beginReveal = () => {
     if (revealStarted || session !== gatherSession) return;
@@ -642,8 +655,7 @@ function submitExtraShot() {
     });
   };
   if (extraShotPhase.canSkip && !shouldReduceMotion()) {
-    row.rowEl.classList.add("fa-skippable");
-    row.rowEl.dataset.skipLabel = tr("タップで判定をスキップ", "Tap to skip reveal");
+    boardScrollEl.classList.add("extra-shot-skippable");
     extraShotSkipReveal = () => {
       if (state !== "extraChecking" || session !== gatherSession) return false;
       if (drumrollTimer !== null) clearTimeout(drumrollTimer);
@@ -651,9 +663,6 @@ function submitExtraShot() {
       revealController?.skip();
       return true;
     };
-    row.rowEl.addEventListener("click", () => {
-      extraShotSkipReveal?.();
-    }, { once: true });
   }
   if (shouldReduceMotion()) {
     beginReveal();
@@ -680,8 +689,10 @@ function rejectGuess(message) {
 function revealRow(row, word, result, done) {
   const session = gatherSession;
   const extraShotReveal = state === "extraChecking";
+  const pauseBeforeLastTile = extraShotReveal
+    && result.slice(0, 4).every((stateName) => stateName === CELL.CORRECT);
   const revealDelay = (index) =>
-    index * UI.revealIntervalMs + (extraShotReveal && index === 4 ? FX.extraShot.lastTilePauseMs : 0);
+    index * UI.revealIntervalMs + (pauseBeforeLastTile && index === 4 ? FX.extraShot.lastTilePauseMs : 0);
   const timers = [];
   let settled = false;
   const schedule = (fn, delay) => {
@@ -731,7 +742,7 @@ function revealRow(row, word, result, done) {
     }, revealDelay(i));
   });
   schedule(complete, 5 * UI.revealIntervalMs
-    + (extraShotReveal ? FX.extraShot.lastTilePauseMs : 0)
+    + (pauseBeforeLastTile ? FX.extraShot.lastTilePauseMs : 0)
     + UI.revealFlipMs / 2
     + UI.afterRevealPauseMs);
   return {
@@ -827,6 +838,7 @@ function forfeitExtraShot() {
   pendingKeys = [];
   extraShotFinishPending = false;
   extraShotSkipReveal = null;
+  boardScrollEl.classList.remove("extra-shot-skippable");
   cancelExtraShotFx();
   const settled = persistFinishedGame({ includeExtraShot: false });
   extraShotPhase = null;
@@ -840,6 +852,7 @@ function finishGame(justFinished) {
   pendingKeys = []; // 決着後に持ち越された先行入力は捨てる
   extraShotFinishPending = false;
   extraShotSkipReveal = null;
+  boardScrollEl.classList.remove("extra-shot-skippable");
   updateHeader();
 
   const lastWord = game.guessWord[game.guessWord.length - 1];

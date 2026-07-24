@@ -34,6 +34,7 @@ const PROMO_OVERLAY_MS = 2600;
 // スワイプ / ドラッグでカードが指の方向に傾く演出の強さ
 const TILT_MAX_DEG = 30; // 傾きの最大角度
 const TILT_GAIN = 60; // カード幅ぶんの移動で何度傾くか（半分のスワイプで最大に達する）
+const CARD_VIEW_MODE_KEY = "playerCardViewMode";
 
 // ---- カードのレイアウト・配色定数（描画座標は幅 1200 x 高さ 675 基準の px）----
 const CARD = {
@@ -764,17 +765,35 @@ function celebratePromotion(stage, rank) {
 function attachCardTilt(tiltEl) {
   const clampDeg = (v) => Math.min(TILT_MAX_DEG, Math.max(-TILT_MAX_DEG, v));
   let pointerId = null;
+  let gestureRect = null;
+  let tiltFrame = 0;
+  let pendingPoint = null;
+  const tiltEnabled = () => tiltEl.closest(".player-card-stage")?.classList.contains("view-tilt");
   const applyTilt = (clientX, clientY) => {
-    const rect = tiltEl.getBoundingClientRect();
+    // 変形後の bounding box を基準にすると、深く傾けたときに基準座標まで動いて
+    // 角度が往復する。pointerdown 時の水平な矩形をジェスチャー中ずっと使う。
+    const rect = gestureRect;
+    if (!rect) return;
     const ry = clampDeg(((clientX - (rect.left + rect.width / 2)) / rect.width) * TILT_GAIN);
     const rx = clampDeg((((rect.top + rect.height / 2) - clientY) / rect.height) * TILT_GAIN);
     // translateZ(0) で Android Chrome でもタッチ中の 3D レイヤーを維持する。
     tiltEl.style.transform = `translateZ(0) rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`;
   };
+  const queueTilt = (clientX, clientY) => {
+    pendingPoint = { clientX, clientY };
+    if (tiltFrame) return;
+    tiltFrame = requestAnimationFrame(() => {
+      tiltFrame = 0;
+      if (!pendingPoint) return;
+      applyTilt(pendingPoint.clientX, pendingPoint.clientY);
+      pendingPoint = null;
+    });
+  };
   tiltEl.addEventListener("pointerdown", (event) => {
-    if (shouldReduceMotion()) return;
+    if (shouldReduceMotion() || !tiltEnabled()) return;
     event.preventDefault(); // ドラッグで周囲のテキストが選択状態になるのを防ぐ
     pointerId = event.pointerId;
+    gestureRect = tiltEl.getBoundingClientRect();
     tiltEl.classList.add("tilting");
     tiltEl.setPointerCapture?.(pointerId);
     // 移動前のタッチでも、触れた位置へすぐ傾けて反応を明確にする。
@@ -782,16 +801,50 @@ function attachCardTilt(tiltEl) {
   });
   tiltEl.addEventListener("pointermove", (event) => {
     if (pointerId !== event.pointerId) return;
-    applyTilt(event.clientX, event.clientY);
+    queueTilt(event.clientX, event.clientY);
   });
   const release = (event) => {
     if (pointerId === null || pointerId !== event.pointerId) return;
     pointerId = null;
+    gestureRect = null;
+    pendingPoint = null;
+    if (tiltFrame) cancelAnimationFrame(tiltFrame);
+    tiltFrame = 0;
     tiltEl.classList.remove("tilting");
     tiltEl.style.transform = "";
   };
   tiltEl.addEventListener("pointerup", release);
   tiltEl.addEventListener("pointercancel", release);
+}
+
+function savedCardViewMode() {
+  return loadJSON(CARD_VIEW_MODE_KEY, "tilt") === "zoom" ? "zoom" : "tilt";
+}
+
+function applyCardViewMode(stage, controls, hint, mode) {
+  const zoomed = mode === "zoom";
+  stage.classList.toggle("view-tilt", !zoomed);
+  stage.classList.toggle("view-zoom", zoomed);
+  stage.tabIndex = zoomed ? 0 : -1;
+  stage.setAttribute(
+    "aria-label",
+    zoomed
+      ? tr("拡大したプレイヤーカード。左右にスクロールできます", "Zoomed player card. Scroll horizontally to inspect it")
+      : tr("傾けて見られるプレイヤーカード", "Player card with tilt interaction")
+  );
+  controls.querySelectorAll("[data-card-view]").forEach((button) => {
+    const active = button.dataset.cardView === mode;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+  hint.textContent = zoomed
+    ? tr("左右に動かして、カードの細部を大きく見られます", "Scroll sideways to inspect the card in detail")
+    : tr("カードをなぞると、指の方向へ傾きます", "Drag across the card to tilt it");
+  if (!zoomed) {
+    stage.scrollLeft = 0;
+    stage.querySelector(".player-card-tilt")?.removeAttribute("style");
+    stage.querySelector(".player-card-tilt")?.classList.remove("tilting");
+  }
 }
 
 async function drawInto(stage, name, { deal }) {
@@ -845,7 +898,43 @@ function render() {
     soundToggleButton()
   );
 
+  let cardViewMode = savedCardViewMode();
   const stage = el("div", { class: "player-card-stage" });
+  const viewHint = el("p", { class: "hint player-card-view-hint" });
+  const viewControls = el(
+    "div",
+    {
+      class: "player-card-view-controls",
+      hidden: !saved,
+    },
+    el(
+      "div",
+      { class: "seg player-card-view-toggle", role: "group", "aria-label": tr("カードの表示方法", "Card viewing mode") },
+      [
+        ["tilt", "sparkle", tr("傾ける", "Tilt")],
+        ["zoom", "search", tr("拡大", "Zoom")],
+      ].map(([mode, iconName, label]) =>
+        el(
+          "button",
+          {
+            type: "button",
+            dataset: { cardView: mode },
+            onclick: () => {
+              playSfx("ui");
+              cardViewMode = mode;
+              saveJSON(CARD_VIEW_MODE_KEY, mode);
+              applyCardViewMode(stage, viewControls, viewHint, mode);
+              if (mode === "zoom") requestAnimationFrame(() => { stage.scrollLeft = 0; });
+            },
+          },
+          icon(iconName, 17),
+          label
+        )
+      )
+    ),
+    viewHint
+  );
+  applyCardViewMode(stage, viewControls, viewHint, cardViewMode);
   const actions = el(
     "div",
     { class: "result-actions player-card-actions", hidden: true },
@@ -869,6 +958,8 @@ function render() {
     const rank = rankForStats(collectStats());
     saveJSON("playerCard", { ...prev, name, issuedAt: Math.floor(Date.now() / 1000), seenRankTier: rank.tier });
     await drawInto(stage, name, { deal: true });
+    viewControls.hidden = false;
+    applyCardViewMode(stage, viewControls, viewHint, cardViewMode);
     actions.hidden = false;
     if (isFirst) {
       playSfx("achievementBig");
@@ -906,6 +997,7 @@ function render() {
       el("label", { class: "player-card-name-label" }, tr("名前", "Name"), nameInput),
       el("p", { class: "hint" }, tr("名前はこの端末にだけ保存されます", "Your name is saved only on this device"))
     ),
+    viewControls,
     stage,
     actions,
     saved ? null : issueButton

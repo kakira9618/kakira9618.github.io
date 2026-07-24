@@ -6,7 +6,7 @@
 import { el, clear, fmtDateTime } from "./dom.js";
 import { registerScreen, navigate, getAppMode } from "./app.js?v=20260723-fa";
 import { buildProblemStatus, MODES } from "../core/records.js";
-import { LEVELS, isValidPID, pidLabel } from "../core/problems.js";
+import { LEVELS, isValidPID, pidLabel, todayPID } from "../core/problems.js";
 import { playSfx } from "../audio/sound.js?v=20260723-fa";
 import { showModal } from "./modal.js?v=20260723-fa";
 import { confirmAndStart } from "./game-screen.js?v=20260723-fa";
@@ -71,6 +71,39 @@ function openProblemMenu(pid, statusMap) {
     ],
     actions: [{ label: tr("閉じる", "Close"), onClick: () => {} }],
   });
+}
+
+function dailyProblemCard(statusMap) {
+  const pid = todayPID();
+  const status = statusOf(statusMap, pid);
+  const doubleClear = (statusMap.get(pid)?.doubleClears ?? 0) > 0;
+  const statusLabel = doubleClear
+    ? "DOUBLE CLEAR"
+    : status === "cleared"
+      ? tr("クリア済み", "Cleared")
+      : status === "failed"
+        ? tr("未クリア", "Failed")
+        : tr("未プレイ", "Unplayed");
+  return el(
+    "button",
+    {
+      class: `card tappable daily-problem-card ${status} ${doubleClear ? "double-clear" : ""}`,
+      "aria-label": tr(`今日のデイリー問題、${pidLabel(pid)}、${statusLabel}`, `Today's Daily puzzle, ${pidLabel(pid)}, ${statusLabel}`),
+      onclick: () => {
+        playSfx("ui");
+        openProblemMenu(pid, statusMap);
+      },
+    },
+    el("span", { class: "daily-problem-icon", "aria-hidden": "true" }, icon("calendar", 24)),
+    el(
+      "span",
+      { class: "daily-problem-copy" },
+      el("span", { class: "daily-problem-kicker" }, tr("今日の DAILY", "TODAY'S DAILY")),
+      el("strong", {}, pidLabel(pid))
+    ),
+    el("span", { class: "daily-problem-status" }, statusLabel),
+    el("span", { class: "daily-problem-arrow", "aria-hidden": "true" }, "→")
+  );
 }
 
 function render() {
@@ -145,6 +178,7 @@ function render() {
       if (st.cleared > 0) clearedCount++;
     }
   }
+  if (blockStart === null) body.append(dailyProblemCard(statusMap));
   body.append(
     el(
       "div",
@@ -248,13 +282,7 @@ function render() {
       el(
         "div",
         { class: "progress-note problem-block-head" },
-        el("span", {}, tr(`ブロック No.${s} - No.${e}`, `Block No.${s} - No.${e}`)),
-        el(
-          "span",
-          { class: "problem-double-legend" },
-          el("i", { class: "problem-double-swatch", "aria-hidden": "true" }),
-          "DOUBLE CLEAR"
-        )
+        tr(`ブロック No.${s} - No.${e}`, `Block No.${s} - No.${e}`)
       ),
       cells.length
         ? el("div", { class: "num-grid" }, cells)

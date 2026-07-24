@@ -7,6 +7,7 @@ import { createRequire } from "node:module";
 import { chromium } from "playwright";
 import { Logic } from "../js/core/logic.js";
 import { ACHIEVEMENTS } from "../js/core/achievements.js";
+import { pidLabel, todayPID } from "../js/core/problems.js";
 
 const require = createRequire(import.meta.url);
 const axePath = require.resolve("axe-core/axe.min.js");
@@ -840,6 +841,22 @@ try {
 
   await page.evaluate(() => { location.hash = "#/problems"; });
   await page.waitForURL(/#\/problems$/);
+  const dailyCard = page.locator("button.daily-problem-card");
+  await dailyCard.waitFor();
+  assert.equal(
+    await dailyCard.locator(".daily-problem-copy strong").textContent(),
+    pidLabel(todayPID()),
+    "the puzzle list should feature today's dynamically resolved Daily puzzle"
+  );
+  assert.equal(
+    await page.locator("#screen-problems .problem-double-legend").count(),
+    0,
+    "the puzzle list should not show a standalone DOUBLE CLEAR legend"
+  );
+  await dailyCard.click();
+  const dailyDialog = page.getByRole("dialog", { name: pidLabel(todayPID()) });
+  await dailyDialog.waitFor();
+  await dailyDialog.getByRole("button", { name: "閉じる" }).click();
   const block = page.locator("button.block-cell").first();
   await block.waitFor();
   await assertNoSeriousA11yViolations("Problems screen");
@@ -1050,7 +1067,7 @@ try {
     await successPage.keyboard.press("Enter");
     await successPage.locator("#screen-game.active .fa-row.fa-charging").waitFor();
     assert.equal(
-      await finalRow.evaluate((row) => row.classList.contains("fa-skippable")),
+      await successPage.locator("#screen-game.active #board-scroll").evaluate((board) => board.classList.contains("extra-shot-skippable")),
       false,
       "The first play of a puzzle must keep the full EXTRA SHOT reveal"
     );
@@ -1324,9 +1341,15 @@ try {
     await repeatPage.keyboard.type("pouch");
     await repeatPage.keyboard.press("Enter");
     await repeatExtraRow.locator(".tile").first().waitFor();
-    await repeatPage.locator("#screen-game.active .fa-row.fa-skippable.fa-charging").waitFor();
+    await repeatPage.locator("#screen-game.active #board-scroll.extra-shot-skippable .fa-row.fa-charging").waitFor();
+    assert.equal(
+      await repeatPage.getByText("タップで判定をスキップ", { exact: true }).count(),
+      0,
+      "The board should not show explanatory skip text"
+    );
     const skipStartedAt = Date.now();
-    await repeatExtraRow.click();
+    // EXTRA SHOT 行ではなく通常盤面をタップしても、盤面領域全体のスキップが働く。
+    await repeatPage.locator("#screen-game.active #board .row").first().click();
     await repeatPage.waitForFunction(
       () => document.querySelectorAll("#screen-game.active .fa-row .tile.state-correct").length === 5,
       null,
@@ -1344,6 +1367,7 @@ try {
   }
 
   // DWORDlie の EXTRA SHOT も通常判定と同じく両回答を参照し、表示する全マスで嘘を貫く。
+  // 先頭 4 枚が緑ではないので、5 枚目直前の追加のタメは入れない。
   {
     const pid = 323;
     const logic = new Logic(pid);
@@ -1355,7 +1379,7 @@ try {
         bgm: false,
         language: "ja",
         keyboardHints: true,
-        reduceFx: true,
+        reduceFx: false,
         extraShot: true,
       }));
       localStorage.setItem("dwordle2.mode", JSON.stringify("uso"));
@@ -1383,8 +1407,37 @@ try {
     await usoPage.keyboard.type(logic.ans1);
     await usoPage.keyboard.press("Enter");
     await usoPage.locator("#screen-game.active .fa-row").waitFor({ timeout: 8000 });
+    await usoPage.evaluate(() => {
+      const tiles = [...document.querySelectorAll("#screen-game.active .fa-row .tile")];
+      window.__usoExtraShotRevealTimes = Array(tiles.length).fill(null);
+      const startedAt = performance.now();
+      tiles.forEach((tile, index) => {
+        const observer = new MutationObserver(() => {
+          if (window.__usoExtraShotRevealTimes[index] !== null || !/state-/.test(tile.className)) return;
+          window.__usoExtraShotRevealTimes[index] = performance.now() - startedAt;
+          observer.disconnect();
+        });
+        observer.observe(tile, { attributes: true, attributeFilter: ["class"] });
+      });
+    });
     await usoPage.keyboard.type(logic.ans2);
     await usoPage.keyboard.press("Enter");
+    await usoPage.waitForFunction(
+      () => window.__usoExtraShotRevealTimes?.every(Number.isFinite),
+      null,
+      { timeout: 10000 }
+    );
+    const usoRevealTimes = await usoPage.evaluate(() => window.__usoExtraShotRevealTimes);
+    const usoEarlyGaps = usoRevealTimes.slice(1, 4).map((time, index) => time - usoRevealTimes[index]);
+    const usoFinalGap = usoRevealTimes[4] - usoRevealTimes[3];
+    assert.ok(
+      usoFinalGap <= Math.max(...usoEarlyGaps) + 250,
+      `The fifth EXTRA SHOT tile should not pause unless the first four are correct: ${JSON.stringify({
+        revealTimes: usoRevealTimes,
+        earlyGaps: usoEarlyGaps,
+        finalGap: usoFinalGap,
+      })}`
+    );
     await usoPage.waitForURL(/#\/result\/uso\/\d+$/, { timeout: 10000 });
     const usoExtra = await usoPage.evaluate(() => {
       const record = JSON.parse(localStorage.getItem("dwordle2.history") || "[]")[0];
@@ -2039,6 +2092,30 @@ try {
     await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
     assert.equal(activeTouchTilt.active, true);
     assert.notEqual(activeTouchTilt.transform, "none", "Android touch should visibly tilt the player card");
+
+    // 拡大モードではカード部分だけが横スクロール可能になり、細部を大きく読める。
+    await cardPage.getByRole("button", { name: "拡大", exact: true }).click();
+    const zoomLayout = await cardPage.locator(".player-card-stage.view-zoom").evaluate((stage) => {
+      const tilt = stage.querySelector(".player-card-tilt");
+      const wrap = stage.querySelector(".player-card-wrap");
+      stage.scrollLeft = 120;
+      return {
+        scrollable: stage.scrollWidth > stage.clientWidth,
+        scrollLeft: stage.scrollLeft,
+        tiltWidth: tilt.getBoundingClientRect().width,
+        stageWidth: stage.getBoundingClientRect().width,
+        wrapAnimation: getComputedStyle(wrap).animationName,
+      };
+    });
+    assert.ok(zoomLayout.scrollable && zoomLayout.scrollLeft > 0, `Zoom mode should pan inside the card stage: ${JSON.stringify(zoomLayout)}`);
+    assert.ok(zoomLayout.tiltWidth > zoomLayout.stageWidth * 1.4, `Zoom mode should enlarge the card on mobile: ${JSON.stringify(zoomLayout)}`);
+    assert.equal(zoomLayout.wrapAnimation, "none", "Zoom mode should keep the enlarged card still for reading");
+    assert.equal(
+      await cardPage.evaluate(() => JSON.parse(localStorage.getItem("dwordle2.playerCardViewMode"))),
+      "zoom",
+      "the selected player-card viewing mode should persist"
+    );
+    await cardPage.getByRole("button", { name: "傾ける", exact: true }).click();
 
     // Android の自動補完などで input が再発火して静かに再描画されても、
     // 常時の浮遊・きらめきは失われない。

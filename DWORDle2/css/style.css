@@ -1677,6 +1677,76 @@ body.theme-cyber .card.tappable:hover {
 }
 
 /* ---- 問題一覧 ---- */
+.daily-problem-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 72px;
+  text-align: left;
+  background:
+    linear-gradient(120deg, color-mix(in srgb, var(--accent) 18%, transparent), transparent 60%),
+    var(--bg-panel);
+}
+.daily-problem-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid color-mix(in srgb, var(--accent) 62%, transparent);
+  border-radius: 14px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  box-shadow: var(--glow);
+}
+.daily-problem-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+.daily-problem-kicker {
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.13em;
+}
+.daily-problem-copy strong {
+  overflow: hidden;
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.daily-problem-status {
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--fg-dim);
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.daily-problem-card.cleared .daily-problem-status {
+  border-color: var(--tile-correct);
+  color: color-mix(in srgb, var(--tile-correct) 82%, white);
+}
+.daily-problem-card.failed .daily-problem-status {
+  border-color: var(--danger);
+  color: #ff8888;
+}
+.daily-problem-card.double-clear .daily-problem-status {
+  border-color: var(--fa-gold, #ffd166);
+  color: #ffe8a3;
+  background: rgba(255, 209, 102, 0.12);
+}
+.daily-problem-arrow {
+  color: var(--fg-dim);
+  font-size: 17px;
+}
+body.theme-pop:not(.mode-uso) .daily-problem-card.double-clear .daily-problem-status {
+  color: #8a5400;
+}
 .seg {
   display: flex;
   background: var(--bg-panel);
@@ -1790,31 +1860,6 @@ body.theme-cyber .num-cell.double-clear {
   font-size: 12px;
   color: var(--fg-dim);
 }
-.problem-block-head,
-.problem-double-legend {
-  display: flex;
-  align-items: center;
-}
-.problem-block-head {
-  justify-content: space-between;
-  gap: 10px;
-}
-.problem-double-legend {
-  flex: none;
-  gap: 5px;
-  font-size: 10px;
-  font-weight: 800;
-  color: var(--fg-dim);
-}
-.problem-double-swatch {
-  width: 12px;
-  height: 12px;
-  border: 1px solid var(--fa-gold, #ffd166);
-  border-radius: 4px;
-  background: linear-gradient(145deg, rgba(255, 224, 128, 0.7), rgba(255, 154, 46, 0.42));
-  box-shadow: 0 0 6px rgba(255, 209, 102, 0.3);
-}
-
 /* ---- 実績 ---- */
 .ach-grid {
   display: grid;
@@ -2836,10 +2881,43 @@ body.theme-pop.mode-normal .player-card-name-input::placeholder {
 .player-card-form .hint {
   margin-top: 6px;
 }
+.player-card-view-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.player-card-view-controls[hidden] {
+  display: none;
+}
+.player-card-view-toggle {
+  width: 100%;
+}
+.player-card-view-toggle button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.player-card-view-hint {
+  min-height: 1.4em;
+  text-align: center;
+}
 /* カード本体: 3D で舞い込む → 光が走る → ふわふわ浮遊 */
 .player-card-stage {
+  min-width: 0;
   perspective: 1200px;
   -webkit-perspective: 1200px;
+}
+.player-card-stage.view-zoom {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 8px 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--bg-panel) 82%, black);
+  overscroll-behavior-inline: contain;
+  touch-action: pan-x;
+  scrollbar-width: thin;
 }
 .player-card-wrap {
   position: relative;
@@ -2865,6 +2943,14 @@ body.theme-pop.mode-normal .player-card-name-input::placeholder {
 }
 .player-card-tilt.tilting {
   transition: transform 0.08s linear;
+}
+.player-card-stage.view-zoom .player-card-tilt {
+  width: 100%;
+  min-width: 720px;
+  transform: none !important;
+  transition: none;
+  will-change: auto;
+  touch-action: pan-x pan-y;
 }
 .player-card-canvas {
   position: relative;
@@ -2932,6 +3018,11 @@ body.theme-pop.mode-normal .player-card-name-input::placeholder {
 }
 body.reduce-motion .player-card-wrap.motion,
 body.reduce-motion .player-card-wrap.motion::after {
+  animation: none;
+  transform: none;
+}
+.player-card-stage.view-zoom .player-card-wrap.motion,
+.player-card-stage.view-zoom .player-card-wrap.motion::after {
   animation: none;
   transform: none;
 }
@@ -3355,22 +3446,8 @@ body.theme-pop #screen-game .sub.fa-counter {
 .row.fa-row.fa-charging .tile {
   animation: faRowPulse 0.5s ease-in-out infinite, faCharge 0.11s linear infinite;
 }
-.row.fa-row.fa-skippable {
-  position: relative;
+#board-scroll.extra-shot-skippable {
   cursor: pointer;
-}
-.row.fa-row.fa-skippable::after {
-  content: attr(data-skip-label);
-  position: absolute;
-  left: 50%;
-  top: calc(100% + 4px);
-  transform: translateX(-50%);
-  color: var(--fg-dim);
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  white-space: nowrap;
-  pointer-events: none;
 }
 @keyframes faCharge {
   0%, 100% { transform: translate(0, 0); }
@@ -3499,7 +3576,7 @@ body.mode-uso .fa-double-ring { border-color: #ff8fae; }
   background-clip: text;
   color: transparent;
   filter: drop-shadow(0 0 16px rgba(255, 209, 102, 0.5));
-  animation: faTitleShine 3s linear infinite;
+  animation: faTitleShine 18s linear infinite;
 }
 body.reduce-motion .result-title.double { animation: none; }
 @keyframes faTitleShine {

@@ -139,7 +139,7 @@ export const FX = {
     cutinMs: 2100, // カットイン全体の長さ（この後に入力可能になる）
     cutinReducedMs: 400, // reduce-motion 時の入力開始までの間
     drumrollMs: 1700, // Enter からドラムロールのタメを置いて判定オープンが始まるまで（SFX drumroll と同期）
-    lastTilePauseMs: 720, // 先頭 4 枚を開いたあと、最後の 1 枚だけ長めに溜める追加時間
+    lastTilePauseMs: 720, // 先頭 4 枚がすべて緑のときだけ、最後の 1 枚を長めに溜める追加時間
     doubleClearMs: 2600, // DOUBLE CLEAR 演出の表示時間
     resultDelayMs: 2900, // 成功時に結果画面へ進むまでの待ち（doubleClearMs より少し後）
     burstColors: [0xffd166, 0xffe680, 0xffffff], // DOUBLE CLEAR の金色パーティクル
