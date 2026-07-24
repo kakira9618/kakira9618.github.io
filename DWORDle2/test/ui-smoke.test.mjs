@@ -2633,8 +2633,51 @@ try {
     await passGate(cardPage);
     await cardPage.evaluate(() => { location.hash = "#/card"; });
     await cardPage.waitForURL(/#\/card$/);
+    await cardPage.locator(".player-card-stage.is-rank-up").waitFor();
+    const promotionCardBox = await cardPage.locator(".player-card-tilt").boundingBox();
+    const promotionCenter = {
+      x: promotionCardBox.x + promotionCardBox.width / 2,
+      y: promotionCardBox.y + promotionCardBox.height / 2,
+    };
+    await cardPage.mouse.dblclick(promotionCenter.x, promotionCenter.y);
+    assert.equal(
+      await cardPage.locator(".player-card-stage.is-zoomed").count(),
+      0,
+      "double-click must not zoom the card during a rank-up"
+    );
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [
+        { id: 0, x: promotionCenter.x - 25, y: promotionCenter.y },
+        { id: 1, x: promotionCenter.x + 25, y: promotionCenter.y },
+      ],
+    });
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchMove",
+      touchPoints: [
+        { id: 0, x: promotionCenter.x - 60, y: promotionCenter.y },
+        { id: 1, x: promotionCenter.x + 60, y: promotionCenter.y },
+      ],
+    });
+    await cardPage.waitForTimeout(80);
+    assert.equal(
+      await cardPage.locator(".player-card-stage.is-zoomed").count(),
+      0,
+      "pinch-out must not zoom the card during a rank-up"
+    );
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
     await cardPage.locator(".rank-up-overlay").waitFor();
     await cardPage.locator(".rank-up-overlay .rank-up-name").filter({ hasText: "GOLD RANK" }).waitFor();
+    await cardPage.locator(".rank-up-overlay").waitFor({ state: "detached" });
+    assert.equal(
+      await cardPage.locator(".player-card-stage.is-rank-up").count(),
+      0,
+      "zoom must be unlocked when the rank-up animation finishes"
+    );
+    await cardPage.mouse.dblclick(promotionCenter.x, promotionCenter.y);
+    await cardPage.locator(".player-card-stage.is-zoomed").waitFor();
+    await cardPage.mouse.dblclick(promotionCenter.x, promotionCenter.y);
+    await cardPage.waitForFunction(() => !document.querySelector(".player-card-stage")?.classList.contains("is-zoomed"));
     // 一度見た昇格は次の表示では繰り返さない
     await cardPage.reload({ waitUntil: "networkidle" });
     await passGate(cardPage);

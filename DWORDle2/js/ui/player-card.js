@@ -741,9 +741,15 @@ function celebratePromotion(stage, rank) {
     toast(message);
     return;
   }
+  // カード着地から昇格演出が終わるまでは、拡大表示が演出と競合しないようにする。
+  // Tilt は引き続き使えるため、ジェスチャー側でズーム入力だけを無視する。
+  stage.classList.add("is-rank-up");
   setTimeout(() => {
     const wrap = stage.querySelector(".player-card-wrap");
-    if (!wrap?.isConnected) return; // 演出前に画面を離れていたら出さない
+    if (!wrap?.isConnected) {
+      stage.classList.remove("is-rank-up");
+      return; // 演出前に画面を離れていたら出さない
+    }
     playSfx("achievementBig");
     winBurst([Number.parseInt(rank.accent.slice(1), 16), 0xffd166, 0xffffff]);
     announce(message);
@@ -760,7 +766,10 @@ function celebratePromotion(stage, rank) {
       )
     );
     wrap.append(overlay);
-    setTimeout(() => overlay.remove(), PROMO_OVERLAY_MS);
+    setTimeout(() => {
+      overlay.remove();
+      stage.classList.remove("is-rank-up");
+    }, PROMO_OVERLAY_MS);
   }, PROMO_DELAY_MS);
 }
 
@@ -769,6 +778,7 @@ function celebratePromotion(stage, rank) {
 function attachCardGestures(stage, tiltEl) {
   const clampDeg = (v) => Math.min(TILT_MAX_DEG, Math.max(-TILT_MAX_DEG, v));
   const clampZoom = (v) => Math.min(CARD_ZOOM_MAX, Math.max(CARD_ZOOM_MIN, v));
+  const isZoomLocked = () => stage.classList.contains("is-rank-up");
   const pointers = new Map();
   let primaryPointerId = null;
   let primaryStart = null;
@@ -881,6 +891,7 @@ function attachCardGestures(stage, tiltEl) {
     if (sound) playSfx("ui");
   };
   const toggleZoom = (clientX, clientY) => {
+    if (isZoomLocked()) return;
     if (zoomed) leaveZoom();
     else enterZoom(clientX, clientY);
   };
@@ -989,6 +1000,7 @@ function attachCardGestures(stage, tiltEl) {
     primaryStart = null;
     panStart = null;
     stopTilt();
+    if (isZoomLocked()) return;
     // スマホではダブルタップを経由せず、等倍の状態から直接ピンチアウトもできる。
     if (!zoomed) {
       zoomed = true;
@@ -1056,6 +1068,11 @@ function attachCardGestures(stage, tiltEl) {
 
     if (!tap) {
       if (wasOnlyPointer) lastTap = null;
+      return;
+    }
+    if (isZoomLocked()) {
+      // 演出終了直前の 1 タップを、終了後のタップと組み合わせない。
+      lastTap = null;
       return;
     }
     const now = event.timeStamp;
