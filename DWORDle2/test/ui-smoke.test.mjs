@@ -1046,6 +1046,12 @@ try {
   await page.waitForURL(/#\/problems$/);
 
   await page.locator(".problem-level-tabs").getByRole("button", { name: "やさしい", exact: true }).click();
+  await page.getByText("No.1 - No.9999", { exact: true }).waitFor();
+  assert.equal(
+    await page.getByText("だれでも知っている単語だけ", { exact: true }).count(),
+    0,
+    "puzzle category progress should not repeat the level description in parentheses"
+  );
   const block = page.locator("button.block-cell").first();
   await block.waitFor();
   await assertNoSeriousA11yViolations("Problems screen");

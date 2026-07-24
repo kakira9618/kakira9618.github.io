@@ -317,7 +317,7 @@ function render() {
     el(
       "div",
       { class: "progress-note", style: { display: "flex", justifyContent: "space-between" } },
-      el("span", {}, `No.${lo} - No.${hi} (${localizedLevel(level).desc})`),
+      el("span", {}, `No.${lo} - No.${hi}`),
       el(
         "span",
         {},
