@@ -867,6 +867,10 @@ try {
   const dailyCalendar = page.locator(".daily-calendar-card");
   const levelTabs = page.locator(".problem-level-tabs");
   await dailyCalendar.waitFor();
+  const dailyCalendarDetails = page.locator("#daily-calendar-details");
+  assert.equal(await dailyCalendarDetails.isVisible(), false, "Daily calendar should be collapsed by default");
+  const openDailyCalendar = page.getByRole("button", { name: "Dailyカレンダーを開く" });
+  assert.equal(await openDailyCalendar.getAttribute("aria-expanded"), "false");
   assert.ok(
     (await dailyCalendar.boundingBox()).y < (await levelTabs.boundingBox()).y,
     "Daily history should appear above the puzzle category tabs"
@@ -882,6 +886,8 @@ try {
     0,
     "the puzzle list should not show a standalone DOUBLE CLEAR legend"
   );
+  await openDailyCalendar.click();
+  assert.equal(await dailyCalendarDetails.isVisible(), true);
   await page.getByRole("button", { name: "前の月" }).click();
   await page.getByText(
     `${historicalDailyDate.getFullYear()}年${historicalDailyDate.getMonth() + 1}月`,
@@ -894,8 +900,31 @@ try {
   await historicalDailyDay.click();
   const historicalDailyDialog = page.getByRole("dialog", { name: pidLabel(historicalDailyPid) });
   await historicalDailyDialog.waitFor();
+  assert.equal(
+    await historicalDailyDialog.getByRole("button", { name: "この問題をプレイ" }).count(),
+    0,
+    "past Daily history must not offer replay"
+  );
+  await historicalDailyDialog.getByText(
+    "過去のDailyはプレイできません。プレイ履歴のみ確認できます。",
+    { exact: true }
+  ).waitFor();
+  assert.equal(
+    await historicalDailyDialog.getByRole("button", { name: /結果を見る/ }).count(),
+    1,
+    "past Daily results should remain viewable"
+  );
   await historicalDailyDialog.getByRole("button", { name: "閉じる" }).click();
   await page.getByRole("button", { name: "次の月" }).click();
+  const futureDailyDays = page.locator(".daily-calendar-day.future");
+  assert.ok(await futureDailyDays.count() > 0, "the current calendar should include future dates");
+  assert.equal(
+    await futureDailyDays.evaluateAll((days) => days.every((day) => day.disabled)),
+    true,
+    "future Daily dates must all be disabled"
+  );
+  await page.getByRole("button", { name: "Dailyカレンダーを閉じる" }).click();
+  assert.equal(await dailyCalendarDetails.isVisible(), false);
   await todayDaily.click();
   const dailyDialog = page.getByRole("dialog", { name: pidLabel(todayPID()) });
   await dailyDialog.waitFor();
@@ -2159,7 +2188,10 @@ try {
         hint: stage.previousElementSibling?.textContent,
       };
     });
-    assert.ok(zoomBeforePinch.scale > 1.8, `Double-tap should zoom the card: ${JSON.stringify(zoomBeforePinch)}`);
+    assert.ok(
+      zoomBeforePinch.scale > 2.8 && zoomBeforePinch.scale < 3.2,
+      `Double-tap should zoom the card to 3x: ${JSON.stringify(zoomBeforePinch)}`
+    );
     assert.equal(zoomBeforePinch.wrapAnimation, "none", "Zoom should keep the enlarged card still for reading");
     assert.match(zoomBeforePinch.hint, /ピンチで拡大・縮小/);
 
@@ -2203,6 +2235,83 @@ try {
       "",
       "a second double-tap should return to the normal Tilt state"
     );
+    const animationAfterZoomReset = await cardPage.locator(".player-card-wrap").evaluate((wrap) => ({
+      deal: wrap.classList.contains("deal"),
+      names: getComputedStyle(wrap).animationName.split(",").map((name) => name.trim()),
+    }));
+    assert.equal(animationAfterZoomReset.deal, false, "returning to 1x must not replay the card deal animation");
+    assert.deepEqual(
+      animationAfterZoomReset.names,
+      ["playerCardFloat"],
+      "returning to 1x should resume only the normal floating animation"
+    );
+
+    const playerCardTilt = cardPage.locator(".player-card-tilt");
+
+    // スマホはダブルタップを経由しなくても、等倍から直接ピンチアウト／インできる。
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [
+        { id: 0, x: tapX - 25, y: tapY },
+        { id: 1, x: tapX + 25, y: tapY },
+      ],
+    });
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchMove",
+      touchPoints: [
+        { id: 0, x: tapX - 55, y: tapY },
+        { id: 1, x: tapX + 55, y: tapY },
+      ],
+    });
+    await cardPage.waitForTimeout(80);
+    const directPinchScale = await playerCardTilt.evaluate(
+      (tilt) => new DOMMatrix(getComputedStyle(tilt).transform).a
+    );
+    assert.ok(directPinchScale > 2, `Direct pinch-out should zoom from 1x: ${directPinchScale}`);
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchMove",
+      touchPoints: [
+        { id: 0, x: tapX - 18, y: tapY },
+        { id: 1, x: tapX + 18, y: tapY },
+      ],
+    });
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    assert.equal(
+      await cardPage.locator(".player-card-stage.is-zoomed").count(),
+      0,
+      "pinching back to 1x should restore the normal Tilt state"
+    );
+
+    // PC のマウス操作でも、ダブルクリックで 3 倍 → ドラッグでパン → 再ダブルクリックで等倍。
+    const playerCardStageBox = await cardPage.locator(".player-card-stage").boundingBox();
+    const desktopCenter = {
+      x: playerCardStageBox.x + playerCardStageBox.width / 2,
+      y: playerCardStageBox.y + playerCardStageBox.height / 2,
+    };
+    await cardPage.mouse.dblclick(desktopCenter.x, desktopCenter.y);
+    const desktopZoomStart = await playerCardTilt.evaluate((tilt) => {
+      const matrix = new DOMMatrix(getComputedStyle(tilt).transform);
+      return { scale: matrix.a, x: matrix.e, y: matrix.f };
+    });
+    assert.ok(
+      desktopZoomStart.scale > 2.8 && desktopZoomStart.scale < 3.2,
+      `Desktop double-click should zoom the card to 3x: ${JSON.stringify(desktopZoomStart)}`
+    );
+    await cardPage.mouse.move(desktopCenter.x, desktopCenter.y);
+    await cardPage.mouse.down();
+    await cardPage.mouse.move(desktopCenter.x + 42, desktopCenter.y + 24, { steps: 4 });
+    await cardPage.mouse.up();
+    const desktopZoomPanned = await playerCardTilt.evaluate((tilt) => {
+      const matrix = new DOMMatrix(getComputedStyle(tilt).transform);
+      return { x: matrix.e, y: matrix.f };
+    });
+    assert.ok(
+      Math.abs(desktopZoomPanned.x - desktopZoomStart.x) > 10
+        || Math.abs(desktopZoomPanned.y - desktopZoomStart.y) > 10,
+      `Desktop drag should pan the zoomed card: ${JSON.stringify({ desktopZoomStart, desktopZoomPanned })}`
+    );
+    await cardPage.mouse.dblclick(desktopCenter.x, desktopCenter.y);
+    assert.equal(await cardPage.locator(".player-card-stage.is-zoomed").count(), 0);
 
     // Android の自動補完などで input が再発火して静かに再描画されても、
     // 常時の浮遊・きらめきは失われない。

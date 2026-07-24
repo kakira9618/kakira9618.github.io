@@ -34,7 +34,7 @@ const PROMO_OVERLAY_MS = 2600;
 // スワイプ / ドラッグでカードが指の方向に傾く演出の強さ
 const TILT_MAX_DEG = 30; // 傾きの最大角度
 const TILT_GAIN = 60; // カード幅ぶんの移動で何度傾くか（半分のスワイプで最大に達する）
-const CARD_ZOOM_INITIAL = 2;
+const CARD_ZOOM_INITIAL = 3;
 const CARD_ZOOM_MIN = 1;
 const CARD_ZOOM_MAX = 5;
 const CARD_DOUBLE_TAP_MS = 320;
@@ -789,22 +789,22 @@ function attachCardGestures(stage, tiltEl, hint) {
       "aria-label",
       zoomed
         ? tr(
-            "拡大中のプレイヤーカード。ピンチで拡大縮小、1本指で移動、ダブルタップで戻ります",
-            "Zoomed player card. Pinch to zoom, drag to pan, and double-tap to return"
+            "拡大中のプレイヤーカード。ドラッグで移動、ピンチで拡大縮小、ダブルタップまたはダブルクリックで戻ります",
+            "Zoomed player card. Drag to pan, pinch to zoom, and double-tap or double-click to return"
           )
         : tr(
-            "プレイヤーカード。1本指で傾け、ダブルタップで拡大できます",
-            "Player card. Drag to tilt and double-tap to zoom"
+            "プレイヤーカード。ドラッグで傾け、ダブルタップまたはダブルクリックで3倍に拡大できます",
+            "Player card. Drag to tilt and double-tap or double-click for 3x zoom"
           )
     );
     hint.textContent = zoomed
       ? tr(
-          "ピンチで拡大・縮小、1本指で移動。ダブルタップで戻ります",
-          "Pinch to zoom, drag to pan. Double-tap to return"
+          "ドラッグで移動、ピンチで拡大・縮小。ダブルタップ／ダブルクリックで戻ります",
+          "Drag to pan and pinch to zoom. Double-tap or double-click to return"
         )
       : tr(
-          "カードをなぞると傾きます。ダブルタップで拡大できます",
-          "Drag to tilt. Double-tap to zoom"
+          "ドラッグで傾きます。ダブルタップ／ダブルクリックで3倍拡大できます",
+          "Drag to tilt. Double-tap or double-click for 3x zoom"
         );
   };
   const constrainPan = () => {
@@ -839,16 +839,19 @@ function attachCardGestures(stage, tiltEl, hint) {
     applyZoom();
     playSfx("ui");
   };
-  const leaveZoom = () => {
+  const leaveZoom = ({ sound = true } = {}) => {
     zoomed = false;
     zoomScale = CARD_ZOOM_MIN;
     panX = 0;
     panY = 0;
     pinchStart = null;
     panStart = null;
+    // zoom 中は animation:none になるため、戻した瞬間に発行時の登場アニメーションが
+    // CSS 上で再スタートしないよう deal を消し、通常の浮遊だけへ戻す。
+    tiltEl.querySelector(".player-card-wrap")?.classList.remove("deal");
     tiltEl.style.transform = "";
     updatePresentation();
-    playSfx("ui");
+    if (sound) playSfx("ui");
   };
   const toggleZoom = (clientX, clientY) => {
     if (zoomed) leaveZoom();
@@ -922,7 +925,16 @@ function attachCardGestures(stage, tiltEl, hint) {
     primaryStart = null;
     panStart = null;
     stopTilt();
-    if (zoomed) beginPinch();
+    // スマホではダブルタップを経由せず、等倍の状態から直接ピンチアウトもできる。
+    if (!zoomed) {
+      zoomed = true;
+      zoomScale = CARD_ZOOM_MIN;
+      panX = 0;
+      panY = 0;
+      updatePresentation();
+      applyZoom();
+    }
+    beginPinch();
   });
   tiltEl.addEventListener("pointermove", (event) => {
     if (!pointers.has(event.pointerId)) return;
@@ -981,6 +993,11 @@ function attachCardGestures(stage, tiltEl, hint) {
       panStart = null;
       pinchStart = null;
       stopTilt();
+    }
+
+    // ピンチインで等倍まで戻ったら、そのまま通常の Tilt 操作へ復帰する。
+    if (!tap && zoomed && pointers.size === 0 && zoomScale <= CARD_ZOOM_MIN + 0.01) {
+      leaveZoom({ sound: false });
     }
 
     if (!tap) {
@@ -1065,8 +1082,8 @@ function render() {
     "p",
     { class: "hint player-card-view-hint", hidden: !saved },
     tr(
-      "カードをなぞると傾きます。ダブルタップで拡大できます",
-      "Drag to tilt. Double-tap to zoom"
+      "ドラッグで傾きます。ダブルタップ／ダブルクリックで3倍拡大できます",
+      "Drag to tilt. Double-tap or double-click for 3x zoom"
     )
   );
   const actions = el(

@@ -1693,6 +1693,21 @@ body.theme-cyber .card.tappable:hover {
   justify-content: space-between;
   gap: 8px;
 }
+.daily-calendar-toggle {
+  flex: none;
+  transition: transform 0.18s;
+}
+.daily-calendar-toggle.expanded {
+  transform: rotate(180deg);
+}
+.daily-calendar-details {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.daily-calendar-details[hidden] {
+  display: none;
+}
 .daily-calendar-title,
 .daily-calendar-nav {
   display: flex;
@@ -1738,6 +1753,7 @@ body.theme-cyber .card.tappable:hover {
   background: rgba(255, 209, 102, 0.12);
 }
 .daily-calendar-nav {
+  justify-content: center;
   flex: none;
   gap: 2px;
 }

@@ -26,6 +26,7 @@ let levelIdx = 0; // LEVELS のインデックス
 let blockStart = null; // ブロック表示中の先頭 No.（null なら ブロック一覧）
 let statusFilter = "all"; // "all" | "cleared" | "failed" | "unplayed"
 let dailyCalendarMonth = null; // year * 12 + month。null は今月
+let dailyCalendarExpanded = false;
 
 function build() {
   root = document.getElementById("screen-problems");
@@ -38,7 +39,7 @@ function statusOf(statusMap, pid) {
   return "failed";
 }
 
-function openProblemMenu(pid, statusMap) {
+function openProblemMenu(pid, statusMap, { allowPlay = true } = {}) {
   const mode = getAppMode();
   const st = statusMap.get(pid);
   const historyItems = (st?.times ?? [])
@@ -59,12 +60,21 @@ function openProblemMenu(pid, statusMap) {
   showModal({
     title: pidLabel(pid),
     body: [
-      el(
-        "button",
-        { class: "btn btn-primary", style: { width: "100%" }, onclick: () => { confirmAndStart(pid, mode); } },
-        icon("play"),
-        tr("この問題をプレイ", "Play this puzzle")
-      ),
+      allowPlay
+        ? el(
+            "button",
+            { class: "btn btn-primary", style: { width: "100%" }, onclick: () => { confirmAndStart(pid, mode); } },
+            icon("play"),
+            tr("この問題をプレイ", "Play this puzzle")
+          )
+        : el(
+            "p",
+            { class: "hint daily-history-only" },
+            tr(
+              "過去のDailyはプレイできません。プレイ履歴のみ確認できます。",
+              "Past Daily puzzles cannot be played. You can only view their play history."
+            )
+          ),
       historyItems.length
         ? el("div", { class: "hint", style: { marginTop: "6px" } }, tr("プレイ履歴:", "Play history:"))
         : el("p", { class: "hint" }, tr("この問題はまだプレイしていません。", "This puzzle has not been played yet.")),
@@ -147,7 +157,7 @@ function dailyCalendar(statusMap) {
           disabled: future || !interactive,
           onclick: () => {
             playSfx("ui");
-            openProblemMenu(pid, statusMap);
+            openProblemMenu(pid, statusMap, { allowPlay: today });
           },
         },
         el("span", { class: "daily-calendar-number" }, String(day)),
@@ -163,6 +173,58 @@ function dailyCalendar(statusMap) {
     cells.push(el("span", { class: "daily-calendar-day empty", "aria-hidden": "true" }));
   }
   const todayState = dailyStatus(statusMap, todayPid);
+  const calendarDetails = el(
+    "div",
+    {
+      class: "daily-calendar-details",
+      id: "daily-calendar-details",
+      hidden: !dailyCalendarExpanded,
+    },
+    el(
+      "div",
+      { class: "daily-calendar-nav" },
+      el(
+        "button",
+        {
+          class: "icon-btn",
+          disabled: dailyCalendarMonth <= earliestMonth,
+          "aria-label": tr("前の月", "Previous month"),
+          onclick: () => {
+            playSfx("ui");
+            dailyCalendarMonth--;
+            render();
+          },
+        },
+        icon("arrowLeft", 17)
+      ),
+      el(
+        "span",
+        { class: "daily-calendar-month", "aria-live": "polite" },
+        tr(`${year}年${month + 1}月`, `${year}-${String(month + 1).padStart(2, "0")}`)
+      ),
+      el(
+        "button",
+        {
+          class: "icon-btn daily-calendar-next",
+          disabled: dailyCalendarMonth >= currentMonth,
+          "aria-label": tr("次の月", "Next month"),
+          onclick: () => {
+            playSfx("ui");
+            dailyCalendarMonth++;
+            render();
+          },
+        },
+        icon("arrowLeft", 17)
+      )
+    ),
+    el(
+      "div",
+      { class: "daily-calendar-weekdays", "aria-hidden": "true" },
+      tr(["日", "月", "火", "水", "木", "金", "土"], ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"])
+        .map((label) => el("span", {}, label))
+    ),
+    el("div", { class: "daily-calendar-grid" }, cells)
+  );
   return el(
     "section",
     { class: "card daily-calendar-card", "aria-label": tr("Daily プレイ履歴", "Daily play history") },
@@ -189,50 +251,24 @@ function dailyCalendar(statusMap) {
         )
       ),
       el(
-        "div",
-        { class: "daily-calendar-nav" },
-        el(
-          "button",
-          {
-            class: "icon-btn",
-            disabled: dailyCalendarMonth <= earliestMonth,
-            "aria-label": tr("前の月", "Previous month"),
-            onclick: () => {
-              playSfx("ui");
-              dailyCalendarMonth--;
-              render();
-            },
+        "button",
+        {
+          class: `icon-btn daily-calendar-toggle ${dailyCalendarExpanded ? "expanded" : ""}`,
+          "aria-expanded": String(dailyCalendarExpanded),
+          "aria-controls": "daily-calendar-details",
+          "aria-label": dailyCalendarExpanded
+            ? tr("Dailyカレンダーを閉じる", "Collapse Daily calendar")
+            : tr("Dailyカレンダーを開く", "Expand Daily calendar"),
+          onclick: () => {
+            playSfx("ui");
+            dailyCalendarExpanded = !dailyCalendarExpanded;
+            render();
           },
-          icon("arrowLeft", 17)
-        ),
-        el(
-          "span",
-          { class: "daily-calendar-month", "aria-live": "polite" },
-          tr(`${year}年${month + 1}月`, `${year}-${String(month + 1).padStart(2, "0")}`)
-        ),
-        el(
-          "button",
-          {
-            class: "icon-btn daily-calendar-next",
-            disabled: dailyCalendarMonth >= currentMonth,
-            "aria-label": tr("次の月", "Next month"),
-            onclick: () => {
-              playSfx("ui");
-              dailyCalendarMonth++;
-              render();
-            },
-          },
-          icon("arrowLeft", 17)
-        )
+        },
+        icon("triangleDown", 17)
       )
     ),
-    el(
-      "div",
-      { class: "daily-calendar-weekdays", "aria-hidden": "true" },
-      tr(["日", "月", "火", "水", "木", "金", "土"], ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"])
-        .map((label) => el("span", {}, label))
-    ),
-    el("div", { class: "daily-calendar-grid" }, cells)
+    calendarDetails
   );
 }
 
