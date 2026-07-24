@@ -637,6 +637,7 @@ function submitExtraShot() {
   let revealStarted = false;
   let revealController = null;
   let drumrollTimer = null;
+  let drumrollSound = null;
   const clearSkipAffordance = () => {
     extraShotSkipReveal = null;
     boardScrollEl.classList.remove("extra-shot-skippable");
@@ -659,6 +660,7 @@ function submitExtraShot() {
     extraShotSkipReveal = () => {
       if (state !== "extraChecking" || session !== gatherSession) return false;
       if (drumrollTimer !== null) clearTimeout(drumrollTimer);
+      drumrollSound?.stop();
       beginReveal();
       revealController?.skip();
       return true;
@@ -668,7 +670,7 @@ function submitExtraShot() {
     beginReveal();
   } else {
     // ドラムロールのタメ。タイルが小さく震え、太鼓が鳴り止んだ直後に判定が開く
-    playSfx("drumroll");
+    drumrollSound = playSfx("drumroll", { cancellable: true });
     row.rowEl.classList.add("fa-charging");
     drumrollTimer = setTimeout(beginReveal, FX.extraShot.drumrollMs);
   }
@@ -694,6 +696,7 @@ function revealRow(row, word, result, done) {
   const revealDelay = (index) =>
     index * UI.revealIntervalMs + (pauseBeforeLastTile && index === 4 ? FX.extraShot.lastTilePauseMs : 0);
   const timers = [];
+  const revealSounds = [];
   let settled = false;
   const schedule = (fn, delay) => {
     const timer = setTimeout(fn, delay);
@@ -712,12 +715,17 @@ function revealRow(row, word, result, done) {
   const complete = () => {
     if (settled || session !== gatherSession) return;
     settled = true;
+    revealSounds.length = 0;
     announce(rowAriaLabel(word, result));
     done();
   };
+  const playRevealSound = (name) => {
+    const sound = playSfx(name, { cancellable: extraShotReveal });
+    if (sound) revealSounds.push(sound);
+  };
   if (shouldReduceMotion()) {
     applyResultImmediately();
-    playSfx(result.includes(CELL.CORRECT) ? "revealCorrect" : result.includes(CELL.USED) ? "revealUsed" : "revealUnused");
+    playRevealSound(result.includes(CELL.CORRECT) ? "revealCorrect" : result.includes(CELL.USED) ? "revealUsed" : "revealUnused");
     schedule(complete, 0);
     return { skip: complete };
   }
@@ -730,7 +738,7 @@ function revealRow(row, word, result, done) {
         if (session !== gatherSession) return;
         tile.classList.add(`state-${stateName}`);
         tile.setAttribute("aria-label", tileAriaLabel(word[i], stateName));
-        playSfx(stateName === CELL.CORRECT ? "revealCorrect" : stateName === CELL.USED ? "revealUsed" : "revealUnused");
+        playRevealSound(stateName === CELL.CORRECT ? "revealCorrect" : stateName === CELL.USED ? "revealUsed" : "revealUnused");
         burstAtElement(tile, colorForState(stateName), FX.burst.countPerTile[stateName] ?? 7);
         if (game.gameMode === "normal") applyKeyStyle(word[i]);
       }, UI.revealFlipMs / 2);
@@ -749,8 +757,8 @@ function revealRow(row, word, result, done) {
     skip() {
       if (settled || session !== gatherSession) return;
       timers.forEach(clearTimeout);
+      revealSounds.forEach((sound) => sound.stop());
       applyResultImmediately();
-      playSfx(result.includes(CELL.CORRECT) ? "revealCorrect" : result.includes(CELL.USED) ? "revealUsed" : "revealUnused");
       complete();
     },
   };

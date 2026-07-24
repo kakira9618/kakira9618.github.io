@@ -151,6 +151,22 @@ const currentBuses = context.gains.filter((gain) => gain.connections.includes(bg
 assert.equal(currentBuses.length, 1, "only the bus for the active track should remain connected");
 assert(context.gains.filter((gain) => gain.disconnected).length >= 12, "old BGM buses should be disconnected");
 
+const gainsBeforeDrumroll = context.gains.length;
+const drumrollSound = playSfx("drumroll", { cancellable: true });
+const drumrollBus = context.gains
+  .slice(gainsBeforeDrumroll)
+  .find((gain) => gain.connections.includes(sfxGain));
+assert(drumrollBus.connections.includes(sfxGain), "a cancellable SFX should use an isolated bus");
+drumrollSound.stop();
+assert.equal(drumrollBus.gain.value, 0, "stopping a cancellable SFX should mute only its isolated bus");
+assert.notEqual(sfxGain.gain.value, 0, "stopping a cancellable SFX must leave the shared SFX output enabled");
+const oscillatorsBeforeFinalFanfare = context.startedOscillators;
+playSfx("doubleClear");
+assert(
+  context.startedOscillators > oscillatorsBeforeFinalFanfare,
+  "a final fanfare should still be scheduled after cancelling the reveal SFX"
+);
+
 const disconnectedBeforeReloadRestart = context.gains.filter((gain) => gain.disconnected).length;
 await unlockAudio({ restartBgm: true });
 await Promise.resolve();

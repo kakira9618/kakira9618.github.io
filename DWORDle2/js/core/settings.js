@@ -12,7 +12,7 @@ export const DEFAULT_SETTINGS = {
   language: "system", // "system"（ブラウザの言語に連動。日本語なら ja、それ以外は en）| "ja" | "en"
   highContrast: false, // 色覚特性向け: 全テーマの判定色を 緑→オレンジ / 黄→青 に置き換える
   keyboardHints: true, // DWORDle のキーボードを判定色で塗り分ける
-  reduceFx: false, // 演出を軽くする（パーティクルを完全にオフ）
+  reduceFx: false, // 3D 効果やアニメーションを抑える
   randomLevel: 1, // ランダムプレイで前回選んだレベル
   // EXTRA SHOT モード（10 回プレイで解放）。ON だとクリア後に追加推理タイムが入り、
   // もう一つの答えを 1 回だけ推理できる（成功で DOUBLE CLEAR）。DWORDle / DWORDlie 共通。

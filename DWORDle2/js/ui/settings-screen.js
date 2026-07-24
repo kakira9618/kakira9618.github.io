@@ -418,7 +418,7 @@ function render() {
       ),
       settingRow(
         tr("演出を軽くする", "Reduce effects"),
-        tr("パーティクルを完全にオフにします", "Disable particles completely"),
+        tr("3D効果やアニメーションを抑えます", "Reduce 3D effects and animations"),
         toggle("reduceFx", tr("演出を軽くする", "Reduce effects"))
       )
     ),

@@ -6,7 +6,7 @@
 import { el, clear, fmtDateTime } from "./dom.js";
 import { registerScreen, navigate, getAppMode } from "./app.js?v=20260723-fa";
 import { buildProblemStatus, MODES } from "../core/records.js";
-import { LEVELS, isValidPID, pidLabel, todayPID } from "../core/problems.js";
+import { LEVELS, isDailyPID, isValidPID, pidLabel, todayPID } from "../core/problems.js";
 import { playSfx } from "../audio/sound.js?v=20260723-fa";
 import { showModal } from "./modal.js?v=20260723-fa";
 import { confirmAndStart } from "./game-screen.js?v=20260723-fa";
@@ -25,6 +25,7 @@ let root = null;
 let levelIdx = 0; // LEVELS のインデックス
 let blockStart = null; // ブロック表示中の先頭 No.（null なら ブロック一覧）
 let statusFilter = "all"; // "all" | "cleared" | "failed" | "unplayed"
+let dailyCalendarMonth = null; // year * 12 + month。null は今月
 
 function build() {
   root = document.getElementById("screen-problems");
@@ -73,36 +74,165 @@ function openProblemMenu(pid, statusMap) {
   });
 }
 
-function dailyProblemCard(statusMap) {
-  const pid = todayPID();
+function dailyDateFromPid(pid) {
+  if (!isDailyPID(pid)) return null;
+  const value = String(pid);
+  if (!/^\d{8}$/.test(value)) return null;
+  const year = Number(value.slice(0, 4));
+  const month = Number(value.slice(4, 6)) - 1;
+  const day = Number(value.slice(6, 8));
+  const date = new Date(year, month, day);
+  return date.getFullYear() === year && date.getMonth() === month && date.getDate() === day
+    ? date
+    : null;
+}
+
+function dailyPidForDate(year, month, day) {
+  return year * 10000 + (month + 1) * 100 + day;
+}
+
+function dailyStatus(statusMap, pid) {
   const status = statusOf(statusMap, pid);
   const doubleClear = (statusMap.get(pid)?.doubleClears ?? 0) > 0;
-  const statusLabel = doubleClear
+  const label = doubleClear
     ? "DOUBLE CLEAR"
     : status === "cleared"
       ? tr("クリア済み", "Cleared")
       : status === "failed"
         ? tr("未クリア", "Failed")
         : tr("未プレイ", "Unplayed");
+  return { status, doubleClear, label };
+}
+
+function dailyCalendar(statusMap) {
+  const now = new Date();
+  const todayPid = todayPID(now);
+  const currentMonth = now.getFullYear() * 12 + now.getMonth();
+  const playedDailyMonths = [...statusMap.keys()]
+    .map(dailyDateFromPid)
+    .filter(Boolean)
+    .map((date) => date.getFullYear() * 12 + date.getMonth());
+  const earliestMonth = playedDailyMonths.length ? Math.min(...playedDailyMonths) : currentMonth;
+  if (
+    dailyCalendarMonth === null
+    || dailyCalendarMonth < earliestMonth
+    || dailyCalendarMonth > currentMonth
+  ) {
+    dailyCalendarMonth = currentMonth;
+  }
+  const year = Math.floor(dailyCalendarMonth / 12);
+  const month = dailyCalendarMonth % 12;
+  const firstWeekday = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const cells = [];
+  for (let i = 0; i < firstWeekday; i++) {
+    cells.push(el("span", { class: "daily-calendar-day empty", "aria-hidden": "true" }));
+  }
+  for (let day = 1; day <= daysInMonth; day++) {
+    const pid = dailyPidForDate(year, month, day);
+    const { status, doubleClear, label } = dailyStatus(statusMap, pid);
+    const today = pid === todayPid;
+    const future = pid > todayPid;
+    const interactive = today || status !== "unplayed";
+    const dayLabel = tr(
+      `${year}年${month + 1}月${day}日${today ? "、今日" : ""}、${label}`,
+      `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}${today ? ", today" : ""}, ${label}`
+    );
+    cells.push(
+      el(
+        "button",
+        {
+          class: `daily-calendar-day ${status} ${doubleClear ? "double-clear" : ""} ${today ? "today" : ""} ${future ? "future" : ""}`,
+          "aria-label": dayLabel,
+          disabled: future || !interactive,
+          onclick: () => {
+            playSfx("ui");
+            openProblemMenu(pid, statusMap);
+          },
+        },
+        el("span", { class: "daily-calendar-number" }, String(day)),
+        el(
+          "span",
+          { class: "daily-calendar-mark", "aria-hidden": "true" },
+          doubleClear ? "★" : status === "cleared" ? "✓" : status === "failed" ? "!" : today ? "●" : ""
+        )
+      )
+    );
+  }
+  while (cells.length % 7 !== 0) {
+    cells.push(el("span", { class: "daily-calendar-day empty", "aria-hidden": "true" }));
+  }
+  const todayState = dailyStatus(statusMap, todayPid);
   return el(
-    "button",
-    {
-      class: `card tappable daily-problem-card ${status} ${doubleClear ? "double-clear" : ""}`,
-      "aria-label": tr(`今日のデイリー問題、${pidLabel(pid)}、${statusLabel}`, `Today's Daily puzzle, ${pidLabel(pid)}, ${statusLabel}`),
-      onclick: () => {
-        playSfx("ui");
-        openProblemMenu(pid, statusMap);
-      },
-    },
-    el("span", { class: "daily-problem-icon", "aria-hidden": "true" }, icon("calendar", 24)),
+    "section",
+    { class: "card daily-calendar-card", "aria-label": tr("Daily プレイ履歴", "Daily play history") },
     el(
-      "span",
-      { class: "daily-problem-copy" },
-      el("span", { class: "daily-problem-kicker" }, tr("今日の DAILY", "TODAY'S DAILY")),
-      el("strong", {}, pidLabel(pid))
+      "div",
+      { class: "daily-calendar-head" },
+      el(
+        "div",
+        { class: "daily-calendar-title" },
+        el("span", { class: "daily-calendar-icon", "aria-hidden": "true" }, icon("calendar", 20)),
+        el("strong", {}, "DAILY"),
+        el(
+          "button",
+          {
+            class: `daily-calendar-today ${todayState.status} ${todayState.doubleClear ? "double-clear" : ""}`,
+            "aria-label": tr(`今日のデイリー問題、${pidLabel(todayPid)}、${todayState.label}`, `Today's Daily puzzle, ${pidLabel(todayPid)}, ${todayState.label}`),
+            onclick: () => {
+              playSfx("ui");
+              openProblemMenu(todayPid, statusMap);
+            },
+          },
+          tr("今日", "Today"),
+          el("span", {}, todayState.label)
+        )
+      ),
+      el(
+        "div",
+        { class: "daily-calendar-nav" },
+        el(
+          "button",
+          {
+            class: "icon-btn",
+            disabled: dailyCalendarMonth <= earliestMonth,
+            "aria-label": tr("前の月", "Previous month"),
+            onclick: () => {
+              playSfx("ui");
+              dailyCalendarMonth--;
+              render();
+            },
+          },
+          icon("arrowLeft", 17)
+        ),
+        el(
+          "span",
+          { class: "daily-calendar-month", "aria-live": "polite" },
+          tr(`${year}年${month + 1}月`, `${year}-${String(month + 1).padStart(2, "0")}`)
+        ),
+        el(
+          "button",
+          {
+            class: "icon-btn daily-calendar-next",
+            disabled: dailyCalendarMonth >= currentMonth,
+            "aria-label": tr("次の月", "Next month"),
+            onclick: () => {
+              playSfx("ui");
+              dailyCalendarMonth++;
+              render();
+            },
+          },
+          icon("arrowLeft", 17)
+        )
+      )
     ),
-    el("span", { class: "daily-problem-status" }, statusLabel),
-    el("span", { class: "daily-problem-arrow", "aria-hidden": "true" }, "→")
+    el(
+      "div",
+      { class: "daily-calendar-weekdays", "aria-hidden": "true" },
+      tr(["日", "月", "火", "水", "木", "金", "土"], ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"])
+        .map((label) => el("span", {}, label))
+    ),
+    el("div", { class: "daily-calendar-grid" }, cells)
   );
 }
 
@@ -149,7 +279,7 @@ function render() {
   // レベル帯タブ
   const levelSeg = el(
     "div",
-    { class: "seg", style: { margin: "10px 12px 0" } },
+    { class: "seg problem-level-tabs" },
     LEVELS.map((lv, i) =>
       el(
         "button",
@@ -168,6 +298,7 @@ function render() {
   );
 
   const body = el("div", { class: "list-screen-body" });
+  body.append(dailyCalendar(statusMap), levelSeg);
 
   // 帯全体の進捗
   let clearedCount = 0;
@@ -178,7 +309,6 @@ function render() {
       if (st.cleared > 0) clearedCount++;
     }
   }
-  if (blockStart === null) body.append(dailyProblemCard(statusMap));
   body.append(
     el(
       "div",
@@ -290,7 +420,7 @@ function render() {
     );
   }
 
-  root.append(header, levelSeg, body);
+  root.append(header, body);
 }
 
 function jumpPrompt() {

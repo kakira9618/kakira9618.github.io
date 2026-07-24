@@ -365,7 +365,7 @@ try {
   for (const label of ["ハイコントラスト配色", "キーボードヒント", "演出を軽くする"]) {
     await page.getByRole("switch", { name: label }).waitFor();
   }
-  for (const copy of ["UIの言語を設定", "UIや背景のテーマを設定", "パーティクルを完全にオフにします"]) {
+  for (const copy of ["UIの言語を設定", "UIや背景のテーマを設定", "3D効果やアニメーションを抑えます"]) {
     await page.getByText(copy, { exact: true }).waitFor();
   }
   const displayRowBorders = await page.locator("#settings-panel-display > .setting-row").evaluateAll((rows) =>
@@ -839,13 +839,42 @@ try {
   await page.keyboard.press("Enter");
   await page.waitForURL(/#\/result\/normal\/\d+$/);
 
+  const historicalDailyDate = new Date();
+  historicalDailyDate.setDate(15);
+  historicalDailyDate.setMonth(historicalDailyDate.getMonth() - 1);
+  const historicalDailyPid =
+    historicalDailyDate.getFullYear() * 10000
+    + (historicalDailyDate.getMonth() + 1) * 100
+    + historicalDailyDate.getDate();
+  await page.evaluate(async ({ pid }) => {
+    const [{ Logic }, records] = await Promise.all([
+      import("./js/core/logic.js"),
+      import("./js/core/records.js"),
+    ]);
+    const logic = new Logic(pid);
+    records.addFinishedGame({
+      version: "2.0.0",
+      startTime: Math.floor(Date.now() / 1000) - 86400 * 40,
+      endTime: Math.floor(Date.now() / 1000) - 86400 * 40 + 60,
+      gameMode: "normal",
+      problemID: pid,
+      guessWord: [logic.ans1],
+      usoResults: [],
+    });
+  }, { pid: historicalDailyPid });
   await page.evaluate(() => { location.hash = "#/problems"; });
   await page.waitForURL(/#\/problems$/);
-  const dailyCard = page.locator("button.daily-problem-card");
-  await dailyCard.waitFor();
+  const dailyCalendar = page.locator(".daily-calendar-card");
+  const levelTabs = page.locator(".problem-level-tabs");
+  await dailyCalendar.waitFor();
+  assert.ok(
+    (await dailyCalendar.boundingBox()).y < (await levelTabs.boundingBox()).y,
+    "Daily history should appear above the puzzle category tabs"
+  );
+  const todayDaily = page.locator("button.daily-calendar-today");
   assert.equal(
-    await dailyCard.locator(".daily-problem-copy strong").textContent(),
-    pidLabel(todayPID()),
+    await todayDaily.getAttribute("aria-label"),
+    `今日のデイリー問題、${pidLabel(todayPID())}、未プレイ`,
     "the puzzle list should feature today's dynamically resolved Daily puzzle"
   );
   assert.equal(
@@ -853,7 +882,21 @@ try {
     0,
     "the puzzle list should not show a standalone DOUBLE CLEAR legend"
   );
-  await dailyCard.click();
+  await page.getByRole("button", { name: "前の月" }).click();
+  await page.getByText(
+    `${historicalDailyDate.getFullYear()}年${historicalDailyDate.getMonth() + 1}月`,
+    { exact: true }
+  ).waitFor();
+  const historicalDailyDay = page.getByRole("button", {
+    name: `${historicalDailyDate.getFullYear()}年${historicalDailyDate.getMonth() + 1}月${historicalDailyDate.getDate()}日、クリア済み`,
+  });
+  await historicalDailyDay.waitFor();
+  await historicalDailyDay.click();
+  const historicalDailyDialog = page.getByRole("dialog", { name: pidLabel(historicalDailyPid) });
+  await historicalDailyDialog.waitFor();
+  await historicalDailyDialog.getByRole("button", { name: "閉じる" }).click();
+  await page.getByRole("button", { name: "次の月" }).click();
+  await todayDaily.click();
   const dailyDialog = page.getByRole("dialog", { name: pidLabel(todayPID()) });
   await dailyDialog.waitFor();
   await dailyDialog.getByRole("button", { name: "閉じる" }).click();
@@ -1156,6 +1199,7 @@ try {
         background: style.backgroundImage,
         backgroundSize: style.backgroundSize,
         animation: style.animationName,
+        duration: style.animationDuration,
         timing: style.animationTimingFunction,
         keyframePositions: [...keyframes.cssRules].map((rule) => `${rule.keyText}:${rule.style.backgroundPosition}`),
       };
@@ -1164,11 +1208,12 @@ try {
     assert.doesNotMatch(doubleTitleStyle.background, /repeating-linear-gradient/);
     assert.equal(doubleTitleStyle.backgroundSize, "220% 100%");
     assert.equal(doubleTitleStyle.animation, "faTitleShine");
+    assert.equal(doubleTitleStyle.duration, "18s");
     assert.equal(doubleTitleStyle.timing, "linear");
     assert.deepEqual(
       doubleTitleStyle.keyframePositions,
-      ["0%:150% 0px", "100%:0% 0px"],
-      "DOUBLE CLEAR shine should run from 150% to 0% in one time cycle"
+      ["0%:150% 0px", "100%:-750% 0px"],
+      "DOUBLE CLEAR shine should keep its original speed while travelling far beyond the title"
     );
 
     const snapshotExtraShot = await successPage.evaluate(async () => {
@@ -2074,7 +2119,7 @@ try {
     assert.ok(androidCardEffects.wrapAnimations.includes("playerCardFloat"));
     assert.equal(androidCardEffects.shineAnimation, "playerCardShine");
     assert.equal(androidCardEffects.shineLayer, "1");
-    assert.equal(androidCardEffects.tiltTouchAction, "pan-y");
+    assert.equal(androidCardEffects.tiltTouchAction, "none");
     assert.equal(androidCardEffects.tiltWillChange, "transform");
 
     // Pixel 3 / Chrome 相当の実タッチで、触れた瞬間から tilt が反映される。
@@ -2093,29 +2138,71 @@ try {
     assert.equal(activeTouchTilt.active, true);
     assert.notEqual(activeTouchTilt.transform, "none", "Android touch should visibly tilt the player card");
 
-    // 拡大モードではカード部分だけが横スクロール可能になり、細部を大きく読める。
-    await cardPage.getByRole("button", { name: "拡大", exact: true }).click();
-    const zoomLayout = await cardPage.locator(".player-card-stage.view-zoom").evaluate((stage) => {
+    // モード切替ボタンは置かず、ダブルタップで拡大へ入り、ピンチで連続倍率を変える。
+    assert.equal(await cardPage.getByRole("button", { name: "拡大", exact: true }).count(), 0);
+    await cardPage.waitForTimeout(360);
+    const tapX = tiltBox.x + tiltBox.width * 0.55;
+    const tapY = tiltBox.y + tiltBox.height * 0.5;
+    for (let i = 0; i < 2; i++) {
+      await cdp.send("Input.dispatchTouchEvent", {
+        type: "touchStart",
+        touchPoints: [{ x: tapX, y: tapY }],
+      });
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+      await cardPage.waitForTimeout(70);
+    }
+    const zoomBeforePinch = await cardPage.locator(".player-card-stage.is-zoomed").evaluate((stage) => {
       const tilt = stage.querySelector(".player-card-tilt");
-      const wrap = stage.querySelector(".player-card-wrap");
-      stage.scrollLeft = 120;
       return {
-        scrollable: stage.scrollWidth > stage.clientWidth,
-        scrollLeft: stage.scrollLeft,
-        tiltWidth: tilt.getBoundingClientRect().width,
-        stageWidth: stage.getBoundingClientRect().width,
-        wrapAnimation: getComputedStyle(wrap).animationName,
+        scale: new DOMMatrix(getComputedStyle(tilt).transform).a,
+        wrapAnimation: getComputedStyle(stage.querySelector(".player-card-wrap")).animationName,
+        hint: stage.previousElementSibling?.textContent,
       };
     });
-    assert.ok(zoomLayout.scrollable && zoomLayout.scrollLeft > 0, `Zoom mode should pan inside the card stage: ${JSON.stringify(zoomLayout)}`);
-    assert.ok(zoomLayout.tiltWidth > zoomLayout.stageWidth * 1.4, `Zoom mode should enlarge the card on mobile: ${JSON.stringify(zoomLayout)}`);
-    assert.equal(zoomLayout.wrapAnimation, "none", "Zoom mode should keep the enlarged card still for reading");
-    assert.equal(
-      await cardPage.evaluate(() => JSON.parse(localStorage.getItem("dwordle2.playerCardViewMode"))),
-      "zoom",
-      "the selected player-card viewing mode should persist"
+    assert.ok(zoomBeforePinch.scale > 1.8, `Double-tap should zoom the card: ${JSON.stringify(zoomBeforePinch)}`);
+    assert.equal(zoomBeforePinch.wrapAnimation, "none", "Zoom should keep the enlarged card still for reading");
+    assert.match(zoomBeforePinch.hint, /ピンチで拡大・縮小/);
+
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [
+        { id: 0, x: tapX - 28, y: tapY },
+        { id: 1, x: tapX + 28, y: tapY },
+      ],
+    });
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchMove",
+      touchPoints: [
+        { id: 0, x: tapX - 58, y: tapY },
+        { id: 1, x: tapX + 58, y: tapY },
+      ],
+    });
+    await cardPage.waitForTimeout(80);
+    const scaleAfterPinch = await cardPage.locator(".player-card-tilt").evaluate(
+      (tilt) => new DOMMatrix(getComputedStyle(tilt).transform).a
     );
-    await cardPage.getByRole("button", { name: "傾ける", exact: true }).click();
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    assert.ok(
+      scaleAfterPinch > zoomBeforePinch.scale + 0.5,
+      `Pinch should continuously increase the card scale: ${JSON.stringify({ zoomBeforePinch, scaleAfterPinch })}`
+    );
+
+    // 拡大中の再ダブルタップで等倍 Tilt に戻る。
+    await cardPage.waitForTimeout(360);
+    for (let i = 0; i < 2; i++) {
+      await cdp.send("Input.dispatchTouchEvent", {
+        type: "touchStart",
+        touchPoints: [{ x: tapX, y: tapY }],
+      });
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+      await cardPage.waitForTimeout(70);
+    }
+    assert.equal(await cardPage.locator(".player-card-stage.is-zoomed").count(), 0);
+    assert.equal(
+      await cardPage.locator(".player-card-tilt").evaluate((tilt) => tilt.style.transform),
+      "",
+      "a second double-tap should return to the normal Tilt state"
+    );
 
     // Android の自動補完などで input が再発火して静かに再描画されても、
     // 常時の浮遊・きらめきは失われない。

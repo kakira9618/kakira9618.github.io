@@ -23,6 +23,7 @@ let bgmRunning = false;
 let bgmTimer = null;
 let bgmListenAt = 0; // 聴取時間（お気に入り BGM の材料）の計上起点。停止中は 0
 let usoMood = false;
+let activeSfxDestination = null; // 停止可能な SE を組み立てている間だけ使う一時バス
 
 // 設定画面と解放演出でも使う BGM カタログ。
 // unlockAchievement がある曲は、その実績を獲得するまで選択できない。
@@ -526,7 +527,7 @@ function tone({ freq = 440, type = "sine", dur = 0.15, gain = 0.5, attack = 0.00
   g.gain.setValueAtTime(0, t0);
   g.gain.linearRampToValueAtTime(gain, t0 + attack);
   g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-  osc.connect(g).connect(dest ?? sfxGain);
+  osc.connect(g).connect(dest ?? activeSfxDestination ?? sfxGain);
   osc.start(t0);
   osc.stop(t0 + dur + 0.05);
 }
@@ -546,7 +547,7 @@ function noise({ dur = 0.12, gain = 0.25, freq = 2000, when = 0, q = 1.2, dest =
   const g = ctx.createGain();
   g.gain.setValueAtTime(gain, t0);
   g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-  src.connect(f).connect(g).connect(dest ?? sfxGain);
+  src.connect(f).connect(g).connect(dest ?? activeSfxDestination ?? sfxGain);
   src.start(t0);
 }
 
@@ -682,17 +683,49 @@ const SFX = {
 // 旧コード向けの互換エイリアス。新規コードは extraShot を使用する。
 SFX.finalAnswer = SFX.extraShot;
 
-export function playSfx(name) {
+export function playSfx(name, { cancellable = false } = {}) {
   if (!getSettings().sfx) return;
   if (!ensureContext()) return;
+  const play = () => {
+    const sfx = SFX[name];
+    if (!sfx) return;
+    if (!cancellable) {
+      sfx();
+      return;
+    }
+
+    // この呼び出しで予約する音だけを独立したバスへ流す。stop() はそのバスだけを
+    // 素早くフェードアウトするため、後から鳴る勝敗・DOUBLE CLEAR の音には影響しない。
+    const bus = ctx.createGain();
+    bus.gain.setValueAtTime(1, ctx.currentTime);
+    bus.connect(sfxGain);
+    const previousDestination = activeSfxDestination;
+    activeSfxDestination = bus;
+    try {
+      sfx();
+    } finally {
+      activeSfxDestination = previousDestination;
+    }
+    let stopped = false;
+    return {
+      stop() {
+        if (stopped || !ctx || ctx.state === "closed") return;
+        stopped = true;
+        const t = ctx.currentTime;
+        bus.gain.cancelScheduledValues(t);
+        bus.gain.setValueAtTime(bus.gain.value, t);
+        bus.gain.linearRampToValueAtTime(0, t + 0.03);
+        setTimeout(() => bus.disconnect(), 80);
+      },
+    };
+  };
   if (ctx.state === "running") {
-    SFX[name]?.();
-    return;
+    return play();
   }
   // Safari のユーザー操作中に resume() を呼び、そのまま SE を予約する。
   // 完了後まで待つと、Safari が音声開始を自動再生として拒否することがある。
   unlockAudio();
-  if (getSettings().sfx) SFX[name]?.();
+  if (getSettings().sfx) return play();
 }
 
 // ---- BGM（生成音楽）----

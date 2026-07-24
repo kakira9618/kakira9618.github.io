@@ -197,7 +197,7 @@ function rebuildParticles() {
   disposeLayer(dust);
   fireflies = null;
   dust = null;
-  // 「演出を軽くする」= パーティクルを完全にオフ（グリッドと地平線は残す）
+  // 3D 背景では「演出を軽くする」によりパーティクルを止める（グリッドと地平線は残す）。
   if (shouldReduceMotion()) return;
   const cfg = FX.bg;
   const colors = (uso ? cfg.particleColorsUso : cfg.particleColors).map((c) => new THREE.Color(c));
