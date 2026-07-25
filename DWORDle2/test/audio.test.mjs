@@ -134,7 +134,7 @@ globalThis.window = {
 
 const { AUDIO } = await import("../js/config.js?v=20260725-b");
 const { setSetting } = await import("../js/core/settings.js?v=20260725-b");
-const { audioNeedsRecovery, currentBgmTrackId, playSfx, rewindBgm, scheduleAudioRecovery, unlockAudio, setUsoMood, stopBgm, BGM_TRACKS } = await import("../js/audio/sound.js?v=20260725-b");
+const { audioNeedsRecovery, currentBgmTrackId, playSfx, rewindBgm, scheduleAudioRecovery, unlockAudio, setUsoMood, startBgm, stopBgm, BGM_TRACKS } = await import("../js/audio/sound.js?v=20260725-b");
 
 setSetting("bgm", false);
 playSfx("ui");
@@ -158,7 +158,10 @@ const masterGain = masterOf(context);
 const outputGains = context.gains.filter((gain) => gain.connections.includes(masterGain));
 const bgmGain = outputGains.find((gain) => Math.abs(gain.gain.value - 0.16) < 1e-9);
 const sfxGain = outputGains.find((gain) => gain !== bgmGain);
-const currentBuses = context.gains.filter((gain) => gain.connections.includes(bgmGain));
+// キープアライブ（無音を作らないための極小信号）も bgmGain にぶら下がるので、曲のバスから除く
+const currentBuses = context.gains.filter(
+  (gain) => gain.connections.includes(bgmGain) && gain.gain.value !== AUDIO.keepAliveGain
+);
 
 assert.equal(currentBuses.length, 1, "only the bus for the active track should remain connected");
 assert(context.gains.filter((gain) => gain.disconnected).length >= 12, "old BGM buses should be disconnected");
@@ -423,6 +426,20 @@ try {
   await new Promise((resolve) => setTimeout(resolve, 700)); // BGM ループ（300ms 周期）の 2 tick ぶん待つ
   const after = getActivity().usage.bgm.classic ?? 0;
   assert.ok(after > before, `listening time should accrue while the classic track plays (${before} -> ${after})`);
+}
+
+// 無音を作らないためのキープアライブ: BGM 再生中だけ、bgmGain の下に極小信号が 1 つぶら下がる。
+// （生成 BGM は拍の変わり目に 100ms 前後の完全な無音ができ、iOS Safari が再生停止と見なす）
+{
+  // 生きているコンテキスト側で数える（テスト中にコンテキストを作り直しているため）
+  const keepAlives = () =>
+    FakeAudioContext.instance.gains.filter((gain) => gain.gain.value === AUDIO.keepAliveGain && !gain.disconnected);
+  assert.ok(AUDIO.keepAliveGain > 0 && AUDIO.keepAliveGain < 0.001, "the keep-alive must stay inaudible");
+  assert.equal(keepAlives().length, 1, "a keep-alive signal should run while BGM plays");
+  stopBgm();
+  assert.equal(keepAlives().length, 0, "stopping BGM must stop the keep-alive too");
+  startBgm();
+  assert.equal(keepAlives().length, 1, "restarting BGM should bring it back");
 }
 
 // 端末スリープ・他アプリの割り込みからの自動復帰:

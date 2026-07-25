@@ -9,6 +9,9 @@ import { AUDIO } from "../config.js?v=20260725-b";
 import { getSettings, onSettingsChange } from "../core/settings.js?v=20260725-b";
 import { logBgmTime } from "../core/activity.js?v=20260725-b";
 
+// ノイズ系打楽器の立ち上がり時間（クリック防止。短いので打点の鋭さは保たれる）
+const BGM_NOISE_ATTACK_SEC = 0.0015;
+
 // 背面タブのタイマー間引きで BGM ループの間隔が伸びたとき、
 // 実際に鳴っていた先読み分を大きく超えて聴取時間を数えないための上限
 const BGM_LISTEN_MAX_TICK_MS = 5000;
@@ -310,6 +313,7 @@ function clearAudioContextReferences() {
   if (bgmTimer) clearTimeout(bgmTimer);
   bgmTimer = null;
   bgmRunning = false;
+  keepAlive = null; // ノードごと捨てるので stop は呼ばない
   disposeUsoEcho();
   for (const node of [...buses.values(), bgmGain, sfxGain, masterGain]) {
     try {
@@ -1350,7 +1354,10 @@ function bgmTone(bus, { midi, t, dur, type = "sine", gain = 0.05, attack = 0.01,
   osc.stop(t + dur + 0.05);
 }
 
-// ハイハット・スネア・ノイズ系（バンドパスノイズの短発）
+// ハイハット・スネア・ノイズ系（バンドパスノイズの短発）。
+// 立ち上がりに 1.5ms のランプを入れる。ここを setValueAtTime で即最大にすると、
+// 小節の変わり目のように直前が無音のとき波形が 1 サンプルで跳ね上がり、
+// 「プチッ」というクリックとして聞こえる（音量を上げるほど目立つ）。
 function bgmNoise(bus, { t, dur = 0.06, gain = 0.04, freq = 6500, q = 1.1 }) {
   const len = Math.max(1, Math.floor(ctx.sampleRate * dur));
   const buf = ctx.createBuffer(1, len, ctx.sampleRate);
@@ -1363,7 +1370,9 @@ function bgmNoise(bus, { t, dur = 0.06, gain = 0.04, freq = 6500, q = 1.1 }) {
   f.frequency.value = freq;
   f.Q.value = q;
   const g = ctx.createGain();
-  g.gain.setValueAtTime(gain, t);
+  const attack = Math.min(BGM_NOISE_ATTACK_SEC, dur * 0.3);
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(gain, t + attack);
   g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
   src.connect(f).connect(g).connect(bus);
   src.start(t);
@@ -1997,6 +2006,34 @@ export function rewindBgm() {
   bgmScheduleStartBar = 0;
 }
 
+// 出力を無音にしないための極小信号（AUDIO.keepAlive* 参照）。BGM の音量つまみの下に
+// 置くので、BGM を 0 にすれば完全に止まる。
+let keepAlive = null;
+
+function startKeepAlive() {
+  if (keepAlive || !ctx || !bgmGain) return;
+  const osc = ctx.createOscillator();
+  osc.type = "sine";
+  osc.frequency.value = AUDIO.keepAliveHz;
+  const gain = ctx.createGain();
+  gain.gain.value = AUDIO.keepAliveGain;
+  osc.connect(gain).connect(bgmGain);
+  osc.start();
+  keepAlive = { osc, gain };
+}
+
+function stopKeepAlive() {
+  if (!keepAlive) return;
+  try {
+    keepAlive.osc.stop();
+    keepAlive.osc.disconnect();
+    keepAlive.gain.disconnect();
+  } catch {
+    // 停止済み・切断済みでも参照だけは捨てる
+  }
+  keepAlive = null;
+}
+
 export function startBgm() {
   if (!ensureContext() || bgmRunning) return;
   resetBgmBuses();
@@ -2007,6 +2044,7 @@ export function startBgm() {
   bgmGain.gain.linearRampToValueAtTime(bgmTargetGain(), t + 0.25);
   nextBarTime = ctx.currentTime + 0.1;
   bgmScheduleStartBar = barIndex;
+  startKeepAlive();
   bgmLoop();
 }
 
@@ -2015,6 +2053,7 @@ export function stopBgm() {
   bgmListenAt = 0; // 停止中は聴取時間を数えない（次の startBgm 後の tick が起点を取り直す）
   if (bgmTimer) clearTimeout(bgmTimer);
   bgmTimer = null;
+  stopKeepAlive();
   if (ctx && ctx.state !== "closed" && bgmGain) {
     const t = ctx.currentTime;
     bgmGain.gain.cancelScheduledValues(t);
