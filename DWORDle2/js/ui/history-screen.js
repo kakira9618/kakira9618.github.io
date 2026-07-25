@@ -16,6 +16,11 @@ import { rowAriaLabel } from "./a11y.js?v=20260725-b";
 let root = null;
 let filter = "all"; // "all" | "normal" | "uso"
 let filtersExpanded = false;
+// 検索条件の変更ではリストだけを描き直す（下の update / renderList 参照）。
+// 全体を作り直すと、入力中の欄が DOM ごと消えて iOS のネイティブ日付 UI が閉じてしまう。
+let listEl = null;
+let matchCountEl = null;
+let activeCountEl = null;
 const PAGE_SIZE = 50;
 let page = 1;
 let filters = {
@@ -120,11 +125,14 @@ function filterField(className, id, labelText, control) {
   return el("div", { class: `history-filter-field ${className}` }, el("label", { for: id }, labelText), control);
 }
 
-function historyControls(total) {
+function historyControls() {
+  // 条件を変えても検索条件カードは作り直さない。iOS Safari は空の日付欄をタップした瞬間に
+  // 今日の日付を確定して change を投げるため、ここで全体を作り直すと
+  // 「ピッカーが一瞬で閉じて今日の日付が入る」状態になる。
   const update = (key, value) => {
     filters = { ...filters, [key]: value };
     page = 1;
-    render();
+    renderList();
   };
   const guessInput = (key, label, placeholder) =>
     el("input", {
@@ -137,14 +145,8 @@ function historyControls(total) {
       "aria-label": label,
       onchange: (event) => update(key, event.target.value),
     });
-  const activeCount = [
-    filters.dateFrom,
-    filters.dateTo,
-    filters.result !== "all",
-    filters.guessesMin,
-    filters.guessesMax,
-    filters.sort !== "date-desc",
-  ].filter(Boolean).length;
+  activeCountEl = el("span", { class: "history-active-count" });
+  matchCountEl = el("span", { class: "history-match-count" });
 
   return el(
     "details",
@@ -160,15 +162,9 @@ function historyControls(total) {
       { class: "history-controls-summary" },
       icon("search", 17),
       el("span", { class: "history-controls-title" }, tr("検索条件・並べ替え", "Filters & sorting")),
-      activeCount
-        ? el("span", { class: "history-active-count" }, tr(`${activeCount} 条件`, `${activeCount} active`))
-        : null,
+      activeCountEl,
       el("span", { class: "spacer" }),
-      el(
-        "span",
-        { class: "history-match-count" },
-        tr(`該当 ${total.toLocaleString()} 件`, `${total.toLocaleString("en-US")} matching`)
-      )
+      matchCountEl
     ),
     el(
       "div",
@@ -253,6 +249,8 @@ function historyControls(total) {
           {
             class: "btn btn-ghost history-reset",
             onclick: () => {
+              // 入力欄の表示値も戻す必要があるので、ここだけは全体を描き直す
+              // （このボタンを押せる時点でネイティブの日付 UI は開いていない）
               filters = { dateFrom: "", dateTo: "", result: "all", guessesMin: "", guessesMax: "", sort: "date-desc" };
               page = 1;
               render();
@@ -296,7 +294,7 @@ function pagination(totalPages, total) {
   const last = Math.min(total, page * PAGE_SIZE);
   const go = (next) => {
     page = Math.min(totalPages, Math.max(1, next));
-    render();
+    renderList(); // 検索条件カードは保ったままリストだけ差し替える
     root.querySelector(".list-screen-body")?.scrollTo({ top: 0 });
   };
   return el(
@@ -380,12 +378,37 @@ function render() {
     )
   );
 
+  const body = el("div", { class: "list-screen-body" });
+  body.append(historyControls());
+  listEl = el("div", { class: "history-list" });
+  body.append(listEl);
+  root.append(header, seg, body);
+  renderList();
+}
+
+// 検索条件カードはそのままに、結果リストと件数表示だけを描き直す。
+function renderList() {
+  if (!listEl) return;
   const games = filteredGames();
   const totalPages = Math.max(1, Math.ceil(games.length / PAGE_SIZE));
   page = Math.min(page, totalPages);
   const visibleGames = games.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const body = el("div", { class: "list-screen-body" });
-  body.append(historyControls(games.length));
+  const activeCount = [
+    filters.dateFrom,
+    filters.dateTo,
+    filters.result !== "all",
+    filters.guessesMin,
+    filters.guessesMax,
+    filters.sort !== "date-desc",
+  ].filter(Boolean).length;
+  activeCountEl.textContent = activeCount ? tr(`${activeCount} 条件`, `${activeCount} active`) : "";
+  activeCountEl.hidden = activeCount === 0;
+  matchCountEl.textContent = tr(
+    `該当 ${games.length.toLocaleString()} 件`,
+    `${games.length.toLocaleString("en-US")} matching`
+  );
+  const body = listEl;
+  clear(body);
   if (games.length === 0) {
     body.append(el("p", { class: "hint", style: { textAlign: "center", marginTop: "40px" } },
       getRecentGames().length === 0
@@ -443,7 +466,6 @@ function render() {
   }
   const pageNav = pagination(totalPages, games.length);
   if (pageNav) body.append(pageNav);
-  root.append(header, seg, body);
 }
 
 registerScreen("history", {

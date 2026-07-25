@@ -909,6 +909,40 @@ try {
     "the filtered record should be a DOUBLE CLEAR"
   );
   await page.getByLabel("結果", { exact: true }).selectOption("all");
+  // 条件を変えても入力欄は作り直さない。作り直すと、iOS Safari が日付欄をタップした直後に
+  // 投げる change で入力欄ごと DOM が消え、ネイティブの日付 UI が一瞬で閉じてしまう。
+  {
+    const filterKeepsInput = await page.evaluate(async () => {
+      const dateInput = document.querySelector("#history-date-from");
+      const guessInput = document.querySelector('.history-guess-range input[type="number"]');
+      dateInput.dataset.probe = "kept";
+      dateInput.focus();
+      dateInput.value = "2099-01-01"; // 未来からの絞り込みなので該当は必ず 0 件
+      dateInput.dispatchEvent(new Event("change", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 60));
+      const dateAfter = document.querySelector("#history-date-from");
+      const guessAfter = document.querySelector('.history-guess-range input[type="number"]');
+      const kept = {
+        sameDateInput: dateAfter === dateInput,
+        probeKept: dateAfter?.dataset.probe === "kept",
+        stillFocused: document.activeElement === dateAfter,
+        sameGuessInput: guessAfter === guessInput,
+        matchCount: document.querySelector(".history-match-count")?.textContent,
+        activeCount: document.querySelector(".history-active-count")?.textContent,
+      };
+      // 後続のテストのために条件を戻す
+      document.querySelector(".history-reset").click();
+      await new Promise((resolve) => setTimeout(resolve, 60));
+      return kept;
+    });
+    assert.ok(
+      filterKeepsInput.sameDateInput && filterKeepsInput.probeKept && filterKeepsInput.stillFocused
+        && filterKeepsInput.sameGuessInput,
+      `changing a filter must keep the filter inputs alive: ${JSON.stringify(filterKeepsInput)}`
+    );
+    assert.match(filterKeepsInput.activeCount, /1 条件/, "the active filter count should update in place");
+    assert.match(filterKeepsInput.matchCount, /該当 0 件/, "the match count should update in place");
+  }
   const historyOverflowLayout = await page.locator("#screen-history .list-screen-body").evaluate(async (body) => {
     const controls = body.querySelector(".history-controls");
     const item = body.querySelector(".history-item");
@@ -2015,7 +2049,7 @@ try {
       "the Continue button must disappear after discarding"
     );
     assert.equal(
-      await leavePage.evaluate(() => Object.keys(JSON.parse(localStorage.getItem("dwordle2.games") || "{}")).length),
+      await leavePage.evaluate(() => JSON.parse(localStorage.getItem("dwordle2.history") || "[]").length),
       0,
       "a discarded game must not be recorded in history"
     );
