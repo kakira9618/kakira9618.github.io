@@ -252,6 +252,11 @@ async function askLeaveGame() {
       title: tr("タイトルへ戻る", "Back to title"),
       body: [
         el(
+          "div",
+          { class: "hint", style: { fontSize: "14px" } },
+          tr("進行中のゲームに対する操作を選択", "Choose an action for the game in progress")
+        ),
+        el(
           "ul",
           { class: "hint", style: { fontSize: "14px", margin: "0", paddingLeft: "18px" } },
           el(
