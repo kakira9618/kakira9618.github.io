@@ -14,6 +14,8 @@
 // ようにする。系列の最下位と最上位だけは元の色で揃え、最上位には glow: true を付けて
 // バッジを光らせる（解除後のみ光る）。
 // hidden: true の実績は、解放するまで名前・説明が「？？？」表示になる。
+// 隠し実績の名前と条件は、ソースの全文検索で条件が割れないよう reveal() で包んで持つ
+// （符号化は `node tools/make-secret.mjs encode "<文章>"`。js/core/secret.js 参照）。
 //
 // ctx = {
 //   record,        // 終了したゲームレコード（clear 済みフィールド付き）
@@ -29,6 +31,7 @@ import { isDailyPID, PID } from "./problems.js?v=20260725-b";
 import { getHistory, getExtraShot } from "./records.js?v=20260725-b";
 import { CELL, Logic } from "./logic.js?v=20260725-b";
 import { isDebugMode } from "./debug.js?v=20260725-b";
+import { reveal } from "./secret.js?v=20260725-b";
 
 // v7: 月間皆勤（30 日）→ 二週間皆勤（14 日）の緩和を既存履歴にも適用する
 // v8: 無限の探求の緩和（5000 → 1000 回）と、新設した DOUBLE CLEAR 系実績を既存履歴に適用する
@@ -110,27 +113,27 @@ export const ACHIEVEMENTS = [
   { id: "collector", cat: "misc", icon: "medal", color: "#ffcf5c", name: "実績ハンター", desc: "実績を 30 個解除する" },
 
   // --- 隠し実績（解放するまで内容非公開）---
-  { id: "h-mirror", hidden: true, icon: "mirror", color: "#c0e8ff", name: "鏡の言葉", desc: "回文になっている単語を Guess する" },
-  { id: "all-letters", hidden: true, icon: "type", color: "#ffd0e8", name: "アルファベット制覇", desc: "1 ゲームの Guess で A から Z まで全ての文字を使う" },
-  { id: "h-anagram", hidden: true, icon: "shuffle", color: "#ffd8a0", name: "並べ替えの妙", desc: "直前の Guess のアナグラム（同じ文字構成の別単語）を Guess する" },
-  { id: "h-alphabet", hidden: true, icon: "type", color: "#d0a0ff", name: "アルファベットマラソン", desc: "すべての Guess をしりとりでつなぎ、5 手以上でクリアする" },
-  { id: "h-noreuse", hidden: true, icon: "ban", color: "#e8c0ff", name: "潔癖症", desc: "3 手以上のクリアで、全 Guess を通して同じ文字を 2 度使わない" },
-  { id: "h-zorome", hidden: true, icon: "dice", color: "#ffe8a0", name: "ゾロ目コレクター", desc: "3 桁以上のゾロ目 No. を 10 種類クリアする" },
-  { id: "h-uso-green", hidden: true, icon: "sparkle", color: "#8fffd0", name: "全緑の嘘", desc: "DWORDlie で表示が 5 つとも緑になる Guess を出す" },
-  { id: "h-abyss", hidden: true, icon: "skull", color: "#ff9090", name: "深淵を一撃", desc: "極 (No.10000-19999) を 4 手以内にクリアする" },
-  { id: "h-lightning", hidden: true, icon: "bolt", color: "#b0ffd0", name: "電光石火", desc: "3 手以上で、開始から 10 秒以内にクリアする" },
-  { id: "h-lexicon", hidden: true, icon: "book", color: "#c0ffd8", name: "語彙の泉", desc: "通算 1000 種類の異なる単語を Guess する" },
-  { id: "h-plays-1000", hidden: true, icon: "layers", color: "#d8b8ff", name: "無限の探求", desc: "通算 1000 回プレイする" },
-  { id: "h-uso-800", glow: true, hidden: true, icon: "mask", color: "#ff5f8f", name: "嘘八百", desc: "裏モード DWORDlie で通算 800 勝する" },
-  { id: "h-play-days-365", hidden: true, icon: "starTrail", color: "#c0ffe0", name: "365日の奇跡", desc: "通算 365 日プレイする" },
-  { id: "h-play-streak-30", hidden: true, icon: "sunrise", color: "#ffd890", name: "一ヶ月の誓い", desc: "30 日連続でプレイする" },
+  { id: "h-mirror", hidden: true, icon: "mirror", color: "#c0e8ff", name: reveal("0vLzSpdqgDm7lcMg"), desc: reveal("3ubMT4BDixCQntMD9UXLcrrbsSiSJ+oa3vDKQbxaixOpXRXcc7cbsdj8y0qUTw==") },
+  { id: "all-letters", hidden: true, icon: "type", color: "#ffd0e8", name: reveal("2P/wSpVvixKuntAI9Ufxcrj+sSqeIeAn09vV"), desc: reveal("Cl2xK6Qn6y3Y/vJKl2pI1k4YIdo2J+k2GzxySpdPixOyXQiJ9UXWcrratyy+J+k32Pz8T4BDjTysntA78nnXcrr7") },
+  { id: "h-anagram", hidden: true, icon: "shuffle", color: "#ffd8a0", name: reveal("38X0Spd9jgqEntMh9UXGdJ3k"), desc: reveal("3ObmTJ9JixCVXRXcc7cbsdj8/EqUZosSsZ7QGfVHwXK43b0VniH4Hdj8yk+AQ408rJv1IvBM+HK607chsyHlCdPXzEaqTYsTqV0V3HO3G7HY/MtKlE8=") },
+  { id: "h-alphabet", hidden: true, icon: "type", color: "#d0a0ff", name: reveal("2P/wSpVvixKuntAI9Ufxcrj+sSqeJ+sP2P77SpR5ixKI"), desc: reveal("2PzLSpd9ixCdntMHNoMd9EgOckqUVosQrJ7QI/VFwHK597EosSfpNdj8+EqXSosRukhyT59PjCqemeoj9UXPcrnSsSq8J+oz2PzLSpRP") },
+  { id: "h-noreuse", hidden: true, icon: "ban", color: "#e8c0ff", name: reveal("3cDGTo9Sjwa8"), desc: reveal("CF20IJ0g0zTfxdhKl2qLE5Se0QP1RspyutqxKZch7TkbOifMZbdIcrnvuymMJ+kG2Pz0TIZIixCjm8Qu82n/crnvcps2IdI338DtSpRLixCRntMt") },
+  { id: "h-zorome", hidden: true, icon: "dice", color: "#ffe8a0", name: reveal("2P/sSpVpjwqVntAa9UfEcrnSsSupJ+st"), desc: reveal("CF20CJcg0zTfxdhKl2qLE4We0QTxX8axdRJ8ifVG+rEKTXJOvmqBMKWe0Ab1R8Jyud+xKI8n6ho=") },
+  { id: "h-uso-green", hidden: true, icon: "sparkle", color: "#8fffd0", name: reveal("3vj6TqFVixCVmMox"), desc: reveal("fyod+1KoAfQbntMO/mXAdp/HsSia5F2x2Pz2SpdsixO5muU49UXDcrrXsSud5C/kXg4hifVG+nS8x7Eojw==") },
+  { id: "h-abyss", hidden: true, icon: "skull", color: "#ff9090", name: reveal("3crjT6FxixOpmeop8Fbr"), desc: reveal("3djniT6KB78KTWKZJulZqAJEa4A2J+oDG0lyT59PjCqemNQs9UXDcrnSsSq8J+oz2PzLSpRP") },
+  { id: "h-lightning", hidden: true, icon: "bolt", color: "#b0ffd0", name: reveal("0ubpTJNNjw6ImtMC"), desc: reveal("CF20IJ0g0zTfxdhKl2OLEbqUxCLzY+NyuvaxK5/kWaEbmvU78n/NdL34sSi9J+o+2P74SpRmixCintAi") },
+  { id: "h-lexicon", hidden: true, icon: "book", color: "#c0ffd8", name: reveal("09fMTKtdixCVm+Eg"), desc: reveal("0v3ITrhTSKALTWKJ8WzGeJrjsSi4I/0h2Pz4SpRPjRyjlfg39Ub6sXwIN9pl5IsQop7QIg==") },
+  { id: "h-plays-1000", hidden: true, icon: "layers", color: "#d8b8ff", name: reveal("3PnzQI9UixCVm9wL8HXq"), desc: reveal("0v3ITrhTSKALTWKJ81/2crjqsSq6J+o12PzLSpRP") },
+  { id: "h-uso-800", glow: true, hidden: true, icon: "mask", color: "#ff5f8f", name: reveal("3uXKTJNvjwiF"), desc: reveal("097dSpVmixKHntEgNoA/3mk5PsBz5IsQnJTSM/Fq/7EDTWKJ80/1crrksSud") },
+  { id: "h-play-days-365", hidden: true, icon: "starTrail", color: "#c0ffe0", name: reveal("CEtnT4FhixCVmPcu/nPJ"), desc: reveal("0v3ITrhTSKINSHJPgWGLEqye0QX1RsxyuuSxK50=") },
+  { id: "h-play-streak-30", hidden: true, icon: "sunrise", color: "#ffd890", name: reveal("38XSSpVyjg2zntMH/m77crr5"), desc: reveal("CE1yT4FhgRGYmuQz9UXPcrjqsSq6J+o12PzLSpRP") },
   // EXTRA SHOT モード（クリア後の追加推理）関連
-  { id: "h-double-clear", hidden: true, icon: "target", color: "#ffd166", name: "両手に花", desc: "EXTRA SHOT に成功して DOUBLE CLEAR する" },
-  { id: "h-double-uso", hidden: true, icon: "eye", color: "#ff9ad0", name: "すべてお見通し", desc: "DWORDlie で DOUBLE CLEAR する（嘘の判定だけから両方の答えを見抜く）" },
-  { id: "h-double-oneshot", hidden: true, icon: "bolt", color: "#8fe3ff", name: "神の二手", desc: "1 手クリアから DOUBLE CLEAR する（合計 2 手で両方の答えを当てる）" },
-  { id: "h-double-10", glow: true, hidden: true, icon: "crown", color: "#ffd166", name: "二兎を得る者", desc: "DOUBLE CLEAR を通算 10 回達成する" },
-  { id: "h-double-abyss", hidden: true, icon: "deepGem", color: "#a0d8e8", name: "深淵の両取り", desc: "極 (No.10000-19999) で DOUBLE CLEAR する" },
-  { id: "h-double-streak-3", hidden: true, icon: "chain", color: "#ffb0e0", name: "双璧の連鎖", desc: "3 ゲーム連続で DOUBLE CLEAR する" },
+  { id: "h-double-clear", hidden: true, icon: "target", color: "#ffd166", name: reveal("38XzT59PixCQldgY"), desc: reveal("fiUG+1fkO9l0KXJKl2+OGauY2Db1Rf9yutty7VmRKt1+XRHlU4U6sdj8y0qUTw==") },
+  { id: "h-double-uso", hidden: true, icon: "eye", color: "#ff9ad0", name: reveal("2PzLSpd9ixCdntMj/mLjeLvnsSiB"), desc: reveal("fyod+1KoAfQbntMONoAnxHkxF4lViC3QaV2xKI8n6hrUwdpMjlyLEJWY2g3zavJyut2xKIcn6RrY/9tNrmWOB4Ke0wfxafxyuvWxK4Qszhrd985Kl0uHLbI=") },
+  { id: "h-double-oneshot", hidden: true, icon: "bolt", color: "#8fe3ff", name: reveal("3NjMSpdqjCu3m9si"), desc: reveal("Cl20IJ0n6j7Y/vhKlGaLELCe0CA2gCfEeTEXiVWILdBpXbEojyfqGtTB2kyGTIA5s11gifBN43K62rYRtyL+KNj8/E67UIsQs57QO/N5+3K627ErnSvUGA==") },
+  { id: "h-double-10", glow: true, hidden: true, icon: "crown", color: "#ffd166", name: reveal("38feTJNKixOpmOw+9Ubjebv4"), desc: reveal("fzIH61qBSNJ3OBP7NifqA9L9yE64U0igC123Mogt6QXd9cJKl12LE7A=") },
+  { id: "h-double-abyss", hidden: true, icon: "deepGem", color: "#a0d8e8", name: reveal("3crjT6FxixCVmeoI80v+crn3"), desc: reveal("3djniT6KB78KTWKZJulZqAJEa4A2J+k2Gzkd/FSILbF4MRfoROSLEKKe0CI=") },
+  { id: "h-double-streak-3", hidden: true, icon: "chain", color: "#ffb0e0", name: reveal("3vLeToRjixCVlNIK/0r+"), desc: reveal("CF2xK6Qn6y3Y/vJAlmePJ6Ge0w42gCfEeTEXiVWILdBpXbEojyfqGg==") },
 ];
 
 let unlocked = loadJSON("achievements", {}); // { id: unlockedAt(sec) }

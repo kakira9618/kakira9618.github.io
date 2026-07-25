@@ -384,9 +384,9 @@ function buildExample(mode, language) {
   const notes = mode === "uso"
     ? isEnglish
       ? [
-          ["correct", c.greenChip, `A ${c.green} lie means this letter was truly ${c.yellow} or gray`],
-          ["used", c.yellowChip, `A ${c.yellow} lie means this letter was truly ${c.green} or gray`],
-          ["unused", "×", `A gray lie means this letter was truly ${c.green} or ${c.yellow}`],
+          ["correct", c.greenChip, `Truly ${c.yellow} or gray`],
+          ["used", c.yellowChip, `Truly ${c.green} or gray`],
+          ["unused", "×", `Truly ${c.green} or ${c.yellow}`],
         ]
       : [
           ["correct", c.greenChip, `この文字の本当の判定は「${c.yellow} か 灰」`],
@@ -395,9 +395,10 @@ function buildExample(mode, language) {
         ]
     : isEnglish
       ? [
-          ["correct", c.greenChip, `${c.Green}: matches the same position in Word 1 or Word 2`],
-          ["used", c.yellowChip, `${c.Yellow}: appears elsewhere in Word 1 or Word 2`],
-          ["unused", "×", "Gray: does not appear in either answer"],
+          // 凡例は 1 行に収める（iPhone 幅で折り返すと読みにくい）ので短く言い切る
+          ["correct", c.greenChip, `${c.Green}: same spot in Word 1 or 2`],
+          ["used", c.yellowChip, `${c.Yellow}: elsewhere in Word 1 or 2`],
+          ["unused", "×", "Gray: in neither answer"],
         ]
       : [
           ["correct", c.greenChip, "Word 1 / 2 どちらかの同じ位置と一致"],

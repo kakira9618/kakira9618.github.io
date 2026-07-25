@@ -3,6 +3,7 @@
 // 日本語なら ja、それ以外はすべて en として扱う。
 
 import { getSettings } from "./settings.js?v=20260725-b";
+import { reveal } from "./secret.js?v=20260725-b";
 
 // ブラウザ / OS の言語設定から表示言語を決める
 function systemLanguage() {
@@ -46,6 +47,8 @@ export function localizedLevel(level) {
   };
 }
 
+// 隠し実績の行は、日本語側（js/core/achievements.js）と同じく reveal() で包む。
+// 平文をソースに残さないための目隠しで、`node tools/make-secret.mjs encode` で作る。
 const ACHIEVEMENT_EN = {
   "first-play": ["First Step", "Finish your first game"],
   "first-clear": ["First Win", "Clear a game for the first time"],
@@ -87,16 +90,16 @@ const ACHIEVEMENT_EN = {
   analyst: ["Analyst", "Use Analysis mode"],
   migrator: ["Move Complete", "Import play history"],
   collector: ["Achievement Hunter", "Unlock 30 achievements"],
-  "h-mirror": ["Mirror Word", "Guess a palindrome"],
+  "h-mirror": [reveal("dhQg23m2SMZUDzY="), reveal("fAg32mXkCbFLHD7AeKAa/lYY")],
   "h-phantom": ["Phantom Answer", "Get five green tiles with a word that is not an answer"],
-  "h-anagram": ["Anagram Magic", "Guess an anagram of your previous Guess"],
-  "h-alphabet": ["Alphabet Marathon", "Clear in 5 or more Guesses with every word chained from the previous word's last letter"],
-  "h-noreuse": ["No Repeats", "Clear in 3 or more Guesses without reusing any letter"],
-  "h-zorome": ["Repeating Digits", "Clear 10 different puzzle Nos. made of at least 3 identical digits"],
-  "h-uso-green": ["All-Green Lie", "Get five displayed green tiles in DWORDlie"],
-  "h-abyss": ["One Strike into the Abyss", "Clear an Extreme puzzle within 4 Guesses"],
-  "h-lightning": ["Lightning Fast", "Clear a game in 3 or more Guesses and within 10 seconds"],
-  "h-lexicon": ["Fountain of Words", "Use 1,000 different Guess words total"],
+  "h-anagram": [reveal("ehMzzmSlBbF2HDXAdQ=="), reveal("fAg32mXkCf8bHDzIcbYJ/BsSNIlvqx3jGw0gzGCtB+RIXRXcc7cb")],
+  "h-alphabet": [reveal("ehEiwXemDeUbMDPbd7AA/lU="), reveal("eBE3yGTkAf8bSHLGZOQF/kkYcu5joRviXg5y3n+wALFeCzfbb+Qf/kkZcsp+pQH/Xhlyz2SrBbFPFTeJZrYN51ISJ9o2swfjX1ohiXqlG+UbETfdYqEa")],
+  "h-noreuse": [reveal("dRJy+3O0DfBPDg=="), reveal("eBE3yGTkAf8bTnLGZOQF/kkYcu5joRviXg5y3n+wAP5OCXLbc7Eb+FUacsh4vUj9XgkmzGQ=")],
+  "h-zorome": [reveal("aRgizHewAf9cXRbAca0c4g=="), reveal("eBE3yGTkWaEbGTvPcKEa9FUJctljvhL9Xl0cxmXqSPxaGTeJeaJI8E9dPsx3txyxCF07zXOqHPhYHD6Jcq0P+E8O")],
+  "h-uso-green": [reveal("ehE+hFG2DfRVXR7Acw=="), reveal("fBgmiXCtHvQbGTvaZqgJ6F4Zcs5koQ3/Gwk7xXO3SPhVXRb+WZYs/VIY")],
+  "h-abyss": [reveal("dBM3iUWwGvhQGHLAeLAHsU8VN4lXphHiSA=="), reveal("eBE3yGTkCf8bOCrdZKEF9BsNJ9NsqA2xTBQmwX+qSKUbOifMZbcN4g==")],
+  "h-lightning": [reveal("dxQ1wWKqAf9cXRTIZbA="), reveal("eBE3yGTkCbFcHD/MNq0GsQhdPds2qQfjXl0V3HO3G/RIXTPHcuQf+E8VO8c29VixSBgxxnigGw==")],
+  "h-lexicon": [reveal("fRInx2KlAf8bEjSJQasa9Ug="), reveal("bg43iSfoWKELXTbAcKIN414TJolRsQ3iSF0lxmSgG7FPEibIeg==")],
   "wins-200": ["Living Legend", "Win 200 games total"],
   "play-streak-3": ["Three Days Straight", "Play on 3 consecutive days"],
   "play-streak-7": ["One-Week Habit", "Play on 7 consecutive days"],
@@ -106,17 +109,17 @@ const ACHIEVEMENT_EN = {
   "plays-30": ["Getting the Hang of It", "Finish 30 games total"],
   "plays-500": ["Master of the Board", "Finish 500 games total"],
   "guesses-3000": ["Three Thousand Words", "Make 3,000 Guesses total"],
-  "all-letters": ["A to Z", "Use every letter of the alphabet within one game"],
-  "h-plays-1000": ["Endless Pursuit", "Finish 1,000 games total"],
-  "h-uso-800": ["Eight Hundred Lies", "Win 800 DWORDlie games"],
-  "h-play-days-365": ["Miracle of 365 Days", "Play on 365 different days"],
-  "h-play-streak-30": ["A Month's Vow", "Play on 30 consecutive days"],
-  "h-double-clear": ["Twin Triumph", "Succeed at EXTRA SHOT for a DOUBLE CLEAR"],
-  "h-double-uso": ["All-Seeing Eye", "Get a DOUBLE CLEAR in DWORDlie (see through the lies to both answers)"],
-  "h-double-oneshot": ["Divine Double", "Turn a first-Guess clear into a DOUBLE CLEAR (both answers in 2 Guesses)"],
-  "h-double-10": ["Catcher of Both Hares", "Achieve 10 DOUBLE CLEARs total"],
-  "h-double-abyss": ["Double from the Abyss", "Get a DOUBLE CLEAR on an Extreme puzzle (No.10000–19999)"],
-  "h-double-streak-3": ["Chain of Pairs", "Get a DOUBLE CLEAR in 3 games in a row"],
+  "all-letters": [reveal("el0mxjae"), reveal("bg43iXOyDeNCXT7MYrAN4xsSNIlirA2xWhEiwXemDeUbCjvdfq0GsVQTN4lxpQX0")],
+  "h-plays-1000": [reveal("fhM2xXO3G7FrCCDaY60c"), reveal("fRQ8wGWsSKAXTWKZNqMJ/F4Oct15sAn9")],
+  "h-uso-800": [reveal("fhQ1wWLkIORVGSDMcuQk+F4O"), reveal("bBQ8iS70WLF/Kh37UqgB9BsaM8Rztw==")],
+  "h-play-days-365": [reveal("dhQgyHWoDbFUG3KaIPFI1VoEIQ=="), reveal("axEz0DarBrEIS2eJcq0O914PN8di5AzwQg4=")],
+  "h-play-streak-30": [reveal("el0fxniwALZIXQTGYQ=="), reveal("axEz0DarBrEITXLKeaob9FgIJsBgoUj1WgQh")],
+  "h-double-clear": [reveal("bwo7xzaQGvhOECLB"), reveal("aAgxynOhDLFaCXLsTpA60BsuGuZC5A7+SV0ziVKLPdN3OHLqWoEpww==")],
+  "h-double-uso": [reveal("ehE+hEWhDfhVGnLsb6E="), reveal("fBgmiXfkLN5uPx7sNock1HovcsB45CzGdC8WxX+hSLlIGDeJYqwa/k4aOolirA2xVxQ32jawB7FZEibBNqUG4kwYINo/")],
+  "h-double-oneshot": [reveal("fxQkwHihSNVUCDDFcw=="), reveal("bwggxzalSPdSDyHdO4Md9EgOcsp6oQnjGxQ83XnkCbF/MgfrWoFI0nc4E/s27Ar+TxVyyHi3H/RJDnLAeORasXwIN9ploRu4")],
+  "h-double-10": [reveal("eBwmyn6hGrFUG3LrebAAsXMcIMxl"), reveal("eh46wHOyDbEKTXLtWZEq3X5dEeVThTriGwk93Xeo")],
+  "h-double-abyss": [reveal("fxIny3qhSPdJEj+JYqwNsXofK9pl"), reveal("fBgmiXfkLN5uPx7sNock1HovcsZ45An/Gzgq3WShBfQbDSfTbKgNsRMzPYcn9FihC5/SOif9UagCVA==")],
+  "h-double-streak-3": [reveal("eBUzwHjkB/cbLTPAZLc="), reveal("fBgmiXfkLN5uPx7sNock1HovcsB45FuxXBw/zGXkAf8bHHLbebM=")],
 };
 
 export function localizedAchievement(achievement) {

@@ -2278,17 +2278,23 @@ body.theme-pop.mode-uso .rcell.unused { color: #fff; }
 #screen-result .result-actions .btn {
   padding: 13px 6px;
   gap: 6px;
+  /* 3 列に収める必要があり、英語の "Save image" などは 16px だと収まらない */
+  font-size: 13.5px;
   white-space: nowrap;
 }
-/* さらに狭い端末では「画像保存」等がはみ出さないよう文字とアイコンを一段縮める */
+#screen-result .result-actions .btn .icon svg {
+  width: 17px;
+  height: 17px;
+}
+/* さらに狭い端末では文字とアイコンをもう一段縮める */
 @media (max-width: 374px) {
   #screen-result .result-actions .btn {
-    font-size: 14px;
+    font-size: 12.5px;
     gap: 4px;
   }
   #screen-result .result-actions .btn .icon svg {
-    width: 16px;
-    height: 16px;
+    width: 15px;
+    height: 15px;
   }
 }
 

@@ -361,8 +361,9 @@ function render() {
       "div",
       { class: "tagline" },
       isUso
-        ? tr("判定は必ず嘘。15手以内に見抜け。", "Every clue lies. See through it in 15 Guesses.")
-        : tr("答えは2つ、盤面は1つ。10手で片方を当てろ。", "Wordle with two answers. Find either one in 10 Guesses.")
+        // 英語は iPhone 幅で 1 行に収まる長さにする
+        ? tr("判定は必ず嘘。15手以内に見抜け。", "Every clue lies. Solve it in 15 Guesses.")
+        : tr("答えは2つ、盤面は1つ。10手で片方を当てろ。", "Two answers, one board. Find either in 10.")
     ),
     el(
       "div",

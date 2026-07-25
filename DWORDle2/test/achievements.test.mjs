@@ -6,6 +6,9 @@ import {
   achievementIdsFromHistory,
 } from "../js/core/achievements.js?v=20260725-b";
 import { Logic, queryWordPair } from "../js/core/logic.js?v=20260725-b";
+// 隠し実績の名前・条件はソースに平文を置かない方針なので、テストでも符号化して比較する
+// （符号化は node tools/make-secret.mjs encode "<文章>"）
+import { reveal } from "../js/core/secret.js?v=20260725-b";
 import { ALL_WORDS } from "../js/data/words.js?v=20260725-b";
 
 function clearRecord({
@@ -37,11 +40,11 @@ assert.equal(
 );
 assert.equal(
   ACHIEVEMENTS.find((achievement) => achievement.id === "h-lexicon")?.desc,
-  "通算 1000 種類の異なる単語を Guess する"
+  reveal("0v3ITrhTSKALTWKJ8WzGeJrjsSi4I/0h2Pz4SpRPjRyjlfg39Ub6sXwIN9pl5IsQop7QIg==")
 );
 assert.equal(
   ACHIEVEMENTS.find((achievement) => achievement.id === "h-zorome")?.desc,
-  "3 桁以上のゾロ目 No. を 10 種類クリアする"
+  reveal("CF20CJcg0zTfxdhKl2qLE4We0QTxX8axdRJ8ifVG+rEKTXJOvmqBMKWe0Ab1R8Jyud+xKI8n6ho=")
 );
 assert.equal(
   ACHIEVEMENTS.some((achievement) => achievement.name.includes("ワードラー") || achievement.name === "初日の出ワードル"),
@@ -58,8 +61,8 @@ assert.equal(
   false,
   "multi-year play-day achievements should be retired"
 );
-assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "h-play-days-365")?.name, "365日の奇跡");
-assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "h-plays-1000")?.desc, "通算 1000 回プレイする");
+assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "h-play-days-365")?.name, reveal("CEtnT4FhixCVmPcu/nPJ"));
+assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "h-plays-1000")?.desc, reveal("0v3ITrhTSKALTWKJ81/2crjqsSq6J+o12PzLSpRP"));
 assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "h-phantom")?.hidden, undefined, "Phantom Answer should be a normal achievement");
 assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "all-letters")?.hidden, true, "A to Z should be a secret achievement");
 assert.equal(

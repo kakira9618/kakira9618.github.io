@@ -25,6 +25,8 @@ const { importFromText } = await import("../js/core/migrate.js?v=20260725-b");
 const { DEFAULT_SETTINGS, getSettings, setSetting } = await import("../js/core/settings.js?v=20260725-b");
 const es = await import("../js/core/extra-shot.js?v=20260725-b");
 const { tryEnableDebugMode } = await import("../js/core/debug.js?v=20260725-b");
+// 隠し要素の文字列はテストにも平文で置かない（js/core/secret.js 参照）
+const { reveal } = await import("../js/core/secret.js?v=20260725-b");
 
 // ---- queryWordSingle: 1 語だけを対象にした Wordle 標準判定 ----
 {
@@ -458,7 +460,7 @@ function fillerWord(logic) {
   records._reload();
   storage.set("dwordle2.playCount", "0");
   assert.equal(es.isExtraShotUnlocked(), false);
-  assert.ok(tryEnableDebugMode("DWORDLER"));
+  assert.ok(tryEnableDebugMode(reveal("fyod+1KILcM=")));
   assert.equal(es.isExtraShotUnlocked(), true, "デバッグモードで解放されるはず");
   assert.equal(es.claimExtraShotUnlockNotice(), false, "デバッグの一時解放では通知しないはず");
 }

@@ -10,6 +10,8 @@ globalThis.localStorage = {
 const { ACHIEVEMENTS, getUnlocked } = await import("../js/core/achievements.js?v=20260725-b");
 const { getSettings, setSetting } = await import("../js/core/settings.js?v=20260725-b");
 const { isDebugMode, tryEnableDebugMode } = await import("../js/core/debug.js?v=20260725-b");
+// キーワードはソースの全文検索に出ないよう符号化して持つ（js/core/secret.js と同じ方針）
+const { reveal } = await import("../js/core/secret.js?v=20260725-b");
 const { loadJSON, removeKey, saveJSON } = await import("../js/core/store.js?v=20260725-b");
 
 setSetting("theme", "classic");
@@ -17,7 +19,7 @@ const savedBeforeDebug = data.get("dwordle2.settings");
 assert.match(savedBeforeDebug, /"theme":"classic"/);
 assert.equal(isDebugMode(), false);
 assert.equal(tryEnableDebugMode("wrong"), false);
-assert.equal(tryEnableDebugMode(" dwordler "), true);
+assert.equal(tryEnableDebugMode(reveal("GxklxmSgBPRJXQ==")), true);
 assert.equal(isDebugMode(), true);
 assert.equal(Object.keys(getUnlocked()).length, ACHIEVEMENTS.length, "debug mode should expose every achievement");
 

@@ -7,6 +7,8 @@ import { createRequire } from "node:module";
 import { chromium } from "playwright";
 import { Logic } from "../js/core/logic.js?v=20260725-b";
 import { ACHIEVEMENTS } from "../js/core/achievements.js?v=20260725-b";
+// 隠し要素の文字列はテストにも平文で置かない（js/core/secret.js 参照）
+import { reveal } from "../js/core/secret.js?v=20260725-b";
 import { pidLabel, todayPID } from "../js/core/problems.js?v=20260725-b";
 
 const require = createRequire(import.meta.url);
@@ -2099,7 +2101,7 @@ try {
       1,
       "an incorrect secret submitted with Enter should show one verdict"
     );
-    await secretInput.fill("DWORDLER");
+    await secretInput.fill(reveal("fyod+1KILcM="));
     await secretInput.press("Enter");
     await freshPage.getByText("DEBUG ON", { exact: true }).waitFor();
     assert.equal(
