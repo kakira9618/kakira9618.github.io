@@ -28,7 +28,8 @@ export function syncDocumentLanguage(language = currentLanguage()) {
   const resolved = language === "en" || language === "ja" ? language : systemLanguage();
   const english = resolved === "en";
   document.documentElement.lang = english ? "en" : "ja";
-  document.title = english ? "DWORDle | A New Kind of Wordle" : "DWORDle | 新感覚Wordle";
+  // 前作 /DWORDle/ と並んだときに区別が付くよう、タブ・検索結果・ブックマークでも "2" を出す
+  document.title = english ? "DWORDle 2 | A New Kind of Wordle" : "DWORDle 2 | 新感覚Wordle";
   document
     .querySelector('meta[name="description"]')
     ?.setAttribute(

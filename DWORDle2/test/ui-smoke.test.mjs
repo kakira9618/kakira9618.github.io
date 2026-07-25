@@ -356,8 +356,8 @@ try {
       statuses,
     };
   });
-  assert.equal(publicEntry.title, "DWORDle | 新感覚Wordle");
-  assert.equal(publicEntry.ogTitle, "DWORDle | 新感覚Wordle");
+  assert.equal(publicEntry.title, "DWORDle 2 | 新感覚Wordle");
+  assert.equal(publicEntry.ogTitle, "DWORDle 2 | 新感覚Wordle");
   assert.equal(
     publicEntry.ogImage,
     "https://kakira9618.github.io/DWORDle2/og.jpg",
@@ -365,7 +365,7 @@ try {
   );
   assert.equal(publicEntry.ogDescription, "答えは2つ。盤面は1つ。新感覚Wordle！");
   assert.equal(publicEntry.twitterCard, "summary", "X は正方形アイコンの小さいカードにする");
-  assert.equal(publicEntry.twitterTitle, "DWORDle | 新感覚Wordle");
+  assert.equal(publicEntry.twitterTitle, "DWORDle 2 | 新感覚Wordle");
   assert.equal(publicEntry.twitterImage, "https://kakira9618.github.io/DWORDle2/og-square.png", "X には正方形アイコンを渡す");
   assert.equal(publicEntry.twitterDescription, "答えは2つ。盤面は1つ。新感覚Wordle！");
   assert.equal(publicEntry.manifest, "manifest.webmanifest");
