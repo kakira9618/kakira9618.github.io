@@ -41,6 +41,35 @@ function randomPID(lo, hi, mode) {
   return lo + Math.floor(Math.random() * (hi - lo + 1));
 }
 
+// 番号の割り当て表。No. の小さい順に並べ、レベル帯は名前と語彙の説明まで出す。
+// 帯の定義は LEVELS が唯一の情報源なので、レベルを増減しても表がそのまま追従する。
+function numberGuide() {
+  const row = (range, name, desc) =>
+    el(
+      "div",
+      { class: "number-guide-row" },
+      el("span", { class: "number-guide-range" }, range),
+      el(
+        "span",
+        { class: "number-guide-label" },
+        el("span", { class: "number-guide-name" }, name),
+        desc ? el("span", { class: "number-guide-desc" }, desc) : null
+      )
+    );
+  const levelRows = LEVELS.slice()
+    .sort((a, b) => a.range[0] - b.range[0])
+    .map((level) => {
+      const localized = localizedLevel(level);
+      return row(`No.${level.range[0]}-${level.range[1]}`, `Lv.${level.id} ${localized.name}`, localized.desc);
+    });
+  return el(
+    "div",
+    { class: "number-guide" },
+    row("No.0", tr("今日のデイリー問題", "Today's Daily puzzle"), tr("毎日 0 時に切り替わる共通問題", "A shared puzzle that changes at midnight")),
+    ...levelRows
+  );
+}
+
 function numberPrompt(mode) {
   const suggestion = randomPID(PID.EASY_MIN, PID.EASY_MAX, mode);
   const input = el("input", {
@@ -54,13 +83,7 @@ function numberPrompt(mode) {
     title: tr("番号を指定してプレイ", "Play by puzzle number"),
     body: [
       input,
-      el(
-        "p",
-        { class: "hint" },
-        tr("No.0: 今日のデイリー問題", "No.0: Today's Daily puzzle"), el("br"),
-        tr("No.1-9999: やさしい / No.10000-19999: 極", "No.1–9999: Easy / No.10000–19999: Extreme"), el("br"),
-        tr("No.20000-39999: レベル別", "No.20000–39999: Level-based")
-      ),
+      numberGuide(),
     ],
     actions: [
       { label: tr("キャンセル", "Cancel"), onClick: () => {} },

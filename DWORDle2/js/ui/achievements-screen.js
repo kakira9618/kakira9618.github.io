@@ -20,7 +20,10 @@ function achCard(ach, unlockedAt) {
   const isHiddenLocked = ach.hidden && !unlockedAt;
   return el(
     "div",
-    { class: `card ach-card ${unlockedAt ? "unlocked" : "locked"} ${isHiddenLocked ? "hidden-locked" : ""}` },
+    {
+      // glow（系列の最上位）は解除後だけ光らせる。未解除で光ると隠し実績のヒントになる
+      class: `card ach-card ${unlockedAt ? "unlocked" : "locked"} ${isHiddenLocked ? "hidden-locked" : ""} ${ach.glow && unlockedAt ? "ach-top" : ""}`,
+    },
     el("div", { class: "badge-icon", style: { color: ach.color } }, icon(isHiddenLocked ? "sparkle" : ach.icon, 22)),
     el(
       "div",

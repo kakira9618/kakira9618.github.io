@@ -1139,6 +1139,46 @@ body.theme-cyber .modal {
   color: var(--fg);
   font-size: 16px;
 }
+/* 番号を指定してプレイの割り当て表。行数が多いので、No. とレベルの 2 列に整理し、
+   説明は 1 段落として小さく添える */
+.number-guide {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+}
+.number-guide-row {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+  gap: 2px 10px;
+  padding: 7px 0;
+  border-top: 1px solid var(--border);
+}
+.number-guide-row:first-child {
+  border-top: 0;
+}
+.number-guide-range {
+  color: var(--fg-dim);
+  font-size: 11.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  align-self: center;
+}
+.number-guide-label {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.number-guide-name {
+  font-size: 12.5px;
+  font-weight: 800;
+}
+.number-guide-desc {
+  color: var(--fg-dim);
+  font-size: 11px;
+  line-height: 1.35;
+}
 body.theme-pop.mode-normal .modal input[type="number"] {
   background: #ffffff;
   color: #4a3550;
@@ -3012,6 +3052,21 @@ body.reduce-motion .guess-flag-cloth {
 }
 .ach-card.hidden-locked .badge-icon {
   border-style: dashed;
+}
+/* 系列の最上位実績（glow）は、同じ色・同じアイコンの下位と見分けが付くよう
+   バッジをゆっくり明滅させる */
+.ach-card.ach-top .badge-icon {
+  border-width: 2px;
+  background: color-mix(in srgb, currentColor 20%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, currentColor 45%, transparent);
+  animation: achTopGlow 2.8s ease-in-out infinite;
+}
+@keyframes achTopGlow {
+  0%, 100% { box-shadow: 0 0 8px color-mix(in srgb, currentColor 30%, transparent); }
+  50% { box-shadow: 0 0 18px color-mix(in srgb, currentColor 70%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ach-card.ach-top .badge-icon { animation: none; }
 }
 
 /* ---- プレイヤーカード ---- */

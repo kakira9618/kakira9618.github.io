@@ -324,8 +324,8 @@ try {
   assert.equal(publicEntry.ogTitle, "DWORDle | 新感覚Wordle");
   assert.equal(
     publicEntry.ogImage,
-    "https://kakira9618.github.io/DWORDle2/og-square.png",
-    "横長画像を併記すると X が summary_large_image で切り抜くので、OGP 画像も正方形にする"
+    "https://kakira9618.github.io/DWORDle2/og.jpg",
+    "横長カードを出すクライアントには 1.91:1 の画像を渡す"
   );
   assert.equal(publicEntry.ogDescription, "答えは2つ。盤面は1つ。新感覚Wordle！");
   assert.equal(publicEntry.twitterCard, "summary", "正方形アイコンを切り抜かれずに出すため summary を使う");

@@ -10,6 +10,9 @@
 // 新規解放された実績の配列を返すので、呼び出し側がトースト表示する。
 //
 // icon は js/ui/icons.js のアイコン名、color はバッジのアクセント色。
+// 同じアイコンを共有する系列（嘘系の仮面、やり込みの本など）は、色相を変えて見分けられる
+// ようにする。系列の最下位と最上位だけは元の色で揃え、最上位には glow: true を付けて
+// バッジを光らせる（解除後のみ光る）。
 // hidden: true の実績は、解放するまで名前・説明が「？？？」表示になる。
 //
 // ctx = {
@@ -54,7 +57,7 @@ export const ACHIEVEMENTS = [
   { id: "wins-10", cat: "wins", icon: "star", color: "#ffe680", name: "勝ち星コレクター", desc: "通算 10 勝する" },
   { id: "wins-50", cat: "wins", icon: "shield", color: "#9fd8a8", name: "歴戦の勇者", desc: "通算 50 勝する" },
   { id: "wins-100", cat: "wins", icon: "gem", color: "#7ee8ff", name: "レジェンド", desc: "通算 100 勝する" },
-  { id: "wins-200", cat: "wins", icon: "trophy", color: "#ffb860", name: "生ける伝説", desc: "通算 200 勝する" },
+  { id: "wins-200", glow: true, cat: "wins", icon: "trophy", color: "#ffb860", name: "生ける伝説", desc: "通算 200 勝する" },
   { id: "streak-3", cat: "wins", icon: "wave", color: "#66c7ff", name: "波に乗って", desc: "3 連勝する" },
   { id: "streak-5", cat: "wins", icon: "flame", color: "#ff9a5c", name: "連勝街道", desc: "5 連勝する" },
   { id: "streak-10", cat: "wins", icon: "crown", color: "#ffd700", name: "無敗神話", desc: "10 連勝する" },
@@ -67,21 +70,21 @@ export const ACHIEVEMENTS = [
   { id: "speed-60", cat: "speed", icon: "gauge", color: "#7cf5ff", name: "スピードスター", desc: "開始から 60 秒以内にクリアする" },
   { id: "slow-10", cat: "speed", icon: "clock", color: "#c8b8a0", name: "熟考の人", desc: "10 分以上かけてクリアする" },
   // --- 毎日の継続（Streak）---
-  { id: "play-streak-3", cat: "habit", icon: "footprints", color: "#a8e8c0", name: "三日坊主卒業", desc: "3 日連続でプレイする" },
-  { id: "play-streak-7", cat: "habit", icon: "calendar", color: "#88d8b8", name: "一週間の習慣", desc: "7 日連続でプレイする" },
-  { id: "play-streak-14", cat: "habit", icon: "flame", color: "#ffb088", name: "二週間の熱中", desc: "14 日連続でプレイする" },
+  { id: "play-streak-3", cat: "habit", icon: "footprints", color: "#ffb088", name: "三日坊主卒業", desc: "3 日連続でプレイする" },
+  { id: "play-streak-7", cat: "habit", icon: "calendar", color: "#ffc857", name: "一週間の習慣", desc: "7 日連続でプレイする" },
+  { id: "play-streak-14", cat: "habit", icon: "flame", color: "#e08cff", name: "二週間の熱中", desc: "14 日連続でプレイする" },
   { id: "daily-7", cat: "habit", icon: "flag", color: "#8fd88f", name: "週間皆勤", desc: "デイリー問題を 7 日連続でクリアする" },
-  { id: "daily-streak-14", cat: "habit", icon: "flag", color: "#68c888", name: "二週間皆勤", desc: "デイリー問題を 14 日連続でクリアする" },
-  { id: "daily-30", cat: "habit", icon: "calendar", color: "#7bd88f", name: "デイリー常連", desc: "デイリー問題を通算 30 回クリアする" },
+  { id: "daily-streak-14", glow: true, cat: "habit", icon: "flag", color: "#8fd88f", name: "二週間皆勤", desc: "デイリー問題を 14 日連続でクリアする" },
+  { id: "daily-30", glow: true, cat: "habit", icon: "calendar", color: "#7bd88f", name: "デイリー常連", desc: "デイリー問題を通算 30 回クリアする" },
   { id: "play-days-30", cat: "habit", icon: "footprints", color: "#c8ffb0", name: "継続は力なり", desc: "通算 30 日プレイする" },
-  { id: "play-days-100", cat: "habit", icon: "footprints", color: "#b0e8a0", name: "百日の歩み", desc: "通算 100 日プレイする" },
+  { id: "play-days-100", glow: true, cat: "habit", icon: "footprints", color: "#c8ffb0", name: "百日の歩み", desc: "通算 100 日プレイする" },
   // --- やり込み ---
   { id: "plays-30", cat: "volume", icon: "book", color: "#e6d2a8", name: "だんだん慣れてきた", desc: "通算 30 回プレイする" },
-  { id: "plays-100", cat: "volume", icon: "book", color: "#d8b88f", name: "習うより慣れろ", desc: "通算 100 回プレイする" },
-  { id: "plays-300", cat: "volume", icon: "book", color: "#d8c8a8", name: "盤上の住人", desc: "通算 300 回プレイする" },
-  { id: "plays-500", cat: "volume", icon: "book", color: "#c8a878", name: "盤上の主", desc: "通算 500 回プレイする" },
+  { id: "plays-100", cat: "volume", icon: "book", color: "#8fd3ff", name: "習うより慣れろ", desc: "通算 100 回プレイする" },
+  { id: "plays-300", cat: "volume", icon: "book", color: "#b8a0ff", name: "盤上の住人", desc: "通算 300 回プレイする" },
+  { id: "plays-500", glow: true, cat: "volume", icon: "book", color: "#e6d2a8", name: "盤上の主", desc: "通算 500 回プレイする" },
   { id: "guesses-1000", cat: "volume", icon: "type", color: "#b8d8ff", name: "千語の探求者", desc: "通算 1000 回 Guess する" },
-  { id: "guesses-3000", cat: "volume", icon: "type", color: "#9cc8ff", name: "三千語の探求者", desc: "通算 3000 回 Guess する" },
+  { id: "guesses-3000", glow: true, cat: "volume", icon: "type", color: "#b8d8ff", name: "三千語の探求者", desc: "通算 3000 回 Guess する" },
   { id: "same-day-5", cat: "volume", icon: "layers", color: "#ffcf80", name: "今日は絶好調", desc: "同じ日に 5 回クリアする" },
   // --- 盤面の模様 ---
   { id: "all-gray", cat: "board", icon: "cloud", color: "#a8b0bd", name: "完全なる空振り", desc: "1 回の Guess で 5 文字すべて灰色になる" },
@@ -91,8 +94,8 @@ export const ACHIEVEMENTS = [
   { id: "h-phantom", cat: "board", icon: "ghost", color: "#baffc9", name: "幻の正解", desc: "正解ではない単語を Guess して、全部緑を出す" },
   // --- モード・難易度 ---
   { id: "uso-clear", cat: "modes", icon: "mask", color: "#ff5f8f", name: "嘘を見抜く", desc: "裏モード DWORDlie をクリアする" },
-  { id: "uso-5", cat: "modes", icon: "mask", color: "#ff7aa8", name: "嘘マスター", desc: "裏モード DWORDlie で通算 5 勝する" },
-  { id: "uso-20", cat: "modes", icon: "mask", color: "#ff9ab8", name: "嘘発見器", desc: "裏モード DWORDlie で通算 20 勝する" },
+  { id: "uso-5", cat: "modes", icon: "mask", color: "#ffc857", name: "嘘マスター", desc: "裏モード DWORDlie で通算 5 勝する" },
+  { id: "uso-20", cat: "modes", icon: "mask", color: "#7cd7ff", name: "嘘発見器", desc: "裏モード DWORDlie で通算 20 勝する" },
   { id: "extreme-clear", cat: "modes", icon: "mountain", color: "#ff8c66", name: "語彙の深淵", desc: "極 (No.10000-19999) の問題を 1 問クリアする" },
   { id: "level-clear", cat: "modes", icon: "compass", color: "#66e0d5", name: "開拓者", desc: "レベル問題 (No.20000-39999) を 1 問クリアする" },
   // --- 時の記念 ---
@@ -110,22 +113,22 @@ export const ACHIEVEMENTS = [
   { id: "h-mirror", hidden: true, icon: "mirror", color: "#c0e8ff", name: "鏡の言葉", desc: "回文になっている単語を Guess する" },
   { id: "all-letters", hidden: true, icon: "type", color: "#ffd0e8", name: "アルファベット制覇", desc: "1 ゲームの Guess で A から Z まで全ての文字を使う" },
   { id: "h-anagram", hidden: true, icon: "shuffle", color: "#ffd8a0", name: "並べ替えの妙", desc: "直前の Guess のアナグラム（同じ文字構成の別単語）を Guess する" },
-  { id: "h-alphabet", hidden: true, icon: "type", color: "#a0c8ff", name: "アルファベットマラソン", desc: "すべての Guess をしりとりでつなぎ、5 手以上でクリアする" },
+  { id: "h-alphabet", hidden: true, icon: "type", color: "#d0a0ff", name: "アルファベットマラソン", desc: "すべての Guess をしりとりでつなぎ、5 手以上でクリアする" },
   { id: "h-noreuse", hidden: true, icon: "ban", color: "#e8c0ff", name: "潔癖症", desc: "3 手以上のクリアで、全 Guess を通して同じ文字を 2 度使わない" },
   { id: "h-zorome", hidden: true, icon: "dice", color: "#ffe8a0", name: "ゾロ目コレクター", desc: "3 桁以上のゾロ目 No. を 10 種類クリアする" },
   { id: "h-uso-green", hidden: true, icon: "sparkle", color: "#8fffd0", name: "全緑の嘘", desc: "DWORDlie で表示が 5 つとも緑になる Guess を出す" },
   { id: "h-abyss", hidden: true, icon: "skull", color: "#ff9090", name: "深淵を一撃", desc: "極 (No.10000-19999) を 4 手以内にクリアする" },
-  { id: "h-lightning", hidden: true, icon: "bolt", color: "#fff0a0", name: "電光石火", desc: "3 手以上で、開始から 10 秒以内にクリアする" },
+  { id: "h-lightning", hidden: true, icon: "bolt", color: "#b0ffd0", name: "電光石火", desc: "3 手以上で、開始から 10 秒以内にクリアする" },
   { id: "h-lexicon", hidden: true, icon: "book", color: "#c0ffd8", name: "語彙の泉", desc: "通算 1000 種類の異なる単語を Guess する" },
   { id: "h-plays-1000", hidden: true, icon: "layers", color: "#d8b8ff", name: "無限の探求", desc: "通算 1000 回プレイする" },
-  { id: "h-uso-800", hidden: true, icon: "mask", color: "#ff6f9f", name: "嘘八百", desc: "裏モード DWORDlie で通算 800 勝する" },
+  { id: "h-uso-800", glow: true, hidden: true, icon: "mask", color: "#ff5f8f", name: "嘘八百", desc: "裏モード DWORDlie で通算 800 勝する" },
   { id: "h-play-days-365", hidden: true, icon: "starTrail", color: "#c0ffe0", name: "365日の奇跡", desc: "通算 365 日プレイする" },
   { id: "h-play-streak-30", hidden: true, icon: "sunrise", color: "#ffd890", name: "一ヶ月の誓い", desc: "30 日連続でプレイする" },
   // EXTRA SHOT モード（クリア後の追加推理）関連
   { id: "h-double-clear", hidden: true, icon: "target", color: "#ffd166", name: "両手に花", desc: "EXTRA SHOT に成功して DOUBLE CLEAR する" },
   { id: "h-double-uso", hidden: true, icon: "eye", color: "#ff9ad0", name: "すべてお見通し", desc: "DWORDlie で DOUBLE CLEAR する（嘘の判定だけから両方の答えを見抜く）" },
-  { id: "h-double-oneshot", hidden: true, icon: "bolt", color: "#ffe680", name: "神の二手", desc: "1 手クリアから DOUBLE CLEAR する（合計 2 手で両方の答えを当てる）" },
-  { id: "h-double-10", hidden: true, icon: "crown", color: "#ffcf5c", name: "二兎を得る者", desc: "DOUBLE CLEAR を通算 10 回達成する" },
+  { id: "h-double-oneshot", hidden: true, icon: "bolt", color: "#8fe3ff", name: "神の二手", desc: "1 手クリアから DOUBLE CLEAR する（合計 2 手で両方の答えを当てる）" },
+  { id: "h-double-10", glow: true, hidden: true, icon: "crown", color: "#ffd166", name: "二兎を得る者", desc: "DOUBLE CLEAR を通算 10 回達成する" },
   { id: "h-double-abyss", hidden: true, icon: "deepGem", color: "#a0d8e8", name: "深淵の両取り", desc: "極 (No.10000-19999) で DOUBLE CLEAR する" },
   { id: "h-double-streak-3", hidden: true, icon: "chain", color: "#ffb0e0", name: "双璧の連鎖", desc: "3 ゲーム連続で DOUBLE CLEAR する" },
 ];
