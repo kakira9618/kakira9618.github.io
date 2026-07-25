@@ -5,7 +5,7 @@ import { el, clear, fmtDateTime } from "./dom.js?v=20260725-b";
 import { registerScreen, navigate, setViewMood } from "./app.js?v=20260725-b";
 import { findGame, MODES, getExtraShot, getExtraShotResult } from "../core/records.js?v=20260725-b";
 import { Logic, CELL } from "../core/logic.js?v=20260725-b";
-import { pidLabel, isDailyPID } from "../core/problems.js?v=20260725-b";
+import { pidLabel } from "../core/problems.js?v=20260725-b";
 import { playSfx } from "../audio/sound.js?v=20260725-b";
 import { toast } from "./toast.js?v=20260725-b";
 import { confirmAndStart } from "./game-screen.js?v=20260725-b";
@@ -35,7 +35,9 @@ function displayResults(record, logic) {
 // 原作互換のシェア文字列 + 公開 URL
 function buildShareText(record, logic, cleared, includeUrl = true) {
   const results = displayResults(record, logic);
-  const seedLabel = isDailyPID(record.problemID) ? "Daily" : `No.${record.problemID}`;
+  // Daily は日付まで入れる（"Daily" だけだと別の日のシェアと見分けが付かない）。
+  // 画面表示・履歴と同じ pidLabel を使う: "Daily 2026-07-26" / "No.12345"
+  const seedLabel = pidLabel(record.problemID);
   const maxGuess = MODES[record.gameMode].maxGuess;
   const name = record.gameMode === "uso" ? tr("[嘘] DWORDlie2", "[LIE] DWORDlie2") : "DWORDle2";
   const countText = cleared ? `${record.guessWord.length}/${maxGuess}` : `X/${maxGuess}`;
