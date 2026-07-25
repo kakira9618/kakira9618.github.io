@@ -64,8 +64,11 @@ let extraShotFinishPending = false;
 let extraShotSkipReveal = null; // 2周目以降のタップによる判定演出スキップ
 let gatherSession = 0;
 let pendingKeys = []; // 判定オープン中の先行入力（次の 1 行分だけ保持）
-let lastTouchKey = null; // pointerdown で確定したタッチ入力（合成 click の重複抑止用）
-let lastTouchKeyTime = 0;
+// タッチ/ペンで処理済みのキー。あとから届く合成 click を 1 件ずつ打ち消すために、
+// キーごとに時刻を並べて持つ（直前の 1 件だけを覚える方式では、P → O と速く打ったとき
+// P の合成 click が O のあとに届いて素通りし、"POP" のように増えてしまう）。
+const TOUCH_CLICK_WINDOW_MS = 700;
+const touchHandledKeys = new Map(); // key -> timeStamp[]
 
 function build() {
   root = document.getElementById("screen-game");
@@ -143,6 +146,23 @@ function applyKeyboardCollapsed() {
   );
 }
 
+function markTouchHandled(key, timeStamp) {
+  const times = touchHandledKeys.get(key) ?? [];
+  times.push(timeStamp);
+  touchHandledKeys.set(key, times);
+}
+
+// 合成 click なら 1 件消費して true を返す。preventDefault が効いて click が
+// 来なかったぶんは、次に同じキーを触ったときに期限切れとして捨てる。
+function consumeTouchClick(key, timeStamp) {
+  const times = touchHandledKeys.get(key);
+  if (!times?.length) return false;
+  while (times.length && timeStamp - times[0] > TOUCH_CLICK_WINDOW_MS) times.shift();
+  if (!times.length) return false;
+  times.shift();
+  return true;
+}
+
 function buildKeyboard() {
   clear(keyboardEl);
   keyEls = {};
@@ -159,7 +179,7 @@ function buildKeyboard() {
           onclick: (event) => {
             // タッチ/ペンの pointerdown ですでに処理済みのタップの合成 click は無視する
             // （抑止が効かない環境での二重入力防止）。キーボード・支援技術の click は通す。
-            if (event.timeStamp - lastTouchKeyTime < 700 && lastTouchKey === k) return;
+            if (consumeTouchClick(k, event.timeStamp)) return;
             handleKey(k);
           },
         },
@@ -171,8 +191,7 @@ function buildKeyboard() {
       btn.addEventListener("pointerdown", (event) => {
         if (event.pointerType === "mouse") return; // マウスは従来どおり click で処理
         event.preventDefault(); // 合成 click を抑止する
-        lastTouchKey = k;
-        lastTouchKeyTime = event.timeStamp;
+        markTouchHandled(k, event.timeStamp);
         handleKey(k);
       });
       keyEls[k] = btn;

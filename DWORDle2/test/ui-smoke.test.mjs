@@ -2013,6 +2013,64 @@ try {
     await narrowPage.close();
   }
 
+  // タッチのキー入力: iOS は指を離したあと遅れて合成 click を配る。
+  // 直前の 1 キーだけを覚える抑止だと、P → O と速く打つと P の click が O の後に届いて
+  // "POP" のように増えていた。キーごとに 1 件ずつ打ち消す。
+  {
+    const touchPage = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: "ja-JP", hasTouch: true });
+    await touchPage.addInitScript(() => {
+      localStorage.setItem("dwordle2.settings", JSON.stringify({ theme: "classic", sfx: false, bgm: false, language: "ja", reduceFx: true }));
+      localStorage.setItem("dwordle2.legacyImportPrompted", "true");
+      localStorage.setItem("dwordle2.tutorialSeen", "true");
+      localStorage.setItem("dwordle2.helpSeen", "true");
+      localStorage.setItem("dwordle2.playCount", "99");
+      localStorage.setItem("dwordle2.menuUnlockSeen", "99");
+      localStorage.setItem("dwordle2.extraShotUnlockSeen", "true");
+      localStorage.setItem("dwordle2.achievements.reconcileVersion", "99");
+    });
+    await touchPage.goto(baseUrl, { waitUntil: "networkidle" });
+    await passGate(touchPage);
+    await touchPage.getByRole("button", { name: "本日の問題", exact: true }).click();
+    await touchPage.waitForURL(/#\/game$/);
+    await touchPage.locator("#screen-game.active .row").last().waitFor();
+    const typedRow = () => touchPage.evaluate(() =>
+      [...document.querySelectorAll("#board .row")]
+        .map((row) => [...row.querySelectorAll(".tile")].map((tile) => tile.textContent).join(""))
+        .find((text) => text.trim() !== "") ?? ""
+    );
+    const touchKey = (key) => touchPage.evaluate(([k]) => {
+      const button = document.querySelector(`#keyboard [data-key="${k}"]`);
+      const box = button.getBoundingClientRect();
+      const init = {
+        bubbles: true, cancelable: true, pointerType: "touch", pointerId: 1,
+        clientX: box.x + box.width / 2, clientY: box.y + box.height / 2,
+      };
+      button.dispatchEvent(new PointerEvent("pointerdown", init));
+      button.dispatchEvent(new PointerEvent("pointerup", init));
+    }, [key]);
+    const lateClick = (key) => touchPage.evaluate(([k]) => {
+      document.querySelector(`#keyboard [data-key="${k}"]`)
+        .dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    }, [key]);
+
+    await touchKey("p");
+    await touchKey("o");
+    await lateClick("p"); // 指を離した P の合成 click が O のあとに届く
+    assert.equal(await typedRow(), "PO", "a late synthetic click must not repeat an earlier key");
+    // 同じキーの連打では、合成 click を打った数だけ打ち消す
+    for (let i = 0; i < 5; i++) await touchPage.locator('#keyboard [data-key="backspace"]').click();
+    await touchKey("s");
+    await touchKey("s");
+    await lateClick("s");
+    await lateClick("s");
+    assert.equal(await typedRow(), "SS", "each touch should swallow exactly one synthetic click");
+    // 合成 click が来ない環境（Android など）でもタッチだけで入力できる
+    for (let i = 0; i < 5; i++) await touchPage.locator('#keyboard [data-key="backspace"]').click();
+    for (const key of ["b", "l", "o", "o", "d"]) await touchKey(key);
+    assert.equal(await typedRow(), "BLOOD", "touch input alone must still type");
+    await touchPage.close();
+  }
+
   // 進行中のゲームで戻ると、中断（保存を残す）か破棄（履歴へ残して終了）かを選ばせる。
   // EXTRA SHOT 中は従来どおり棄権確認なので、ここは通常プレイで見る。
   {
