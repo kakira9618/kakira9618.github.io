@@ -32,6 +32,13 @@ export function showConsentBanner() {
       tr(
         "利用状況の把握のため Google アナリティクスの Cookie を使ってよろしいですか？プレイ履歴や入力した単語は送信しません。",
         "May we use Google Analytics cookies to understand how the game is used? Your play history and the words you type are never sent."
+      ),
+      " ",
+      // 同意を求める場では、その場から詳細（Google のデータ利用）へ辿れるようにする
+      el(
+        "a",
+        { href: "https://policies.google.com/technologies/partner-sites", target: "_blank", rel: "noopener noreferrer" },
+        tr("詳細", "Details")
       )
     ),
     el(

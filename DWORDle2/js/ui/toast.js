@@ -408,9 +408,6 @@ export function extraShotUnlockCelebration() {
   });
 }
 
-// 旧コード向けの互換エイリアス。
-export const finalAnswerUnlockCelebration = extraShotUnlockCelebration;
-
 // ---- 隠しテーマ解放 ----
 
 // HIDDEN_THEMES のエントリを受け取り、その場で切り替えられる解放カードを出す。

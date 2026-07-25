@@ -91,6 +91,35 @@ assert(achievementIds.has("uso-clear"));
   assert.equal(getHistory().length, before);
 }
 
+// ---- 手で編集されたエクスポート JSON: startTime / gameMode を検証・正規化して取り込む ----
+// 未知の gameMode をそのまま履歴へ入れると MODES[gameMode] を引く画面が例外で開けなくなり、
+// 非数値の startTime は履歴のソートと結果画面 URL のキーを壊す。
+{
+  const { importFromText } = await import("../js/core/migrate.js?v=20260725-b");
+  const { MODES } = await import("../js/core/records.js?v=20260725-b");
+  const before = getHistory().length;
+  const { added } = importFromText(
+    JSON.stringify({
+      app: "dwordle2",
+      version: 1,
+      history: [
+        { startTime: "not-a-number", endTime: null, gameMode: "cheat", problemID: 1234, guessWord: ["about"] },
+        { startTime: 1_760_000_000, endTime: "bogus", gameMode: "cheat", problemID: 1235, guessWord: ["about"] },
+      ],
+    })
+  );
+  assert.equal(added, 1, "a record without a usable startTime must be rejected");
+  assert.equal(getHistory().length, before + 1);
+  const normalized = getHistory().find((record) => record.problemID === 1235);
+  assert.equal(normalized.gameMode, "normal", "an unknown gameMode must be normalized to normal");
+  assert.ok(MODES[normalized.gameMode], "every stored record must resolve to a known mode");
+  assert.equal(normalized.endTime, 1_760_000_000, "a malformed endTime must fall back to startTime");
+  assert.ok(
+    getHistory().every((record) => Number.isFinite(Number(record.startTime)) && MODES[record.gameMode]),
+    "history must never contain records the screens cannot render"
+  );
+}
+
 // ---- 実績を解除しないインポート: noAchievements が付き、実績判定から恒久的に除外される ----
 {
   const { importFromText } = await import("../js/core/migrate.js?v=20260725-b");

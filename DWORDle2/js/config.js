@@ -155,9 +155,6 @@ export const FX = {
   },
 };
 
-// 旧コード向けの互換エイリアス。新規コードは extraShot を使用する。
-FX.finalAnswer = FX.extraShot;
-
 export const AUDIO = {
   masterGain: 0.5,
   bgmGain: 0.16,

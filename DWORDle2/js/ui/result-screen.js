@@ -238,7 +238,13 @@ function render(args) {
             if (error?.name === "AbortError") return;
           }
         }
-        open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(buildShareText(record, logic, cleared))}`, "_blank");
+        // open() は <a target="_blank"> と違って暗黙の noopener にならないため明示する
+        // （開いた先に window.opener を渡さない）
+        open(
+          `https://twitter.com/intent/tweet?text=${encodeURIComponent(buildShareText(record, logic, cleared))}`,
+          "_blank",
+          "noopener"
+        );
       }, true),
       actionBtn("copy", tr("コピー", "Copy"), async () => {
         try {

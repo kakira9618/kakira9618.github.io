@@ -201,7 +201,15 @@ async function main() {
 
   if (opts.tests) {
     console.log("npm test を実行中…");
-    await run("npm", ["test"]);
+    try {
+      await run("npm", ["test"]);
+    } catch (error) {
+      // 書き換えたまま止まると作業ツリーが中途半端に汚れ、次の実行が
+      // 「未コミットの変更がある」で弾かれる。元の内容へ戻してから投げ直す。
+      for (const site of sites) await writeFile(site.full, site.text);
+      console.error(`テストが失敗したので ${sites.map((s) => s.file).join(", ")} を元に戻した`);
+      throw error;
+    }
     console.log("テスト: OK");
   }
 

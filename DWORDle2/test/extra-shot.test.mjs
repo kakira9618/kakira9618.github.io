@@ -231,13 +231,16 @@ const { reveal } = await import("../js/core/secret.js?v=20260725-b");
 // ---- 設定の既定値 ----
 assert.equal(DEFAULT_SETTINGS.extraShot, false, "EXTRA SHOT の既定は OFF");
 
-// ---- 旧モジュール API は互換シムとして残す ----
+// ---- 解放条件（プレイ回数）----
+// 旧 FINAL ANSWER 名のモジュールシム（js/core/final-answer.js など）は、
+// 本体からの参照が無くなったため削除した。互換で残す必要があるのは
+// 保存データの移行（設定の finalAnswer / レコードの finalAnswer / finalAnswerUnlockSeen）だけ。
 {
   storage.clear();
   storage.set("dwordle2.playCount", "10");
-  const legacyApi = await import("../js/core/final-answer.js?legacy-api");
-  assert.equal(legacyApi.isFinalAnswerUnlocked(), true);
-  assert.equal(legacyApi.finalAnswerRemainingPlays(), 0);
+  const unlockApi = await import("../js/core/extra-shot.js?unlock-plays");
+  assert.equal(unlockApi.isExtraShotUnlocked(), true);
+  assert.equal(unlockApi.extraShotRemainingPlays(), 0);
 }
 
 // ---- 隠し実績 ----

@@ -33,6 +33,19 @@ function isImportableGame(v) {
   );
 }
 
+// 本作のエクスポート形式は startTime をそのまま履歴のキーに使うため、数値であることを要求する。
+// 非数値が混ざると履歴のソートと結果画面 URL (#/result/<mode>/<startTime>) が壊れる。
+function hasUsableStartTime(v) {
+  const startTime = Number(v?.startTime);
+  return Number.isFinite(startTime) && startTime > 0;
+}
+
+// 手で編集された JSON が未知の gameMode を持ち込むと、MODES[gameMode] を引く画面
+// （履歴一覧など）が例外で開けなくなる。旧作形式と同じ規則で必ず 2 値へ正規化する。
+function normalizeGameMode(gameMode) {
+  return gameMode === "uso" ? "uso" : "normal";
+}
+
 // オブジェクトが旧作の履歴ファイル（{ version, <time>: game, ... }）かどうか
 function looksLikeHistoryFile(obj) {
   if (!obj || typeof obj !== "object" || Array.isArray(obj)) return false;
@@ -51,7 +64,7 @@ function convertHistoryFile(obj, importedTag, withAchievements = true) {
     records.push({
       startTime: Number(game.startTime ?? key),
       endTime: Number(game.endTime ?? game.startTime ?? key),
-      gameMode: game.gameMode === "uso" ? "uso" : "normal",
+      gameMode: normalizeGameMode(game.gameMode),
       problemID: game.problemID,
       guessWord: game.guessWord.slice(),
       usoResults: Array.isArray(game.usoResults) ? game.usoResults : undefined,
@@ -68,7 +81,8 @@ export function scanLegacyHistory() {
   const found = []; // { key, games: n, obj }
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    if (key.startsWith("dwordle2.")) continue; // 本作自身のデータは除外
+    // 走査中に別タブがキーを消すと key は null になり得る（仕様）
+    if (key === null || key.startsWith("dwordle2.")) continue; // 本作自身のデータは除外
     const raw = localStorage.getItem(key);
     if (!raw || raw[0] !== "{") continue;
     let obj;
@@ -118,10 +132,19 @@ export function importFromText(text, { withAchievements = true } = {}) {
     throw new Error("JSON として読み取れませんでした");
   }
   if (obj && obj.app === "dwordle2" && Array.isArray(obj.history)) {
-    // 本作のエクスポート形式。レコード既存の noAchievements（過去の選択）は維持する
+    // 本作のエクスポート形式。レコード既存の noAchievements（過去の選択）は維持する。
+    // 手で編集された JSON も想定し、履歴のキーになる startTime と gameMode は
+    // 旧作形式と同じ強さで検証・正規化してから取り込む。
     const records = obj.history
-      .filter(isImportableGame)
-      .map((g) => ({ ...g, imported: g.imported ?? "json", ...(withAchievements ? {} : { noAchievements: true }) }));
+      .filter((g) => isImportableGame(g) && hasUsableStartTime(g))
+      .map((g) => ({
+        ...g,
+        startTime: Number(g.startTime),
+        endTime: Number.isFinite(Number(g.endTime)) ? Number(g.endTime) : Number(g.startTime),
+        gameMode: normalizeGameMode(g.gameMode),
+        imported: g.imported ?? "json",
+        ...(withAchievements ? {} : { noAchievements: true }),
+      }));
     return { added: addImportedGames(records), total: records.length };
   }
   if (looksLikeHistoryFile(obj)) {

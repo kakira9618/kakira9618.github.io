@@ -28,7 +28,7 @@
 
 import { loadJSON, saveJSON, onExternalChange } from "./store.js?v=20260725-b";
 import { isDailyPID, PID } from "./problems.js?v=20260725-b";
-import { getHistory, getExtraShot } from "./records.js?v=20260725-b";
+import { getHistory, getExtraShot, MODES } from "./records.js?v=20260725-b";
 import { CELL, Logic } from "./logic.js?v=20260725-b";
 import { isDebugMode } from "./debug.js?v=20260725-b";
 import { reveal } from "./secret.js?v=20260725-b";
@@ -499,7 +499,8 @@ export function achievementIdsFromHistory(records) {
     if (countable && guesses === 1) ids.add("one-shot");
     if (countable && guesses <= 2) ids.add("two-shot");
     if (guesses <= 4) ids.add("within-4");
-    if (guesses === (mode === "uso" ? 15 : 10)) ids.add("last-gasp");
+    // 最大手数は MODES から引く（checkOnGameFinish 側の maxGuess と定義を分けない）
+    if (guesses === MODES[mode].maxGuess) ids.add("last-gasp");
     if (
       guesses >= 3 &&
       results.length === guesses &&
@@ -625,7 +626,8 @@ export function checkOnGameFinish(ctx) {
   const lettersUsed = new Set(record.guessWord.join(""));
   if (countablePlay && lettersUsed.size >= 26) unlock("all-letters", newly);
   if (countablePlay && isUso && Array.isArray(record.usoResults)) {
-    if (record.usoResults.some((row) => row.every((s) => s === CELL.CORRECT))) {
+    // 行そのものが配列かも見る（履歴側 achievementIdsFromHistory と同じガード）
+    if (record.usoResults.some((row) => Array.isArray(row) && row.every((s) => s === CELL.CORRECT))) {
       unlock("h-uso-green", newly);
     }
   }

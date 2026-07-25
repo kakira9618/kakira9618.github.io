@@ -9,7 +9,12 @@
 //     usage: { themes: { cyber: 123456, ... }, bgm: { normal: 123456, ... } }, // テーマ / BGM の累計使用時間（ms）
 //     events: [ [unix秒, 種別, ID], ... ]                                   // 直近の生イベント（リングバッファ）
 //   }
-// counters / screens は無制限に育っても小さい集計値。events は EVENT_LIMIT 件で古い方から捨てる。
+// screens は画面数ぶんしか増えない。events は EVENT_LIMIT 件で古い方から捨てる。
+// counters は ID の種類だけ増える。ID はボタンのラベル由来なので、問題一覧・履歴一覧の
+// ように「問題番号や進捗を含むラベル」を持つ画面では種類が際限なく増える
+// （例: `click:problems:問題 1、未プレイ` はクリアすると別キーになる）。
+// そのため COUNTER_KEY_LIMIT で打ち止めにし、以降の新しい ID は画面単位のバケット
+// （`click:problems:*`）へまとめる。既存キーの計数は続くので、これまでの集計は失われない。
 // ID にはボタンのラベル文字列を使うため表示言語で変わり得る。称号の判定条件に使うときは
 // 両言語のキーを見るか、counters ではなく screens / 専用カウンタを使うこと。
 
@@ -22,6 +27,9 @@ const EVENT_LIMIT = 2000;
 const FLUSH_DELAY_MS = 2000;
 // ID に使うラベルの最大長
 const LABEL_MAX_CHARS = 40;
+// counters に持つキーの上限（1 キー ≈ 50 バイトなので 500 件で約 25KB）。
+// 超えたあとの新しい ID は overflowCounterKey() のバケットへ寄せる。
+export const COUNTER_KEY_LIMIT = 500;
 
 let data = null;
 let dirty = false;
@@ -59,18 +67,34 @@ function flush() {
   saveJSON("activity", data);
 }
 
+// 上限を超えて新しく現れた ID をまとめるキー。
+// `click:problems:問題 12` → `click:problems:*` のように、種別と画面までは残す。
+function overflowCounterKey(key) {
+  const parts = key.split(":");
+  return `${parts.slice(0, Math.min(2, parts.length)).join(":")}:*`;
+}
+
+// counters のキーを 1 つ増やす。上限に達したあとの新しいキーはバケットへ寄せる
+// （既存キーはそのまま数え続けるので、これまでの集計値は失われない）。
+function bumpCounter(activity, key, n = 1) {
+  let target = key;
+  if (activity.counters[target] === undefined && Object.keys(activity.counters).length >= COUNTER_KEY_LIMIT) {
+    target = overflowCounterKey(key);
+  }
+  activity.counters[target] = (activity.counters[target] ?? 0) + n;
+}
+
 // counters だけを増やす（打鍵などの高頻度イベント用。リングバッファには残さない）
 export function logCount(id, n = 1) {
   const activity = ensureLoaded();
-  activity.counters[id] = (activity.counters[id] ?? 0) + n;
+  bumpCounter(activity, id, n);
   scheduleFlush();
 }
 
 // counters を増やし、リングバッファにも [時刻, 種別, ID] を残す
 export function logEvent(type, id) {
   const activity = ensureLoaded();
-  const key = `${type}:${id}`;
-  activity.counters[key] = (activity.counters[key] ?? 0) + 1;
+  bumpCounter(activity, `${type}:${id}`);
   activity.events.push([Math.floor(Date.now() / 1000), type, id]);
   if (activity.events.length > EVENT_LIMIT) {
     activity.events.splice(0, activity.events.length - EVENT_LIMIT);

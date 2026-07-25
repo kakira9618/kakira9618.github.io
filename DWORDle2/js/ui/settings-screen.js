@@ -272,7 +272,10 @@ function showImportModal() {
             toast(tr("このブラウザに旧作の履歴が見つかりませんでした", "No history from the original games was found in this browser"));
             return;
           }
-          complete(importFromLocalStorage());
+          // withAchievements を渡し忘れると、レコードに noAchievements が付かないまま
+          // 取り込まれ、後の再集計（RECONCILE_VERSION 更新後の初回起動）で
+          // 断ったはずの実績が解除されてしまう。
+          complete(importFromLocalStorage({ withAchievements: achievementsCheck.checked }));
         },
       }, icon("search"), tr("DWORDle / DWORDlie を自動検出", "Auto-detect DWORDle / DWORDlie")),
       el(

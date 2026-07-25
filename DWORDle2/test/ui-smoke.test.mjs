@@ -84,8 +84,18 @@ const ogJpg = await readFile(path.join(projectRoot, "og.jpg"));
     "sw.js のキャッシュ名が古い。node tools/make-source-hash.mjs で更新する"
   );
   const { listPrecacheAssets } = await import("../tools/make-source-hash.mjs");
-  for (const asset of await listPrecacheAssets()) {
+  const assets = await listPrecacheAssets();
+  for (const asset of assets) {
     assert.ok(swSource.includes(`"${asset}"`), `sw.js の事前キャッシュに ${asset} がない。node tools/make-source-hash.mjs で更新する`);
+  }
+  // 消したファイルが事前キャッシュに残っていると install の cache.addAll() が 404 で
+  // 失敗し、SW が有効化されないまま（= オフライン不可・新版へ切り替わらない）になる。
+  // 生成物なので、リストは実ファイルと完全一致していること。
+  {
+    const listed = JSON.parse(swSource.slice(swSource.indexOf("const PRECACHE = ") + "const PRECACHE = ".length, swSource.indexOf("];") + 1));
+    const known = new Set(assets);
+    const stale = listed.filter((asset) => asset !== "./" && !known.has(asset));
+    assert.deepEqual(stale, [], `sw.js の事前キャッシュに実在しないファイルが残っている。node tools/make-source-hash.mjs で更新する`);
   }
 }
 
@@ -2333,6 +2343,60 @@ try {
     );
   } finally {
     await importLockContext.close();
+  }
+
+  // 設定画面の自動検出インポートも「実績も解除する」の選択に従う。
+  // ここで withAchievements を渡し忘れるとレコードに noAchievements が付かず、
+  // その場は静かでも、後の再集計（RECONCILE_VERSION 更新後の初回起動）で
+  // 断ったはずの実績が解除されてしまう。
+  const importOptOutContext = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
+  const importOptOutPage = await importOptOutContext.newPage();
+  try {
+    await importOptOutPage.addInitScript(() => {
+      localStorage.setItem("dwordle2.tutorialSeen", "true");
+      localStorage.setItem("dwordle2.helpSeen", "true");
+      localStorage.setItem("dwordle2.helpSeenUso", "true");
+      localStorage.setItem("dwordle2.legacyImportPrompted", "true"); // 自動提案は出さず、設定から入る
+      localStorage.setItem("tonyu-legacy-history", JSON.stringify({
+        version: 1,
+        1700000100: { startTime: 1700000100, endTime: 1700000130, gameMode: "normal", problemID: 2, guessWord: ["point"], complete: true },
+      }));
+    });
+    await importOptOutPage.goto(baseUrl, { waitUntil: "networkidle" });
+    await passGate(importOptOutPage);
+    await importOptOutPage.getByRole("button", { name: "設定", exact: true }).click();
+    await importOptOutPage.getByRole("tab", { name: "データ" }).click();
+    await importOptOutPage.getByRole("button", { name: "履歴をインポート（移行）" }).click();
+    const optOutDialog = importOptOutPage.getByRole("dialog", { name: "履歴のインポート（移行）" });
+    await optOutDialog.waitFor();
+    await optOutDialog.getByRole("checkbox").uncheck();
+    await optOutDialog.getByRole("button", { name: "DWORDle / DWORDlie を自動検出" }).click();
+    await importOptOutPage.locator("#toast-layer .toast").filter({ hasText: "件のプレイ履歴をマージしました" }).waitFor();
+
+    const optOutState = await importOptOutPage.evaluate(() => ({
+      history: JSON.parse(localStorage.getItem("dwordle2.history") ?? "[]"),
+      achievements: Object.keys(JSON.parse(localStorage.getItem("dwordle2.achievements") ?? "{}")),
+    }));
+    assert.equal(optOutState.history.length, 1, "the record should still be imported");
+    assert.equal(
+      optOutState.history[0].noAchievements,
+      true,
+      "auto-detect must honour the unchecked achievements box by flagging the record"
+    );
+    assert.deepEqual(optOutState.achievements, [], "no achievement should be unlocked by the opt-out import");
+
+    // 将来のリリースでの再集計を再現する（reconcileVersion を消して再起動）
+    await importOptOutPage.evaluate(() => localStorage.removeItem("dwordle2.achievements.reconcileVersion"));
+    await importOptOutPage.reload({ waitUntil: "networkidle" });
+    await passGate(importOptOutPage);
+    await importOptOutPage.waitForTimeout(1200);
+    assert.deepEqual(
+      await importOptOutPage.evaluate(() => Object.keys(JSON.parse(localStorage.getItem("dwordle2.achievements") ?? "{}"))),
+      [],
+      "a later reconcile must not unlock achievements the player declined"
+    );
+  } finally {
+    await importOptOutContext.close();
   }
 
   // プレイヤーカード: 5 プレイ未満はロック（メニュー施錠 + 直接 URL はタイトルへ戻す）

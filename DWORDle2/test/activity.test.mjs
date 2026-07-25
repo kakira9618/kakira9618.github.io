@@ -1,4 +1,5 @@
-// 行動ログのお気に入り集計（テーマ / BGM の累計使用時間）のテスト。
+// 行動ログのお気に入り集計（テーマ / BGM の累計使用時間）と、
+// counters のキー数に上限があること（問題番号入りラベルで無制限に増えない）のテスト。
 // お気に入り = 使用時間が最長のもの。まだ記録が無ければ null（カード側は「-」表示）。
 import assert from "node:assert/strict";
 
@@ -26,11 +27,14 @@ data.set("dwordle2.activity", JSON.stringify({
 
 const { setSetting } = await import("../js/core/settings.js?v=20260725-b");
 const {
+  COUNTER_KEY_LIMIT,
   favoriteBgmTrackId,
   favoriteThemeId,
   getActivity,
   initActivity,
   logBgmTime,
+  logCount,
+  logEvent,
 } = await import("../js/core/activity.js?v=20260725-b");
 
 // usage の無い既存データでも壊れず、お気に入りは「無し」(null) になる
@@ -65,6 +69,36 @@ assert.ok(
   themeTotals.cyber > 0 && themeTotals.classic > themeTotals.cyber,
   `both themes should have positive totals with classic ahead (${JSON.stringify(themeTotals)})`
 );
+
+// counters のキー数の上限: 問題一覧のように番号や進捗を含むラベルでも際限なく増えない。
+// 上限に達したあとの新しい ID は `click:problems:*` へまとめ、既存キーは数え続ける。
+{
+  const before = Object.keys(getActivity().counters).length;
+  logEvent("click", "title:本日の問題"); // 上限前の通常キー（あとで加算されることを確認する）
+  const knownKey = "click:title:本日の問題";
+  assert.equal(getActivity().counters[knownKey], 1);
+  // 問題一覧のセルを大量にタップした状況（ラベルは番号と進捗を含むので毎回違うキーになる）
+  for (let pid = 1; pid <= COUNTER_KEY_LIMIT + 200; pid++) {
+    logEvent("click", `problems:問題 ${pid}、未プレイ`);
+  }
+  const counters = getActivity().counters;
+  const keys = Object.keys(counters);
+  assert.ok(
+    keys.length <= COUNTER_KEY_LIMIT + 8,
+    `counter keys must stay bounded (${keys.length} keys for ${COUNTER_KEY_LIMIT + 200} distinct ids)`
+  );
+  assert.ok(counters["click:problems:*"] > 0, "ids beyond the limit must be folded into a per-screen bucket");
+  assert.equal(
+    keys.filter((key) => key.startsWith("click:problems:") && key !== "click:problems:*").length,
+    COUNTER_KEY_LIMIT - before - 1,
+    "only the keys that fit under the limit should be kept individually"
+  );
+  // 上限に達したあとも、既に存在するキーの計数は続く
+  logEvent("click", "title:本日の問題");
+  logCount("key:physical");
+  assert.equal(getActivity().counters[knownKey], 2, "existing counters must keep counting after the limit");
+  assert.equal(getActivity().counters["key:physical"], 4, "existing counters must keep counting after the limit");
+}
 
 // 集計は少し置くと localStorage に書き出される
 await new Promise((resolve) => setTimeout(resolve, 2200));

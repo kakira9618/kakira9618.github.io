@@ -691,9 +691,6 @@ const SFX = {
   swoosh: () => noise({ dur: 0.25, gain: 0.12, freq: 1200 }),
 };
 
-// 旧コード向けの互換エイリアス。新規コードは extraShot を使用する。
-SFX.finalAnswer = SFX.extraShot;
-
 export function playSfx(name, { cancellable = false } = {}) {
   if (!getSettings().sfx) return;
   if (!ensureContext()) return;
