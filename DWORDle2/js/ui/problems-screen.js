@@ -56,6 +56,8 @@ function openProblemMenu(pid, statusMap, { allowPlay = true } = {}) {
       )
     );
   showModal({
+    // 履歴が長いと「閉じる」まで遠いので、右上の × でも閉じられるようにする
+    closeButton: true,
     title: pidLabel(pid),
     body: [
       allowPlay

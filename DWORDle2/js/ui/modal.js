@@ -4,6 +4,7 @@ import { el, clear } from "./dom.js?v=20260725-b";
 import { playSfx } from "../audio/sound.js?v=20260725-b";
 import { tr } from "../core/i18n.js?v=20260725-b";
 import { logEvent } from "../core/activity.js?v=20260725-b";
+import { icon } from "./icons.js?v=20260725-b";
 
 const layer = () => document.getElementById("modal-layer");
 const openCloseFns = new Set(); // closeAllModals 用
@@ -15,7 +16,9 @@ const FOCUSABLE =
 // showModal({ title, body, actions: [{label, primary, danger, onClick}] })
 // onClick が false を返さない限り閉じる。戻り値は close()。
 // startAtTop: true ならモーダル自体へフォーカスし、開くたびスクロール位置を先頭へ戻す。
-export function showModal({ title, body, actions = [], onClose = null, startAtTop = false }) {
+// closeButton: true なら右上に控えめな × を出す（本文が長く、閉じるボタンまで
+// スクロールしないと届かないダイアログ向け。スクロールしても追従する）。
+export function showModal({ title, body, actions = [], onClose = null, startAtTop = false, closeButton = false }) {
   if (typeof title === "string") logEvent("modal", title.slice(0, 40)); // 行動ログ
   const backdrop = el("div", { class: "modal-backdrop" });
   const previousFocus = document.activeElement;
@@ -60,6 +63,21 @@ export function showModal({ title, body, actions = [], onClose = null, startAtTo
       "aria-label": title ? null : tr("ダイアログ", "Dialog"),
       tabindex: "-1",
     },
+    closeButton
+      ? el(
+          "div",
+          { class: "modal-close-row" },
+          el(
+            "button",
+            {
+              class: "modal-close",
+              "aria-label": tr("閉じる", "Close"),
+              onclick: () => { playSfx("ui"); close(); },
+            },
+            icon("x", 16)
+          )
+        )
+      : null,
     title ? el("h2", { id: titleId }, title) : null,
     el("div", { class: "modal-body" }, body),
     actions.length ? el("div", { class: "modal-actions" }, actionBtns) : null

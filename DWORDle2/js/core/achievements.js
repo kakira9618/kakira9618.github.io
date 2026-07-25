@@ -126,7 +126,7 @@ export const ACHIEVEMENTS = [
   { id: "h-double-uso", hidden: true, icon: "eye", color: "#ff9ad0", name: "すべてお見通し", desc: "DWORDlie で DOUBLE CLEAR する（嘘の判定だけから両方の答えを見抜く）" },
   { id: "h-double-oneshot", hidden: true, icon: "bolt", color: "#ffe680", name: "神の二手", desc: "1 手クリアから DOUBLE CLEAR する（合計 2 手で両方の答えを当てる）" },
   { id: "h-double-10", hidden: true, icon: "crown", color: "#ffcf5c", name: "二兎を得る者", desc: "DOUBLE CLEAR を通算 10 回達成する" },
-  { id: "h-double-abyss", hidden: true, icon: "spiral", color: "#a0d8e8", name: "深淵の両取り", desc: "極 (No.10000-19999) で DOUBLE CLEAR する" },
+  { id: "h-double-abyss", hidden: true, icon: "deepGem", color: "#a0d8e8", name: "深淵の両取り", desc: "極 (No.10000-19999) で DOUBLE CLEAR する" },
   { id: "h-double-streak-3", hidden: true, icon: "chain", color: "#ffb0e0", name: "双璧の連鎖", desc: "3 ゲーム連続で DOUBLE CLEAR する" },
 ];
 

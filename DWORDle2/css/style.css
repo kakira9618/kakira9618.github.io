@@ -1078,6 +1078,39 @@ body.theme-cyber .modal {
   from { transform: scale(0.9) translateY(12px); opacity: 0; }
   to { transform: none; opacity: 1; }
 }
+/* 右上の控えめな × 。モーダル自体がスクロールコンテナなので sticky で追従させ、
+   height: 0 の行に浮かせてタイトルの位置を動かさない */
+.modal-close-row {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  height: 0;
+  display: flex;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+.modal-close {
+  pointer-events: auto;
+  width: 32px;
+  height: 32px;
+  margin: -6px -6px 0 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--fg-dim);
+  opacity: 0.65;
+  transition: opacity 0.15s;
+}
+.modal-close:hover,
+.modal-close:focus-visible {
+  opacity: 1;
+}
+/* × と重ならないようにタイトルの右を空ける */
+.modal-close-row + h2 {
+  padding-right: 30px;
+}
 .modal h2 {
   font-size: 19px;
   letter-spacing: 0.06em;
@@ -1635,6 +1668,25 @@ body.theme-cyber .card.tappable:hover {
 }
 .history-filter-field input::placeholder {
   color: var(--fg-dim);
+}
+/* iOS / Safari の日付入力はネイティブ装飾の分だけ内容が右へはみ出すので、
+   装飾を外して値を左寄せにし、枠内に必ず収める */
+.history-filter-field input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  overflow: hidden;
+}
+.history-filter-field input[type="date"]::-webkit-date-and-time-value {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+.history-filter-field input[type="date"]::-webkit-calendar-picker-indicator {
+  flex: none;
+  margin: 0 0 0 auto;
+  padding: 0;
 }
 /* 明るい Pop の入力欄は、無効状態に見える灰色を避けて編集可能な面を明示する
    （プレイヤー名入力と同じ扱い）。color-scheme も light にして日付・数値の

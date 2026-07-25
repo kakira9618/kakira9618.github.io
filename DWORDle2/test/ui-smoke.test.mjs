@@ -1004,7 +1004,13 @@ try {
     1,
     "past Daily results should use the date-time play label and remain viewable"
   );
-  await historicalDailyDialog.getByRole("button", { name: "閉じる" }).click();
+  // 右上の × でも閉じられる（本文が長いと下の「閉じる」までスクロールが要るため）
+  assert.equal(
+    await historicalDailyDialog.locator(".modal-close").count(),
+    1,
+    "the puzzle dialog should offer a close button in the top-right corner"
+  );
+  await historicalDailyDialog.locator(".modal-close").click();
   assert.equal(
     await page.evaluate(async ({ pid }) => {
       const { confirmAndStart } = await import("./js/ui/game-screen.js?v=20260725-b");
@@ -1025,7 +1031,7 @@ try {
   await todayDaily.click();
   const dailyDialog = page.getByRole("dialog", { name: pidLabel(todayPID()) });
   await dailyDialog.waitFor();
-  await dailyDialog.getByRole("button", { name: "閉じる" }).click();
+  await dailyDialog.locator(".modal-actions").getByRole("button", { name: "閉じる" }).click();
 
   // 今日のDailyをDWORDleだけでプレイ済みなら、DWORDlie側は「未プレイ」のまま。
   // 開始時は矛盾した「プレイ済み」ではなく、別モードでの当日プレイだと明示する。
@@ -1068,7 +1074,7 @@ try {
     { exact: false }
   ).waitFor();
   await crossModeDailyDialog.getByRole("button", { name: "キャンセル" }).click();
-  await usoDailyDialog.getByRole("button", { name: "閉じる" }).click();
+  await usoDailyDialog.locator(".modal-actions").getByRole("button", { name: "閉じる" }).click();
   await page.evaluate(async () => {
     const app = await import("./js/ui/app.js?v=20260725-b");
     app.setAppMode("normal");
