@@ -576,7 +576,8 @@ try {
   assert.equal(usoPopHelpTileColors.correct.color, "rgb(6, 40, 26)");
   assert.equal(usoPopHelpTileColors.used.color, "rgb(32, 23, 0)");
   assert.equal(usoPopHelpTileColors.unused.color, "rgb(255, 255, 255)");
-  assert.equal(await usoPopHelp.locator(".modal-close").count(), 0, "help dialog should not have a top-right close button");
+  // 本文が長いので、右上の × でも閉じられる（下端の「閉じる」に気づかない人向け）
+  assert.equal(await usoPopHelp.locator(".modal-close").count(), 1, "help dialog should have a top-right close button");
   await page.waitForFunction(() => {
     const dialog = document.querySelector('[role="dialog"][aria-labelledby]');
     return dialog?.textContent.includes("DWORDlie 遊び方") && dialog.scrollTop === 0 && document.activeElement === dialog;
@@ -587,7 +588,8 @@ try {
     dialog.scrollTop = dialog.scrollHeight;
   });
   assert.ok(await usoPopHelp.evaluate((dialog) => dialog.scrollTop > 0), "help dialog should be scrollable for the reopen test");
-  await usoPopHelp.getByRole("button", { name: "閉じる" }).click();
+  // 下端までスクロールした状態でも × は追従して見えている（sticky が効いているかの検知）
+  await usoPopHelp.locator(".modal-close").click();
   await usoPopHelp.waitFor({ state: "detached" });
   await page.getByRole("button", { name: "遊び方" }).click();
   const reopenedUsoHelp = page.getByRole("dialog", { name: "DWORDlie 遊び方" });
@@ -601,7 +603,7 @@ try {
     return dialog?.textContent.includes("DWORDlie 遊び方") && dialog.scrollTop === 0 && document.activeElement === dialog;
   });
   assert.equal(await reopenedUsoHelp.evaluate((dialog) => dialog.scrollTop), 0, "reopened help dialog should always start at the top");
-  await reopenedUsoHelp.getByRole("button", { name: "閉じる" }).click();
+  await reopenedUsoHelp.locator(".modal-actions").getByRole("button", { name: "閉じる" }).click();
   await reopenedUsoHelp.waitFor({ state: "detached" });
   await page.getByRole("button", { name: "番号を指定" }).click();
   const usoPopPuzzleDialog = page.getByRole("dialog", { name: "番号を指定してプレイ" });
@@ -1837,6 +1839,60 @@ try {
   assert.equal(flightsAfterLeave, 0, "Tile gather animation should be removed when leaving the game");
   await shortPage.close();
 
+  // 375〜389px（iPhone SE2 / 8 / X 世代）のゲーム画面ヘッダー。
+  // 詰めのメディアクエリが 374px までしか効かず "DWORD..." に省略されていた回帰の検知。
+  for (const narrowWidth of [375, 389]) {
+    const narrowPage = await browser.newPage({ viewport: { width: narrowWidth, height: 844 }, locale: "ja-JP" });
+    await narrowPage.addInitScript(() => {
+      localStorage.setItem("dwordle2.settings", JSON.stringify({ theme: "cyber", sfx: false, bgm: false, language: "ja" }));
+      localStorage.setItem("dwordle2.legacyImportPrompted", "true");
+      localStorage.setItem("dwordle2.tutorialSeen", "true");
+      localStorage.setItem("dwordle2.tutorialSeenUso", "true");
+      localStorage.setItem("dwordle2.helpSeen", "true");
+      localStorage.setItem("dwordle2.helpSeenUso", "true");
+      localStorage.setItem("dwordle2.playCount", "99");
+      localStorage.setItem("dwordle2.extraShotUnlockSeen", "true");
+      localStorage.setItem("dwordle2.menuUnlockSeen", "99");
+    });
+    await narrowPage.goto(baseUrl, { waitUntil: "networkidle" });
+    await passGate(narrowPage);
+    for (const narrowMode of ["normal", "uso"]) {
+      if (narrowMode === "uso") await narrowPage.getByRole("button", { name: "裏モードへ" }).click();
+      await narrowPage.getByRole("button", { name: "本日の問題", exact: true }).click();
+      await narrowPage.waitForURL(/#\/game$/);
+      await narrowPage.locator("#screen-game.active .row").last().waitFor();
+      // EXTRA SHOT 中のカウンタ（42px 固定でいちばん幅を食う）でも収まることを見る
+      const narrowTitleMetrics = await narrowPage.evaluate(() => {
+        const counter = document.querySelector("#screen-game .header span.sub");
+        const measure = () => {
+          const title = document.querySelector("#screen-game.active .header .title");
+          const header = title.closest(".header");
+          return {
+            text: title.textContent,
+            truncated: title.scrollWidth > title.clientWidth + 0.5,
+            headerOverflow: Math.round((header.scrollWidth - header.clientWidth) * 10) / 10,
+          };
+        };
+        const normal = measure();
+        counter.classList.add("fa-counter");
+        counter.replaceChildren(
+          Object.assign(document.createElement("span"), { textContent: "EXTRA" }),
+          Object.assign(document.createElement("span"), { textContent: "SHOT" })
+        );
+        const extraShot = measure();
+        return { normal, extraShot };
+      });
+      assert.ok(
+        !narrowTitleMetrics.normal.truncated && narrowTitleMetrics.normal.headerOverflow <= 0
+          && !narrowTitleMetrics.extraShot.truncated && narrowTitleMetrics.extraShot.headerOverflow <= 0,
+        `the game header title must never be ellipsized at ${narrowWidth}px (${narrowMode}): ${JSON.stringify(narrowTitleMetrics)}`
+      );
+      await narrowPage.getByRole("button", { name: "タイトルへ戻る" }).click();
+      await narrowPage.waitForURL(/#\/$/);
+    }
+    await narrowPage.close();
+  }
+
   const fallbackContext = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
   const fallbackPage = await fallbackContext.newPage();
   await fallbackPage.addInitScript(() => {
@@ -2223,7 +2279,7 @@ try {
     await firstGuidePage.waitForURL(/#\/game$/);
     const normalGuide = firstGuidePage.getByRole("dialog", { name: "DWORDle 遊び方" });
     await normalGuide.waitFor();
-    await normalGuide.getByRole("button", { name: "閉じる" }).click();
+    await normalGuide.locator(".modal-actions").getByRole("button", { name: "閉じる" }).click();
     await normalGuide.waitFor({ state: "detached" });
 
     // 一度開いたら、次に盤面へ入っても勝手には開かない
@@ -2245,7 +2301,7 @@ try {
     await firstGuidePage.waitForURL(/#\/game$/);
     const usoGuide = firstGuidePage.getByRole("dialog", { name: "DWORDlie 遊び方" });
     await usoGuide.waitFor();
-    await usoGuide.getByRole("button", { name: "閉じる" }).click();
+    await usoGuide.locator(".modal-actions").getByRole("button", { name: "閉じる" }).click();
     await usoGuide.waitFor({ state: "detached" });
   } finally {
     await firstGuideContext.close();

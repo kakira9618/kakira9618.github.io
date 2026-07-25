@@ -516,6 +516,8 @@ export function showHelpModal(mode, afterClose = null) {
     title: mode === "uso" ? (language === "en" ? "DWORDlie Guide" : "DWORDlie 遊び方") : (language === "en" ? "DWORDle Guide" : "DWORDle 遊び方"),
     body: [content],
     startAtTop: true,
+    // 本文が長く「閉じる」までスクロールしないと届かないので、右上の × でも閉じられるようにする
+    closeButton: true,
     actions: [{ label: language === "en" ? "Close" : "閉じる", primary: true, onClick: () => {} }],
     onClose: () => {
       stopAnimation();

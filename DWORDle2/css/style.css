@@ -396,8 +396,10 @@ body.theme-pop #bgPop {
   font-size: 10.5px;
   line-height: 1.25;
 }
-/* 狭い端末では余白・アイコン・文字を段階的に詰めて、タイトルを省略せずに全要素を収める */
-@media (max-width: 374px) {
+/* 狭い端末では余白・アイコン・文字を段階的に詰めて、タイトルを省略せずに全要素を収める。
+   375〜389px（iPhone SE2 / 8 / X 世代）でも "DWORDlie" + EXTRA SHOT カウンタが収まるよう、
+   最初の段は 389px から効かせる（390px 幅は等倍でちょうど収まる） */
+@media (max-width: 389px) {
   .header {
     gap: 4px;
     padding: 0 8px;
