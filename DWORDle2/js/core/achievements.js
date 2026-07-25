@@ -91,7 +91,7 @@ export const ACHIEVEMENTS = [
   { id: "h-phantom", cat: "board", icon: "ghost", color: "#baffc9", name: "幻の正解", desc: "正解ではない単語を Guess して、全部緑を出す" },
   // --- モード・難易度 ---
   { id: "uso-clear", cat: "modes", icon: "mask", color: "#ff5f8f", name: "嘘を見抜く", desc: "裏モード DWORDlie をクリアする" },
-  { id: "uso-5", cat: "modes", icon: "mask", color: "#ff7aa8", name: "嘘マスター", desc: "裏モード DWORDlie で通算 5 勝する" },
+  { id: "uso-5", cat: "modes", icon: "layers", color: "#ff7aa8", name: "嘘マスター", desc: "裏モード DWORDlie で通算 5 勝する" },
   { id: "uso-20", cat: "modes", icon: "mask", color: "#ff9ab8", name: "嘘発見器", desc: "裏モード DWORDlie で通算 20 勝する" },
   { id: "extreme-clear", cat: "modes", icon: "mountain", color: "#ff8c66", name: "語彙の深淵", desc: "極 (No.10000-19999) の問題を 1 問クリアする" },
   { id: "level-clear", cat: "modes", icon: "compass", color: "#66e0d5", name: "開拓者", desc: "レベル問題 (No.20000-39999) を 1 問クリアする" },
