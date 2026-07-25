@@ -1234,6 +1234,15 @@ body.theme-pop.mode-normal .modal input[type="number"] {
   user-select: text;
   -webkit-user-select: text;
 }
+/* 本文に混ざるリンク（同意バナーの詳細・設定のプライバシー注記）。
+   ブラウザ既定の #0000EE は暗い面でコントラストが 1.2:1 まで落ちて読めないので、
+   version-note / entry-gate-credit と同じく本文色 + 下線で示す。 */
+.consent-banner a,
+.settings-privacy-note a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 .consent-banner-actions {
   display: flex;
   gap: 8px;
