@@ -62,7 +62,10 @@ function idsOf(newly) {
 // 旧「月間皆勤」の解除状態は、新しい「二週間皆勤」へ引き継ぐ。
 {
   storage.clear();
-  storage.set("dwordle2.achievements", JSON.stringify({ "daily-streak-30": 1_700_000_000 }));
+  storage.set("dwordle2.achievements", JSON.stringify({
+    "daily-streak-30": 1_700_000_000,
+    "future-achievement": 1_700_000_100,
+  }));
   records._reload();
   const migrated = await import(`../js/core/achievements.js?scenario=${++scenarioSerial}`);
   assert.equal(migrated.getUnlocked()["daily-streak-14"], 1_700_000_000);
@@ -70,6 +73,16 @@ function idsOf(newly) {
   const persisted = JSON.parse(storage.get("dwordle2.achievements"));
   assert.equal(persisted["daily-streak-14"], 1_700_000_000);
   assert.equal(Object.hasOwn(persisted, "daily-streak-30"), false);
+  assert.equal(
+    Object.hasOwn(migrated.getUnlocked(), "future-achievement"),
+    false,
+    "unknown achievement IDs must not affect the current UI or achievement count"
+  );
+  assert.equal(
+    persisted["future-achievement"],
+    1_700_000_100,
+    "unknown achievement IDs must be preserved for compatibility with newer versions"
+  );
 }
 
 // 両方の答えと 1 文字も共有しない単語（判定が全部灰色になる）

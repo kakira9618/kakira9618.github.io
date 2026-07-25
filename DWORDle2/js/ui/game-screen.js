@@ -10,7 +10,7 @@ import { el, clear } from "./dom.js?v=20260725-b";
 import { APP_VERSION, UI, FX } from "../config.js?v=20260725-b";
 import { Logic, CELL, displayResultForMode } from "../core/logic.js?v=20260725-b";
 import { MODES, saveCurrentGame, clearCurrentGame, getCurrentGame, addFinishedGame, isAlreadyPlayed, getHistory, getExtraShot } from "../core/records.js?v=20260725-b";
-import { pidLabel } from "../core/problems.js?v=20260725-b";
+import { isDailyPID, pidLabel, todayPID } from "../core/problems.js?v=20260725-b";
 import { checkOnGameFinish } from "../core/achievements.js?v=20260725-b";
 import { registerScreen, navigate, redirect, getAppMode, currentScreenName } from "./app.js?v=20260725-b";
 import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration, extraShotUnlockCelebration } from "./toast.js?v=20260725-b";
@@ -899,6 +899,15 @@ function finishGame(justFinished) {
 
 // すでにプレイ済みなら確認してから開始する（原作の確認ダイアログ相当）
 export async function confirmAndStart(pid, mode) {
+  if (isDailyPID(pid) && pid !== todayPID()) {
+    toast(
+      tr(
+        "過去・未来のDaily問題はプレイできません",
+        "Past and future Daily puzzles cannot be played"
+      )
+    );
+    return false;
+  }
   const today = new Date().toDateString();
   const playedTodayGames = getHistory().filter((record) => {
     if (record.problemID !== pid) return false;

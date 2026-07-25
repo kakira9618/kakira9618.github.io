@@ -1001,6 +1001,15 @@ try {
     "past Daily results should use the date-time play label and remain viewable"
   );
   await historicalDailyDialog.getByRole("button", { name: "閉じる" }).click();
+  assert.equal(
+    await page.evaluate(async ({ pid }) => {
+      const { confirmAndStart } = await import("./js/ui/game-screen.js?v=20260725-b");
+      return confirmAndStart(pid, "normal");
+    }, { pid: historicalDailyPid }),
+    false,
+    "the shared game-start entry point must reject past Daily puzzles"
+  );
+  await page.locator("#toast-layer .toast").filter({ hasText: "過去・未来のDaily問題はプレイできません" }).waitFor();
   await page.getByRole("button", { name: "次の月" }).click();
   const futureDailyDays = page.locator(".daily-calendar-day.future");
   assert.ok(await futureDailyDays.count() > 0, "the current calendar should include future dates");
@@ -2092,6 +2101,18 @@ try {
     await freshPage.waitForURL(/#\/achievements$/);
     await freshPage.locator("#screen-achievements .header .sub").filter({ hasText: `${ACHIEVEMENTS.length} / ${ACHIEVEMENTS.length}` }).waitFor();
     await freshPage.getByText("only consider the first play of the same puzzle number on the same day, regardless of mode", { exact: false }).waitFor();
+    const achievementTextSelection = await freshPage.locator("#screen-achievements").evaluate((screen) => ({
+      screen: getComputedStyle(screen).userSelect,
+      header: getComputedStyle(screen.querySelector(".header .title")).userSelect,
+      category: getComputedStyle(screen.querySelector(".progress-note")).userSelect,
+      name: getComputedStyle(screen.querySelector(".ach-card .name")).userSelect,
+      button: getComputedStyle(screen.querySelector("button")).userSelect,
+    }));
+    assert.deepEqual(
+      achievementTextSelection,
+      { screen: "text", header: "text", category: "text", name: "text", button: "none" },
+      "all achievement text should be selectable while controls remain non-selectable"
+    );
 
     await freshPage.reload({ waitUntil: "networkidle" });
     await passGate(freshPage);

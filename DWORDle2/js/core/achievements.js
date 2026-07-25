@@ -87,7 +87,7 @@ export const ACHIEVEMENTS = [
   { id: "all-gray", cat: "board", icon: "cloud", color: "#a8b0bd", name: "完全なる空振り", desc: "1 回の Guess で 5 文字すべて灰色になる" },
   { id: "rainbow", cat: "board", icon: "palette", color: "#ffb3de", name: "三色盛り", desc: "1 回の Guess で緑・黄・灰をすべて出す" },
   { id: "green-start", cat: "board", icon: "rocket", color: "#8fffb0", name: "ロケットスタート", desc: "初手で緑を 3 つ以上出す" },
-  { id: "green-zero", cat: "board", icon: "moon", color: "#b8c4ff", name: "大逆転", desc: "3 手以上かけて、最終手まで緑が 1 つも無い状態からクリアする" },
+  { id: "green-zero", cat: "board", icon: "moon", color: "#b8c4ff", name: "大逆転", desc: "3 手以上で、最終手より前に緑を 1 つも出さずにクリアする" },
   { id: "h-phantom", cat: "board", icon: "ghost", color: "#baffc9", name: "幻の正解", desc: "正解ではない単語を Guess して、全部緑を出す" },
   // --- モード・難易度 ---
   { id: "uso-clear", cat: "modes", icon: "mask", color: "#ff5f8f", name: "嘘を見抜く", desc: "裏モード DWORDlie をクリアする" },
@@ -119,7 +119,7 @@ export const ACHIEVEMENTS = [
   { id: "h-lexicon", hidden: true, icon: "book", color: "#c0ffd8", name: "語彙の泉", desc: "通算 1000 種類の異なる単語を Guess する" },
   { id: "h-plays-1000", hidden: true, icon: "layers", color: "#d8b8ff", name: "無限の探求", desc: "通算 1000 回プレイする" },
   { id: "h-uso-800", hidden: true, icon: "mask", color: "#ff6f9f", name: "嘘八百", desc: "裏モード DWORDlie で通算 800 勝する" },
-  { id: "h-play-days-365", hidden: true, icon: "starTrail", color: "#c0ffe0", name: "365 日の奇跡", desc: "通算 365 日プレイする" },
+  { id: "h-play-days-365", hidden: true, icon: "starTrail", color: "#c0ffe0", name: "365日の奇跡", desc: "通算 365 日プレイする" },
   { id: "h-play-streak-30", hidden: true, icon: "sunrise", color: "#ffd890", name: "一ヶ月の誓い", desc: "30 日連続でプレイする" },
   // EXTRA SHOT モード（クリア後の追加推理）関連
   { id: "h-double-clear", hidden: true, icon: "twinHearts", color: "#ffd166", name: "両手に花", desc: "EXTRA SHOT に成功して DOUBLE CLEAR する" },
@@ -154,12 +154,6 @@ for (const [oldId, newId] of Object.entries(achievementIdMigrations)) {
   delete unlocked[oldId];
   migratedAchievementIds = true;
 }
-// 廃止した実績の解除記録は残しておくと実績ハンター（解除数）の数え方がずれるので捨てる
-for (const id of Object.keys(unlocked)) {
-  if (knownAchievementIds.has(id)) continue;
-  delete unlocked[id];
-  migratedAchievementIds = true;
-}
 if (migratedAchievementIds) saveJSON("achievements", unlocked);
 
 export function getUnlocked() {
@@ -167,11 +161,17 @@ export function getUnlocked() {
     const debugUnlockedAt = Math.floor(Date.now() / 1000);
     return Object.fromEntries(ACHIEVEMENTS.map((achievement) => [achievement.id, unlocked[achievement.id] ?? debugUnlockedAt]));
   }
-  return { ...unlocked };
+  // 新旧バージョンのタブが混在しても将来の実績記録を消さない。現在の画面や集計には、
+  // このバージョンが知っている実績だけを公開する。
+  return Object.fromEntries(
+    ACHIEVEMENTS
+      .filter((achievement) => unlocked[achievement.id] !== undefined)
+      .map((achievement) => [achievement.id, unlocked[achievement.id]])
+  );
 }
 
 export function isUnlocked(id) {
-  return isDebugMode() || unlocked[id] !== undefined;
+  return isDebugMode() || (knownAchievementIds.has(id) && unlocked[id] !== undefined);
 }
 
 function unlock(id, newly) {
@@ -183,7 +183,8 @@ function unlock(id, newly) {
 
 // collector（メタ実績）を最後に判定して保存する
 function finalize(newly) {
-  if (Object.keys(unlocked).length >= COLLECTOR_REQUIREMENT) unlock("collector", newly);
+  const knownUnlockedCount = ACHIEVEMENTS.filter((achievement) => unlocked[achievement.id] !== undefined).length;
+  if (knownUnlockedCount >= COLLECTOR_REQUIREMENT) unlock("collector", newly);
   if (newly.length > 0) saveJSON("achievements", unlocked);
   return newly;
 }
@@ -525,7 +526,7 @@ export function achievementIdsFromHistory(records) {
       ids.add("h-double-clear");
       if (mode === "uso") ids.add("h-double-uso");
       if (guesses === 1) ids.add("h-double-oneshot");
-      if (mode === "normal" && pid >= PID.HARD_MIN && pid <= PID.HARD_MAX) ids.add("h-double-abyss");
+      if (pid >= PID.HARD_MIN && pid <= PID.HARD_MAX) ids.add("h-double-abyss");
     }
 
     if (countable) {
@@ -683,7 +684,7 @@ export function checkOnGameFinish(ctx) {
       unlock("h-double-clear", newly);
       if (isUso) unlock("h-double-uso", newly);
       if (guesses === 1) unlock("h-double-oneshot", newly);
-      if (!isUso && pid >= PID.HARD_MIN && pid <= PID.HARD_MAX) unlock("h-double-abyss", newly);
+      if (pid >= PID.HARD_MIN && pid <= PID.HARD_MAX) unlock("h-double-abyss", newly);
     }
     if (countableHistory.filter((g) => g.clear && getExtraShot(g)?.success).length >= 10) {
       unlock("h-double-10", newly);

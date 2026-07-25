@@ -5,7 +5,7 @@ import { el, clear } from "./dom.js?v=20260725-b";
 import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260725-b";
 import { countPlays, getCurrentGame, getHistory, isAlreadyPlayed } from "../core/records.js?v=20260725-b";
 import { isDebugMode } from "../core/debug.js?v=20260725-b";
-import { LEVELS, todayPID, isValidPID, isDailyPID, pidLabel, PID } from "../core/problems.js?v=20260725-b";
+import { LEVELS, todayPID, isValidPID, pidLabel, PID } from "../core/problems.js?v=20260725-b";
 import { getSettings, setSetting } from "../core/settings.js?v=20260725-b";
 import { loadJSON, saveJSON } from "../core/store.js?v=20260725-b";
 import { importFromLocalStorage, scanLegacyHistory } from "../core/migrate.js?v=20260725-b";
@@ -70,17 +70,11 @@ function numberPrompt(mode) {
         onClick: () => {
           let pid = parseInt(input.value, 10);
           if (pid === 0) pid = todayPID();
-          // 過去の日付（No.YYYYMMDD）を直接入力すれば、Daily 連続クリアの実績を
-          // 一日でまとめて埋められてしまう。Daily は No.0（＝今日）だけ受け付ける。
-          if (isDailyPID(pid) && pid !== todayPID()) {
-            toast(tr("Daily 問題は No.0（今日の問題）のみプレイできます", "Daily puzzles can only be played as No.0 (today's puzzle)"));
-            return false;
-          }
           if (!isValidPID(pid)) {
             toast(tr("0〜39999 の番号を入力してください", "Enter a number from 0 to 39999"));
             return false;
           }
-          confirmAndStart(pid, mode);
+          return confirmAndStart(pid, mode);
         },
       },
     ],

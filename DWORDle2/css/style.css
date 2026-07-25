@@ -1980,12 +1980,15 @@ body.theme-cyber .num-cell.double-clear {
   margin-top: 2px;
   line-height: 1.45;
 }
-/* 実績は読み物なので、名前・説明・注記を選択してコピーできるようにする */
-.ach-card .name,
-.ach-card .desc,
-.achievement-count-note {
+/* 実績は読み物なので、見出し・進捗・名前・説明・注記をまとめて選択／コピーできる。 */
+#screen-achievements {
   user-select: text;
   -webkit-user-select: text;
+}
+/* ただし操作ボタンは、長押しやドラッグでラベルが選択されないようにする。 */
+#screen-achievements button {
+  user-select: none;
+  -webkit-user-select: none;
 }
 .achievement-count-note {
   white-space: pre-line;

@@ -58,13 +58,13 @@ assert.equal(
   false,
   "multi-year play-day achievements should be retired"
 );
-assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "h-play-days-365")?.name, "365 日の奇跡");
+assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "h-play-days-365")?.name, "365日の奇跡");
 assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "h-plays-1000")?.desc, "通算 1000 回プレイする");
 assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "h-phantom")?.hidden, undefined, "Phantom Answer should be a normal achievement");
 assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "all-letters")?.hidden, true, "A to Z should be a secret achievement");
 assert.equal(
   ACHIEVEMENTS.find((achievement) => achievement.id === "green-zero")?.desc,
-  "3 手以上かけて、最終手まで緑が 1 つも無い状態からクリアする"
+  "3 手以上で、最終手より前に緑を 1 つも出さずにクリアする"
 );
 assert.deepEqual(
   {

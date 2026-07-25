@@ -386,6 +386,23 @@ function fillerWord(logic) {
   assert.ok(idsOf(mod.checkOnGameFinish(ctx)).has("h-double-abyss"), "極の DOUBLE CLEAR で h-double-abyss が解放されるはず");
   assert.ok(mod.achievementIdsFromHistory([ctx.record]).has("h-double-abyss"), "履歴復元でも h-double-abyss を推定するはず");
 
+  const usoCtx = finishCtx({
+    pid: 10001,
+    mode: "uso",
+    guessWords: [logic.ans1],
+    usoResults: [Array(5).fill(CELL.USED)],
+    extraShot: { word: logic.ans2, success: true },
+  });
+  const usoMod = await scenario([usoCtx.record]);
+  assert.ok(
+    idsOf(usoMod.checkOnGameFinish(usoCtx)).has("h-double-abyss"),
+    "DWORDlie の極でも h-double-abyss が解放されるはず"
+  );
+  assert.ok(
+    usoMod.achievementIdsFromHistory([usoCtx.record]).has("h-double-abyss"),
+    "DWORDlie の極の履歴復元でも h-double-abyss を推定するはず"
+  );
+
   const easy = finishCtx({ pid: 123, guessWords: [new Logic(123).ans1], extraShot: { word: new Logic(123).ans2, success: true } });
   const easyIds = idsOf((await scenario([easy.record])).checkOnGameFinish(easy));
   assert.ok(!easyIds.has("h-double-abyss"), "やさしい問題では h-double-abyss は解放されないはず");
