@@ -27,8 +27,10 @@ let blockStart = null; // ブロック表示中の先頭 No.（null なら ブ�
 let statusFilter = "all"; // "all" | "cleared" | "failed" | "unplayed"
 let dailyCalendarMonth = null; // year * 12 + month。null は今月
 let dailySelectedPid = null; // カレンダーで選択中の日付（null は今日）
-// 履歴が無い月もさかのぼれるように、今月からの遡行可能な月数だけを上限にする
+// 履歴が無い月も見られるように、カレンダーは今月の前後どちらへも辿れるようにする
+// （未来の日付はプレイできないままで、眺めるだけ）
 const DAILY_CALENDAR_MAX_MONTHS_BACK = 120;
+const DAILY_CALENDAR_MAX_MONTHS_AHEAD = 120;
 
 function build() {
   root = document.getElementById("screen-problems");
@@ -121,10 +123,11 @@ function dailyCalendar(statusMap) {
     currentMonth - DAILY_CALENDAR_MAX_MONTHS_BACK,
     ...playedDailyMonths
   );
+  const latestMonth = currentMonth + DAILY_CALENDAR_MAX_MONTHS_AHEAD;
   if (
     dailyCalendarMonth === null
     || dailyCalendarMonth < earliestMonth
-    || dailyCalendarMonth > currentMonth
+    || dailyCalendarMonth > latestMonth
   ) {
     dailyCalendarMonth = currentMonth;
   }
@@ -204,7 +207,7 @@ function dailyCalendar(statusMap) {
         "button",
         {
           class: "icon-btn daily-calendar-next",
-          disabled: dailyCalendarMonth >= currentMonth,
+          disabled: dailyCalendarMonth >= latestMonth,
           "aria-label": tr("次の月", "Next month"),
           onclick: () => {
             playSfx("ui");

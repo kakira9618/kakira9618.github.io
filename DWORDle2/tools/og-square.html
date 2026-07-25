@@ -17,12 +17,18 @@
        - 書体は Futura 700。favicon.png のグリフ縦横比（D 0.880 / 2 0.822）と
          一致する唯一の候補で、macOS 標準搭載。別 OS で再生成すると別の字面になるので注意。
      left / top は「文字のインク位置」ではなく CSS ボックス位置なので、
-     Futura のサイドベアリング分だけずれた値になっている（触るなら再計測すること）。 */
+     Futura のサイドベアリング分だけずれた値になっている（触るなら再計測すること）。
+
+     --art-scale は図案全体の縮小率。1 なら従来どおりの全面デザイン。
+     X の Summary カードで上下が切り落とされる環境向けに余白を作るための逃げ道で、
+     1.91:1 に切られても意匠を欠けさせたくないなら 0.5 まで下げる
+     （そのぶん正方形で出る環境ではアイコンが小さくなるトレードオフ）。 */
   :root {
     --correct: #6aaa64; /* 地の緑 */
     --used: #c9b458;    /* L 字の帯 */
     --unused: #787c7e;  /* 帯の両端のキャップ */
     --unit: 6.25%;      /* 帯とキャップの太さ */
+    --art-scale: 1;     /* 1 = 余白なし。上下が切られる環境に合わせるなら 0.5 まで下げる */
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -32,6 +38,14 @@
     position: relative;
     background: var(--correct);
     font-family: Futura, "Avenir Next", "Helvetica Neue", Helvetica, sans-serif;
+  }
+
+  /* 図案全体。地の緑はキャンバス全面のまま、中身だけを縮めて中央に置く */
+  .art {
+    position: absolute;
+    inset: 0;
+    transform: scale(var(--art-scale));
+    transform-origin: 50% 50%;
   }
 
   /* L 字の帯（右辺 + 下辺）。両端はキャップの分だけ空ける */
@@ -65,11 +79,13 @@
 </style>
 </head>
 <body>
-  <div class="bar right"></div>
-  <div class="bar bottom"></div>
-  <div class="cap tr"></div>
-  <div class="cap bl"></div>
-  <div class="glyph d">D</div>
-  <div class="glyph two">2</div>
+  <div class="art">
+    <div class="bar right"></div>
+    <div class="bar bottom"></div>
+    <div class="cap tr"></div>
+    <div class="cap bl"></div>
+    <div class="glyph d">D</div>
+    <div class="glyph two">2</div>
+  </div>
 </body>
 </html>
