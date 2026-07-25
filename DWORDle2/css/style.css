@@ -1230,7 +1230,8 @@ body.theme-pop.mode-normal .modal input[type="number"] {
 .modal textarea {
   min-height: 110px;
   font-family: ui-monospace, monospace;
-  font-size: 12px;
+  /* 16px 未満だと iOS Safari が focus のたびにページを自動拡大するので下げない */
+  font-size: 16px;
 }
 .hint {
   color: var(--fg-dim);
@@ -1786,6 +1787,11 @@ body.theme-cyber .card.tappable:hover {
 .history-filter-field.sort {
   grid-column: 1 / -1;
 }
+/* 入力欄の高さ。日付の値を縦中央に置く計算にも使う */
+.history-filter-grid {
+  --history-field-h: 38px;
+  --history-field-border: 1px;
+}
 .history-filter-field input,
 .history-filter-field select {
   box-sizing: border-box;
@@ -1793,14 +1799,15 @@ body.theme-cyber .card.tappable:hover {
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  height: 36px;
+  height: var(--history-field-h);
   padding: 0 8px;
-  border: 1px solid var(--border);
+  border: var(--history-field-border) solid var(--border);
   border-radius: 7px;
   background: rgba(0, 0, 0, 0.24);
   color: var(--fg);
   color-scheme: dark;
-  font: 600 12px/1 var(--font-display);
+  /* 16px 未満だと iOS Safari が focus のたびにページを自動拡大するため下げない */
+  font: 600 16px/1 var(--font-display);
 }
 .history-filter-field input::placeholder {
   color: var(--fg-dim);
@@ -1818,6 +1825,9 @@ body.theme-cyber .card.tappable:hover {
   margin: 0;
   padding: 0;
   text-align: left;
+  /* iOS / Safari は値テキストを枠の上端に置く（上半分に寄って見える原因）。
+     行の高さを内寸に合わせて縦中央へ落とす */
+  line-height: calc(var(--history-field-h) - var(--history-field-border) * 2);
 }
 .history-filter-field input[type="date"]::-webkit-calendar-picker-indicator {
   flex: none;
@@ -1991,7 +2001,10 @@ body.theme-pop.mode-normal .history-filter-field input::placeholder {
   cursor: default;
 }
 .daily-calendar-day.future {
-  opacity: 0.26;
+  opacity: 0.34; /* 眺めるだけの日。押せる程度には見えるようにする */
+}
+.daily-calendar-day.future.selected {
+  opacity: 0.85; /* 選んでいる間はどの日を見ているか分かるようにする */
 }
 .daily-calendar-day.unplayed:not(.today) {
   opacity: 0.48;
@@ -2069,6 +2082,11 @@ body.theme-pop.mode-normal .history-filter-field input::placeholder {
 .daily-detail-status.cleared { color: color-mix(in srgb, var(--tile-correct) 76%, white); }
 .daily-detail-status.failed { color: #ff9999; }
 .daily-detail-status.double-clear { color: var(--fa-gold, #ffd166); }
+/* 未来の日付は「出題前」。プレイ済み系の色を使わず、控えめな灰色のまま */
+.daily-detail-status.future { color: var(--fg-dim); }
+.daily-detail-future {
+  font-size: 12px;
+}
 .daily-detail-pid {
   color: var(--fg-dim);
   font-size: 11px;

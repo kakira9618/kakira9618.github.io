@@ -9,6 +9,7 @@ import * as THREE from "three";
 import { FX } from "../config.js?v=20260725-b";
 import { getSettings, onSettingsChange } from "../core/settings.js?v=20260725-b";
 import { onMotionPreferenceChange, shouldReduceMotion } from "../core/motion.js?v=20260725-b";
+import { viewportWidth, viewportHeight } from "./viewport.js?v=20260725-b";
 
 let renderer = null;
 let scene = null;
@@ -404,8 +405,8 @@ export function setBackgroundMood(usoMode) {
 
 function resize() {
   if (!renderer) return;
-  renderer.setSize(innerWidth, innerHeight, false);
-  camera.aspect = innerWidth / innerHeight;
+  renderer.setSize(viewportWidth(), viewportHeight(), false);
+  camera.aspect = viewportWidth() / viewportHeight();
   camera.updateProjectionMatrix();
 }
 

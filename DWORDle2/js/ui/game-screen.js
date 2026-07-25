@@ -606,11 +606,11 @@ export function releaseKeyboardPresses() {
 
 function submitGuess() {
   if (inputBuffer.length !== 5) {
-    return rejectGuess("Not enough letters");
+    return rejectGuess(tr("5文字入力してください", "Not enough letters"));
   }
   const word = inputBuffer;
   if (!logic.isValidWord(word)) {
-    return rejectGuess("Not in word list");
+    return rejectGuess(tr("辞書にありません", "Not in word list"));
   }
 
   const trueResult = logic.queryWord(word);
@@ -672,11 +672,11 @@ function beginExtraShot(clearedWord) {
 // 追加推理の確定。チャンスは 1 回だけで、成功なら DOUBLE CLEAR として記録される。
 function submitExtraShot() {
   if (inputBuffer.length !== 5) {
-    return rejectGuess("Not enough letters");
+    return rejectGuess(tr("5文字入力してください", "Not enough letters"));
   }
   const word = inputBuffer;
   if (!logic.isValidWord(word)) {
-    return rejectGuess("Not in word list");
+    return rejectGuess(tr("辞書にありません", "Not in word list"));
   }
   if (word === extraShotPhase.clearedWord) {
     // 当てた方をもう一度入力してもチャンスは消費させず、打ち直しを促す

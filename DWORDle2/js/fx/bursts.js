@@ -10,6 +10,7 @@ import * as THREE from "three";
 import { FX, tileColorsFor } from "../config.js?v=20260725-b";
 import { getSettings } from "../core/settings.js?v=20260725-b";
 import { shouldReduceMotion } from "../core/motion.js?v=20260725-b";
+import { viewportWidth, viewportHeight } from "./viewport.js?v=20260725-b";
 
 let renderer = null;
 let scene = null;
@@ -55,8 +56,8 @@ function refreshSurface() {
 
 function resize() {
   if (!renderer) return;
-  const w = innerWidth;
-  const h = innerHeight;
+  const w = viewportWidth();
+  const h = viewportHeight();
   viewH = h;
   renderer.setSize(w, h, false);
   // fov から「z=0 で 1px = 1world」になるカメラ距離を求める。
@@ -133,8 +134,8 @@ export function winBurst(colors) {
     setTimeout(() => {
       try {
         burstAt(
-          innerWidth * (0.25 + Math.random() * 0.5),
-          innerHeight * (0.2 + Math.random() * 0.35),
+          viewportWidth() * (0.25 + Math.random() * 0.5),
+          viewportHeight() * (0.2 + Math.random() * 0.35),
           colors[i % colors.length],
           cfg.countWin / 4
         );
@@ -210,7 +211,7 @@ export function flyInTiles(targetElements, isUso, initialTexts = [], scrollConta
   let arriveCb = null;
   const flightGroup = [];
   const now = performance.now();
-  const diag = Math.max(innerWidth, innerHeight);
+  const diag = Math.max(viewportWidth(), viewportHeight());
   const scrollRect = scrollContainer?.getBoundingClientRect();
   const scrollTracking = scrollContainer
     ? {

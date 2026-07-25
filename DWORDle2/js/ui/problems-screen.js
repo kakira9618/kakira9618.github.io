@@ -131,8 +131,8 @@ function dailyCalendar(statusMap) {
   ) {
     dailyCalendarMonth = currentMonth;
   }
-  // 選択中の日付。未選択・未来日付・表示中の月の外なら今日に戻す
-  const selectedPid = dailySelectedPid !== null && dailySelectedPid <= todayPid ? dailySelectedPid : todayPid;
+  // 選択中の日付。未選択なら今日。未来の日付も（プレイはできないが）選んで眺められる
+  const selectedPid = dailySelectedPid ?? todayPid;
   const year = Math.floor(dailyCalendarMonth / 12);
   const month = dailyCalendarMonth % 12;
   const firstWeekday = new Date(year, month, 1).getDay();
@@ -148,8 +148,8 @@ function dailyCalendar(statusMap) {
     const future = pid > todayPid;
     const selected = pid === selectedPid;
     const dayLabel = tr(
-      `${year}年${month + 1}月${day}日${today ? "、今日" : ""}、${label}`,
-      `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}${today ? ", today" : ""}, ${label}`
+      `${year}年${month + 1}月${day}日${today ? "、今日" : ""}、${future ? "まだ出題前" : label}`,
+      `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}${today ? ", today" : ""}, ${future ? "not available yet" : label}`
     );
     cells.push(
       el(
@@ -157,8 +157,7 @@ function dailyCalendar(statusMap) {
         {
           class: `daily-calendar-day ${status} ${doubleClear ? "double-clear" : ""} ${today ? "today" : ""} ${future ? "future" : ""} ${selected ? "selected" : ""}`,
           "aria-label": dayLabel,
-          "aria-pressed": future ? null : String(selected),
-          disabled: future,
+          "aria-pressed": String(selected),
           onclick: () => {
             playSfx("ui");
             // ダイアログではなくカレンダー直下に内容を展開する
@@ -234,6 +233,7 @@ function dailyDetail(pid, statusMap, todayPid) {
   const mode = getAppMode();
   const date = dailyDateFromPid(pid);
   const isToday = pid === todayPid;
+  const isFuture = pid > todayPid;
   const { status, doubleClear, label } = dailyStatus(statusMap, pid);
   const heading = date
     ? tr(
@@ -251,8 +251,20 @@ function dailyDetail(pid, statusMap, todayPid) {
       el("span", { class: "daily-detail-date" }, heading),
       isToday ? el("span", { class: "daily-detail-today" }, tr("今日", "Today")) : null,
       el("span", { class: "spacer" }),
-      el("span", { class: `daily-detail-status ${doubleClear ? "double-clear" : status}` }, label)
+      el(
+        "span",
+        { class: `daily-detail-status ${isFuture ? "future" : doubleClear ? "double-clear" : status}` },
+        isFuture ? tr("出題前", "Not yet") : label
+      )
     ),
+    // 未来の日付は眺めるだけ。プレイ導線が無い理由をここで示す
+    isFuture
+      ? el(
+          "div",
+          { class: "hint daily-detail-future" },
+          tr("この日の問題は、その日になったらプレイできます", "This puzzle unlocks on that day")
+        )
+      : null,
     // 説明文は置かず、今日のプレイ導線と過去のプレイ結果へのリンクだけを並べる
     isToday
       ? el(

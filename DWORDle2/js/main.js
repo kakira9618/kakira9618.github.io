@@ -58,6 +58,9 @@ appReady.catch(() => {});
 // 古い Android Chrome は dvh に未対応のため、実際の表示領域を CSS 変数で補う。
 // 対応ブラウザでは CSS 側の 100dvh が優先される。
 function syncAppViewportHeight() {
+  // ピンチズーム中は更新しない。iOS Safari の innerHeight は拡大すると「見えている高さ」に
+  // 縮むため、そのまま反映すると UI 全体が縮んでしまう（レイアウトの高さは本来変わらない）。
+  if ((window.visualViewport?.scale ?? 1) > 1.01) return;
   document.documentElement.style.setProperty("--app-height", `${window.innerHeight}px`);
 }
 syncAppViewportHeight();

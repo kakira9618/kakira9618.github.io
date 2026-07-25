@@ -103,14 +103,21 @@ function showStats() {
   });
 }
 
-function selectControl(label, value, options, onChange) {
+function selectControl(label, value, options, onChange, id = null) {
   const select = el(
     "select",
-    { "aria-label": label, onchange: (event) => onChange(event.target.value) },
+    { id, "aria-label": label, onchange: (event) => onChange(event.target.value) },
     options.map(([key, text]) => el("option", { value: key }, text))
   );
   select.value = value;
   return select;
+}
+
+// 入力欄は <label> の中に入れず、label[for] で結び付ける。
+// iOS Safari は label に内包した input[type=date] をタップすると、ネイティブの日付 UI を
+// 出した直後に label 経由の二重の活性化が届き、ピッカーが即閉じて意図しない日付が入る。
+function filterField(className, id, labelText, control) {
+  return el("div", { class: `history-filter-field ${className}` }, el("label", { for: id }, labelText), control);
 }
 
 function historyControls(total) {
@@ -169,30 +176,32 @@ function historyControls(total) {
       el(
         "div",
         { class: "history-filter-grid" },
-        el(
-          "label",
-          { class: "history-filter-field history-date-field" },
-          el("span", {}, tr("開始日", "Start date")),
+        filterField(
+          "history-date-field",
+          "history-date-from",
+          tr("開始日", "Start date"),
           el("input", {
             type: "date",
+            id: "history-date-from",
             value: filters.dateFrom,
             onchange: (event) => update("dateFrom", event.target.value),
           })
         ),
-        el(
-          "label",
-          { class: "history-filter-field history-date-field" },
-          el("span", {}, tr("終了日", "End date")),
+        filterField(
+          "history-date-field",
+          "history-date-to",
+          tr("終了日", "End date"),
           el("input", {
             type: "date",
+            id: "history-date-to",
             value: filters.dateTo,
             onchange: (event) => update("dateTo", event.target.value),
           })
         ),
-        el(
-          "label",
-          { class: "history-filter-field history-result-field" },
-          el("span", {}, tr("結果", "Result")),
+        filterField(
+          "history-result-field",
+          "history-result",
+          tr("結果", "Result"),
           selectControl(
             tr("結果", "Result"),
             filters.result,
@@ -202,7 +211,8 @@ function historyControls(total) {
               ["lose", tr("失敗", "Loss")],
               ["double", "DOUBLE CLEAR"],
             ],
-            (value) => update("result", value)
+            (value) => update("result", value),
+            "history-result"
           )
         ),
         el(
@@ -217,10 +227,10 @@ function historyControls(total) {
             guessInput("guessesMax", tr("最大手数", "Maximum Guesses"), tr("最大", "Max"))
           )
         ),
-        el(
-          "label",
-          { class: "history-filter-field sort" },
-          el("span", {}, tr("並べ替え", "Sort")),
+        filterField(
+          "sort",
+          "history-sort",
+          tr("並べ替え", "Sort"),
           selectControl(
             tr("並べ替え", "Sort"),
             filters.sort,
@@ -230,7 +240,8 @@ function historyControls(total) {
               ["guesses-asc", tr("手数（少ない順）", "Guesses (fewest)")],
               ["guesses-desc", tr("手数（多い順）", "Guesses (most)")],
             ],
-            (value) => update("sort", value)
+            (value) => update("sort", value),
+            "history-sort"
           )
         )
       ),

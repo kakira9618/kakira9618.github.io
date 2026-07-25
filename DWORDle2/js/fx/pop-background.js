@@ -11,6 +11,7 @@
 import { FX } from "../config.js?v=20260725-b";
 import { getSettings, onSettingsChange } from "../core/settings.js?v=20260725-b";
 import { onMotionPreferenceChange, shouldReduceMotion } from "../core/motion.js?v=20260725-b";
+import { viewportWidth, viewportHeight } from "./viewport.js?v=20260725-b";
 
 let canvas = null;
 let ctx = null;
@@ -60,18 +61,18 @@ let lastH = 0;
 function resize() {
   if (!ctx) return;
   const dpr = Math.min(devicePixelRatio || 1, 2);
-  canvas.width = Math.round(innerWidth * dpr);
-  canvas.height = Math.round(innerHeight * dpr);
+  canvas.width = Math.round(viewportWidth() * dpr);
+  canvas.height = Math.round(viewportHeight() * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   // ラインは画面比率に合わせて追従させる（モバイルのアドレスバー伸縮でも跳ばない）
   if (lastW > 0 && lastH > 0) {
     for (const line of lines) {
-      line.x *= innerWidth / lastW;
-      line.y *= innerHeight / lastH;
+      line.x *= viewportWidth() / lastW;
+      line.y *= viewportHeight() / lastH;
     }
   }
-  lastW = innerWidth;
-  lastH = innerHeight;
+  lastW = viewportWidth();
+  lastH = viewportHeight();
   if (!running && isPopActive()) draw();
 }
 
@@ -90,7 +91,7 @@ function applyTheme(theme) {
       snapReveals();
       draw();
     } else {
-      ctx.clearRect(0, 0, innerWidth, innerHeight);
+      ctx.clearRect(0, 0, viewportWidth(), viewportHeight());
     }
   }
 }
@@ -118,8 +119,8 @@ function wavePhase(x, y, wave, time) {
 
 function draw() {
   const cfg = FX.popBg;
-  const w = innerWidth;
-  const h = innerHeight;
+  const w = viewportWidth();
+  const h = viewportHeight();
   ctx.clearRect(0, 0, w, h);
   const colors = uso ? cfg.colorsUso : cfg.colors;
   // fill の回数を色数までに抑えるため、同色のドットは 1 つの Path2D にまとめる
@@ -174,7 +175,7 @@ function lineMargin() {
 // band(0..lineCount-1) ごとに横位置を散らして、ラインが一箇所に固まらないようにする
 function bandX(band) {
   const n = FX.popBg.tiles.lineCount;
-  return ((band + rand(0.15, 0.85)) / n) * innerWidth;
+  return ((band + rand(0.15, 0.85)) / n) * viewportWidth();
 }
 
 // 画面上端より上（y < 0）で生まれたラインは、
@@ -239,8 +240,8 @@ function scheduleRevert(line) {
 function initLines() {
   const cfg = FX.popBg.tiles;
   const margin = lineMargin();
-  const spread = cfg.spawnSpreadY * innerHeight;
-  const loop = innerHeight + margin * 2 + spread;
+  const spread = cfg.spawnSpreadY * viewportHeight();
+  const loop = viewportHeight() + margin * 2 + spread;
   // 初期位相を周回全体（画面外の助走域も含む）に散らして、出現タイミング・y 座標が揃わないようにする
   lines = Array.from({ length: cfg.lineCount }, (_, i) =>
     makeLine(i, -margin - spread + ((i + rand(0.15, 0.85)) / cfg.lineCount) * loop)
@@ -274,8 +275,8 @@ function stepLines(dt) {
     line.angle += line.spin * dt;
     // 画面下へ抜けたら、同じ band の新しいライン（白）として上から降り直す（エンドレス）。
     // 生まれ直しの位置を上方向にランダムに離して、再登場のタイミングを散らす
-    if (line.y > innerHeight + margin) {
-      lines[i] = makeLine(line.band, -margin - rand(0, cfg.spawnSpreadY * innerHeight));
+    if (line.y > viewportHeight() + margin) {
+      lines[i] = makeLine(line.band, -margin - rand(0, cfg.spawnSpreadY * viewportHeight()));
       continue;
     }
     // 判定 → 白戻し → また判定、を落ちている間ずっと繰り返す

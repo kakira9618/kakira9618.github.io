@@ -171,14 +171,9 @@ await page.addInitScript(({ unlockedAchievements }) => {
 await page.addInitScript({ path: axePath });
 
 async function assertNoSeriousA11yViolations(stage) {
-  // meta-viewport ルール（ズーム禁止の検出）は除外する。
-  // ズーム全面禁止はユーザーの明示要望による製品判断（2026-07-22）。
-  const result = await page.evaluate(async () =>
-    window.axe.run(document, {
-      resultTypes: ["violations"],
-      rules: { "meta-viewport": { enabled: false }, "meta-viewport-large": { enabled: false } },
-    })
-  );
+  // 既定でズームできるようになったので、meta-viewport ルール（ズーム禁止の検出）も有効に戻す。
+  // 設定「ズーム固定」を ON にしたときだけ禁止になるが、テストは既定値で回している。
+  const result = await page.evaluate(async () => window.axe.run(document, { resultTypes: ["violations"] }));
   const violations = result.violations.filter((violation) => ["serious", "critical"].includes(violation.impact));
   const details = violations
     .map((violation) => `${violation.id}: ${violation.help}\n${violation.nodes.map((node) => `  ${node.target.join(" ")}: ${node.failureSummary}`).join("\n")}`)
@@ -1062,10 +1057,23 @@ try {
   await page.getByRole("button", { name: "次の月" }).click();
   const futureDailyDays = page.locator(".daily-calendar-day.future");
   assert.ok(await futureDailyDays.count() > 0, "the current calendar should include future dates");
+  // 未来の日付も選んで眺められる（プレイはできない）
   assert.equal(
-    await futureDailyDays.evaluateAll((days) => days.every((day) => day.disabled)),
-    true,
-    "future Daily dates must all be disabled"
+    await futureDailyDays.evaluateAll((days) => days.some((day) => day.disabled)),
+    false,
+    "future Daily dates should stay selectable"
+  );
+  await futureDailyDays.first().click();
+  await dailyDetail.getByText("この日の問題は、その日になったらプレイできます").waitFor();
+  assert.equal(
+    await dailyDetail.getByRole("button", { name: "この問題をプレイ" }).count(),
+    0,
+    "a future Daily date must not offer a play button"
+  );
+  assert.equal(
+    await page.locator(".daily-calendar-day.future.selected").count(),
+    1,
+    "the picked future date should stay highlighted"
   );
   await todayDaily.click();
   await dailyDetail.getByRole("button", { name: "この問題をプレイ" }).waitFor();
