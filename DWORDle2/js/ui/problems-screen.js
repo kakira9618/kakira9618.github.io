@@ -305,6 +305,17 @@ function render() {
     el("h1", { class: "title" }, tr("問題一覧", "Puzzles")),
     el("span", { class: "spacer" }),
     el("span", { class: `mode-chip ${mode === "uso" ? "uso" : ""}` }, MODES[mode].title),
+    soundToggleButton(),
+    el(
+      "button",
+      {
+        class: "icon-btn",
+        title: tr("番号へジャンプ", "Jump to number"),
+        "aria-label": tr("番号へジャンプ", "Jump to number"),
+        onclick: jumpPrompt,
+      },
+      icon("search")
+    ),
     // タイトル画面と同じく、右上のボタンで DWORDle / DWORDlie を切り替えられるようにする
     el(
       "button",
@@ -320,17 +331,6 @@ function render() {
         },
       },
       icon(mode === "uso" ? "mask" : "moon")
-    ),
-    soundToggleButton(),
-    el(
-      "button",
-      {
-        class: "icon-btn",
-        title: tr("番号へジャンプ", "Jump to number"),
-        "aria-label": tr("番号へジャンプ", "Jump to number"),
-        onclick: jumpPrompt,
-      },
-      icon("search")
     )
   );
 
