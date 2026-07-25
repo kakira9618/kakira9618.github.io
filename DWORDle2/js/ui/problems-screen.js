@@ -26,6 +26,9 @@ let levelIdx = -1; // -1 は Daily、0 以上は LEVELS のインデックス
 let blockStart = null; // ブロック表示中の先頭 No.（null なら ブロック一覧）
 let statusFilter = "all"; // "all" | "cleared" | "failed" | "unplayed"
 let dailyCalendarMonth = null; // year * 12 + month。null は今月
+let dailySelectedPid = null; // カレンダーで選択中の日付（null は今日）
+// 履歴が無い月もさかのぼれるように、今月からの遡行可能な月数だけを上限にする
+const DAILY_CALENDAR_MAX_MONTHS_BACK = 120;
 
 function build() {
   root = document.getElementById("screen-problems");
@@ -38,7 +41,7 @@ function statusOf(statusMap, pid) {
   return "failed";
 }
 
-function openProblemMenu(pid, statusMap, { allowPlay = true } = {}) {
+function openProblemMenu(pid, statusMap) {
   const mode = getAppMode();
   const st = statusMap.get(pid);
   const historyItems = (st?.times ?? [])
@@ -60,21 +63,12 @@ function openProblemMenu(pid, statusMap, { allowPlay = true } = {}) {
     closeButton: true,
     title: pidLabel(pid),
     body: [
-      allowPlay
-        ? el(
-            "button",
-            { class: "btn btn-primary", style: { width: "100%" }, onclick: () => { confirmAndStart(pid, mode); } },
-            icon("play"),
-            tr("この問題をプレイ", "Play this puzzle")
-          )
-        : el(
-            "p",
-            { class: "hint daily-history-only" },
-            tr(
-              "過去のDailyはプレイできません。プレイ履歴のみ確認できます。",
-              "Past Daily puzzles cannot be played. You can only view their play history."
-            )
-          ),
+      el(
+        "button",
+        { class: "btn btn-primary", style: { width: "100%" }, onclick: () => { confirmAndStart(pid, mode); } },
+        icon("play"),
+        tr("この問題をプレイ", "Play this puzzle")
+      ),
       historyItems.length
         ? el("div", { class: "hint", style: { marginTop: "6px" } }, tr("プレイ履歴:", "Play history:"))
         : el("p", { class: "hint" }, tr("この問題はまだプレイしていません。", "This puzzle has not been played yet.")),
@@ -122,7 +116,11 @@ function dailyCalendar(statusMap) {
     .map(dailyDateFromPid)
     .filter(Boolean)
     .map((date) => date.getFullYear() * 12 + date.getMonth());
-  const earliestMonth = playedDailyMonths.length ? Math.min(...playedDailyMonths) : currentMonth;
+  // 履歴が無い月も見られるように、遡行の下限は履歴とは無関係に決める
+  const earliestMonth = Math.min(
+    currentMonth - DAILY_CALENDAR_MAX_MONTHS_BACK,
+    ...playedDailyMonths
+  );
   if (
     dailyCalendarMonth === null
     || dailyCalendarMonth < earliestMonth
@@ -130,6 +128,8 @@ function dailyCalendar(statusMap) {
   ) {
     dailyCalendarMonth = currentMonth;
   }
+  // 選択中の日付。未選択・未来日付・表示中の月の外なら今日に戻す
+  const selectedPid = dailySelectedPid !== null && dailySelectedPid <= todayPid ? dailySelectedPid : todayPid;
   const year = Math.floor(dailyCalendarMonth / 12);
   const month = dailyCalendarMonth % 12;
   const firstWeekday = new Date(year, month, 1).getDay();
@@ -143,7 +143,7 @@ function dailyCalendar(statusMap) {
     const { status, doubleClear, label } = dailyStatus(statusMap, pid);
     const today = pid === todayPid;
     const future = pid > todayPid;
-    const interactive = today || status !== "unplayed";
+    const selected = pid === selectedPid;
     const dayLabel = tr(
       `${year}年${month + 1}月${day}日${today ? "、今日" : ""}、${label}`,
       `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}${today ? ", today" : ""}, ${label}`
@@ -152,12 +152,15 @@ function dailyCalendar(statusMap) {
       el(
         "button",
         {
-          class: `daily-calendar-day ${status} ${doubleClear ? "double-clear" : ""} ${today ? "today" : ""} ${future ? "future" : ""}`,
+          class: `daily-calendar-day ${status} ${doubleClear ? "double-clear" : ""} ${today ? "today" : ""} ${future ? "future" : ""} ${selected ? "selected" : ""}`,
           "aria-label": dayLabel,
-          disabled: future || !interactive,
+          "aria-pressed": future ? null : String(selected),
+          disabled: future,
           onclick: () => {
             playSfx("ui");
-            openProblemMenu(pid, statusMap, { allowPlay: today });
+            // ダイアログではなくカレンダー直下に内容を展開する
+            dailySelectedPid = pid;
+            render();
           },
         },
         el("span", { class: "daily-calendar-number" }, String(day)),
@@ -218,7 +221,65 @@ function dailyCalendar(statusMap) {
       tr(["日", "月", "火", "水", "木", "金", "土"], ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"])
         .map((label) => el("span", {}, label))
     ),
-    el("div", { class: "daily-calendar-grid" }, cells)
+    el("div", { class: "daily-calendar-grid" }, cells),
+    dailyDetail(selectedPid, statusMap, todayPid)
+  );
+}
+
+// 選択した日の内容。以前はダイアログで出していたものをカレンダー直下へ展開する。
+function dailyDetail(pid, statusMap, todayPid) {
+  const mode = getAppMode();
+  const date = dailyDateFromPid(pid);
+  const isToday = pid === todayPid;
+  const { status, doubleClear, label } = dailyStatus(statusMap, pid);
+  const heading = date
+    ? tr(
+        `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`,
+        `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+      )
+    : pidLabel(pid);
+  const plays = (statusMap.get(pid)?.times ?? []).slice().reverse();
+  return el(
+    "div",
+    { class: "daily-detail", "aria-live": "polite" },
+    el(
+      "div",
+      { class: "daily-detail-head" },
+      el("span", { class: "daily-detail-date" }, heading),
+      isToday ? el("span", { class: "daily-detail-today" }, tr("今日", "Today")) : null,
+      el("span", { class: "spacer" }),
+      el("span", { class: `daily-detail-status ${doubleClear ? "double-clear" : status}` }, label)
+    ),
+    el("div", { class: "daily-detail-pid" }, pidLabel(pid)),
+    isToday
+      ? el(
+          "button",
+          { class: "btn btn-primary daily-detail-play", onclick: () => { playSfx("ui"); confirmAndStart(pid, mode); } },
+          icon("play"),
+          tr("この問題をプレイ", "Play this puzzle")
+        )
+      : el(
+          "p",
+          { class: "hint daily-history-only" },
+          tr(
+            "過去のDailyはプレイできません。プレイ履歴のみ確認できます。",
+            "Past Daily puzzles cannot be played. You can only view their play history."
+          )
+        ),
+    plays.length
+      ? el(
+          "div",
+          { class: "daily-detail-plays" },
+          el("div", { class: "hint" }, tr("プレイ履歴:", "Play history:")),
+          ...plays.map((time) =>
+            el(
+              "button",
+              { class: "btn", onclick: () => { playSfx("ui"); navigate(`/result/${mode}/${time}`); } },
+              tr(`${fmtDateTime(time)} のプレイ`, `Play on ${fmtDateTime(time)}`)
+            )
+          )
+        )
+      : el("p", { class: "hint" }, tr("この日はまだプレイしていません。", "You have not played this day yet."))
   );
 }
 

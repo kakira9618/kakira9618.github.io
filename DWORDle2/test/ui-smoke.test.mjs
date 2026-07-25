@@ -991,29 +991,26 @@ try {
   });
   await historicalDailyDay.waitFor();
   await historicalDailyDay.click();
-  const historicalDailyDialog = page.getByRole("dialog", { name: pidLabel(historicalDailyPid) });
-  await historicalDailyDialog.waitFor();
+  // 日付を選ぶとダイアログではなくカレンダー直下に内容が開く
+  const dailyDetail = page.locator("#screen-problems .daily-detail");
+  await dailyDetail.getByText(pidLabel(historicalDailyPid), { exact: true }).waitFor();
+  assert.equal(await page.locator('[role="dialog"]').count(), 0, "selecting a Daily date must not open a dialog");
   assert.equal(
-    await historicalDailyDialog.getByRole("button", { name: "この問題をプレイ" }).count(),
+    await dailyDetail.getByRole("button", { name: "この問題をプレイ" }).count(),
     0,
     "past Daily history must not offer replay"
   );
-  await historicalDailyDialog.getByText(
+  await dailyDetail.getByText(
     "過去のDailyはプレイできません。プレイ履歴のみ確認できます。",
     { exact: true }
   ).waitFor();
   assert.equal(
-    await historicalDailyDialog.getByRole("button", { name: /^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2} のプレイ$/ }).count(),
+    await dailyDetail.getByRole("button", { name: /^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2} のプレイ$/ }).count(),
     1,
     "past Daily results should use the date-time play label and remain viewable"
   );
-  // 右上の × でも閉じられる（本文が長いと下の「閉じる」までスクロールが要るため）
-  assert.equal(
-    await historicalDailyDialog.locator(".modal-close").count(),
-    1,
-    "the puzzle dialog should offer a close button in the top-right corner"
-  );
-  await historicalDailyDialog.locator(".modal-close").click();
+  // 選択中の日と今日は別々に示す（今日は表示中の月に無くてもよい）
+  assert.equal(await page.locator(".daily-calendar-day.selected").count(), 1, "the picked date should stay highlighted");
   assert.equal(
     await page.evaluate(async ({ pid }) => {
       const { confirmAndStart } = await import("./js/ui/game-screen.js?v=20260725-b");
@@ -1032,9 +1029,12 @@ try {
     "future Daily dates must all be disabled"
   );
   await todayDaily.click();
-  const dailyDialog = page.getByRole("dialog", { name: pidLabel(todayPID()) });
-  await dailyDialog.waitFor();
-  await dailyDialog.locator(".modal-actions").getByRole("button", { name: "閉じる" }).click();
+  await dailyDetail.getByText(pidLabel(todayPID()), { exact: true }).waitFor();
+  assert.equal(
+    await page.locator(".daily-calendar-day.today.selected").count(),
+    1,
+    "today should be both markable as today and selectable"
+  );
 
   // 今日のDailyをDWORDleだけでプレイ済みなら、DWORDlie側は「未プレイ」のまま。
   // 開始時は矛盾した「プレイ済み」ではなく、別モードでの当日プレイだと明示する。
@@ -1068,16 +1068,15 @@ try {
     "Daily status should remain mode-specific after playing only DWORDle"
   );
   await usoTodayDaily.click();
-  const usoDailyDialog = page.getByRole("dialog", { name: pidLabel(todayPID()) });
-  await usoDailyDialog.getByText("この問題はまだプレイしていません。", { exact: true }).waitFor();
-  await usoDailyDialog.getByRole("button", { name: "この問題をプレイ" }).click();
+  const usoDailyDetail = page.locator("#screen-problems .daily-detail");
+  await usoDailyDetail.getByText("この日はまだプレイしていません。", { exact: true }).waitFor();
+  await usoDailyDetail.getByRole("button", { name: "この問題をプレイ" }).click();
   const crossModeDailyDialog = page.getByRole("dialog", { name: "別モードで本日プレイ済み" });
   await crossModeDailyDialog.getByText(
     `${pidLabel(todayPID())} は本日 DWORDle でプレイ済みですが、DWORDlie ではまだプレイしていません。`,
     { exact: false }
   ).waitFor();
   await crossModeDailyDialog.getByRole("button", { name: "キャンセル" }).click();
-  await usoDailyDialog.locator(".modal-actions").getByRole("button", { name: "閉じる" }).click();
   await page.evaluate(async () => {
     const app = await import("./js/ui/app.js?v=20260725-b");
     app.setAppMode("normal");
