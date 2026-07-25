@@ -507,8 +507,7 @@ function render() {
       ),
       settingRow(
         tr("効果音の音量", "Sound effects volume"),
-        tr("効果音だけの音量を調整します。50% が標準で、上げると大きくできます",
-           "Adjust sound effects independently. 50% is the default; go higher to boost"),
+        tr("効果音だけの音量を調整します", "Adjust sound effects independently"),
         volumeSlider("sfxVolume", tr("効果音の音量", "Sound effects volume"))
       ),
       settingRow(
@@ -521,8 +520,7 @@ function render() {
       ),
       settingRow(
         tr("BGMの音量", "BGM volume"),
-        tr("BGMだけの音量を調整します。50% が標準で、上げると大きくできます",
-           "Adjust BGM independently. 50% is the default; go higher to boost"),
+        tr("BGMだけの音量を調整します", "Adjust BGM independently"),
         volumeSlider("bgmVolume", tr("BGMの音量", "BGM volume"))
       ),
       settingRow(
