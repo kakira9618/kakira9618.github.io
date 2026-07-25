@@ -15,6 +15,7 @@ import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js?v
 import { syncDocumentLanguage, tr } from "./core/i18n.js?v=20260725-b";
 import { initActivity } from "./core/activity.js?v=20260725-b";
 import { initAnalytics } from "./core/analytics.js?v=20260725-b";
+import { maybeShowConsentBanner } from "./ui/consent-banner.js?v=20260725-b";
 import { onSaveError } from "./core/store.js?v=20260725-b";
 import { showEntryGate } from "./ui/gate.js?v=20260725-b";
 
@@ -184,6 +185,7 @@ showEntryGate(
     const recoveredAchievements = await appReady;
     startRouter();
     initAnalytics(); // Google Analytics（読み込みはアイドル時間まで遅延）
+    maybeShowConsentBanner(); // EEA / 英国 / スイスからのアクセスにだけ同意バナーを出す
     if (recoveredAchievements.length) {
       setTimeout(async () => {
         const { achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } =

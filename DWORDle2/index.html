@@ -15,19 +15,20 @@
 <meta property="og:title" content="DWORDle | 新感覚Wordle">
 <meta property="og:description" content="答えは2つ。盤面は1つ。新感覚Wordle！">
 <meta property="og:url" content="https://kakira9618.github.io/DWORDle2/">
-<!-- カードは全クライアント共通で 1.91:1 の og.jpg を使う。
+<!-- X 以外（Discord / Slack / LINE など）は 1.91:1 の og.jpg を使う。
      グラデーション主体の絵なので JPEG（PNG だと 423KB、JPEG 品質90 なら 90KB） -->
 <meta property="og:image" content="https://kakira9618.github.io/DWORDle2/og.jpg">
 <meta property="og:image:type" content="image/jpeg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="DWORDle 2 — 答えが2つある Wordle">
-<!-- X も横長の大きいカードで統一する（画像は og:image と同じ og.jpg） -->
-<meta name="twitter:card" content="summary_large_image">
+<!-- X だけは正方形アイコンの Summary カード。twitter:image は og:image より優先される。
+     summary_large_image だと正方形が 1.91:1 に切り抜かれて意匠が欠けるため -->
+<meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="DWORDle | 新感覚Wordle">
 <meta name="twitter:description" content="答えは2つ。盤面は1つ。新感覚Wordle！">
-<meta name="twitter:image" content="https://kakira9618.github.io/DWORDle2/og.jpg">
-<meta name="twitter:image:alt" content="DWORDle 2 — 答えが2つある Wordle">
+<meta name="twitter:image" content="https://kakira9618.github.io/DWORDle2/og-square.png">
+<meta name="twitter:image:alt" content="DWORDle 2 のアイコン">
 <link rel="stylesheet" href="css/style.css?v=20260725-b">
 <script type="importmap">
 { "imports": { "three": "./vendor/three.module.min.js" } }

@@ -338,9 +338,9 @@ try {
     "横長カードを出すクライアントには 1.91:1 の画像を渡す"
   );
   assert.equal(publicEntry.ogDescription, "答えは2つ。盤面は1つ。新感覚Wordle！");
-  assert.equal(publicEntry.twitterCard, "summary_large_image", "カードは横長の大きい表示で統一する");
+  assert.equal(publicEntry.twitterCard, "summary", "X は正方形アイコンの小さいカードにする");
   assert.equal(publicEntry.twitterTitle, "DWORDle | 新感覚Wordle");
-  assert.equal(publicEntry.twitterImage, "https://kakira9618.github.io/DWORDle2/og.jpg", "X にも og:image と同じ横長画像を渡す");
+  assert.equal(publicEntry.twitterImage, "https://kakira9618.github.io/DWORDle2/og-square.png", "X には正方形アイコンを渡す");
   assert.equal(publicEntry.twitterDescription, "答えは2つ。盤面は1つ。新感覚Wordle！");
   assert.equal(publicEntry.manifest, "manifest.webmanifest");
   assert.deepEqual(publicEntry.statuses, [200, 200, 200, 200], "Public metadata assets should be served");

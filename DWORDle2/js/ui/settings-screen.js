@@ -615,6 +615,7 @@ function render() {
               "playerCard", // プレイヤーカード（名前・発行情報・確認済みランク）
               "playerId", // プレイヤー ID も新規プレイヤーとして発番し直す
               "activity", // 行動ログ（クリック・画面滞在などの端末内記録）
+              "analyticsConsent", // Cookie 同意の選択（対象地域では再び確認する）
             ]) {
               removeKey(key);
             }
