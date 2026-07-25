@@ -14,6 +14,7 @@ import { getSettings, onSettingsChange, hiddenThemesUnlockedBy } from "./core/se
 import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js?v=20260725-b";
 import { syncDocumentLanguage, tr } from "./core/i18n.js?v=20260725-b";
 import { initActivity } from "./core/activity.js?v=20260725-b";
+import { initAnalytics } from "./core/analytics.js?v=20260725-b";
 import { onSaveError } from "./core/store.js?v=20260725-b";
 import { showEntryGate } from "./ui/gate.js?v=20260725-b";
 
@@ -182,6 +183,7 @@ showEntryGate(
   async () => {
     const recoveredAchievements = await appReady;
     startRouter();
+    initAnalytics(); // Google Analytics（読み込みはアイドル時間まで遅延）
     if (recoveredAchievements.length) {
       setTimeout(async () => {
         const { achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } =

@@ -622,6 +622,25 @@ function render() {
             location.reload();
           },
         }, icon("trash"), tr("全データ削除", "Delete all data"))
+      ),
+      // Google アナリティクスの利用告知（GA の規約で開示が必要。設定・履歴は端末内のみ）
+      el(
+        "p",
+        { class: "hint settings-privacy-note" },
+        tr(
+          "プライバシー: プレイ履歴・実績・設定はこの端末内にだけ保存され、サーバーには送信されません。"
+            + "利用状況の把握のため Google アナリティクスを使用しており、画面の閲覧やゲーム結果の統計値（モード・勝敗・手数）を匿名で送信します。"
+            + "プレイヤー名や入力した単語は送信しません。広告目的の利用はしません。",
+          "Privacy: your play history, achievements, and settings are stored only on this device and are never sent to a server. "
+            + "This site uses Google Analytics to understand usage, sending anonymous statistics such as screen views and game results (mode, win/loss, number of Guesses). "
+            + "Your player name and the words you type are never sent. No advertising use."
+        ),
+        el("br"),
+        el(
+          "a",
+          { href: "https://policies.google.com/technologies/partner-sites", target: "_blank", rel: "noopener noreferrer" },
+          tr("Google のデータ利用について", "How Google uses data")
+        )
       )
     ),
     el(

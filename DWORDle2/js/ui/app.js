@@ -16,6 +16,7 @@ import { setBackgroundMood } from "../fx/effects.js?v=20260725-b";
 import { setPopBackgroundMood } from "../fx/pop-background.js?v=20260725-b";
 import { closeAllModals } from "./modal.js?v=20260725-b";
 import { trackScreen } from "../core/activity.js?v=20260725-b";
+import { trackPageView } from "../core/analytics.js?v=20260725-b";
 
 const screens = new Map(); // name -> { element, render(params) }
 let currentName = null;
@@ -85,7 +86,9 @@ function show(name, args) {
     if (s !== screen && n === currentName) s.onLeave?.();
   }
   currentName = name;
-  trackScreen(screens.has(name) ? name : "title"); // 行動ログ（訪問回数・滞在時間）
+  const screenName = screens.has(name) ? name : "title";
+  trackScreen(screenName); // 行動ログ（訪問回数・滞在時間）
+  trackPageView(screenName); // Google Analytics（画面名だけ。結果画面の startTime などは送らない）
   screen.render(args);
 }
 

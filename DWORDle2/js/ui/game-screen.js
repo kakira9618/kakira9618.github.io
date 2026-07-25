@@ -20,6 +20,7 @@ import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js?v=20260725-b";
 import { hiddenThemesUnlockedBy } from "../core/settings.js?v=20260725-b";
 import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/effects.js?v=20260725-b";
 import { showHelpModal, hasSeenHelp } from "./help.js?v=20260725-b";
+import { trackEvent } from "../core/analytics.js?v=20260725-b";
 import { soundToggleButton } from "./sound-toggle.js?v=20260725-b";
 import { icon } from "./icons.js?v=20260725-b";
 import { tr } from "../core/i18n.js?v=20260725-b";
@@ -872,6 +873,13 @@ function finishGame(justFinished) {
 
   if (justFinished) {
     const doubleCleared = Boolean(getExtraShot(record)?.success);
+    // Google Analytics（統計値のみ。問題の答えや入力語は送らない）
+    trackEvent("game_finish", {
+      game_mode: record.gameMode,
+      result: doubleCleared ? "double_clear" : cleared ? "clear" : "lose",
+      guesses: record.guessWord.length,
+      daily: isDailyPID(record.problemID),
+    });
     if (doubleCleared) {
       // 大成功: 専用ファンファーレ + 金色の DOUBLE CLEAR カットイン + 金色バースト
       playSfx("doubleClear");

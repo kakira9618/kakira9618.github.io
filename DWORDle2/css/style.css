@@ -769,6 +769,11 @@ body.theme-cyber .icon-btn.menu-locked:hover {
     animation: none;
   }
 }
+.settings-privacy-note {
+  margin-top: 12px;
+  font-size: 11px;
+  line-height: 1.6;
+}
 .version-note {
   color: var(--fg-dim);
   font-size: 11px;

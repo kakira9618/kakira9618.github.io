@@ -94,6 +94,8 @@ js/core/              ロジック（UI 非依存・テスト対象）
   migrate.js          履歴のインポート（旧作・本作エクスポート）
   analysis-core.js    分析計算（Worker と共用）
   analysis.worker.js  分析用 Web Worker
+  analytics.js        Google アナリティクス（アイドル読み込み・本番ドメインのみ）
+  secret.js           隠し要素の文字列を符号化して持つためのユーティリティ
 js/ui/                画面（ハッシュルータ + 各 screen）
 js/fx/                Three.js 背景 / パーティクル
 js/audio/sound.js     効果音・生成 BGM
