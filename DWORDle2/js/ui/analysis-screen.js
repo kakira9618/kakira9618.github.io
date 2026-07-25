@@ -88,9 +88,11 @@ function render(args) {
     return;
   }
 
-  // 実績: アナリスト
-  const newly = checkOnEvent("analysis");
-  if (newly.length) achievementCelebration(newly);
+  // 実績: アナリスト。破棄したゲームの閲覧は全実績の対象外。
+  if (!record.discarded) {
+    const newly = checkOnEvent("analysis");
+    if (newly.length) achievementCelebration(newly);
+  }
 
   body.append(
     el(

@@ -117,6 +117,7 @@ export function renderResultCanvas(record, logic, displayRows) {
   const accent = isUso ? st.accentUso : st.accent;
   const flagColor = theme === "pop" && !isUso ? "#000000" : st.fg;
   const cleared = record.clear;
+  const discarded = Boolean(record.discarded);
   const extraInfo = extraShotInfo(record, logic);
   const maxGuess = MODES[record.gameMode].maxGuess;
 
@@ -177,19 +178,19 @@ export function renderResultCanvas(record, logic, displayRows) {
   ctx.fillStyle = st.dim;
   const d = new Date(record.startTime * 1000);
   const dateStr = `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
-  const countText = cleared ? `${rows}/${maxGuess}` : `X/${maxGuess}`;
+  const countText = discarded ? `DISCARDED ${rows}/${maxGuess}` : cleared ? `${rows}/${maxGuess}` : `X/${maxGuess}`;
   ctx.fillText(`${pidLabel(record.problemID)}   ${dateStr}   ${countText}`, centerX, y);
 
-  // DOUBLE CLEAR! / GAME CLEAR / GAME OVER（DOUBLE CLEAR は金色で目立たせる）
+  // DOUBLE CLEAR! / GAME CLEAR / DISCARDED / GAME OVER（DOUBLE CLEAR は金色で目立たせる）
   y += 52;
   const doubleClear = Boolean(extraInfo?.success);
   ctx.font = `900 ${SS.resultSize}px "Avenir Next", sans-serif`;
-  ctx.fillStyle = doubleClear ? st.extraAccent : cleared ? st.clear : st.over;
+  ctx.fillStyle = doubleClear ? st.extraAccent : cleared ? st.clear : discarded ? st.dim : st.over;
   if (st.glow || (doubleClear && theme !== "pop")) {
     ctx.shadowColor = ctx.fillStyle;
     ctx.shadowBlur = 30;
   }
-  ctx.fillText(doubleClear ? "DOUBLE CLEAR!" : cleared ? "GAME CLEAR" : "GAME OVER", centerX, y);
+  ctx.fillText(doubleClear ? "DOUBLE CLEAR!" : cleared ? "GAME CLEAR" : discarded ? "DISCARDED" : "GAME OVER", centerX, y);
   ctx.shadowBlur = 0;
 
   // 答え → 入力履歴 → EXTRA SHOT の順に並べる。

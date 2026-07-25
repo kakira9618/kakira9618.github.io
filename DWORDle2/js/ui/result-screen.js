@@ -40,7 +40,9 @@ function buildShareText(record, logic, cleared, includeUrl = true) {
   const seedLabel = pidLabel(record.problemID);
   const maxGuess = MODES[record.gameMode].maxGuess;
   const name = record.gameMode === "uso" ? tr("[嘘] DWORDlie2", "[LIE] DWORDlie2") : "DWORDle2";
-  const countText = cleared ? `${record.guessWord.length}/${maxGuess}` : `X/${maxGuess}`;
+  const countText = record.discarded
+    ? `DISCARDED ${record.guessWord.length}/${maxGuess}`
+    : cleared ? `${record.guessWord.length}/${maxGuess}` : `X/${maxGuess}`;
   let text = `${name} ${seedLabel} ${countText}\n\n`;
   // ハイコントラスト設定では絵文字も本家 Wordle と同じ 🟧 / 🟦 に置き換える
   const highContrast = getSettings().highContrast;
@@ -86,6 +88,7 @@ function render(args) {
   const logic = new Logic(record.problemID);
   const lastWord = record.guessWord[record.guessWord.length - 1];
   const cleared = record.clear;
+  const discarded = Boolean(record.discarded);
   const results = displayResults(record, logic);
   const maxGuess = MODES[record.gameMode].maxGuess;
   // EXTRA SHOT の記録。旧 finalAnswer レコードも同じ表示へ透過する。
@@ -213,15 +216,15 @@ function render(args) {
     { class: "list-screen-body" },
     el(
       "div",
-      { class: `result-title ${doubleClear ? "double" : cleared ? "clear" : "over"}` },
-      doubleClear ? "DOUBLE CLEAR!" : cleared ? "GAME CLEAR" : "GAME OVER"
+      { class: `result-title ${doubleClear ? "double" : cleared ? "clear" : discarded ? "discarded" : "over"}` },
+      doubleClear ? "DOUBLE CLEAR!" : cleared ? "GAME CLEAR" : discarded ? "DISCARDED" : "GAME OVER"
     ),
     el(
       "div",
       { class: "hint" },
       tr(
-        `${fmtDateTime(record.startTime)} ・ ${record.guessWord.length} / ${maxGuess} 手${record.imported ? " ・ 移行" : ""}`,
-        `${fmtDateTime(record.startTime)} · ${record.guessWord.length} / ${maxGuess} Guesses${record.imported ? " · Imported" : ""}`
+        `${fmtDateTime(record.startTime)} ・ ${record.guessWord.length} / ${maxGuess} 手${discarded ? " ・ 破棄 ・ 実績対象外" : ""}${record.imported ? " ・ 移行" : ""}`,
+        `${fmtDateTime(record.startTime)} · ${record.guessWord.length} / ${maxGuess} Guesses${discarded ? " · Discarded · No achievements" : ""}${record.imported ? " · Imported" : ""}`
       )
     ),
     el("div", { class: "card answers-grid" }, answerRow(1, logic.ans1), answerRow(2, logic.ans2)),

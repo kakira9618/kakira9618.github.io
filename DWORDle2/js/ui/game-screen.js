@@ -9,7 +9,7 @@
 import { el, clear } from "./dom.js?v=20260725-b";
 import { APP_VERSION, UI, FX } from "../config.js?v=20260725-b";
 import { Logic, CELL, displayResultForMode } from "../core/logic.js?v=20260725-b";
-import { MODES, saveCurrentGame, clearCurrentGame, getCurrentGame, addFinishedGame, isAlreadyPlayed, getHistory, getExtraShot } from "../core/records.js?v=20260725-b";
+import { MODES, saveCurrentGame, clearCurrentGame, getCurrentGame, addFinishedGame, addDiscardedGame, isAlreadyPlayed, getHistory, getExtraShot } from "../core/records.js?v=20260725-b";
 import { isDailyPID, pidLabel, todayPID } from "../core/problems.js?v=20260725-b";
 import { checkOnGameFinish } from "../core/achievements.js?v=20260725-b";
 import { registerScreen, navigate, redirect, getAppMode, currentScreenName } from "./app.js?v=20260725-b";
@@ -242,7 +242,7 @@ function isExtraShotActive() {
 }
 
 // 進行中のゲームを持ってタイトルへ戻るときの選択。
-// 中断 = 保存を残して「つづきから」で再開できる（従来の挙動）／破棄 = 進行状況を消す。
+// 中断 = 保存を残して「つづきから」で再開できる（従来の挙動）／破棄 = 履歴へ残して終了する。
 // × ・背景タップ・Escape・キャンセルはどれも「ゲームに戻る」。
 async function askLeaveGame() {
   const { showModal } = await import("./modal.js?v=20260725-b");
@@ -267,7 +267,12 @@ async function askLeaveGame() {
           el(
             "li",
             {},
-            tr("破棄：進行状況を削除します", "Discard: delete progress")
+            tr("破棄：本日の同問題は実績対象外", "Discard: no achievements for this puzzle today")
+          ),
+          el(
+            "li",
+            {},
+            tr("キャンセル：ゲームに戻ります", "Cancel: return to the game")
           )
         ),
       ],
@@ -281,6 +286,25 @@ async function askLeaveGame() {
   });
 }
 
+function discardGame(current) {
+  const record = addDiscardedGame({
+    version: current.version,
+    startTime: current.startTime,
+    endTime: Math.floor(Date.now() / 1000),
+    gameMode: current.gameMode,
+    problemID: current.problemID,
+    guessWord: current.guessWord.slice(),
+    usoResults: current.gameMode === "uso" ? (current.usoResults ?? []).slice() : undefined,
+  });
+  clearCurrentGame(current.gameMode);
+  trackEvent("game_discard", {
+    game_mode: record.gameMode,
+    guesses: record.guessWord.length,
+    daily: isDailyPID(record.problemID),
+  });
+  return record;
+}
+
 async function requestBackToTitle() {
   playSfx("ui");
   if (!isExtraShotActive()) {
@@ -292,7 +316,7 @@ async function requestBackToTitle() {
       const choice = await askLeaveGame();
       leavePromptOpen = false;
       if (choice === "cancel") return;
-      if (choice === "discard") clearCurrentGame(game.gameMode);
+      if (choice === "discard") discardGame(game);
     }
     navigate("/");
     return;
@@ -850,7 +874,7 @@ function applyAllKeyStyles() {
 
 function persistFinishedGame({ includeExtraShot = true } = {}) {
   const hadLostBefore = getHistory().some(
-    (g) => g.gameMode === game.gameMode && g.problemID === game.problemID && !g.clear
+    (g) => g.gameMode === game.gameMode && g.problemID === game.problemID && !g.clear && !g.discarded
   );
   const record = addFinishedGame({
     version: game.version,
@@ -979,13 +1003,19 @@ export async function confirmAndStart(pid, mode) {
     return Number.isFinite(playedAt) && new Date(playedAt * 1000).toDateString() === today;
   });
   const playedToday = playedTodayGames.length > 0;
+  const discardedToday = playedTodayGames.some((record) => record.discarded);
   const playedInCurrentMode = isAlreadyPlayed(pid, mode);
   if (playedInCurrentMode || playedToday) {
     // 注意: 動的 import にも必ず ?v= トークンを付ける。素の URL だと古いキャッシュの
     // modal.js（旧トークンで sound.js を import する）が混ざり、BGM が二重再生される。
     const { confirmModal } = await import("./modal.js?v=20260725-b");
     const label = pidLabel(pid);
-    const countNote = playedToday
+    const countNote = discardedToday
+      ? tr(
+          "\n\n※この問題は本日破棄済みです。今回のプレイはすべての実績の対象外です。",
+          "\n\nThis puzzle was discarded today. This play is not eligible for any achievements."
+        )
+      : playedToday
       ? tr(
           "\n\n※この問題は本日プレイ済みです。今回のプレイは、プレイ数・勝利数などのカウント系実績に加算されず、隠し実績の判定対象にもなりません。",
           "\n\nThis puzzle has already been played today. This play will not count toward play, win, or other count-based achievement totals, and will not be checked for secret achievements."
@@ -993,10 +1023,17 @@ export async function confirmAndStart(pid, mode) {
       : "";
     const onlyPlayedInOtherModeToday = playedToday && !playedInCurrentMode;
     const playedModeTitles = [...new Set(playedTodayGames.map((record) => MODES[record.gameMode]?.title).filter(Boolean))];
-    const title = onlyPlayedInOtherModeToday
+    const title = discardedToday
+      ? tr("本日破棄した問題", "Puzzle discarded today")
+      : onlyPlayedInOtherModeToday
       ? tr("別モードで本日プレイ済み", "Played today in another mode")
       : tr("プレイ済みの問題", "Puzzle already played");
-    const message = onlyPlayedInOtherModeToday
+    const message = discardedToday
+      ? tr(
+          `${label} は本日破棄済みです。\nもう一度プレイしますか？`,
+          `${label} was discarded today.\nPlay it again?`
+        ) + countNote
+      : onlyPlayedInOtherModeToday
       ? tr(
           `${label} は本日 ${playedModeTitles.join(" / ")} でプレイ済みですが、${MODES[mode].title} ではまだプレイしていません。\n${MODES[mode].title} でプレイしますか？\n\n※今回のプレイは、プレイ数・勝利数などのカウント系実績に加算されず、隠し実績の判定対象にもなりません。`,
           `${label} was played today in ${playedModeTitles.join(" / ")}, but has not yet been played in ${MODES[mode].title}.\nPlay it in ${MODES[mode].title}?\n\nThis play will not count toward play, win, or other count-based achievement totals, and will not be checked for secret achievements.`
@@ -1017,11 +1054,12 @@ export async function confirmAndStart(pid, mode) {
     const ok = await confirmModal(
       tr("進行中のゲーム", "Game in progress"),
       tr(
-        `${pidLabel(current.problemID)} のゲームが進行中です。\n破棄して新しいゲームを始めますか？`,
-        `${pidLabel(current.problemID)} is in progress.\nDiscard it and start a new game?`
+        `${pidLabel(current.problemID)} のゲームが進行中です。\n破棄して新しいゲームを始めますか？\n\n※破棄した問題は履歴に残り、本日の同じ問題は実績対象外になります。`,
+        `${pidLabel(current.problemID)} is in progress.\nDiscard it and start a new game?\n\nThe discarded game remains in history, and this puzzle will not be eligible for achievements today.`
       )
     );
     if (!ok) return false;
+    discardGame(current);
   }
   startNewGame(pid, mode);
   return true;

@@ -2013,7 +2013,7 @@ try {
     await narrowPage.close();
   }
 
-  // 進行中のゲームで戻ると、中断（保存を残す）か破棄（消す）かを選ばせる。
+  // 進行中のゲームで戻ると、中断（保存を残す）か破棄（履歴へ残して終了）かを選ばせる。
   // EXTRA SHOT 中は従来どおり棄権確認なので、ここは通常プレイで見る。
   {
     const leavePage = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
@@ -2060,6 +2060,11 @@ try {
       ["キャンセル", "破棄", "中断"],
       "the leave dialog should offer cancel / discard / pause"
     );
+    assert.match(
+      await leaveDialog.textContent(),
+      /破棄：本日の同問題は実績対象外/,
+      "the discard option should explain the same-day achievement penalty"
+    );
     // 狭い端末でもラベルが 2 行に割れず 1 行に収まる
     const leaveActionsLayout = await leaveDialog.locator(".modal-actions").evaluate((row) => ({
       overflow: Math.round((row.scrollWidth - row.clientWidth) * 10) / 10,
@@ -2081,7 +2086,7 @@ try {
     assert.equal((await savedGame())?.guessWord.length, 1, "pausing must keep the game in progress");
     await leavePage.getByRole("button", { name: /つづきから/ }).click();
     await leavePage.waitForURL(/#\/game$/);
-    // 破棄は保存を消し、履歴にも残さない
+    // 破棄は進行中保存を消す一方、途中経過と破棄状態を履歴へ残す
     await leavePage.getByRole("button", { name: "タイトルへ戻る" }).click();
     await leaveDialog.waitFor();
     await leaveDialog.getByRole("button", { name: "破棄" }).click();
@@ -2092,10 +2097,37 @@ try {
       0,
       "the Continue button must disappear after discarding"
     );
+    const discardedHistory = await leavePage.evaluate(() => JSON.parse(localStorage.getItem("dwordle2.history") || "[]"));
+    assert.equal(discardedHistory.length, 1, "a discarded game must be recorded in history");
+    assert.equal(discardedHistory[0].discarded, true, "the history record must identify the game as discarded");
+    assert.equal(discardedHistory[0].clear, false, "a discarded game must not be a clear");
+    assert.deepEqual(discardedHistory[0].guessWord, ["crane"], "the partial Guess history must be preserved");
+
+    await leavePage.getByRole("button", { name: "プレイ履歴" }).click();
+    await leavePage.waitForURL(/#\/history$/);
+    const discardedItem = leavePage.getByRole("button", { name: /破棄、1 手/ });
+    await discardedItem.waitFor();
+    assert.match(await discardedItem.textContent(), /破棄 ・ 実績対象外/);
+    await discardedItem.click();
+    await leavePage.waitForURL(/#\/result\/normal\//);
+    await leavePage.getByText("DISCARDED", { exact: true }).waitFor();
+    assert.equal(await leavePage.locator("#screen-result .result-grid .rrow").count(), 1, "the result should show partial progress");
+    assert.match(await leavePage.locator("#screen-result .list-screen-body > .hint").first().textContent(), /破棄 ・ 実績対象外/);
+
+    // 同日の再挑戦前にも、すべての実績が対象外になることを明示する
+    await leavePage.getByRole("button", { name: "もう一度" }).click();
+    const discardedReplayDialog = leavePage.getByRole("dialog", { name: "本日破棄した問題" });
+    await discardedReplayDialog.waitFor();
+    assert.match(await discardedReplayDialog.textContent(), /すべての実績の対象外/);
+    await discardedReplayDialog.getByRole("button", { name: "キャンセル" }).click();
+
+    // 破棄結果の分析は閲覧できるが、「アナリスト」実績は解除しない
+    await leavePage.getByRole("button", { name: "分析" }).click();
+    await leavePage.waitForURL(/#\/analysis\/normal\//);
     assert.equal(
-      await leavePage.evaluate(() => JSON.parse(localStorage.getItem("dwordle2.history") || "[]").length),
-      0,
-      "a discarded game must not be recorded in history"
+      await leavePage.evaluate(() => Boolean(JSON.parse(localStorage.getItem("dwordle2.achievements") || "{}").analyst)),
+      false,
+      "analyzing a discarded game must not unlock the Analyst achievement"
     );
     await leavePage.close();
   }

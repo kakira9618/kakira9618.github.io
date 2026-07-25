@@ -26,7 +26,7 @@ let page = 1;
 let filters = {
   dateFrom: "",
   dateTo: "",
-  result: "all", // "all" | "win" | "lose" | "double"
+  result: "all", // "all" | "win" | "lose" | "discarded" | "double"
   guessesMin: "",
   guessesMax: "",
   sort: "date-desc",
@@ -205,6 +205,7 @@ function historyControls() {
               ["all", tr("すべて", "All")],
               ["win", tr("成功", "Win")],
               ["lose", tr("失敗", "Loss")],
+              ["discarded", tr("破棄", "Discarded")],
               ["double", "DOUBLE CLEAR"],
             ],
             (value) => update("result", value),
@@ -273,7 +274,8 @@ function filteredGames() {
   const games = getRecentGames(filter === "all" ? null : filter).filter((game) => {
     if (game.startTime < from || game.startTime >= to) return false;
     if (filters.result === "win" && !game.clear) return false;
-    if (filters.result === "lose" && game.clear) return false;
+    if (filters.result === "lose" && (game.clear || game.discarded)) return false;
+    if (filters.result === "discarded" && !game.discarded) return false;
     if (filters.result === "double" && !(game.clear && getExtraShot(game)?.success)) return false;
     return game.guessWord.length >= minGuesses && game.guessWord.length <= maxGuesses;
   });
@@ -421,15 +423,18 @@ function renderList() {
   }
   for (const g of visibleGames) {
     const maxGuess = MODES[g.gameMode].maxGuess;
+    const discarded = Boolean(g.discarded);
     const doubleClear = Boolean(getExtraShot(g)?.success); // EXTRA SHOT 成功は金バッジ + 星
+    const resultJa = discarded ? "破棄" : g.clear ? (doubleClear ? "ダブルクリア" : "成功") : "失敗";
+    const resultEn = discarded ? "discarded" : g.clear ? (doubleClear ? "double clear" : "win") : "loss";
     body.append(
       el(
         "button",
         {
           class: "card tappable history-item",
           "aria-label": tr(
-            `${pidLabel(g.problemID)}、${MODES[g.gameMode].title}、${g.clear ? (doubleClear ? "ダブルクリア" : "成功") : "失敗"}、${g.guessWord.length} 手`,
-            `${pidLabel(g.problemID)}, ${MODES[g.gameMode].title}, ${g.clear ? (doubleClear ? "double clear" : "win") : "loss"}, ${g.guessWord.length} Guesses`
+            `${pidLabel(g.problemID)}、${MODES[g.gameMode].title}、${resultJa}、${g.guessWord.length} 手`,
+            `${pidLabel(g.problemID)}, ${MODES[g.gameMode].title}, ${resultEn}, ${g.guessWord.length} Guesses`
           ),
           onclick: () => {
             playSfx("ui");
@@ -438,8 +443,8 @@ function renderList() {
         },
         el(
           "div",
-          { class: `badge ${g.clear ? "win" : "lose"}${doubleClear ? " double" : ""}` },
-          g.clear ? `${g.guessWord.length}` : "X",
+          { class: `badge ${discarded ? "discarded" : g.clear ? "win" : "lose"}${doubleClear ? " double" : ""}` },
+          discarded ? icon("trash", 20) : g.clear ? `${g.guessWord.length}` : "X",
           doubleClear ? el("span", { class: "badge-star", "aria-hidden": "true" }, "★") : null
         ),
         el(
@@ -455,8 +460,8 @@ function renderList() {
             "div",
             { class: "line2" },
             tr(
-              `${fmtDateTime(g.startTime)} ・ ${g.guessWord.length}/${maxGuess} 手${g.imported ? " ・ 移行" : ""}`,
-              `${fmtDateTime(g.startTime)} · ${g.guessWord.length}/${maxGuess} Guesses${g.imported ? " · Imported" : ""}`
+              `${fmtDateTime(g.startTime)} ・ ${g.guessWord.length}/${maxGuess} 手${discarded ? " ・ 破棄 ・ 実績対象外" : ""}${g.imported ? " ・ 移行" : ""}`,
+              `${fmtDateTime(g.startTime)} · ${g.guessWord.length}/${maxGuess} Guesses${discarded ? " · Discarded · No achievements" : ""}${g.imported ? " · Imported" : ""}`
             )
           )
         ),

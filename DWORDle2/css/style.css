@@ -1694,6 +1694,8 @@ body.theme-cyber .card.tappable:hover {
 }
 .badge.win { background: color-mix(in srgb, var(--tile-correct) 25%, transparent); color: var(--tile-correct); }
 .badge.lose { background: color-mix(in srgb, var(--danger) 18%, transparent); color: #ff7a7a; }
+.badge.discarded { background: color-mix(in srgb, var(--fg-dim) 18%, transparent); color: var(--fg-dim); }
+.badge.discarded svg { width: 20px; height: 20px; }
 .history-item .info {
   flex: 1;
   min-width: 0;
@@ -2319,6 +2321,10 @@ body.theme-cyber .result-title.clear {
 .result-title.over {
   color: #ff6a6a;
   text-shadow: 0 0 18px rgba(255, 60, 60, 0.4);
+}
+.result-title.discarded {
+  color: var(--fg-dim);
+  text-shadow: none;
 }
 .answer-line {
   display: flex;

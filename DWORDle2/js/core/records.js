@@ -8,6 +8,7 @@
 //     guessWord: ["about", ...],
 //     usoResults: [["correct",...], ...]  // uso のみ（表示された嘘の判定）
 //     clear: boolean,                     // キャッシュ。guessWord から再計算可能
+//     discarded: true | undefined,        // v2 追加スキーマ: 途中で明示的に破棄した記録
 //     imported: "auto" | "json" | undefined, // 旧作から移行したレコードの印
 //     extraShot: { word, success, result? } | undefined, // v2 追加スキーマ: EXTRA SHOT の
 //       // 追加推理（クリア時のみ発生しうる）。success ならDOUBLE CLEAR。
@@ -97,6 +98,7 @@ export function findGame(startTime, gameMode) {
 }
 
 export function computeClear(record) {
+  if (record.discarded) return false;
   if (record.guessWord.length === 0) return false;
   const logic = new Logic(record.problemID);
   return logic.isGameClear(record.guessWord[record.guessWord.length - 1]);
@@ -108,7 +110,7 @@ export function countPlays() {
   const saved = loadJSON("playCount", null);
   if (saved !== null) return saved;
   // 既存ユーザーは手元の実プレイ数（インポート除く）をそのまま引き継ぐ
-  const n = ensureLoaded().filter((g) => !g.imported).length;
+  const n = ensureLoaded().filter((g) => !g.imported && !g.discarded).length;
   saveJSON("playCount", n);
   return n;
 }
@@ -127,6 +129,20 @@ export function addFinishedGame(record) {
   history.sort((a, b) => a.startTime - b.startTime);
   persist();
   saveJSON("playCount", playsBefore + 1);
+  return record;
+}
+
+// 途中で明示的に破棄したゲームも、経過を振り返れるよう履歴へ残す。
+// 完了プレイ数には加算せず、clear は入力内容にかかわらず常に false とする。
+export function addDiscardedGame(record) {
+  ensureLoaded();
+  record = normalizeExtraShotRecord({ ...record, discarded: true, clear: false });
+  while (history.some((g) => g.startTime === record.startTime && g.gameMode === record.gameMode)) {
+    record.startTime++;
+  }
+  history.push(record);
+  history.sort((a, b) => a.startTime - b.startTime);
+  persist();
   return record;
 }
 
@@ -288,7 +304,7 @@ export function dailyClearStreak() {
 // ---- エクスポート ----
 
 export function exportJSON() {
-  return JSON.stringify({ app: "dwordle2", version: 1, exportedAt: Math.floor(Date.now() / 1000), history: ensureLoaded() }, null, 2);
+  return JSON.stringify({ app: "dwordle2", version: 2, exportedAt: Math.floor(Date.now() / 1000), history: ensureLoaded() }, null, 2);
 }
 
 // テスト用: キャッシュ破棄

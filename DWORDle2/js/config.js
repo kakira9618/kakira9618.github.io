@@ -187,4 +187,9 @@ export const AUDIO = {
   // 端末スリープや他アプリの割り込みで AudioContext が止まったときの自動復帰試行
   // （ユーザー操作を待たずに resume する）。即時 1 回のあと、この間隔で再試行する。
   recoveryDelaysMs: [400, 1200, 3000, 8000],
+  // 中断が繰り返される端末（iOS Safari は無音の context を数秒で中断する）で、
+  // 自動復帰を打ち切るまでの回数。タブ・アプリからの復帰でリセットされる。
+  autoRecoveryLimit: 2,
+  // これだけ鳴り続けたら「繰り返し中断」ではないと見なして上の回数を戻す
+  autoRecoverySettleMs: 30000,
 };

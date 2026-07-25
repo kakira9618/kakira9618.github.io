@@ -194,13 +194,14 @@ document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
     stopBgm();
   } else if (!restartBgmIfReady()) {
-    scheduleAudioRecovery();
+    scheduleAudioRecovery({ userReturn: true });
   }
 });
 // スリープ復帰やウィンドウ切替は visibilitychange を伴わないことがあるため、
 // フォーカスが戻ったときにも確認する（鳴っていれば scheduleAudioRecovery は何もしない）。
-addEventListener("focus", () => scheduleAudioRecovery());
-addEventListener("pageshow", () => scheduleAudioRecovery());
+// userReturn: 戻ってきた合図なので、自動復帰の打ち切り回数をここでリセットする。
+addEventListener("focus", () => scheduleAudioRecovery({ userReturn: true }));
+addEventListener("pageshow", () => scheduleAudioRecovery({ userReturn: true }));
 
 // エントリーゲート（扉絵）を通ってから本来の画面へ入る。
 // 扉絵の間はグローバル解錠を止めており（上の unlock 参照）、

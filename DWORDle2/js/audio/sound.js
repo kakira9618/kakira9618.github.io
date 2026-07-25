@@ -398,7 +398,15 @@ function ensureContext() {
     // （画面が表示されたままでも中断される）。AudioContext の状態変化から復帰させる。
     ctx.addEventListener?.("statechange", () => {
       if (!ctx) return;
-      if (ctx.state === "running" || ctx.state === "closed") return;
+      clearTimeout(autoRecoveryResetTimer);
+      if (ctx.state === "closed") return;
+      if (ctx.state === "running") {
+        // しばらく鳴り続けたら「ピンポン中」ではないので、回数制限を戻す
+        autoRecoveryResetTimer = setTimeout(() => {
+          autoRecoveryCount = 0;
+        }, AUDIO.autoRecoverySettleMs);
+        return;
+      }
       scheduleAudioRecovery();
     });
   } catch {
@@ -485,14 +493,23 @@ export function restartBgmIfReady() {
 // Chrome / Android は一度操作があれば非操作コンテキストからの resume() も通る。
 // iOS Safari は通らないことがあるので、失敗しても従来の pointerdown 経由の復帰が残る。
 let recoveryTimers = [];
+// 自動（statechange 由来）の復帰が続けざまに走った回数。
+// iOS Safari は無音の AudioContext を数秒で中断するため、無条件に resume し返すと
+// 中断 → 復帰 → 中断 … を繰り返し、アドレスバーの再生中アイコンが点滅し続ける。
+// 復帰操作（タブ・アプリからの復帰）でリセットし、それ以外では上限で打ち切る。
+let autoRecoveryCount = 0;
+let autoRecoveryResetTimer = null;
 
 function cancelAudioRecovery() {
   for (const timer of recoveryTimers) clearTimeout(timer);
   recoveryTimers = [];
 }
 
+// 自動復帰の対象は BGM だけ。効果音はユーザー操作の中で鳴るので、
+// そのタップで resume される（unlockAudio / playSfx の ensureContext 経由）。
+// 効果音のためだけに無音の context を起こし続けると上記の点滅になる。
 function audioWanted(settings = getSettings()) {
-  return Boolean(settings.sfx || settings.bgm);
+  return Boolean(settings.bgm);
 }
 
 // pagehide のフェードアウトが pageshow で戻されないまま残ると（iOS の共有 UI 経由など）
@@ -531,9 +548,19 @@ function attemptAudioRecovery() {
 
 // すぐ 1 回試し、失敗したら AUDIO.recoveryDelaysMs の間隔で数回だけ再試行する
 // （スリープ復帰直後は AudioContext の状態遷移が遅れて 1 回目が失敗しやすい）。
-export function scheduleAudioRecovery() {
+// userReturn: タブ・アプリからの復帰など、ユーザーが戻ってきた合図での呼び出し。
+// 自動復帰の回数制限をここでリセットする。
+export function scheduleAudioRecovery({ userReturn = false } = {}) {
   cancelAudioRecovery();
   if (!audioWanted()) return;
+  if (userReturn) {
+    autoRecoveryCount = 0;
+  } else if (autoRecoveryCount >= AUDIO.autoRecoveryLimit) {
+    // 中断が繰り返される端末では、ここで打ち切って再生中アイコンの点滅を止める。
+    // 次にタブ・アプリへ戻ったときか、次のユーザー操作で鳴り直す。
+    return;
+  }
+  autoRecoveryCount++;
   void attemptAudioRecovery().then((recovered) => {
     if (recovered) return;
     for (const delay of AUDIO.recoveryDelaysMs) {

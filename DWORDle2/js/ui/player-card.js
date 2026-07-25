@@ -197,7 +197,8 @@ function build() {
 // ---- 統計の収集 ----
 
 function collectStats() {
-  const history = getHistory();
+  // 破棄は履歴として閲覧できるが、ランクやカード統計を稼ぐ用途には使わない。
+  const history = getHistory().filter((game) => !game.discarded);
   // プレイした日付列（ローカル日付の通し番号で重複除去、昇順。ロケール非依存）
   const days = Array.from(new Set(history.map((g) => localDayNumber(g.startTime)))).sort((a, b) => a - b);
   // 連続プレイ日数の最大（records.getStatistics と同じ「隣接日差が 2 日未満なら継続」）

@@ -451,9 +451,48 @@ try {
   sleeping.setState("interrupted");
   await new Promise((resolve) => setTimeout(resolve, 50));
   assert.equal(sleeping.state, "interrupted", "a failed resume must leave the context untouched");
-  scheduleAudioRecovery();
+  scheduleAudioRecovery({ userReturn: true });
   await new Promise((resolve) => setTimeout(resolve, 50));
   assert.equal(sleeping.state, "running", "the next recovery attempt should succeed");
+}
+
+// 中断が繰り返される端末（iOS Safari は無音の context を数秒で中断する）では、
+// 自動復帰を打ち切る。resume し返し続けるとアドレスバーの再生中アイコンが点滅する。
+{
+  const flapping = FakeAudioContext.instance;
+  scheduleAudioRecovery({ userReturn: true }); // 復帰操作でカウンタを戻す
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  const resumeCallsBefore = flapping.resumeCalls;
+  for (let i = 0; i < 6; i++) {
+    flapping.setState("interrupted");
+    await new Promise((resolve) => setTimeout(resolve, 30));
+  }
+  const autoResumes = flapping.resumeCalls - resumeCallsBefore;
+  assert.ok(
+    autoResumes <= AUDIO.autoRecoveryLimit,
+    `repeated interruptions must stop being auto-resumed (${autoResumes} resumes for 6 interruptions)`
+  );
+  assert.equal(flapping.state, "interrupted", "the audio should stay stopped once auto recovery gives up");
+  // タブ・アプリから戻ってきたときは、また鳴らし直す
+  scheduleAudioRecovery({ userReturn: true });
+  await new Promise((resolve) => setTimeout(resolve, 50));
+  assert.equal(flapping.state, "running", "coming back to the tab must recover the audio again");
+}
+
+// BGM が OFF のときは自動復帰しない（効果音は操作のタップで resume されるので、
+// 無音の context を起こし続ける必要がない = 再生中アイコンを出さない）
+{
+  const idle = FakeAudioContext.instance;
+  setSetting("bgm", false);
+  scheduleAudioRecovery({ userReturn: true });
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  const resumeCallsBefore = idle.resumeCalls;
+  idle.setState("interrupted");
+  await new Promise((resolve) => setTimeout(resolve, 60));
+  assert.equal(idle.resumeCalls, resumeCallsBefore, "SFX-only sessions must not wake a silent context");
+  assert.equal(idle.state, "interrupted");
+  // BGM は OFF のままにする（ここで戻すと unlockAudio の非同期再開が
+  // 次の「停止中は聴取時間が積まれない」検証に割り込む）
 }
 
 stopBgm();

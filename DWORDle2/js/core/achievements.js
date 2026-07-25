@@ -3,6 +3,8 @@
 // 同日・同問題の再プレイ（achievementCountableRecords のカウント対象外）では、
 // カウント系実績に加えて隠し実績と、1 手/2 手クリア・幻の正解のように答えを知っていれば
 // 狙える実績も判定しない（答えを知った再プレイでの稼ぎ防止）。
+// 途中で破棄したゲームは一切の実績判定から除外し、その日の同じ問題の後続プレイも
+// すべての実績判定から除外する。
 //
 // 解放判定はイベント駆動:
 //   - checkOnGameFinish(ctx): ゲーム終了時（ctx はこのファイル冒頭のコメント参照）
@@ -299,19 +301,40 @@ function localDayKey(record) {
   ].join("-");
 }
 
-// カウント系実績では、同じローカル日付・問題 No. の再プレイをモードを問わず除外する。
-// 日付や問題 No. を判定できない移行レコードは、誤ってまとめないよう個別に数える。
-export function achievementCountableRecords(records) {
-  const seen = new Set();
+function achievementDayProblemKey(record) {
+  const day = localDayKey(record);
+  const pid = record?.problemID;
+  if (day === null || pid === null || pid === undefined || pid === "") return null;
+  return `${day}:${pid}`;
+}
+
+// 破棄レコード自体と、その後に同じローカル日付・問題 No. で行われたプレイを、
+// モードを問わずすべての実績判定から除外する。破棄より前に完了していたプレイまでは
+// 遡って無効にしないため、既に解除した実績との整合性も保たれる。
+export function achievementEligibleRecords(records) {
+  const blocked = new Set();
   return records
     .filter((record) => Array.isArray(record?.guessWord) && record.guessWord.length > 0)
     .slice()
     .sort((a, b) => Number(a.startTime) - Number(b.startTime))
     .filter((record) => {
-      const day = localDayKey(record);
-      const pid = record.problemID;
-      if (day === null || pid === null || pid === undefined || pid === "") return true;
-      const key = `${day}:${pid}`;
+      const key = achievementDayProblemKey(record);
+      if (record.discarded) {
+        if (key !== null) blocked.add(key);
+        return false;
+      }
+      return key === null || !blocked.has(key);
+    });
+}
+
+// カウント系実績では、同じローカル日付・問題 No. の再プレイをモードを問わず除外する。
+// 日付や問題 No. を判定できない移行レコードは、誤ってまとめないよう個別に数える。
+export function achievementCountableRecords(records) {
+  const seen = new Set();
+  return achievementEligibleRecords(records)
+    .filter((record) => {
+      const key = achievementDayProblemKey(record);
+      if (key === null) return true;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
@@ -349,8 +372,10 @@ function calendarAndCountIds(records) {
   let guessTotal = 0;
   let usoWins = 0;
 
+  const eligibleRecords = achievementEligibleRecords(records);
+
   // 日時そのものが条件の実績は、カウント対象外の再プレイでも判定する。
-  for (const record of records) {
+  for (const record of eligibleRecords) {
     if (!record?.clear || !Array.isArray(record.guessWord) || record.guessWord.length === 0) continue;
     const at = completedAtSec(record);
     if (at === null) continue;
@@ -362,7 +387,7 @@ function calendarAndCountIds(records) {
     if (date.getMonth() === 11 && date.getDate() === 25) ids.add("christmas");
   }
 
-  const countableRecords = achievementCountableRecords(records);
+  const countableRecords = achievementCountableRecords(eligibleRecords);
   for (const record of countableRecords) {
     if (!Array.isArray(record?.guessWord) || record.guessWord.length === 0) continue;
     games++;
@@ -405,10 +430,7 @@ function calendarAndCountIds(records) {
 // 分析モード利用など、履歴に情報が残らない条件は対象外。
 // noAchievements 付きレコード（「実績は解除しない」を選んだインポート）は判定に使わない。
 export function achievementIdsFromHistory(records) {
-  const games = records
-    .filter((record) => Array.isArray(record?.guessWord) && record.guessWord.length > 0 && !record.noAchievements)
-    .slice()
-    .sort((a, b) => a.startTime - b.startTime);
+  const games = achievementEligibleRecords(records.filter((record) => !record?.noAchievements));
   const ids = new Set();
   if (games.length === 0) return ids;
   const countableGames = achievementCountableRecords(games);
@@ -582,7 +604,13 @@ export function checkOnGameFinish(ctx) {
   const guesses = record.guessWord.length;
   const logic = new Logic(pid);
   const history = getHistory();
-  const countableHistory = achievementCountableRecords(history);
+  const eligibleHistory = achievementEligibleRecords(history);
+  // 先に破棄した同日・同問題の再挑戦は、盤面・日時・勝敗を含む全実績の対象外。
+  const eligiblePlay = eligibleHistory.some(
+    (game) => Number(game.startTime) === Number(record.startTime) && game.gameMode === record.gameMode
+  );
+  if (!eligiblePlay) return [];
+  const countableHistory = achievementCountableRecords(eligibleHistory);
   // 同日・同問題の再プレイか（achievementCountableRecords と同じ「その日の初回だけ」基準）。
   // 答えを知った再プレイでチャレンジ系の隠し実績を稼げないよう、隠し実績は初回プレイだけ判定する。
   const countablePlay = (() => {
@@ -701,7 +729,7 @@ export function checkOnGameFinish(ctx) {
   }
 
   // 日付・回数系（record は履歴に保存済みなので、現在のゲームも集計に含まれる）
-  for (const id of calendarAndCountIds(getHistory())) unlock(id, newly);
+  for (const id of calendarAndCountIds(eligibleHistory)) unlock(id, newly);
 
   return finalize(newly);
 }
