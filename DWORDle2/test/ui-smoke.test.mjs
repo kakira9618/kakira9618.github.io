@@ -66,7 +66,7 @@ const ogJpg = await readFile(path.join(projectRoot, "og.jpg"));
 {
   const { computeVersionHash, isKnownCommit } = await import("../tools/make-source-hash.mjs");
   const { SOURCE_HASH } = await import("../js/version.js?v=20260725-b");
-  assert.match(SOURCE_HASH, /^[0-9a-f]{8,40}$/, "the version hash should be a short hex hash");
+  assert.match(SOURCE_HASH, /^[0-9a-f]{7,40}$/, "the version hash should be a short hex hash");
   // コミット直後は HEAD が先へ進むので「最新と一致」は課さず、実在するコミットかだけ見る。
   // （生成物のコミットは自分のハッシュを含められないため。手順は tools/make-source-hash.mjs 参照）
   assert.ok(

@@ -1,5 +1,5 @@
 // バージョン表示用のハッシュを求め、js/version.js と sw.js（Service Worker）を書き出す。
-// - js/version.js: バージョン表示「v2.0.0 (a1b2c3d4)」の括弧部分
+// - js/version.js: バージョン表示「v2.0.0 (a1b2c3d)」の括弧部分
 // - sw.js: 全資産の事前キャッシュリストとハッシュ入りキャッシュ名（PWA のオフライン対応）
 //
 // ハッシュは「DWORDle2 ディレクトリを最後に変更した Git コミット」の短縮ハッシュ。
@@ -51,7 +51,7 @@ async function computeContentHash() {
     hash.update(`${rel}\n`);
     hash.update(await readFile(path.join(root, rel)));
   }
-  return hash.digest("hex").slice(0, 8);
+  return hash.digest("hex").slice(0, 7);
 }
 
 async function git(args) {
@@ -62,8 +62,8 @@ async function git(args) {
 // DWORDle2 ディレクトリを最後に変更したコミットの短縮ハッシュ
 export async function computeVersionHash() {
   try {
-    const hash = await git(["log", "-1", "--abbrev=8", "--format=%h", "--", "."]);
-    if (/^[0-9a-f]{8,40}$/.test(hash)) return hash;
+    const hash = await git(["log", "-1", "--abbrev=7", "--format=%h", "--", "."]);
+    if (/^[0-9a-f]{7,40}$/.test(hash)) return hash;
   } catch {
     // Git が無い・リポジトリではない・履歴が空 → 内容ハッシュへ退避する
   }
