@@ -3326,15 +3326,16 @@ body.theme-pop.mode-normal .player-card-name-input::placeholder {
     transform: translateY(-6px) rotateX(1.6deg) rotateY(-2deg);
   }
 }
+/* 光沢は「走る」ことに意味があるので、動きを止めるときは帯ごと消す
+   （transform だけ戻すと、止まった白い帯がカードの上に残ってしまう） */
 body.reduce-motion .player-card-wrap.motion,
-body.reduce-motion .player-card-wrap.motion::after {
+.player-card-stage.is-zoomed .player-card-wrap.motion {
   animation: none;
   transform: none;
 }
-.player-card-stage.is-zoomed .player-card-wrap.motion,
+body.reduce-motion .player-card-wrap.motion::after,
 .player-card-stage.is-zoomed .player-card-wrap.motion::after {
-  animation: none;
-  transform: none;
+  display: none;
 }
 .player-card-actions {
   margin-top: 4px;

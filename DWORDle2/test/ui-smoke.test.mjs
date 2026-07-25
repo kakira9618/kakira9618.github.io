@@ -62,16 +62,21 @@ const ogJpg = await readFile(path.join(projectRoot, "og.jpg"));
   assert.equal(ogJpg.readUInt16BE(sof + 7), 1200, "OGP image width should be 1200px");
   assert.equal(ogJpg.readUInt16BE(sof + 5), 630, "OGP image height should be 630px");
 }
-// バージョン表示のソースハッシュが最新か（ソース変更後の tools/make-source-hash.mjs 実行忘れを検出）
+// バージョン表示のハッシュ（DWORDle2 を最後に変更したコミット）と sw.js の整合
 {
-  const { computeSourceHash } = await import("../tools/make-source-hash.mjs");
+  const { computeVersionHash, isKnownCommit } = await import("../tools/make-source-hash.mjs");
   const { SOURCE_HASH } = await import("../js/version.js?v=20260725-b");
-  assert.equal(
-    SOURCE_HASH,
-    await computeSourceHash(),
-    "js/version.js のソースハッシュが古い。node tools/make-source-hash.mjs で更新する"
+  assert.match(SOURCE_HASH, /^[0-9a-f]{8,40}$/, "the version hash should be a short hex hash");
+  // コミット直後は HEAD が先へ進むので「最新と一致」は課さず、実在するコミットかだけ見る。
+  // （生成物のコミットは自分のハッシュを含められないため。手順は tools/make-source-hash.mjs 参照）
+  assert.ok(
+    await isKnownCommit(SOURCE_HASH),
+    `js/version.js のハッシュ ${SOURCE_HASH} が実在するコミットではない。node tools/make-source-hash.mjs で更新する`
   );
-  assert.match(SOURCE_HASH, /^[0-9a-f]{8}$/, "the source hash should be 8 hex digits");
+  const latest = await computeVersionHash();
+  if (latest !== SOURCE_HASH) {
+    console.log(`  note: 表示ハッシュ ${SOURCE_HASH} / DWORDle2 の最新コミット ${latest}`);
+  }
   // PWA: sw.js（同じツールが生成）もキャッシュ名と事前キャッシュリストが最新であること
   const swSource = await readFile(path.join(projectRoot, "sw.js"), "utf8");
   assert.ok(

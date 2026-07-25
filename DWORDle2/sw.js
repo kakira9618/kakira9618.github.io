@@ -1,8 +1,8 @@
 // 自動生成ファイル。tools/make-source-hash.mjs が書き出す（手で編集しない）。
 // DWORDle 2 の Service Worker。全資産をインストール時に事前キャッシュし、
 // オフラインでも完全動作させる（キャッシュ優先 + ネットワークフォールバック）。
-// キャッシュ名はソースハッシュ入りで、デプロイのたびに新しいキャッシュへ入れ替わる。
-const CACHE_NAME = "dwordle2-b71dd02b";
+// キャッシュ名はコミットのハッシュ入りで、デプロイのたびに新しいキャッシュへ入れ替わる。
+const CACHE_NAME = "dwordle2-6e848cef";
 const PRECACHE = [
   "./",
   "index.html",
