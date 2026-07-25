@@ -1150,9 +1150,22 @@ body.theme-cyber .modal {
 }
 .modal .modal-actions {
   display: flex;
+  /* 3 つ並ぶダイアログ（中断 / 破棄 / キャンセル）が入りきらないときは、
+     ラベルを折り返すのではなく行を折る */
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 16px;
   justify-content: flex-end;
+}
+.modal .modal-actions .btn {
+  white-space: nowrap;
+}
+/* 狭い端末では 3 ボタンを詰めて 1 行に収める（ヘッダーと同じ 389px の段） */
+@media (max-width: 389px) {
+  .modal .modal-actions .btn {
+    padding-inline: 12px;
+    font-size: 15px;
+  }
 }
 .modal input[type="number"],
 .modal input[type="text"],

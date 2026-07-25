@@ -59,6 +59,7 @@ let seedHidden = false;
 let finishedRecord = null; // 終了後に結果画面へ渡す
 let extraShotPhase = null; // { clearedWord, target, canSkip, attempt: { word, success, result } | null }
 let extraShotLeavePromptOpen = false;
+let leavePromptOpen = false; // 中断 / 破棄ダイアログの二重表示防止
 let extraShotFinishPending = false;
 let extraShotSkipReveal = null; // 2周目以降のタップによる判定演出スキップ
 let gatherSession = 0;
@@ -240,9 +241,59 @@ function isExtraShotActive() {
   return state === "extraCutin" || state === "extraGuess" || state === "extraChecking";
 }
 
+// 進行中のゲームを持ってタイトルへ戻るときの選択。
+// 中断 = 保存を残して「つづきから」で再開できる（従来の挙動）／破棄 = 進行状況を消す。
+// × ・背景タップ・Escape・キャンセルはどれも「ゲームに戻る」。
+async function askLeaveGame() {
+  const { showModal } = await import("./modal.js?v=20260725-b");
+  return new Promise((resolve) => {
+    let decided = null;
+    showModal({
+      title: tr("タイトルへ戻る", "Back to title"),
+      body: [
+        el(
+          "div",
+          { class: "hint", style: { fontSize: "14px" } },
+          tr("プレイ中のゲームをどうしますか？", "What should happen to the game in progress?")
+        ),
+        el(
+          "ul",
+          { class: "hint", style: { fontSize: "14px", margin: "0", paddingLeft: "18px" } },
+          el(
+            "li",
+            {},
+            tr("中断：タイトルの「つづきから」で再開できます", "Pause: resume later with Continue on the title screen")
+          ),
+          el(
+            "li",
+            {},
+            tr("破棄：進行状況を消します（履歴には残りません）", "Discard: throw the progress away (nothing is recorded)")
+          )
+        ),
+      ],
+      actions: [
+        { label: tr("キャンセル", "Cancel"), onClick: () => { decided = "cancel"; } },
+        { label: tr("破棄", "Discard"), danger: true, onClick: () => { decided = "discard"; } },
+        { label: tr("中断", "Pause"), primary: true, onClick: () => { decided = "pause"; } },
+      ],
+      onClose: () => resolve(decided ?? "cancel"),
+    });
+  });
+}
+
 async function requestBackToTitle() {
   playSfx("ui");
   if (!isExtraShotActive()) {
+    // 1 手以上入力済みで未終了のときだけ、中断か破棄かを選ばせる
+    // （0 手なら失うものがなく、終了後は既に履歴へ記録済み）。
+    if (state !== "finish" && game?.guessWord.length > 0) {
+      if (leavePromptOpen) return;
+      leavePromptOpen = true;
+      const choice = await askLeaveGame();
+      leavePromptOpen = false;
+      if (choice === "cancel") return;
+      if (choice === "discard") clearCurrentGame(game.gameMode);
+    }
     navigate("/");
     return;
   }

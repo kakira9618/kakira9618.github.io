@@ -1927,6 +1927,93 @@ try {
     await narrowPage.close();
   }
 
+  // 進行中のゲームで戻ると、中断（保存を残す）か破棄（消す）かを選ばせる。
+  // EXTRA SHOT 中は従来どおり棄権確認なので、ここは通常プレイで見る。
+  {
+    const leavePage = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
+    await leavePage.addInitScript(() => {
+      localStorage.setItem("dwordle2.settings", JSON.stringify({ theme: "cyber", sfx: false, bgm: false, language: "ja", extraShot: false }));
+      localStorage.setItem("dwordle2.legacyImportPrompted", "true");
+      localStorage.setItem("dwordle2.tutorialSeen", "true");
+      localStorage.setItem("dwordle2.helpSeen", "true");
+      localStorage.setItem("dwordle2.playCount", "99");
+      localStorage.setItem("dwordle2.menuUnlockSeen", "99");
+      localStorage.setItem("dwordle2.extraShotUnlockSeen", "true");
+      localStorage.setItem("dwordle2.achievements.reconcileVersion", "99");
+    });
+    await leavePage.goto(baseUrl, { waitUntil: "networkidle" });
+    await passGate(leavePage);
+    const savedGame = () => leavePage.evaluate(() => JSON.parse(localStorage.getItem("dwordle2.current.normal") || "null"));
+    const startAndGuess = async () => {
+      await leavePage.getByRole("button", { name: "本日の問題", exact: true }).click();
+      await leavePage.waitForURL(/#\/game$/);
+      await leavePage.locator("#screen-game.active .row").last().waitFor();
+      await leavePage.keyboard.type("crane");
+      await leavePage.keyboard.press("Enter");
+      await leavePage.waitForFunction(() => JSON.parse(localStorage.getItem("dwordle2.current.normal") || "null")?.guessWord.length === 1);
+      await leavePage.waitForTimeout(1600); // 判定オープンの演出
+    };
+    // 0 手ならダイアログを出さずに戻る（失うものがない）
+    await leavePage.getByRole("button", { name: "本日の問題", exact: true }).click();
+    await leavePage.waitForURL(/#\/game$/);
+    await leavePage.locator("#screen-game.active .row").last().waitFor();
+    await leavePage.getByRole("button", { name: "タイトルへ戻る" }).click();
+    await leavePage.waitForURL(/#\/$/);
+    assert.equal(
+      await leavePage.getByRole("dialog", { name: "タイトルへ戻る" }).count(),
+      0,
+      "leaving an untouched board must not ask anything"
+    );
+
+    await startAndGuess();
+    const leaveDialog = leavePage.getByRole("dialog", { name: "タイトルへ戻る" });
+    await leavePage.getByRole("button", { name: "タイトルへ戻る" }).click();
+    await leaveDialog.waitFor();
+    assert.deepEqual(
+      await leaveDialog.locator(".modal-actions button").allTextContents(),
+      ["キャンセル", "破棄", "中断"],
+      "the leave dialog should offer cancel / discard / pause"
+    );
+    // 狭い端末でもラベルが 2 行に割れず 1 行に収まる
+    const leaveActionsLayout = await leaveDialog.locator(".modal-actions").evaluate((row) => ({
+      overflow: Math.round((row.scrollWidth - row.clientWidth) * 10) / 10,
+      rows: new Set([...row.children].map((button) => Math.round(button.getBoundingClientRect().top))).size,
+    }));
+    assert.ok(
+      leaveActionsLayout.overflow <= 0 && leaveActionsLayout.rows === 1,
+      `the three leave buttons should fit on one row: ${JSON.stringify(leaveActionsLayout)}`
+    );
+    // キャンセルはゲームに残る
+    await leaveDialog.getByRole("button", { name: "キャンセル" }).click();
+    await leaveDialog.waitFor({ state: "detached" });
+    assert.match(leavePage.url(), /#\/game$/, "cancel must keep the player in the game");
+    // 中断は保存を残してタイトルへ（「つづきから」で再開できる）
+    await leavePage.getByRole("button", { name: "タイトルへ戻る" }).click();
+    await leaveDialog.waitFor();
+    await leaveDialog.getByRole("button", { name: "中断" }).click();
+    await leavePage.waitForURL(/#\/$/);
+    assert.equal((await savedGame())?.guessWord.length, 1, "pausing must keep the game in progress");
+    await leavePage.getByRole("button", { name: /つづきから/ }).click();
+    await leavePage.waitForURL(/#\/game$/);
+    // 破棄は保存を消し、履歴にも残さない
+    await leavePage.getByRole("button", { name: "タイトルへ戻る" }).click();
+    await leaveDialog.waitFor();
+    await leaveDialog.getByRole("button", { name: "破棄" }).click();
+    await leavePage.waitForURL(/#\/$/);
+    assert.equal(await savedGame(), null, "discarding must drop the in-progress game");
+    assert.equal(
+      await leavePage.getByRole("button", { name: /つづきから/ }).count(),
+      0,
+      "the Continue button must disappear after discarding"
+    );
+    assert.equal(
+      await leavePage.evaluate(() => Object.keys(JSON.parse(localStorage.getItem("dwordle2.games") || "{}")).length),
+      0,
+      "a discarded game must not be recorded in history"
+    );
+    await leavePage.close();
+  }
+
   const fallbackContext = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
   const fallbackPage = await fallbackContext.newPage();
   await fallbackPage.addInitScript(() => {
@@ -2146,7 +2233,9 @@ try {
     /3 \/ 10/,
     "Buffered keys should submit the second Guess automatically"
   );
+  // 進行中なので中断 / 破棄を聞かれる。ここは従来どおり保存を残して抜ける
   await page.getByRole("button", { name: "タイトルへ戻る" }).click();
+  await page.getByRole("dialog", { name: "タイトルへ戻る" }).getByRole("button", { name: "中断" }).click();
   await page.waitForURL(/#\/$/);
 
   // 初回案内は基本ルールを先に表示し、閉じた後で旧作の移行を提案する。
