@@ -5,9 +5,9 @@
 //   曲の実体は TRACKS（テンポ・コード進行・1 小節のスケジューラ）に定義する。
 //   設定やモード切替時はバスをクロスフェードしてシームレスに移行する。
 
-import { AUDIO } from "../config.js?v=20260723-fa";
-import { getSettings, onSettingsChange } from "../core/settings.js?v=20260723-fa";
-import { logBgmTime } from "../core/activity.js?v=20260723-fa";
+import { AUDIO } from "../config.js?v=20260725-a";
+import { getSettings, onSettingsChange } from "../core/settings.js?v=20260725-a";
+import { logBgmTime } from "../core/activity.js?v=20260725-a";
 
 // 背面タブのタイマー間引きで BGM ループの間隔が伸びたとき、
 // 実際に鳴っていた先読み分を大きく超えて聴取時間を数えないための上限
@@ -339,24 +339,35 @@ function clearAudioContextReferences() {
 // 破棄までの残り時間を無音で埋める。bfcache 入りしたページへ戻ってきた場合は
 // pageshow（persisted）でフェードインして元の音量に戻す。
 const UNLOAD_FADE_SEC = 0.05;
+// iOS Safari は破棄しないページでも pagehide を出す（下の pageshow のコメント参照）ため、
+// ここで AudioContext を閉じると戻ったときに無音のままになる。iOS では閉じない。
+const CLOSES_ON_UNLOAD = !/iP(hone|ad|od)/.test(globalThis.navigator?.userAgent ?? "");
 let unloadFadeInstalled = false;
 
 function installUnloadFade() {
   if (unloadFadeInstalled) return;
   unloadFadeInstalled = true;
   // テスト環境（window のスタブ）ではリスナー登録自体を省略する
-  window.addEventListener?.("pagehide", () => {
+  window.addEventListener?.("pagehide", (event) => {
     if (!ctx || ctx.state !== "running" || !masterGain) return;
     const t = ctx.currentTime;
     masterGain.gain.cancelScheduledValues(t);
     masterGain.gain.setValueAtTime(masterGain.gain.value, t);
     masterGain.gain.linearRampToValueAtTime(0, t + UNLOAD_FADE_SEC);
+    // ただしフェードだけでは足りない。ページが本当に破棄される場合、レンダラごと
+    // 消えるためオーディオスレッドはこのランプを描画しきる前に止まり、出力ストリームは
+    // 停止処理を経ずに切れる。すると音声デバイスが最後のバッファを鳴らし続け、
+    // 「ぷー」という持続音になる。close() を同期的に呼んで、正常な停止経路を通す。
+    // bfcache 入り（persisted）のときは戻ってきたときに鳴らし直せなくなるため閉じない。
+    if (CLOSES_ON_UNLOAD && !event?.persisted) ctx.close?.()?.catch(() => {});
   });
   window.addEventListener?.("pageshow", () => {
     // iOS Safari は画像保存の共有・ダウンロードUIから戻る際にも pagehide → pageshow を
     // 発火するが、bfcache 復帰とは限らない。persisted に関係なく同じ AudioContext の
     // マスター音量を戻し、保存後だけ音が消えたままになる状態を防ぐ。
-    if (!ctx || !masterGain) return;
+    // 上で閉じてしまっていた場合は触れない。次のタップで unlockAudio が作り直す
+    // （ensureContext が closed を検出して参照を初期化する）。
+    if (!ctx || ctx.state === "closed" || !masterGain) return;
     const t = ctx.currentTime;
     masterGain.gain.cancelScheduledValues(t);
     masterGain.gain.setValueAtTime(masterGain.gain.value, t);

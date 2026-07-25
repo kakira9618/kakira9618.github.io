@@ -8,8 +8,8 @@
 //
 // 原作と同じ No. は必ず同じ問題になるよう、リスト内容・順序を変更しないこと。
 
-import { ALL_WORDS, EASY_WORDS } from "../data/words.js?v=20260723-fa";
-import { FREQ_ORDER } from "../data/levels.js?v=20260723-fa";
+import { ALL_WORDS, EASY_WORDS } from "../data/words.js?v=20260725-a";
+import { FREQ_ORDER } from "../data/levels.js?v=20260725-a";
 
 export const PID = {
   DAILY_ALIAS: 0,

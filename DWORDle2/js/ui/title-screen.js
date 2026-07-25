@@ -1,29 +1,29 @@
 // タイトル画面。モード選択・問題選択の入り口。
 // 右上のマスクボタンで DWORDlie（裏モード）に切り替わる。
 
-import { el, clear } from "./dom.js?v=20260723-fa";
-import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260723-fa";
-import { countPlays, getCurrentGame, getHistory, isAlreadyPlayed } from "../core/records.js?v=20260723-fa";
-import { isDebugMode } from "../core/debug.js?v=20260723-fa";
-import { LEVELS, todayPID, isValidPID, pidLabel, PID } from "../core/problems.js?v=20260723-fa";
-import { getSettings, setSetting } from "../core/settings.js?v=20260723-fa";
-import { loadJSON, saveJSON } from "../core/store.js?v=20260723-fa";
-import { importFromLocalStorage, scanLegacyHistory } from "../core/migrate.js?v=20260723-fa";
-import { playSfx } from "../audio/sound.js?v=20260723-fa";
-import { toast, extraShotUnlockCelebration } from "./toast.js?v=20260723-fa";
-import { claimExtraShotUnlockNotice } from "../core/extra-shot.js?v=20260723-fa";
-import { showModal } from "./modal.js?v=20260723-fa";
-import { finishHistoryImport } from "./history-import.js?v=20260723-fa";
-import { showFirstTutorial, showHelpModal } from "./help.js?v=20260723-fa";
-import { confirmAndStart } from "./game-screen.js?v=20260723-fa";
-import { soundToggleButton } from "./sound-toggle.js?v=20260723-fa";
-import { burstAtElement } from "../fx/effects.js?v=20260723-fa";
-import { shouldReduceMotion } from "../core/motion.js?v=20260723-fa";
-import { icon } from "./icons.js?v=20260723-fa";
-import { APP_VERSION } from "../config.js?v=20260723-fa";
-import { SOURCE_HASH } from "../version.js?v=20260723-fa";
-import { localizedLevel, tr } from "../core/i18n.js?v=20260723-fa";
-import { CARD_UNLOCK_PLAYS } from "./player-card.js?v=20260723-fa";
+import { el, clear } from "./dom.js?v=20260725-a";
+import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260725-a";
+import { countPlays, getCurrentGame, getHistory, isAlreadyPlayed } from "../core/records.js?v=20260725-a";
+import { isDebugMode } from "../core/debug.js?v=20260725-a";
+import { LEVELS, todayPID, isValidPID, pidLabel, PID } from "../core/problems.js?v=20260725-a";
+import { getSettings, setSetting } from "../core/settings.js?v=20260725-a";
+import { loadJSON, saveJSON } from "../core/store.js?v=20260725-a";
+import { importFromLocalStorage, scanLegacyHistory } from "../core/migrate.js?v=20260725-a";
+import { playSfx } from "../audio/sound.js?v=20260725-a";
+import { toast, extraShotUnlockCelebration } from "./toast.js?v=20260725-a";
+import { claimExtraShotUnlockNotice } from "../core/extra-shot.js?v=20260725-a";
+import { showModal } from "./modal.js?v=20260725-a";
+import { finishHistoryImport } from "./history-import.js?v=20260725-a";
+import { showFirstTutorial, showHelpModal } from "./help.js?v=20260725-a";
+import { confirmAndStart } from "./game-screen.js?v=20260725-a";
+import { soundToggleButton } from "./sound-toggle.js?v=20260725-a";
+import { burstAtElement } from "../fx/effects.js?v=20260725-a";
+import { shouldReduceMotion } from "../core/motion.js?v=20260725-a";
+import { icon } from "./icons.js?v=20260725-a";
+import { APP_VERSION } from "../config.js?v=20260725-a";
+import { SOURCE_HASH } from "../version.js?v=20260725-a";
+import { localizedLevel, tr } from "../core/i18n.js?v=20260725-a";
+import { CARD_UNLOCK_PLAYS } from "./player-card.js?v=20260725-a";
 
 let root = null;
 let legacyImportCheckDone = false;

@@ -3,6 +3,7 @@
   "short_name": "DWORDle 2",
   "description": "答えが2つある Wordle。DWORDlieも収録。",
   "lang": "ja",
+  "id": "/DWORDle2/",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

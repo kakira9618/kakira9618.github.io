@@ -4,4 +4,4 @@ export {
   cancelExtraShotFx as cancelFinalAnswerFx,
   playExtraShotCutin as playFinalAnswerCutin,
   playDoubleClearCutin,
-} from "./extra-shot-fx.js?v=20260723-fa";
+} from "./extra-shot-fx.js?v=20260725-a";

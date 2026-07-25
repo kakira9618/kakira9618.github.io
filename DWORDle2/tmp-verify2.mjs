@@ -11,7 +11,7 @@ page.on("request", (q) => { if (/three/.test(q.url())) three.push(1); });
 await page.goto("http://localhost:8744/");
 await page.waitForTimeout(1500);
 console.log("初期(classic) three:", three.length);
-await page.evaluate(async () => (await import("/js/core/settings.js?v=20260723-fa")).setSetting("theme", "cyber"));
+await page.evaluate(async () => (await import("/js/core/settings.js?v=20260725-a")).setSetting("theme", "cyber"));
 await page.waitForTimeout(3000);
 console.log("cyber切替後 three:", three.length);
 console.log("背景canvas:", await page.evaluate(() => {

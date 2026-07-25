@@ -1,13 +1,13 @@
 // 実績閲覧モード。通常実績 + 隠し実績（未解放は内容非公開）。
 // ルート: #/achievements
 
-import { el, clear, fmtDateTime } from "./dom.js?v=20260723-fa";
-import { registerScreen, navigate } from "./app.js?v=20260723-fa";
-import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, getUnlocked } from "../core/achievements.js?v=20260723-fa";
-import { playSfx } from "../audio/sound.js?v=20260723-fa";
-import { soundToggleButton } from "./sound-toggle.js?v=20260723-fa";
-import { icon } from "./icons.js?v=20260723-fa";
-import { localizedAchievement, tr } from "../core/i18n.js?v=20260723-fa";
+import { el, clear, fmtDateTime } from "./dom.js?v=20260725-a";
+import { registerScreen, navigate } from "./app.js?v=20260725-a";
+import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, getUnlocked } from "../core/achievements.js?v=20260725-a";
+import { playSfx } from "../audio/sound.js?v=20260725-a";
+import { soundToggleButton } from "./sound-toggle.js?v=20260725-a";
+import { icon } from "./icons.js?v=20260725-a";
+import { localizedAchievement, tr } from "../core/i18n.js?v=20260725-a";
 
 let root = null;
 

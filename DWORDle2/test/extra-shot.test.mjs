@@ -18,12 +18,12 @@ globalThis.localStorage = {
   removeItem: (key) => storage.delete(key),
 };
 
-const { Logic, CELL, queryWordSingle, displayResultForMode } = await import("../js/core/logic.js?v=20260723-fa");
-const records = await import("../js/core/records.js?v=20260723-fa");
-const { importFromText } = await import("../js/core/migrate.js?v=20260723-fa");
-const { DEFAULT_SETTINGS, getSettings, setSetting } = await import("../js/core/settings.js?v=20260723-fa");
-const es = await import("../js/core/extra-shot.js?v=20260723-fa");
-const { tryEnableDebugMode } = await import("../js/core/debug.js?v=20260723-fa");
+const { Logic, CELL, queryWordSingle, displayResultForMode } = await import("../js/core/logic.js?v=20260725-a");
+const records = await import("../js/core/records.js?v=20260725-a");
+const { importFromText } = await import("../js/core/migrate.js?v=20260725-a");
+const { DEFAULT_SETTINGS, getSettings, setSetting } = await import("../js/core/settings.js?v=20260725-a");
+const es = await import("../js/core/extra-shot.js?v=20260725-a");
+const { tryEnableDebugMode } = await import("../js/core/debug.js?v=20260725-a");
 
 // ---- queryWordSingle: 1 語だけを対象にした Wordle 標準判定 ----
 {

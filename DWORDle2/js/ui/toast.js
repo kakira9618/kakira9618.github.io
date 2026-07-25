@@ -4,13 +4,13 @@
 // 複数の解放は共通キュー (enqueueUnlockDialog) で直列に表示され、
 // 実績 → Extra BGM / テーマの順で自然に連結する。
 
-import { el } from "./dom.js?v=20260723-fa";
-import { UI } from "../config.js?v=20260723-fa";
-import { playSfx } from "../audio/sound.js?v=20260723-fa";
-import { winBurst } from "../fx/effects.js?v=20260723-fa";
-import { icon } from "./icons.js?v=20260723-fa";
-import { setSetting } from "../core/settings.js?v=20260723-fa";
-import { isEnglish, localizedAchievement, tr } from "../core/i18n.js?v=20260723-fa";
+import { el } from "./dom.js?v=20260725-a";
+import { UI } from "../config.js?v=20260725-a";
+import { playSfx } from "../audio/sound.js?v=20260725-a";
+import { winBurst } from "../fx/effects.js?v=20260725-a";
+import { icon } from "./icons.js?v=20260725-a";
+import { setSetting } from "../core/settings.js?v=20260725-a";
+import { isEnglish, localizedAchievement, tr } from "../core/i18n.js?v=20260725-a";
 
 const layer = () => document.getElementById("toast-layer");
 const unlockLayer = () => document.getElementById("unlock-layer");

@@ -3,23 +3,23 @@
 // カードのデザインはテーマによらず共通（ダーク + ランク色のフレーム）。
 // 通算 5 回プレイで解放（タイトルメニューの段階解放と同じ仕組み）。
 
-import { el, clear } from "./dom.js?v=20260723-fa";
-import { registerScreen, navigate, redirect } from "./app.js?v=20260723-fa";
-import { getHistory, countPlays, localDayNumber } from "../core/records.js?v=20260723-fa";
-import { ACHIEVEMENTS, getUnlocked } from "../core/achievements.js?v=20260723-fa";
-import { HIDDEN_THEMES } from "../core/settings.js?v=20260723-fa";
-import { favoriteBgmTrackId, favoriteThemeId } from "../core/activity.js?v=20260723-fa";
-import { BGM_TRACKS, currentBgmTrackId, playSfx } from "../audio/sound.js?v=20260723-fa";
-import { loadJSON, saveJSON } from "../core/store.js?v=20260723-fa";
-import { isDebugMode } from "../core/debug.js?v=20260723-fa";
-import { toast } from "./toast.js?v=20260723-fa";
-import { soundToggleButton } from "./sound-toggle.js?v=20260723-fa";
-import { winBurst } from "../fx/effects.js?v=20260723-fa";
-import { shouldReduceMotion } from "../core/motion.js?v=20260723-fa";
-import { icon, iconSvg } from "./icons.js?v=20260723-fa";
-import { announce } from "./a11y.js?v=20260723-fa";
-import { SHARE_URL } from "../config.js?v=20260723-fa";
-import { tr } from "../core/i18n.js?v=20260723-fa";
+import { el, clear } from "./dom.js?v=20260725-a";
+import { registerScreen, navigate, redirect } from "./app.js?v=20260725-a";
+import { getHistory, countPlays, localDayNumber } from "../core/records.js?v=20260725-a";
+import { ACHIEVEMENTS, getUnlocked } from "../core/achievements.js?v=20260725-a";
+import { HIDDEN_THEMES } from "../core/settings.js?v=20260725-a";
+import { favoriteBgmTrackId, favoriteThemeId } from "../core/activity.js?v=20260725-a";
+import { BGM_TRACKS, currentBgmTrackId, playSfx } from "../audio/sound.js?v=20260725-a";
+import { loadJSON, saveJSON } from "../core/store.js?v=20260725-a";
+import { isDebugMode } from "../core/debug.js?v=20260725-a";
+import { toast } from "./toast.js?v=20260725-a";
+import { soundToggleButton } from "./sound-toggle.js?v=20260725-a";
+import { winBurst } from "../fx/effects.js?v=20260725-a";
+import { shouldReduceMotion } from "../core/motion.js?v=20260725-a";
+import { icon, iconSvg } from "./icons.js?v=20260725-a";
+import { announce } from "./a11y.js?v=20260725-a";
+import { SHARE_URL } from "../config.js?v=20260725-a";
+import { tr } from "../core/i18n.js?v=20260725-a";
 
 // 解放しきい値（タイトルメニューの MENU_UNLOCKS と同じ値を参照させる）
 export const CARD_UNLOCK_PLAYS = 5;
