@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>DWORDle 2 app icon</title>
+<style>
+  /* PWA のインストールアイコン（icon-*.png / icon-maskable-*.png）。
+     tools/make-app-icons.mjs がスクリーンショットして書き出す。
+
+     ホーム画面では小さく表示され、maskable では任意の形に切り抜かれるので、
+     favicon / OGP と違って L 字の帯やキャップは置かず、緑一色 + 白い D² だけにする。
+
+     ジオメトリは favicon.png / tools/og-square.html と同じ比率をそのまま使い
+     （書体は Futura 700、D と 2 は独立配置）、最後に D² のインク全体を
+     キャンバス中央へ寄せている。--art-scale は maskable のセーフゾーン用。 */
+  :root {
+    --bg: #6aaa64; /* 地の緑（クラシック配色の correct と同じ） */
+    /* D² のインク中心をキャンバス中心へ合わせる補正（キャンバス比） */
+    --shift-x: -3.15%;
+    --shift-y: 9.35%;
+    --art-scale: 1;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    position: relative;
+    background: var(--bg);
+    font-family: Futura, "Avenir Next", "Helvetica Neue", Helvetica, sans-serif;
+  }
+  .art {
+    position: absolute;
+    inset: 0;
+    transform: translate(var(--shift-x), var(--shift-y)) scale(var(--art-scale));
+    transform-origin: 50% 50%;
+  }
+  /* 白い D²。D と 2 は独立に配置する（肩付き文字の位置を favicon と揃えるため） */
+  .glyph {
+    position: absolute;
+    color: #fff;
+    font-weight: 700;
+    line-height: 1;
+    white-space: pre;
+  }
+  .glyph.d { left: 12.142%; top: 10.692%; font-size: 74.167vw; }
+  .glyph.two { left: 67.492%; top: 1.108%; font-size: 31.25vw; }
+</style>
+</head>
+<body>
+  <div class="art">
+    <div class="glyph d">D</div>
+    <div class="glyph two">2</div>
+  </div>
+</body>
+</html>

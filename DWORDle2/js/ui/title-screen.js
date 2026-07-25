@@ -41,13 +41,12 @@ function randomPID(lo, hi, mode) {
   return lo + Math.floor(Math.random() * (hi - lo + 1));
 }
 
-// 番号の割り当て表。No. の小さい順に並べ、レベル帯は名前と語彙の説明まで出す。
-// 帯の定義は LEVELS が唯一の情報源なので、レベルを増減しても表がそのまま追従する。
+// 番号の割り当て表。デイリーを先頭に、あとはレベル順（Lv.1→Lv.6）で並べる。
+// 左右の列を通しで揃えるため、行ラッパーを作らず 2 列グリッドへ直接並べる。
 function numberGuide() {
-  const row = (range, name, desc) =>
-    el(
-      "div",
-      { class: "number-guide-row" },
+  const cells = [];
+  const addRow = (range, name, desc) => {
+    cells.push(
       el("span", { class: "number-guide-range" }, range),
       el(
         "span",
@@ -56,18 +55,17 @@ function numberGuide() {
         desc ? el("span", { class: "number-guide-desc" }, desc) : null
       )
     );
-  const levelRows = LEVELS.slice()
-    .sort((a, b) => a.range[0] - b.range[0])
-    .map((level) => {
-      const localized = localizedLevel(level);
-      return row(`No.${level.range[0]}-${level.range[1]}`, `Lv.${level.id} ${localized.name}`, localized.desc);
-    });
-  return el(
-    "div",
-    { class: "number-guide" },
-    row("No.0", tr("今日のデイリー問題", "Today's Daily puzzle"), tr("毎日 0 時に切り替わる共通問題", "A shared puzzle that changes at midnight")),
-    ...levelRows
+  };
+  addRow(
+    "No.0",
+    tr("今日のデイリー問題", "Today's Daily puzzle"),
+    tr("毎日 0 時に切り替わる共通問題", "A shared puzzle that changes at midnight")
   );
+  for (const level of LEVELS.slice().sort((a, b) => a.id - b.id)) {
+    const localized = localizedLevel(level);
+    addRow(`No.${level.range[0]}-${level.range[1]}`, `Lv.${level.id} ${localized.name}`, localized.desc);
+  }
+  return el("div", { class: "number-guide" }, cells);
 }
 
 function numberPrompt(mode) {

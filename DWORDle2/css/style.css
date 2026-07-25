@@ -1143,17 +1143,19 @@ body.theme-cyber .modal {
    説明は 1 段落として小さく添える */
 .number-guide {
   margin-top: 12px;
-  display: flex;
-  flex-direction: column;
-}
-.number-guide-row {
   display: grid;
-  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
-  gap: 2px 10px;
+  /* 左列は全行で同じ幅にして、右カラムの開始位置を縦に揃える */
+  grid-template-columns: max-content minmax(0, 1fr);
+  /* 区切り線を左右で途切れさせないため、間隔は gap ではなく左列の padding で取る */
+  column-gap: 0;
+}
+.number-guide-range,
+.number-guide-label {
   padding: 7px 0;
   border-top: 1px solid var(--border);
 }
-.number-guide-row:first-child {
+.number-guide-range:first-child,
+.number-guide-range:first-child + .number-guide-label {
   border-top: 0;
 }
 .number-guide-range {
@@ -1162,7 +1164,10 @@ body.theme-cyber .modal {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  align-self: center;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  padding-right: 12px;
 }
 .number-guide-label {
   display: flex;
