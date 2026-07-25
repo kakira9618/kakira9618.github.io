@@ -19,7 +19,7 @@ import { playExtraShotCutin, playDoubleClearCutin, cancelExtraShotFx } from "./e
 import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js?v=20260725-b";
 import { hiddenThemesUnlockedBy } from "../core/settings.js?v=20260725-b";
 import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/effects.js?v=20260725-b";
-import { showHelpModal } from "./help.js?v=20260725-b";
+import { showHelpModal, hasSeenHelp } from "./help.js?v=20260725-b";
 import { soundToggleButton } from "./sound-toggle.js?v=20260725-b";
 import { icon } from "./icons.js?v=20260725-b";
 import { tr } from "../core/i18n.js?v=20260725-b";
@@ -360,6 +360,9 @@ function render() {
   }
   updateHeader();
   scrollToBottom();
+  // 遊び方を一度も開いていないモードは、盤面に入った時点で強制的に開く
+  // （タイトルの基本ルールを飛ばしても、ルールを知らないまま始めさせない）
+  if (!hasSeenHelp(game.gameMode)) showHelpModal(game.gameMode);
 }
 
 function addRow(animate) {

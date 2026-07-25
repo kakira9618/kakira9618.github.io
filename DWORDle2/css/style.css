@@ -3054,19 +3054,39 @@ body.reduce-motion .guess-flag-cloth {
   border-style: dashed;
 }
 /* 系列の最上位実績（glow）は、同じ色・同じアイコンの下位と見分けが付くよう
-   バッジをゆっくり明滅させる */
+   バッジを光らせる。box-shadow の色を直接アニメーションさせると補間が粗くて
+   チカチカするので、後ろに置いた光輪の opacity / scale だけをなめらかに動かす */
 .ach-card.ach-top .badge-icon {
+  position: relative;
   border-width: 2px;
   background: color-mix(in srgb, currentColor 20%, transparent);
-  box-shadow: 0 0 12px color-mix(in srgb, currentColor 45%, transparent);
-  animation: achTopGlow 2.8s ease-in-out infinite;
+  box-shadow: 0 0 10px color-mix(in srgb, currentColor 35%, transparent);
 }
-@keyframes achTopGlow {
-  0%, 100% { box-shadow: 0 0 8px color-mix(in srgb, currentColor 30%, transparent); }
-  50% { box-shadow: 0 0 18px color-mix(in srgb, currentColor 70%, transparent); }
+.ach-card.ach-top .badge-icon > * {
+  position: relative;
+  z-index: 1;
+}
+.ach-card.ach-top .badge-icon::before {
+  content: "";
+  position: absolute;
+  inset: -9px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, currentColor 62%, transparent) 0%,
+    color-mix(in srgb, currentColor 26%, transparent) 45%,
+    transparent 72%
+  );
+  pointer-events: none;
+  will-change: opacity, transform;
+  animation: achTopHalo 3.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+@keyframes achTopHalo {
+  0%, 100% { opacity: 0.3; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.14); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ach-card.ach-top .badge-icon { animation: none; }
+  .ach-card.ach-top .badge-icon::before { animation: none; opacity: 0.7; }
 }
 
 /* ---- プレイヤーカード ---- */

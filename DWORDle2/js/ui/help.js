@@ -11,6 +11,7 @@ import { currentLanguage } from "../core/i18n.js?v=20260725-b";
 import { getSettings } from "../core/settings.js?v=20260725-b";
 import { shouldReduceMotion } from "../core/motion.js?v=20260725-b";
 import { isExtraShotUnlocked } from "../core/extra-shot.js?v=20260725-b";
+import { loadJSON, saveJSON } from "../core/store.js?v=20260725-b";
 
 // 判定色の呼び名。ハイコントラスト設定では 緑→オレンジ / 黄→青 に置き換わる。
 // *Chip は凡例の 1 文字ラベル（日本語はオレンジを「橙」と略記）。
@@ -486,7 +487,17 @@ function localizedBody(mode, language) {
   ].filter(Boolean); // 未解放時は extraShotNote が null（DOM append に渡さない）
 }
 
+// モードごとの「遊び方を一度でも開いたか」。初回プレイでの強制表示に使う
+function helpSeenKey(mode) {
+  return mode === "uso" ? "helpSeenUso" : "helpSeen";
+}
+
+export function hasSeenHelp(mode) {
+  return loadJSON(helpSeenKey(mode), false);
+}
+
 export function showHelpModal(mode, afterClose = null) {
+  saveJSON(helpSeenKey(mode), true);
   stopAnimation();
   playSfx("help");
   const language = currentLanguage();

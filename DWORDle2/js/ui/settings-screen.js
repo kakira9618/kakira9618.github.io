@@ -604,6 +604,8 @@ function render() {
               "legacyImportPrompted",
               "tutorialSeen",
               "tutorialSeenUso",
+              "helpSeen", // 遊び方の強制表示も初回プレイと同じ状態に戻す
+              "helpSeenUso",
               "playCount", // タイトルメニューの段階解放も初期状態へ戻す
               "menuUnlockSeen",
               "extraShotUnlockSeen", // EXTRA SHOT モードの解放通知も再び出る状態に戻す

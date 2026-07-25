@@ -127,6 +127,9 @@ await page.addInitScript(({ unlockedAchievements }) => {
   }));
   localStorage.setItem("dwordle2.achievements", JSON.stringify(unlockedAchievements));
   localStorage.setItem("dwordle2.legacyImportPrompted", "true");
+  // 遊び方の強制表示は専用の初回プレイ検証で確認するので、本流では既読にしておく
+  localStorage.setItem("dwordle2.helpSeen", "true");
+  localStorage.setItem("dwordle2.helpSeenUso", "true");
   // タイトルメニューの段階解放を全開放した状態で UI を検証する
   localStorage.setItem("dwordle2.playCount", "99");
   localStorage.setItem("dwordle2.extraShotUnlockSeen", "true");
@@ -1171,6 +1174,8 @@ try {
         localStorage.setItem("dwordle2.achievements.reconcileVersion", "99");
         localStorage.setItem("dwordle2.legacyImportPrompted", "true");
         localStorage.setItem("dwordle2.tutorialSeen", "true");
+        localStorage.setItem("dwordle2.helpSeen", "true");
+        localStorage.setItem("dwordle2.helpSeenUso", "true");
         localStorage.setItem("dwordle2.playCount", "99");
         localStorage.setItem("dwordle2.extraShotUnlockSeen", "true");
         localStorage.setItem("dwordle2.menuUnlockSeen", "99");
@@ -1251,6 +1256,8 @@ try {
         localStorage.setItem("dwordle2.achievements.reconcileVersion", "99");
         localStorage.setItem("dwordle2.legacyImportPrompted", "true");
         localStorage.setItem("dwordle2.tutorialSeen", "true");
+        localStorage.setItem("dwordle2.helpSeen", "true");
+        localStorage.setItem("dwordle2.helpSeenUso", "true");
         localStorage.setItem("dwordle2.playCount", "99");
         localStorage.setItem("dwordle2.extraShotUnlockSeen", "true");
         localStorage.setItem("dwordle2.menuUnlockSeen", "99");
@@ -1579,6 +1586,8 @@ try {
         localStorage.setItem("dwordle2.achievements.reconcileVersion", "99");
         localStorage.setItem("dwordle2.legacyImportPrompted", "true");
         localStorage.setItem("dwordle2.tutorialSeen", "true");
+        localStorage.setItem("dwordle2.helpSeen", "true");
+        localStorage.setItem("dwordle2.helpSeenUso", "true");
         localStorage.setItem("dwordle2.playCount", "99");
         localStorage.setItem("dwordle2.extraShotUnlockSeen", "true");
         localStorage.setItem("dwordle2.menuUnlockSeen", "99");
@@ -1651,6 +1660,8 @@ try {
       localStorage.setItem("dwordle2.achievements.reconcileVersion", "99");
       localStorage.setItem("dwordle2.legacyImportPrompted", "true");
       localStorage.setItem("dwordle2.tutorialSeen", "true");
+      localStorage.setItem("dwordle2.helpSeen", "true");
+      localStorage.setItem("dwordle2.helpSeenUso", "true");
       localStorage.setItem("dwordle2.tutorialSeenUso", "true");
       localStorage.setItem("dwordle2.playCount", "99");
       localStorage.setItem("dwordle2.extraShotUnlockSeen", "true");
@@ -1725,6 +1736,8 @@ try {
     }));
     localStorage.setItem("dwordle2.legacyImportPrompted", "true");
     localStorage.setItem("dwordle2.tutorialSeen", "true");
+    localStorage.setItem("dwordle2.helpSeen", "true");
+    localStorage.setItem("dwordle2.helpSeenUso", "true");
     localStorage.setItem("dwordle2.playCount", "99");
     localStorage.setItem("dwordle2.extraShotUnlockSeen", "true");
     localStorage.setItem("dwordle2.menuUnlockSeen", "99");
@@ -1783,6 +1796,8 @@ try {
     localStorage.setItem("dwordle2.settings", JSON.stringify({ theme: "cyber", sfx: false, bgm: false, language: "ja" }));
     localStorage.setItem("dwordle2.legacyImportPrompted", "true");
     localStorage.setItem("dwordle2.tutorialSeen", "true");
+    localStorage.setItem("dwordle2.helpSeen", "true");
+    localStorage.setItem("dwordle2.helpSeenUso", "true");
     localStorage.setItem("dwordle2.playCount", "99");
     localStorage.setItem("dwordle2.extraShotUnlockSeen", "true");
     localStorage.setItem("dwordle2.menuUnlockSeen", "99");
@@ -1809,6 +1824,8 @@ try {
     localStorage.setItem("dwordle2.settings", JSON.stringify({ theme: "cyber", sfx: false, bgm: false, language: "ja", reduceFx: false }));
     localStorage.setItem("dwordle2.legacyImportPrompted", "true");
     localStorage.setItem("dwordle2.tutorialSeen", "true");
+    localStorage.setItem("dwordle2.helpSeen", "true");
+    localStorage.setItem("dwordle2.helpSeenUso", "true");
     localStorage.setItem("dwordle2.playCount", "99");
     localStorage.setItem("dwordle2.extraShotUnlockSeen", "true");
     localStorage.setItem("dwordle2.menuUnlockSeen", "99");
@@ -2137,12 +2154,64 @@ try {
     await freshContext.close();
   }
 
+  // 初回プレイ: 遊び方を一度も開いていないモードは、盤面に入った時点で自動で開く
+  const firstGuideContext = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
+  const firstGuidePage = await firstGuideContext.newPage();
+  try {
+    await firstGuidePage.addInitScript(() => {
+      localStorage.setItem("dwordle2.settings", JSON.stringify({
+        theme: "classic", sfx: false, sfxVolume: 0, bgm: false, bgmVolume: 0, language: "ja", reduceFx: true,
+      }));
+      localStorage.setItem("dwordle2.tutorialSeen", "true");
+      localStorage.setItem("dwordle2.tutorialSeenUso", "true");
+      localStorage.setItem("dwordle2.legacyImportPrompted", "true");
+      localStorage.setItem("dwordle2.playCount", "99");
+      localStorage.setItem("dwordle2.menuUnlockSeen", "99");
+      localStorage.setItem("dwordle2.extraShotUnlockSeen", "true");
+      localStorage.setItem("dwordle2.achievements.reconcileVersion", "99");
+    });
+    await firstGuidePage.goto(baseUrl, { waitUntil: "networkidle" });
+    await passGate(firstGuidePage);
+    await firstGuidePage.getByRole("button", { name: "本日の問題", exact: true }).click();
+    await firstGuidePage.waitForURL(/#\/game$/);
+    const normalGuide = firstGuidePage.getByRole("dialog", { name: "DWORDle 遊び方" });
+    await normalGuide.waitFor();
+    await normalGuide.getByRole("button", { name: "閉じる" }).click();
+    await normalGuide.waitFor({ state: "detached" });
+
+    // 一度開いたら、次に盤面へ入っても勝手には開かない
+    await firstGuidePage.reload({ waitUntil: "networkidle" });
+    await passGate(firstGuidePage);
+    await firstGuidePage.waitForURL(/#\/game$/);
+    await firstGuidePage.locator("#screen-game.active .row").last().waitFor();
+    assert.equal(
+      await firstGuidePage.getByRole("dialog", { name: "DWORDle 遊び方" }).count(),
+      0,
+      "the guide must not reopen once it has been read"
+    );
+
+    // DWORDlie は別カウント。裏モードの盤面に初めて入ったときに開く
+    await firstGuidePage.getByRole("button", { name: "タイトルへ戻る" }).click();
+    await firstGuidePage.waitForURL(/#\/$/);
+    await firstGuidePage.getByRole("button", { name: "裏モードへ" }).click();
+    await firstGuidePage.getByRole("button", { name: "本日の問題", exact: true }).click();
+    await firstGuidePage.waitForURL(/#\/game$/);
+    const usoGuide = firstGuidePage.getByRole("dialog", { name: "DWORDlie 遊び方" });
+    await usoGuide.waitFor();
+    await usoGuide.getByRole("button", { name: "閉じる" }).click();
+    await usoGuide.waitFor({ state: "detached" });
+  } finally {
+    await firstGuideContext.close();
+  }
+
   // DWORDlie 解放の瞬間（seenPlays 1 → plays 2）はモーダルで案内し、そのまま裏モードへ切り替えられる
   const usoUnlockContext = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
   const usoUnlockPage = await usoUnlockContext.newPage();
   try {
     await usoUnlockPage.addInitScript(() => {
       localStorage.setItem("dwordle2.tutorialSeen", "true");
+      localStorage.setItem("dwordle2.helpSeen", "true");
+      localStorage.setItem("dwordle2.helpSeenUso", "true");
       localStorage.setItem("dwordle2.tutorialSeenUso", "true");
       localStorage.setItem("dwordle2.legacyImportPrompted", "true");
       localStorage.setItem("dwordle2.playCount", "2");
@@ -2192,6 +2261,8 @@ try {
   try {
     await importLockPage.addInitScript(() => {
       localStorage.setItem("dwordle2.tutorialSeen", "true");
+      localStorage.setItem("dwordle2.helpSeen", "true");
+      localStorage.setItem("dwordle2.helpSeenUso", "true");
       localStorage.setItem("tonyu-legacy-history", JSON.stringify({
         version: 1,
         1700000100: { startTime: 1700000100, endTime: 1700000130, gameMode: "normal", problemID: 2, guessWord: ["point"], complete: true },
@@ -2233,6 +2304,8 @@ try {
   try {
     await cardLockPage.addInitScript(() => {
       localStorage.setItem("dwordle2.tutorialSeen", "true");
+      localStorage.setItem("dwordle2.helpSeen", "true");
+      localStorage.setItem("dwordle2.helpSeenUso", "true");
       localStorage.setItem("dwordle2.legacyImportPrompted", "true");
       localStorage.setItem("dwordle2.playCount", "4");
       localStorage.setItem("dwordle2.menuUnlockSeen", "4");
@@ -2264,6 +2337,8 @@ try {
   try {
     await cardPage.addInitScript(() => {
       localStorage.setItem("dwordle2.tutorialSeen", "true");
+      localStorage.setItem("dwordle2.helpSeen", "true");
+      localStorage.setItem("dwordle2.helpSeenUso", "true");
       localStorage.setItem("dwordle2.legacyImportPrompted", "true");
       localStorage.setItem("dwordle2.playCount", "5");
       localStorage.setItem("dwordle2.menuUnlockSeen", "5");
@@ -2831,6 +2906,8 @@ try {
   try {
     await moodPage.addInitScript(() => {
       localStorage.setItem("dwordle2.tutorialSeen", "true");
+      localStorage.setItem("dwordle2.helpSeen", "true");
+      localStorage.setItem("dwordle2.helpSeenUso", "true");
       localStorage.setItem("dwordle2.legacyImportPrompted", "true");
       localStorage.setItem("dwordle2.playCount", "99");
       localStorage.setItem("dwordle2.extraShotUnlockSeen", "true");
@@ -2903,6 +2980,8 @@ try {
       localStorage.setItem("dwordle2.mode", JSON.stringify("uso"));
       localStorage.setItem("dwordle2.lastPlayedMode", JSON.stringify("normal")); // 旧仕様の保存値より選択を優先する
       localStorage.setItem("dwordle2.tutorialSeen", "true");
+      localStorage.setItem("dwordle2.helpSeen", "true");
+      localStorage.setItem("dwordle2.helpSeenUso", "true");
       localStorage.setItem("dwordle2.tutorialSeenUso", "true");
       localStorage.setItem("dwordle2.legacyImportPrompted", "true");
       localStorage.setItem("dwordle2.playCount", "99");
@@ -2938,6 +3017,8 @@ try {
     await mutedStartPage.addInitScript(() => {
       localStorage.setItem("dwordle2.settings", JSON.stringify({ theme: "classic", sfx: true, bgm: true, language: "ja" }));
       localStorage.setItem("dwordle2.tutorialSeen", "true");
+      localStorage.setItem("dwordle2.helpSeen", "true");
+      localStorage.setItem("dwordle2.helpSeenUso", "true");
       localStorage.setItem("dwordle2.legacyImportPrompted", "true");
       localStorage.setItem("dwordle2.playCount", "99");
       localStorage.setItem("dwordle2.extraShotUnlockSeen", "true");
@@ -2965,6 +3046,8 @@ try {
     await narrowPage.addInitScript(() => {
       localStorage.setItem("dwordle2.settings", JSON.stringify({ theme: "classic", sfx: false, bgm: false, language: "en" }));
       localStorage.setItem("dwordle2.tutorialSeen", "true");
+      localStorage.setItem("dwordle2.helpSeen", "true");
+      localStorage.setItem("dwordle2.helpSeenUso", "true");
       localStorage.setItem("dwordle2.legacyImportPrompted", "true");
       localStorage.setItem("dwordle2.playCount", "99");
       localStorage.setItem("dwordle2.extraShotUnlockSeen", "true");
@@ -3028,6 +3111,8 @@ try {
     await swPage.addInitScript(() => {
       localStorage.setItem("dwordle2.settings", JSON.stringify({ theme: "cyber", sfx: false, bgm: false, language: "ja" }));
       localStorage.setItem("dwordle2.tutorialSeen", "true");
+      localStorage.setItem("dwordle2.helpSeen", "true");
+      localStorage.setItem("dwordle2.helpSeenUso", "true");
       localStorage.setItem("dwordle2.legacyImportPrompted", "true");
       localStorage.setItem("dwordle2.playCount", "99");
       localStorage.setItem("dwordle2.extraShotUnlockSeen", "true");
