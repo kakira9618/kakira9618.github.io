@@ -121,7 +121,14 @@ function buildExample(mode, language) {
     buildWordRow("Word 2", EX.ans2),
   ];
   const guessTiles = EX.guess.split("").map(() => el("div", { class: "rcell htile big" }, ""));
-  const guessRow = el("div", { class: "help-anim-row", "aria-hidden": "true" }, guessTiles);
+  // 入力行も Word 1 / 2 と同じ 3 列レイアウトに載せて、タイルの x 座標を揃える
+  // （ラベル位置には同じ幅の透明なダミーを置く）
+  const guessRow = el(
+    "div",
+    { class: "help-ans-line", "aria-hidden": "true" },
+    el("span", { class: "hint help-ans-spacer" }, "Word 1"),
+    el("div", { class: "help-anim-row" }, guessTiles)
+  );
   const exampleTitle = el(
     "div",
     { class: "hint", style: { textAlign: "center" } },

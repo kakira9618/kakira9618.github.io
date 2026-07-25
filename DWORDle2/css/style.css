@@ -2739,12 +2739,21 @@ body.theme-pop:not(.mode-uso) .help-example-box {
   gap: 6px;
   align-items: center;
 }
+/* ラベル・タイル・灰色判定の × までを 1 つの塊とみなして中央に置く。
+   3 列とも内容幅にして justify-content: center で寄せるので、
+   タイルだけが中央に来て「Word 1」の分だけ左に寄って見えることがない。
+   × の列は幅を固定し、判定中に出入りしてもタイルが動かないようにする */
 .help-ans-line {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: max-content auto var(--help-mark-slot, 26px);
+  justify-content: center;
   align-items: center;
   width: 100%;
+}
+/* 入力行のラベル位置に置く、幅合わせ用の透明なダミー */
+.help-ans-spacer {
+  visibility: hidden;
 }
 .help-ans-line .hint {
   position: static;
