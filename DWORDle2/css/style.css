@@ -545,12 +545,23 @@ body.theme-cyber .btn:hover {
 /* ---- タイトル画面 ---- */
 #screen-title {
   align-items: center;
-  justify-content: center;
+  /* 中央寄せは下の auto マージンで行う。justify-content: center だと、内容が画面に
+     収まらないとき（320x568 でアドレスバーが出ている・「つづきから」が並ぶ等）に
+     上端がスクロール範囲の外へ押し出され、ロゴにどうやっても届かなくなる。
+     auto マージンなら余白が無いときは 0 に潰れ、上端から普通に並ぶ。 */
+  justify-content: flex-start;
   gap: 12px;
   padding: 24px;
   text-align: center;
   overflow-y: auto;
   touch-action: var(--touch-action-scroll); /* スクロールコンテナには祖先の指定が届かないため個別に指定 */
+}
+/* 通常配置の最初と最後の子（先頭の装飾 div は absolute、末尾の版数表示は fixed なので対象外） */
+#screen-title > .title-brand {
+  margin-top: auto;
+}
+#screen-title > .title-nav {
+  margin-bottom: auto;
 }
 .logo {
   font-size: clamp(40px, 11vw, 58px);

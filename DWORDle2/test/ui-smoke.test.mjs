@@ -1915,6 +1915,50 @@ try {
   assert.equal(flightsAfterLeave, 0, "Tile gather animation should be removed when leaving the game");
   await shortPage.close();
 
+  // 320x568（iPhone SE 世代）のタイトル画面。アドレスバーぶんを差し引いた高さや
+  // 「つづきから」が並んで内容が入り切らないとき、中央寄せでロゴが画面外へ押し出され、
+  // スクロールしても戻ってこられなくなっていた回帰の検知。
+  for (const shortHeight of [568, 460]) {
+    const tinyPage = await browser.newPage({ viewport: { width: 320, height: shortHeight }, locale: "ja-JP" });
+    await tinyPage.addInitScript(() => {
+      localStorage.setItem("dwordle2.settings", JSON.stringify({ theme: "cyber", sfx: false, bgm: false, language: "ja" }));
+      localStorage.setItem("dwordle2.legacyImportPrompted", "true");
+      localStorage.setItem("dwordle2.tutorialSeen", "true");
+      localStorage.setItem("dwordle2.helpSeen", "true");
+      localStorage.setItem("dwordle2.playCount", "99");
+      localStorage.setItem("dwordle2.menuUnlockSeen", "99");
+      localStorage.setItem("dwordle2.extraShotUnlockSeen", "true");
+      localStorage.setItem("dwordle2.achievements.reconcileVersion", "99");
+      // 内容が最も多くなる状態（「つづきから」が並ぶ）で見る
+      localStorage.setItem("dwordle2.current.normal", JSON.stringify({
+        version: 1, gameMode: "normal", problemID: 20260722, startTime: 1700000000,
+        guessWord: ["crane", "blood"], usoResults: [],
+      }));
+    });
+    await tinyPage.goto(baseUrl, { waitUntil: "networkidle" });
+    await passGate(tinyPage);
+    await tinyPage.locator(".logo").waitFor();
+    const tinyTitleMetrics = await tinyPage.evaluate(() => {
+      const screen = document.getElementById("screen-title");
+      screen.scrollTop = 0;
+      const screenBox = screen.getBoundingClientRect();
+      const logoBox = document.querySelector(".logo").getBoundingClientRect();
+      return {
+        scrollable: screen.scrollHeight > screen.clientHeight,
+        logoTop: Math.round(logoBox.top - screenBox.top),
+        logoClipped: logoBox.top < screenBox.top - 0.5,
+      };
+    });
+    assert.ok(
+      !tinyTitleMetrics.logoClipped && tinyTitleMetrics.logoTop >= 0,
+      `the title logo must stay reachable at 320x${shortHeight}: ${JSON.stringify(tinyTitleMetrics)}`
+    );
+    // 下端（設定ボタン）まで実際にスクロールで届く
+    await tinyPage.getByRole("button", { name: "設定" }).scrollIntoViewIfNeeded();
+    await tinyPage.getByRole("button", { name: "設定" }).waitFor();
+    await tinyPage.close();
+  }
+
   // 375〜389px（iPhone SE2 / 8 / X 世代）のゲーム画面ヘッダー。
   // 詰めのメディアクエリが 374px までしか効かず "DWORD..." に省略されていた回帰の検知。
   for (const narrowWidth of [375, 389]) {

@@ -252,22 +252,17 @@ async function askLeaveGame() {
       title: tr("タイトルへ戻る", "Back to title"),
       body: [
         el(
-          "div",
-          { class: "hint", style: { fontSize: "14px" } },
-          tr("プレイ中のゲームをどうしますか？", "What should happen to the game in progress?")
-        ),
-        el(
           "ul",
           { class: "hint", style: { fontSize: "14px", margin: "0", paddingLeft: "18px" } },
           el(
             "li",
             {},
-            tr("中断：タイトルの「つづきから」で再開できます", "Pause: resume later with Continue on the title screen")
+            tr("中断：あとで再開できます", "Pause: resume later")
           ),
           el(
             "li",
             {},
-            tr("破棄：進行状況を消します（履歴には残りません）", "Discard: throw the progress away (nothing is recorded)")
+            tr("破棄：進行状況を削除します", "Discard: delete progress")
           )
         ),
       ],
@@ -610,7 +605,7 @@ function submitGuess() {
   }
   const word = inputBuffer;
   if (!logic.isValidWord(word)) {
-    return rejectGuess(tr("辞書にありません", "Not in word list"));
+    return rejectGuess(tr("未登録の単語です", "Not in word list"));
   }
 
   const trueResult = logic.queryWord(word);
@@ -676,7 +671,7 @@ function submitExtraShot() {
   }
   const word = inputBuffer;
   if (!logic.isValidWord(word)) {
-    return rejectGuess(tr("辞書にありません", "Not in word list"));
+    return rejectGuess(tr("未登録の単語です", "Not in word list"));
   }
   if (word === extraShotPhase.clearedWord) {
     // 当てた方をもう一度入力してもチャンスは消費させず、打ち直しを促す

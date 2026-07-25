@@ -367,7 +367,7 @@ function render() {
         {
           class: key === filter ? "active" : "",
           onclick: () => {
-            playSfx("segment");
+            playSfx("ui"); // 問題一覧のカテゴリ選択と同じ音
             filter = key;
             page = 1;
             render();
