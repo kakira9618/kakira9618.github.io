@@ -91,7 +91,7 @@ export const ACHIEVEMENTS = [
   { id: "h-phantom", cat: "board", icon: "ghost", color: "#baffc9", name: "幻の正解", desc: "正解ではない単語を Guess して、全部緑を出す" },
   // --- モード・難易度 ---
   { id: "uso-clear", cat: "modes", icon: "mask", color: "#ff5f8f", name: "嘘を見抜く", desc: "裏モード DWORDlie をクリアする" },
-  { id: "uso-5", cat: "modes", icon: "layers", color: "#ff7aa8", name: "嘘マスター", desc: "裏モード DWORDlie で通算 5 勝する" },
+  { id: "uso-5", cat: "modes", icon: "mask", color: "#ff7aa8", name: "嘘マスター", desc: "裏モード DWORDlie で通算 5 勝する" },
   { id: "uso-20", cat: "modes", icon: "mask", color: "#ff9ab8", name: "嘘発見器", desc: "裏モード DWORDlie で通算 20 勝する" },
   { id: "extreme-clear", cat: "modes", icon: "mountain", color: "#ff8c66", name: "語彙の深淵", desc: "極 (No.10000-19999) の問題を 1 問クリアする" },
   { id: "level-clear", cat: "modes", icon: "compass", color: "#66e0d5", name: "開拓者", desc: "レベル問題 (No.20000-39999) を 1 問クリアする" },
@@ -122,10 +122,10 @@ export const ACHIEVEMENTS = [
   { id: "h-play-days-365", hidden: true, icon: "starTrail", color: "#c0ffe0", name: "365日の奇跡", desc: "通算 365 日プレイする" },
   { id: "h-play-streak-30", hidden: true, icon: "sunrise", color: "#ffd890", name: "一ヶ月の誓い", desc: "30 日連続でプレイする" },
   // EXTRA SHOT モード（クリア後の追加推理）関連
-  { id: "h-double-clear", hidden: true, icon: "twinHearts", color: "#ffd166", name: "両手に花", desc: "EXTRA SHOT に成功して DOUBLE CLEAR する" },
-  { id: "h-double-uso", hidden: true, icon: "binoculars", color: "#ff9ad0", name: "すべてお見通し", desc: "DWORDlie で DOUBLE CLEAR する（嘘の判定だけから両方の答えを見抜く）" },
-  { id: "h-double-oneshot", hidden: true, icon: "comet", color: "#ffe680", name: "神の二手", desc: "1 手クリアから DOUBLE CLEAR する（合計 2 手で両方の答えを当てる）" },
-  { id: "h-double-10", hidden: true, icon: "doubleCheck", color: "#ffcf5c", name: "二兎を得る者", desc: "DOUBLE CLEAR を通算 10 回達成する" },
+  { id: "h-double-clear", hidden: true, icon: "target", color: "#ffd166", name: "両手に花", desc: "EXTRA SHOT に成功して DOUBLE CLEAR する" },
+  { id: "h-double-uso", hidden: true, icon: "eye", color: "#ff9ad0", name: "すべてお見通し", desc: "DWORDlie で DOUBLE CLEAR する（嘘の判定だけから両方の答えを見抜く）" },
+  { id: "h-double-oneshot", hidden: true, icon: "bolt", color: "#ffe680", name: "神の二手", desc: "1 手クリアから DOUBLE CLEAR する（合計 2 手で両方の答えを当てる）" },
+  { id: "h-double-10", hidden: true, icon: "crown", color: "#ffcf5c", name: "二兎を得る者", desc: "DOUBLE CLEAR を通算 10 回達成する" },
   { id: "h-double-abyss", hidden: true, icon: "spiral", color: "#a0d8e8", name: "深淵の両取り", desc: "極 (No.10000-19999) で DOUBLE CLEAR する" },
   { id: "h-double-streak-3", hidden: true, icon: "chain", color: "#ffb0e0", name: "双璧の連鎖", desc: "3 ゲーム連続で DOUBLE CLEAR する" },
 ];

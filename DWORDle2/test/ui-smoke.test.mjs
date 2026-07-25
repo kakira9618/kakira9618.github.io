@@ -2296,6 +2296,30 @@ try {
       color: "rgb(74, 53, 80)",
       border: "rgba(255, 79, 158, 0.58)",
     }, "Pop DWORDle player-name input should look editable rather than disabled");
+    // プレイ履歴の検索条件・並べ替えの入力欄も、Pop では同じく編集可能に見せる
+    await cardPage.evaluate(() => { location.hash = "#/history"; });
+    await cardPage.waitForURL(/#\/history$/);
+    await cardPage.locator(".history-controls").waitFor();
+    await cardPage.locator(".history-controls").evaluate((details) => { details.open = true; });
+    const popHistoryControlStyles = await cardPage.locator(".history-controls").evaluate((controls) => {
+      const read = (element) => {
+        const style = getComputedStyle(element);
+        return { background: style.backgroundColor, color: style.color, colorScheme: style.colorScheme };
+      };
+      return {
+        date: read(controls.querySelector('.history-filter-field input[type="date"]')),
+        select: read(controls.querySelector(".history-filter-field select")),
+      };
+    });
+    for (const [name, style] of Object.entries(popHistoryControlStyles)) {
+      assert.deepEqual(
+        style,
+        { background: "rgb(255, 255, 255)", color: "rgb(74, 53, 80)", colorScheme: "light" },
+        `Pop DWORDle history ${name} control should look editable rather than disabled`
+      );
+    }
+    await cardPage.evaluate(() => { location.hash = "#/card"; });
+    await cardPage.waitForURL(/#\/card$/);
     // シェア / 保存ボタンは発行前には見えない（[hidden] が display: flex に負ける退行の防止）
     await cardPage.getByRole("button", { name: "カードを発行" }).waitFor();
     assert.equal(
