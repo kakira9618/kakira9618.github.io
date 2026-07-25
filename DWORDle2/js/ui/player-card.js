@@ -740,9 +740,10 @@ function celebratePromotion(stage, rank) {
     toast(message);
     return;
   }
-  // カード着地から昇格演出が終わるまでは、拡大表示が演出と競合しないようにする。
-  // Tilt は引き続き使えるため、ジェスチャー側でズーム入力だけを無視する。
+  // カード着地から昇格演出が終わるまでは、Tilt・拡大が演出と競合しないようにする。
+  // 進行中の Tilt もその場で戻す（傾いたままスタンプが出ないように）。
   stage.classList.add("is-rank-up");
+  stage.querySelector(".player-card-tilt")?.dispatchEvent(new CustomEvent("player-card-promo"));
   setTimeout(() => {
     const wrap = stage.querySelector(".player-card-wrap");
     if (!wrap?.isConnected) {
@@ -777,7 +778,8 @@ function celebratePromotion(stage, rank) {
 function attachCardGestures(stage, tiltEl) {
   const clampDeg = (v) => Math.min(TILT_MAX_DEG, Math.max(-TILT_MAX_DEG, v));
   const clampZoom = (v) => Math.min(CARD_ZOOM_MAX, Math.max(CARD_ZOOM_MIN, v));
-  const isZoomLocked = () => stage.classList.contains("is-rank-up");
+  // ランクアップ演出中は Tilt・拡大とも受け付けない
+  const isPromoLocked = () => stage.classList.contains("is-rank-up");
   const pointers = new Map();
   let primaryPointerId = null;
   let primaryStart = null;
@@ -890,7 +892,7 @@ function attachCardGestures(stage, tiltEl) {
     if (sound) playSfx("ui");
   };
   const toggleZoom = (clientX, clientY) => {
-    if (isZoomLocked()) return;
+    if (isPromoLocked()) return;
     if (zoomed) leaveZoom();
     else enterZoom(clientX, clientY);
   };
@@ -968,6 +970,10 @@ function attachCardGestures(stage, tiltEl) {
   };
 
   stage.classList.remove("is-zoomed");
+  // 演出が始まったら、指を置いたままでも傾きを戻す
+  tiltEl.addEventListener("player-card-promo", () => {
+    if (!zoomed) stopTilt();
+  });
   tiltEl.tabIndex = 0;
   updatePresentation();
   tiltEl.addEventListener("pointerdown", (event) => {
@@ -986,7 +992,7 @@ function attachCardGestures(stage, tiltEl) {
       };
       if (zoomed) {
         panStart = { x: event.clientX, y: event.clientY, panX, panY };
-      } else if (!shouldReduceMotion()) {
+      } else if (!shouldReduceMotion() && !isPromoLocked()) {
         gestureRect = tiltEl.getBoundingClientRect();
         tiltEl.classList.add("tilting");
         // 移動前のタッチでも、触れた位置へすぐ傾けて反応を明確にする。
@@ -999,7 +1005,7 @@ function attachCardGestures(stage, tiltEl) {
     primaryStart = null;
     panStart = null;
     stopTilt();
-    if (isZoomLocked()) return;
+    if (isPromoLocked()) return;
     // スマホではダブルタップを経由せず、等倍の状態から直接ピンチアウトもできる。
     if (!zoomed) {
       zoomed = true;
@@ -1029,7 +1035,7 @@ function attachCardGestures(stage, tiltEl) {
       return;
     }
 
-    if (primaryPointerId === event.pointerId && !shouldReduceMotion()) {
+    if (primaryPointerId === event.pointerId && !shouldReduceMotion() && !isPromoLocked()) {
       queueTilt(event.clientX, event.clientY);
     }
   });
@@ -1069,7 +1075,7 @@ function attachCardGestures(stage, tiltEl) {
       if (wasOnlyPointer) lastTap = null;
       return;
     }
-    if (isZoomLocked()) {
+    if (isPromoLocked()) {
       // 演出終了直前の 1 タップを、終了後のタップと組み合わせない。
       lastTap = null;
       return;

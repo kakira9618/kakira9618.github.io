@@ -2711,6 +2711,20 @@ try {
       "pinch-out must not zoom the card during a rank-up"
     );
     await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    // 演出中は Tilt も禁止（傾いたまま RANK UP スタンプが出ないように）
+    await cardPage.mouse.move(promotionCardBox.x + promotionCardBox.width * 0.85, promotionCardBox.y + promotionCardBox.height * 0.2);
+    await cardPage.mouse.down();
+    await cardPage.mouse.move(promotionCardBox.x + promotionCardBox.width * 0.15, promotionCardBox.y + promotionCardBox.height * 0.8);
+    await cardPage.waitForTimeout(80);
+    assert.deepEqual(
+      await cardPage.locator(".player-card-tilt").evaluate((tilt) => ({
+        tilting: tilt.classList.contains("tilting"),
+        inline: tilt.style.transform,
+      })),
+      { tilting: false, inline: "" },
+      "dragging must not tilt the card during a rank-up"
+    );
+    await cardPage.mouse.up();
     await cardPage.locator(".rank-up-overlay").waitFor();
     await cardPage.locator(".rank-up-overlay .rank-up-name").filter({ hasText: "GOLD RANK" }).waitFor();
     await cardPage.locator(".rank-up-overlay").waitFor({ state: "detached" });
@@ -2719,6 +2733,16 @@ try {
       0,
       "zoom must be unlocked when the rank-up animation finishes"
     );
+    // 演出が終われば Tilt も戻る
+    await cardPage.mouse.move(promotionCardBox.x + promotionCardBox.width * 0.85, promotionCardBox.y + promotionCardBox.height * 0.2);
+    await cardPage.mouse.down();
+    await cardPage.waitForTimeout(80);
+    assert.match(
+      await cardPage.locator(".player-card-tilt").evaluate((tilt) => tilt.style.transform),
+      /rotate[XY]/,
+      "tilt must work again once the rank-up animation finishes"
+    );
+    await cardPage.mouse.up();
     await cardPage.mouse.dblclick(promotionCenter.x, promotionCenter.y);
     await cardPage.locator(".player-card-stage.is-zoomed").waitFor();
     await cardPage.mouse.dblclick(promotionCenter.x, promotionCenter.y);
