@@ -80,6 +80,27 @@ npm run test:unit
 npm run test:ui
 ```
 
+### バージョンとリリース
+
+バージョン表示は `v2.0.0 (8d581ed)` の形式で、括弧内は DWORDle2 配下を最後に変更した
+コミットの短縮ハッシュ（16 進 7 桁）。
+
+```sh
+# 前バージョン（タグ）からの変更を見る
+npm run changes
+
+# バージョンを上げる（js/config.js と package.json の書き換え → npm test →
+# 2 コミット → タグ dwordle2-vX.Y.Z → push まで自動）
+npm run bump -- minor          # patch / minor / major / 2.3.0（直接指定）
+npm run bump -- patch --dry-run # 実行予定だけ表示
+
+# バージョンを上げずにデプロイするとき（ハッシュ表示と Service Worker の更新のみ）
+npm run hash
+```
+
+リポジトリ (kakira9618.github.io) は複数サイトの共用なので、タグは `dwordle2-v` 接頭辞で
+名前空間を分けている。AI に「バージョンを上げて」と頼むときの手順は `CLAUDE.md` 参照。
+
 ## 構成
 
 ```

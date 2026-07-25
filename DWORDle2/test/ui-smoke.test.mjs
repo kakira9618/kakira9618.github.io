@@ -89,6 +89,22 @@ const ogJpg = await readFile(path.join(projectRoot, "og.jpg"));
   }
 }
 
+// バージョン番号（APP_VERSION）の整合。上げ方は tools/bump-version.mjs 参照
+{
+  const { APP_VERSION } = await import("../js/config.js?v=20260725-b");
+  const pkg = JSON.parse(await readFile(path.join(projectRoot, "package.json"), "utf8"));
+  assert.match(APP_VERSION, /^\d+\.\d+\.\d+$/, "APP_VERSION は x.y.z 形式であること");
+  assert.equal(pkg.version, APP_VERSION, "package.json の version が APP_VERSION と揃っていない");
+  const { latestReleasedVersion, compareVersions } = await import("../tools/bump-version.mjs");
+  const released = await latestReleasedVersion();
+  if (released) {
+    assert.ok(
+      compareVersions(APP_VERSION, released) >= 0,
+      `APP_VERSION ${APP_VERSION} が最新タグ v${released} より古い。node tools/bump-version.mjs で上げる`
+    );
+  }
+}
+
 // X の Summary カード用の正方形アイコン（twitter:image が参照する）。
 // favicon.png と同じ意匠をベタ塗りで描いているので PNG が最小になる。
 const ogSquarePng = await readFile(path.join(projectRoot, "og-square.png"));
