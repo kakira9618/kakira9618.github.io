@@ -993,19 +993,23 @@ try {
   });
   await historicalDailyDay.waitFor();
   await historicalDailyDay.click();
-  // 日付を選ぶとダイアログではなくカレンダー直下に内容が開く
+  // 日付を選ぶとダイアログではなくカレンダー直下に内容が開く。
+  // 内容は日付・状態・プレイ導線だけに絞る（問題 No. や注意書きは出さない）
   const dailyDetail = page.locator("#screen-problems .daily-detail");
-  await dailyDetail.getByText(pidLabel(historicalDailyPid), { exact: true }).waitFor();
+  const historicalDetailDate = `${historicalDailyDate.getFullYear()}年${historicalDailyDate.getMonth() + 1}月${historicalDailyDate.getDate()}日`;
+  await dailyDetail.getByText(historicalDetailDate, { exact: true }).waitFor();
+  await dailyDetail.getByText("クリア済み", { exact: true }).waitFor();
   assert.equal(await page.locator('[role="dialog"]').count(), 0, "selecting a Daily date must not open a dialog");
   assert.equal(
     await dailyDetail.getByRole("button", { name: "この問題をプレイ" }).count(),
     0,
     "past Daily history must not offer replay"
   );
-  await dailyDetail.getByText(
-    "過去のDailyはプレイできません。プレイ履歴のみ確認できます。",
-    { exact: true }
-  ).waitFor();
+  assert.equal(
+    await dailyDetail.getByText(pidLabel(historicalDailyPid), { exact: true }).count(),
+    0,
+    "the Daily detail should not repeat the puzzle number"
+  );
   assert.equal(
     await dailyDetail.getByRole("button", { name: /^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2} のプレイ$/ }).count(),
     1,
@@ -1031,7 +1035,7 @@ try {
     "future Daily dates must all be disabled"
   );
   await todayDaily.click();
-  await dailyDetail.getByText(pidLabel(todayPID()), { exact: true }).waitFor();
+  await dailyDetail.getByRole("button", { name: "この問題をプレイ" }).waitFor();
   assert.equal(
     await page.locator(".daily-calendar-day.today.selected").count(),
     1,
@@ -1071,7 +1075,7 @@ try {
   );
   await usoTodayDaily.click();
   const usoDailyDetail = page.locator("#screen-problems .daily-detail");
-  await usoDailyDetail.getByText("この日はまだプレイしていません。", { exact: true }).waitFor();
+  await usoDailyDetail.getByText("未プレイ", { exact: true }).waitFor();
   await usoDailyDetail.getByRole("button", { name: "この問題をプレイ" }).click();
   const crossModeDailyDialog = page.getByRole("dialog", { name: "別モードで本日プレイ済み" });
   await crossModeDailyDialog.getByText(
@@ -1087,6 +1091,17 @@ try {
   await page.waitForURL(/#\/$/);
   await page.evaluate(() => { location.hash = "#/problems"; });
   await page.waitForURL(/#\/problems$/);
+
+  // 右上のボタンでタイトル画面と同じように DWORDle / DWORDlie を切り替えられる
+  {
+    const problemsHeader = page.locator("#screen-problems .header");
+    assert.equal(await problemsHeader.locator(".mode-chip").innerText(), "DWORDle");
+    await problemsHeader.getByRole("button", { name: "裏モードへ" }).click();
+    await page.locator("#screen-problems .mode-chip").filter({ hasText: "DWORDlie" }).waitFor();
+    assert.equal(await page.locator("body.mode-uso").count(), 1, "the puzzle list toggle should switch the app mode");
+    await problemsHeader.getByRole("button", { name: "表モードへ" }).click();
+    await page.locator("#screen-problems .mode-chip").filter({ hasText: "DWORDle" }).waitFor();
+  }
 
   await page.locator(".problem-level-tabs").getByRole("button", { name: "やさしい", exact: true }).click();
   await page.getByText("No.1 - No.9999", { exact: true }).waitFor();

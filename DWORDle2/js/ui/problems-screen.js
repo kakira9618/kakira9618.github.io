@@ -4,7 +4,7 @@
 // ルート: #/problems
 
 import { el, clear, fmtDateTime } from "./dom.js?v=20260725-b";
-import { registerScreen, navigate, getAppMode } from "./app.js?v=20260725-b";
+import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260725-b";
 import { buildProblemStatus, MODES } from "../core/records.js?v=20260725-b";
 import { LEVELS, isDailyPID, isValidPID, pidLabel, todayPID } from "../core/problems.js?v=20260725-b";
 import { playSfx } from "../audio/sound.js?v=20260725-b";
@@ -253,7 +253,7 @@ function dailyDetail(pid, statusMap, todayPid) {
       el("span", { class: "spacer" }),
       el("span", { class: `daily-detail-status ${doubleClear ? "double-clear" : status}` }, label)
     ),
-    el("div", { class: "daily-detail-pid" }, pidLabel(pid)),
+    // 説明文は置かず、今日のプレイ導線と過去のプレイ結果へのリンクだけを並べる
     isToday
       ? el(
           "button",
@@ -261,19 +261,11 @@ function dailyDetail(pid, statusMap, todayPid) {
           icon("play"),
           tr("この問題をプレイ", "Play this puzzle")
         )
-      : el(
-          "p",
-          { class: "hint daily-history-only" },
-          tr(
-            "過去のDailyはプレイできません。プレイ履歴のみ確認できます。",
-            "Past Daily puzzles cannot be played. You can only view their play history."
-          )
-        ),
+      : null,
     plays.length
       ? el(
           "div",
           { class: "daily-detail-plays" },
-          el("div", { class: "hint" }, tr("プレイ履歴:", "Play history:")),
           ...plays.map((time) =>
             el(
               "button",
@@ -282,7 +274,7 @@ function dailyDetail(pid, statusMap, todayPid) {
             )
           )
         )
-      : el("p", { class: "hint" }, tr("この日はまだプレイしていません。", "You have not played this day yet."))
+      : null
   );
 }
 
@@ -313,6 +305,22 @@ function render() {
     el("h1", { class: "title" }, tr("問題一覧", "Puzzles")),
     el("span", { class: "spacer" }),
     el("span", { class: `mode-chip ${mode === "uso" ? "uso" : ""}` }, MODES[mode].title),
+    // タイトル画面と同じく、右上のボタンで DWORDle / DWORDlie を切り替えられるようにする
+    el(
+      "button",
+      {
+        class: "icon-btn",
+        title: mode === "uso" ? tr("表モードへ", "Switch to DWORDle") : tr("裏モードへ", "Switch to DWORDlie"),
+        "aria-label": mode === "uso" ? tr("表モードへ", "Switch to DWORDle") : tr("裏モードへ", "Switch to DWORDlie"),
+        style: mode === "uso" ? { boxShadow: "0 0 12px rgba(255,43,94,0.8)", color: "#ff5f8f" } : {},
+        onclick: () => {
+          playSfx("swoosh");
+          setAppMode(mode === "uso" ? "normal" : "uso");
+          render();
+        },
+      },
+      icon(mode === "uso" ? "mask" : "moon")
+    ),
     soundToggleButton(),
     el(
       "button",
