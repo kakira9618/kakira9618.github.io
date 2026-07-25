@@ -169,9 +169,22 @@ export const FX = {
   },
 };
 
+// viewport メタの内容。設定「ズーム固定」の ON / OFF で main.js が差し替える。
+// locked 側は index.html の初期値ではなく、設定を読んでから適用する。
+export const VIEWPORT = {
+  base: "width=device-width, initial-scale=1, viewport-fit=cover",
+  locked: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover",
+};
+
 export const AUDIO = {
   masterGain: 0.5,
-  bgmGain: 0.16,
-  sfxGain: 0.5,
+  bgmGain: 0.16, // 音量設定 volumeUnityPercent のときの BGM ゲイン
+  sfxGain: 0.5, // 音量設定 volumeUnityPercent のときの効果音ゲイン
+  // 音量設定の何 % を等倍（上の bgmGain / sfxGain そのまま）とするか。
+  // 50 なら 100% で 2 倍まで上げられる。既定値もこの値。
+  volumeUnityPercent: 50,
   bgmCrossfadeSec: 1.4, // 表 / 裏切替時の BGM クロスフェード時間
+  // 端末スリープや他アプリの割り込みで AudioContext が止まったときの自動復帰試行
+  // （ユーザー操作を待たずに resume する）。即時 1 回のあと、この間隔で再試行する。
+  recoveryDelaysMs: [400, 1200, 3000, 8000],
 };

@@ -13,7 +13,7 @@ import { toast } from "./toast.js?v=20260725-b";
 import { showModal, confirmModal } from "./modal.js?v=20260725-b";
 import { icon } from "./icons.js?v=20260725-b";
 import { finishHistoryImport } from "./history-import.js?v=20260725-b";
-import { APP_VERSION } from "../config.js?v=20260725-b";
+import { APP_VERSION, AUDIO } from "../config.js?v=20260725-b";
 import { SOURCE_HASH } from "../version.js?v=20260725-b";
 import { isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js?v=20260725-b";
 import { isDebugMode, tryEnableDebugMode } from "../core/debug.js?v=20260725-b";
@@ -110,6 +110,11 @@ function toggle(key, label) {
   return sw;
 }
 
+// 音量は AUDIO.volumeUnityPercent (50%) が標準で、そこから上は増幅になる。
+// スライダーの読み上げと数値表示に「標準」を出して、どこが基準かが分かるようにする。
+const volumeText = (value) =>
+  value === AUDIO.volumeUnityPercent ? tr(`${value}%（標準）`, `${value}% (default)`) : `${value}%`;
+
 function volumeSlider(key, label) {
   const value = getSettings()[key];
   const valueEl = el("span", { class: "volume-value", "aria-hidden": "true" }, `${value}%`);
@@ -120,11 +125,11 @@ function volumeSlider(key, label) {
     step: "1",
     value,
     "aria-label": label,
-    "aria-valuetext": `${value}%`,
+    "aria-valuetext": volumeText(value),
     oninput: (event) => {
       const next = Number(event.target.value);
       setSetting(key, next);
-      event.target.setAttribute("aria-valuetext", `${next}%`);
+      event.target.setAttribute("aria-valuetext", volumeText(next));
       valueEl.textContent = `${next}%`;
     },
     onchange: () => {
@@ -423,6 +428,14 @@ function render() {
         tr("演出を軽くする", "Reduce effects"),
         tr("3D効果やアニメーションを抑えます", "Reduce 3D effects and animations"),
         toggle("reduceFx", tr("演出を軽くする", "Reduce effects"))
+      ),
+      settingRow(
+        tr("ズーム固定", "Lock zoom"),
+        tr(
+          "ピンチやダブルタップでの拡大を無効にします（プレイ中の誤操作防止）",
+          "Disable pinch and double-tap zoom (prevents accidental zooming while playing)"
+        ),
+        toggle("lockZoom", tr("ズーム固定", "Lock zoom"))
       )
     ),
     // EXTRA SHOT モード（10 回プレイ or デバッグモードで解放）。
@@ -494,7 +507,8 @@ function render() {
       ),
       settingRow(
         tr("効果音の音量", "Sound effects volume"),
-        tr("効果音だけの音量を調整します", "Adjust sound effects independently"),
+        tr("効果音だけの音量を調整します。50% が標準で、上げると大きくできます",
+           "Adjust sound effects independently. 50% is the default; go higher to boost"),
         volumeSlider("sfxVolume", tr("効果音の音量", "Sound effects volume"))
       ),
       settingRow(
@@ -507,7 +521,8 @@ function render() {
       ),
       settingRow(
         tr("BGMの音量", "BGM volume"),
-        tr("BGMだけの音量を調整します", "Adjust BGM independently"),
+        tr("BGMだけの音量を調整します。50% が標準で、上げると大きくできます",
+           "Adjust BGM independently. 50% is the default; go higher to boost"),
         volumeSlider("bgmVolume", tr("BGMの音量", "BGM volume"))
       ),
       settingRow(

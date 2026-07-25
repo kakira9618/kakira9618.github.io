@@ -69,6 +69,7 @@ class FakeAudioContext {
     this.startedOscillators = 0;
     this.startedFrequencies = [];
     this.resumeCalls = 0;
+    this.listeners = {};
     FakeAudioContext.instances.push(this);
     FakeAudioContext.instance = this;
   }
@@ -95,6 +96,16 @@ class FakeAudioContext {
   createBuffer(_channels, length) {
     return { getChannelData: () => new Float32Array(length) };
   }
+  addEventListener(type, listener) {
+    (this.listeners[type] ??= []).push(listener);
+  }
+
+  // 端末スリープや割り込みで state が変わったときの通知を模す
+  setState(state) {
+    this.state = state;
+    for (const listener of this.listeners.statechange ?? []) listener();
+  }
+
   resume() {
     this.resumeCalls++;
     if (FakeAudioContext.holdNextResume) {
@@ -123,7 +134,7 @@ globalThis.window = {
 
 const { AUDIO } = await import("../js/config.js?v=20260725-b");
 const { setSetting } = await import("../js/core/settings.js?v=20260725-b");
-const { audioNeedsRecovery, currentBgmTrackId, playSfx, rewindBgm, unlockAudio, setUsoMood, stopBgm, BGM_TRACKS } = await import("../js/audio/sound.js?v=20260725-b");
+const { audioNeedsRecovery, currentBgmTrackId, playSfx, rewindBgm, scheduleAudioRecovery, unlockAudio, setUsoMood, stopBgm, BGM_TRACKS } = await import("../js/audio/sound.js?v=20260725-b");
 
 setSetting("bgm", false);
 playSfx("ui");
@@ -142,7 +153,8 @@ await unlockAudio();
 assert.equal(audioNeedsRecovery(), false, "running BGM should not be restarted on every input");
 for (let i = 0; i < 12; i++) setUsoMood(i % 2 === 0);
 
-const masterGain = context.gains.find((gain) => gain.connections.includes(context.destination));
+const masterOf = (audioContext) => audioContext.gains.find((gain) => gain.connections.includes(audioContext.destination));
+const masterGain = masterOf(context);
 const outputGains = context.gains.filter((gain) => gain.connections.includes(masterGain));
 const bgmGain = outputGains.find((gain) => Math.abs(gain.gain.value - 0.16) < 1e-9);
 const sfxGain = outputGains.find((gain) => gain !== bgmGain);
@@ -175,10 +187,21 @@ assert(
   "reload recovery should rebuild the active BGM bus"
 );
 
+// 音量は AUDIO.volumeUnityPercent (50) が等倍。50 で素のゲイン、100 でその 2 倍になる。
 setSetting("bgmVolume", 50);
 setSetting("sfxVolume", 25);
-assert.equal(bgmGain.gain.value, 0.08);
-assert.equal(sfxGain.gain.value, 0.125);
+assert.equal(bgmGain.gain.value, 0.16);
+assert.equal(sfxGain.gain.value, 0.25);
+setSetting("bgmVolume", 100);
+setSetting("sfxVolume", 100);
+assert.equal(bgmGain.gain.value, 0.32, "100% must double the BGM gain");
+assert.equal(sfxGain.gain.value, 1, "100% must double the SFX gain");
+setSetting("bgmVolume", 0);
+setSetting("sfxVolume", 0);
+assert.equal(bgmGain.gain.value, 0);
+assert.equal(sfxGain.gain.value, 0);
+setSetting("bgmVolume", 50);
+setSetting("sfxVolume", 50);
 
 context.state = "closed";
 assert.equal(audioNeedsRecovery(), true, "a closed Safari audio context should request recovery");
@@ -400,6 +423,37 @@ try {
   await new Promise((resolve) => setTimeout(resolve, 700)); // BGM ループ（300ms 周期）の 2 tick ぶん待つ
   const after = getActivity().usage.bgm.classic ?? 0;
   assert.ok(after > before, `listening time should accrue while the classic track plays (${before} -> ${after})`);
+}
+
+// 端末スリープ・他アプリの割り込みからの自動復帰:
+// ユーザー操作を待たずに resume して BGM を鳴らし直す（従来はタップまで無音だった）。
+{
+  const sleeping = FakeAudioContext.instance;
+  const resumeCallsBeforeSleep = sleeping.resumeCalls;
+  // 中断中に master がフェードアウトされたまま残るケースも同時に再現する
+  masterOf(sleeping).gain.value = 0;
+  sleeping.setState("interrupted"); // statechange から自動復帰が走る
+  await new Promise((resolve) => setTimeout(resolve, 50));
+  assert.ok(
+    sleeping.resumeCalls > resumeCallsBeforeSleep,
+    "an interrupted context must be resumed without waiting for a user gesture"
+  );
+  assert.equal(sleeping.state, "running", "the context should be running again after auto recovery");
+  assert.equal(
+    masterOf(sleeping).gain.value,
+    AUDIO.masterGain,
+    "auto recovery must restore a master gain left faded out"
+  );
+  assert.equal(audioNeedsRecovery(), false, "BGM should be playing again after auto recovery");
+
+  // 失敗しても例外にならず、次の試行で復帰できる（iOS Safari の interrupted 継続）
+  FakeAudioContext.failNextResume = true;
+  sleeping.setState("interrupted");
+  await new Promise((resolve) => setTimeout(resolve, 50));
+  assert.equal(sleeping.state, "interrupted", "a failed resume must leave the context untouched");
+  scheduleAudioRecovery();
+  await new Promise((resolve) => setTimeout(resolve, 50));
+  assert.equal(sleeping.state, "running", "the next recovery attempt should succeed");
 }
 
 stopBgm();

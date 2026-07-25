@@ -9,7 +9,7 @@
 import { startRouter, initAppMode } from "./ui/app.js?v=20260725-b";
 import { initEffects } from "./fx/effects.js?v=20260725-b";
 import { initPopBackground } from "./fx/pop-background.js?v=20260725-b";
-import { audioNeedsRecovery, bgmTracksUnlockedBy, restartBgmIfReady, stopBgm, unlockAudio } from "./audio/sound.js?v=20260725-b";
+import { audioNeedsRecovery, bgmTracksUnlockedBy, restartBgmIfReady, scheduleAudioRecovery, stopBgm, unlockAudio } from "./audio/sound.js?v=20260725-b";
 import { getSettings, onSettingsChange, hiddenThemesUnlockedBy } from "./core/settings.js?v=20260725-b";
 import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js?v=20260725-b";
 import { syncDocumentLanguage, tr } from "./core/i18n.js?v=20260725-b";
@@ -18,6 +18,7 @@ import { initAnalytics } from "./core/analytics.js?v=20260725-b";
 import { maybeShowConsentBanner } from "./ui/consent-banner.js?v=20260725-b";
 import { onSaveError } from "./core/store.js?v=20260725-b";
 import { showEntryGate } from "./ui/gate.js?v=20260725-b";
+import { VIEWPORT } from "./config.js?v=20260725-b";
 
 // トーストは扉絵の critical path から外してある（保存エラー・SW 更新は稀で、即時性も要らない）
 function notify(message) {
@@ -109,10 +110,22 @@ function syncDisplayClasses(settings = getSettings()) {
   document.body.classList.toggle("high-contrast", Boolean(settings.highContrast));
   document.body.classList.toggle("reduce-motion", shouldReduceMotion(settings));
 }
+
+// 設定「ズーム固定」。既定はズーム可で、ON のときだけ viewport メタと
+// touch-action（body.zoom-locked → CSS 変数）の二段構えで拡大を封じる。
+function syncZoomLock(settings = getSettings()) {
+  const locked = Boolean(settings.lockZoom);
+  document.body.classList.toggle("zoom-locked", locked);
+  document
+    .querySelector('meta[name="viewport"]')
+    ?.setAttribute("content", locked ? VIEWPORT.locked : VIEWPORT.base);
+}
 syncDisplayClasses();
+syncZoomLock();
 syncDocumentLanguage();
 onSettingsChange((settings, key) => {
   if (key === "theme" || key === "reduceFx" || key === "highContrast") syncDisplayClasses(settings);
+  if (key === "lockZoom") syncZoomLock(settings);
   if (key === "language") syncDocumentLanguage(settings.language);
   if (key === "theme" && settings.theme === "cyber") void initEffects(); // 後から cyber に切り替えたら遅延初期化
 });
@@ -162,18 +175,29 @@ const unlock = () => {
 addEventListener("pointerdown", unlock);
 addEventListener("keydown", unlock);
 
-// ズームは全面禁止（viewport の user-scalable=no + CSS touch-action: pan-x pan-y）。
-// これはそれらが効かない環境向けの保険として、ダブルタップ拡大も直接抑止する。
-document.addEventListener("dblclick", (event) => event.preventDefault(), { passive: false });
+// ズーム固定のときだけ、viewport / touch-action が効かない環境向けの保険として
+// ダブルタップ拡大も直接抑止する（既定のズーム可では何もしない）。
+document.addEventListener(
+  "dblclick",
+  (event) => {
+    if (getSettings().lockZoom) event.preventDefault();
+  },
+  { passive: false }
+);
 
-// バックグラウンド復帰時は、状態に応じて即時再生または次の操作で再接続する。
+// バックグラウンド復帰時は、そのまま再生できるならすぐ鳴らし、
+// AudioContext が中断されていたら操作を待たずに復帰を試みる（数回リトライ）。
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
     stopBgm();
-  } else {
-    restartBgmIfReady();
+  } else if (!restartBgmIfReady()) {
+    scheduleAudioRecovery();
   }
 });
+// スリープ復帰やウィンドウ切替は visibilitychange を伴わないことがあるため、
+// フォーカスが戻ったときにも確認する（鳴っていれば scheduleAudioRecovery は何もしない）。
+addEventListener("focus", () => scheduleAudioRecovery());
+addEventListener("pageshow", () => scheduleAudioRecovery());
 
 // エントリーゲート（扉絵）を通ってから本来の画面へ入る。
 // 扉絵の間はグローバル解錠を止めており（上の unlock 参照）、

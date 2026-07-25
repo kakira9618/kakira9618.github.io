@@ -240,13 +240,26 @@ body.theme-pop .card {
   border: 0;
 }
 
-/* ズームは全面禁止（viewport の user-scalable=no と合わせた二段構え）。
-   pan-x pan-y はスクロールだけを許可し、ピンチズーム・ダブルタップズームを封じる */
+/* ズームは既定で許可する。設定「ズーム固定」が ON のときだけ body.zoom-locked が付き、
+   下の 2 変数が pan-* に切り替わってピンチズーム・ダブルタップズームを封じる
+   （viewport の user-scalable=no と合わせた二段構え。iOS Safari は meta を無視するため
+   CSS 側が実効的な封じ手になる）。
+   - --touch-action-app  : html / body / 画面 / ボタン
+   - --touch-action-scroll: スクロールコンテナ（effective touch-action の探索がそこで
+     打ち切られ、祖先の指定が届かないため個別に指定する必要がある） */
+:root {
+  --touch-action-app: manipulation;
+  --touch-action-scroll: auto;
+}
+body.zoom-locked {
+  --touch-action-app: pan-x pan-y;
+  --touch-action-scroll: pan-y;
+}
 html,
 body {
   height: 100%;
   overscroll-behavior: none;
-  touch-action: pan-x pan-y;
+  touch-action: var(--touch-action-app);
 }
 
 body {
@@ -282,7 +295,7 @@ textarea,
 
 #app,
 .screen {
-  touch-action: pan-x pan-y;
+  touch-action: var(--touch-action-app);
 }
 
 button {
@@ -291,7 +304,7 @@ button {
   background: none;
   border: none;
   cursor: pointer;
-  touch-action: pan-x pan-y;
+  touch-action: var(--touch-action-app);
 }
 
 :where(button, a, input, select, textarea, summary, [tabindex]):focus-visible {
@@ -537,7 +550,7 @@ body.theme-cyber .btn:hover {
   padding: 24px;
   text-align: center;
   overflow-y: auto;
-  touch-action: pan-y; /* スクロールコンテナには祖先のズーム禁止が届かないため個別に指定 */
+  touch-action: var(--touch-action-scroll); /* スクロールコンテナには祖先の指定が届かないため個別に指定 */
 }
 .logo {
   font-size: clamp(40px, 11vw, 58px);
@@ -823,7 +836,7 @@ body.theme-cyber .icon-btn.menu-locked:hover {
   scrollbar-width: thin;
   padding: 14px 0 24px;
   cursor: grab;
-  touch-action: pan-y;
+  touch-action: var(--touch-action-scroll);
   overscroll-behavior-y: contain;
 }
 #board-scroll.dragging {
@@ -1076,7 +1089,7 @@ body.theme-cyber .key.state-correct { box-shadow: 0 0 10px color-mix(in srgb, va
   max-height: 86vh; /* dvh 未対応ブラウザ向けフォールバック */
   max-height: 86dvh;
   overflow-y: auto;
-  touch-action: pan-y; /* スクロールコンテナには祖先のズーム禁止が届かないため個別に指定 */
+  touch-action: var(--touch-action-scroll); /* スクロールコンテナには祖先の指定が届かないため個別に指定 */
   background: var(--bg-panel-2);
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -1518,7 +1531,7 @@ body.theme-cyber .toast {
   max-height: min(38vh, 280px); /* dvh 未対応ブラウザ向けフォールバック */
   max-height: min(38dvh, 280px);
   overflow-y: auto;
-  touch-action: pan-y; /* スクロールコンテナには祖先のズーム禁止が届かないため個別に指定 */
+  touch-action: var(--touch-action-scroll); /* スクロールコンテナには祖先の指定が届かないため個別に指定 */
   margin: 0;
   text-align: left;
 }
@@ -1606,9 +1619,9 @@ body.theme-cyber .toast {
   flex-direction: column;
   gap: 10px;
   /* スクロールコンテナは effective touch-action の探索がここで打ち切られ、
-     祖先（html/body）の指定が届かないため、ここでもズームを封じる
-     （縦スクロールだけ許可） */
-  touch-action: pan-y;
+     祖先（html/body）の指定が届かないため、ここでも同じ変数で指定する
+     （ズーム固定 ON のときだけ縦スクロールだけ許可） */
+  touch-action: var(--touch-action-scroll);
 }
 /* 履歴が画面高を超えても、検索カードや履歴行は縮めず一覧だけをスクロールする */
 #screen-history .list-screen-body > * {
@@ -2612,7 +2625,7 @@ body.reduce-motion .bar-grow {
   margin-top: 10px;
   padding: 2px 6px 2px 2px;
   overflow-y: auto;
-  touch-action: pan-y; /* スクロールコンテナには祖先のズーム禁止が届かないため個別に指定 */
+  touch-action: var(--touch-action-scroll); /* スクロールコンテナには祖先の指定が届かないため個別に指定 */
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
   border-radius: 9px;

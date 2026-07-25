@@ -257,8 +257,10 @@ export function currentBgmTrackId() {
   return selectedTrack();
 }
 
+// 設定値 (0〜100) → 実ゲイン。AUDIO.volumeUnityPercent が等倍で、
+// それより上は base を超えて増幅する（100% で 2 倍）。
 function volumeGain(base, value) {
-  return base * (Math.min(100, Math.max(0, Number(value) || 0)) / 100);
+  return base * (Math.min(100, Math.max(0, Number(value) || 0)) / AUDIO.volumeUnityPercent);
 }
 
 function sfxTargetGain(settings = getSettings()) {
@@ -392,6 +394,13 @@ function ensureContext() {
     bgmGain.gain.value = 0;
     bgmGain.connect(masterGain);
     buses = new Map();
+    // 端末スリープや他アプリの割り込みは visibilitychange を伴わないことがある
+    // （画面が表示されたままでも中断される）。AudioContext の状態変化から復帰させる。
+    ctx.addEventListener?.("statechange", () => {
+      if (!ctx) return;
+      if (ctx.state === "running" || ctx.state === "closed") return;
+      scheduleAudioRecovery();
+    });
   } catch {
     // iOS Safari の同時 AudioContext 上限などで生成に失敗した場合は次の操作で再試行する。
     clearAudioContextReferences();
@@ -461,12 +470,82 @@ export function audioNeedsRecovery() {
 }
 
 // バックグラウンド復帰時、Safari が AudioContext を自動復帰できた場合だけ即時再開する。
-// suspended / interrupted の場合は false を返し、次のユーザー操作で unlockAudio する。
+// suspended / interrupted の場合は false を返し、scheduleAudioRecovery / 次のユーザー操作に任せる。
 export function restartBgmIfReady() {
   if (!ctx || ctx.state !== "running" || !getSettings().bgm) return false;
   stopBgm();
   startBgm();
   return true;
+}
+
+// ---- 自動復帰 ----
+// 端末スリープからの復帰・他アプリの音声割り込み・タブ復帰では AudioContext が
+// suspended / interrupted のまま残り、次にタップするまで無音になる。
+// ユーザー操作を待たずに resume を試みてここで鳴らし直す。
+// Chrome / Android は一度操作があれば非操作コンテキストからの resume() も通る。
+// iOS Safari は通らないことがあるので、失敗しても従来の pointerdown 経由の復帰が残る。
+let recoveryTimers = [];
+
+function cancelAudioRecovery() {
+  for (const timer of recoveryTimers) clearTimeout(timer);
+  recoveryTimers = [];
+}
+
+function audioWanted(settings = getSettings()) {
+  return Boolean(settings.sfx || settings.bgm);
+}
+
+// pagehide のフェードアウトが pageshow で戻されないまま残ると（iOS の共有 UI 経由など）
+// 以後ずっと無音になるため、復帰のたびにマスター音量を必ず戻す。
+function restoreMasterGain() {
+  if (!ctx || ctx.state === "closed" || !masterGain) return;
+  const t = ctx.currentTime;
+  masterGain.gain.cancelScheduledValues(t);
+  masterGain.gain.setValueAtTime(masterGain.gain.value, t);
+  masterGain.gain.linearRampToValueAtTime(AUDIO.masterGain, t + UNLOAD_FADE_SEC);
+}
+
+function attemptAudioRecovery() {
+  // 非表示中は復帰させない（BGM は停止済み。表示に戻ったときに改めて呼ばれる）
+  if (!audioWanted() || globalThis.document?.visibilityState === "hidden") return Promise.resolve(false);
+  // closed（PC の pagehide で閉じた後）は次のユーザー操作で作り直す
+  if (!ctx || ctx.state === "closed") return Promise.resolve(false);
+  if (ctx.state === "running") {
+    restoreMasterGain();
+    if (getSettings().bgm && !bgmRunning) startBgm();
+    return Promise.resolve(true);
+  }
+  return resumeAudioContext().then((resumed) => {
+    if (!resumed) return false;
+    restoreMasterGain();
+    if (getSettings().bgm) {
+      // 中断中に予約時刻が過ぎているため、スケジュール開始位置から作り直す
+      // （unlockAudio の復帰経路と同じ扱い。3 小節目から始まるのを防ぐ）
+      stopBgm();
+      barIndex = bgmScheduleStartBar;
+      startBgm();
+    }
+    return true;
+  });
+}
+
+// すぐ 1 回試し、失敗したら AUDIO.recoveryDelaysMs の間隔で数回だけ再試行する
+// （スリープ復帰直後は AudioContext の状態遷移が遅れて 1 回目が失敗しやすい）。
+export function scheduleAudioRecovery() {
+  cancelAudioRecovery();
+  if (!audioWanted()) return;
+  void attemptAudioRecovery().then((recovered) => {
+    if (recovered) return;
+    for (const delay of AUDIO.recoveryDelaysMs) {
+      recoveryTimers.push(
+        setTimeout(() => {
+          void attemptAudioRecovery().then((ok) => {
+            if (ok) cancelAudioRecovery();
+          });
+        }, delay)
+      );
+    }
+  });
 }
 
 // 表 / 裏の切替。予約済みの旧バスを破棄してから新しいモードを再生する。

@@ -437,8 +437,8 @@ try {
   assert.equal(await page.getByRole("tab", { name: "表示" }).getAttribute("aria-selected"), "true");
   const switches = page.getByRole("switch");
   await switches.first().waitFor();
-  assert.equal(await switches.count(), 3, "The Display tab should expose its three switches");
-  for (const label of ["ハイコントラスト配色", "キーボードヒント", "演出を軽くする"]) {
+  assert.equal(await switches.count(), 4, "The Display tab should expose its four switches");
+  for (const label of ["ハイコントラスト配色", "キーボードヒント", "演出を軽くする", "ズーム固定"]) {
     await page.getByRole("switch", { name: label }).waitFor();
   }
   for (const copy of ["UIの言語を設定", "UIや背景のテーマを設定", "3D効果やアニメーションを抑えます"]) {
@@ -449,7 +449,7 @@ try {
   );
   assert.deepEqual(
     displayRowBorders,
-    ["solid", "solid", "solid", "solid", "none"],
+    ["solid", "solid", "solid", "solid", "solid", "none"],
     "Settings should keep separators only between items, not below the final item"
   );
   assert.equal(await page.getByText("低スペック端末向け", { exact: false }).count(), 0);
@@ -1181,15 +1181,49 @@ try {
   assert.equal(await solvedCard.getByText("もっと絞れたかもしれない単語").count(), 0, "Winning Guess should not show suggestions");
   await assertNoSeriousA11yViolations("Analysis screen");
 
-  // ズームは全面禁止（ユーザーの明示要望による製品判断。2026-07-22）
+  // ズームは既定で許可し、設定「ズーム固定」を ON にしたときだけ封じる（2026-07-26 に変更）
   const viewport = await page.locator('meta[name="viewport"]').getAttribute("content");
-  assert.equal(viewport.includes("user-scalable=no"), true, "Zoom must be fully disabled by request");
-  assert.equal(viewport.includes("maximum-scale=1"), true, "Zoom must be fully disabled by request");
+  assert.equal(viewport.includes("user-scalable=no"), false, "Zoom must be allowed by default");
+  assert.equal(viewport.includes("maximum-scale"), false, "Zoom must be allowed by default");
   assert.equal(
     await page.evaluate(() => getComputedStyle(document.body).touchAction),
-    "pan-x pan-y",
-    "touch-action must block pinch zoom app-wide"
+    "manipulation",
+    "pinch zoom must be possible by default"
   );
+  {
+    // 設定を ON にすると、viewport メタと touch-action の両方が即座に切り替わる。
+    // スクロールコンテナは祖先の指定が届かないので、そこも一緒に切り替わることを見る。
+    const zoomLock = await page.evaluate(async () => {
+      const { setSetting } = await import("./js/core/settings.js?v=20260725-b");
+      const scroller = document.querySelector(".modal, .list-screen-body, #board-scroll");
+      setSetting("lockZoom", true);
+      const locked = {
+        viewport: document.querySelector('meta[name="viewport"]').getAttribute("content"),
+        body: getComputedStyle(document.body).touchAction,
+        scroller: scroller ? getComputedStyle(scroller).touchAction : null,
+        bodyClass: document.body.classList.contains("zoom-locked"),
+      };
+      setSetting("lockZoom", false);
+      const unlocked = {
+        viewport: document.querySelector('meta[name="viewport"]').getAttribute("content"),
+        body: getComputedStyle(document.body).touchAction,
+        scroller: scroller ? getComputedStyle(scroller).touchAction : null,
+        bodyClass: document.body.classList.contains("zoom-locked"),
+      };
+      return { locked, unlocked };
+    });
+    assert.ok(
+      zoomLock.locked.viewport.includes("user-scalable=no") && zoomLock.locked.viewport.includes("maximum-scale=1"),
+      `Lock zoom must add the no-zoom viewport: ${zoomLock.locked.viewport}`
+    );
+    assert.equal(zoomLock.locked.body, "pan-x pan-y", "Lock zoom must block pinch zoom app-wide");
+    assert.equal(zoomLock.locked.scroller, "pan-y", "Lock zoom must block pinch zoom inside scroll containers");
+    assert.equal(zoomLock.locked.bodyClass, true);
+    assert.equal(zoomLock.unlocked.body, "manipulation", "Turning the lock off must restore pinch zoom");
+    assert.equal(zoomLock.unlocked.scroller, "auto");
+    assert.equal(zoomLock.unlocked.viewport.includes("user-scalable"), false);
+    assert.equal(zoomLock.unlocked.bodyClass, false);
+  }
   assert.equal(runtimeErrors.length, 0, `Runtime errors:\n${runtimeErrors.join("\n")}`);
 
   // EXTRA SHOT 中の戻る操作: 確認後に棄権し、元のゲームだけを通常クリアとして記録する
