@@ -15,6 +15,15 @@ export const UI = {
   // ハイコントラスト設定時の判定色（全テーマ共通・本家 Wordle 準拠）。
   // CSS の body.high-contrast の --tile-* 上書きと同期している。
   tileColorsHighContrast: { used: "#85c0f9", correct: "#f5793a" },
+  // 判定色の上に載せる文字色（テーマ別）。CSS 変数 (--tile-ink-*) と同期している。
+  // 明るい判定色に白文字だとコントラストが 1.6〜2.4:1 まで落ちるため、
+  // cyber / pop では暗色インクにする。classic は原作 Wordle 準拠で白のまま。
+  // ハイコントラスト設定では判定色だけが変わり、インクはテーマのものを使う（CSS と同じ）。
+  tileInk: {
+    classic: { unused: "#fff", used: "#fff", correct: "#fff" },
+    cyber: { unused: "#e6ecf5", used: "#1a1200", correct: "#04120b" },
+    pop: { unused: "#1c222b", used: "#201700", correct: "#06281a" },
+  },
   // 判定オープン演出
   revealIntervalMs: 180, // タイルを 1 枚ずつ開く間隔
   revealFlipMs: 420, // 1 枚のフリップ所要時間
@@ -28,6 +37,11 @@ export const UI = {
 export function tileColorsFor(theme, highContrast) {
   const base = UI.tileColors[theme] ?? UI.tileColors.cyber;
   return highContrast ? { ...base, ...UI.tileColorsHighContrast } : base;
+}
+
+// 判定タイルに載せる文字色を得る（canvas 描画用。DOM 側は --tile-ink-* を直接使う）
+export function tileInkFor(theme) {
+  return UI.tileInk[theme] ?? UI.tileInk.cyber;
 }
 
 export const FX = {

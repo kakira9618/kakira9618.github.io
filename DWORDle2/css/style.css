@@ -20,6 +20,13 @@
   --tile-unused: #787c7e;
   --tile-used: #c9b458;
   --tile-correct: #6aaa64;
+  /* 判定色の上に載せる文字色。盤面タイル (.tile)・結果や遊び方の小タイル (.rcell)・
+     キーボード (.key) がすべてこの変数を参照する。テーマごとに背景が変わるので、
+     文字色も必ずここで一緒に決める（片方だけ上書きして食い違うのを防ぐ）。
+     classic は原作 Wordle の配色に合わせて白のまま。 */
+  --tile-ink-unused: #fff;
+  --tile-ink-used: #fff;
+  --tile-ink-correct: #fff;
 
   --bg: #202020;
   --bg-panel: #2a2a2a;
@@ -56,6 +63,10 @@ body.theme-cyber {
   --tile-unused: #3a4356;
   --tile-used: #ffc233;
   --tile-correct: #00e68a;
+  /* ネオンの黄・緑に白文字はコントラスト不足（1.6〜1.8:1）なので暗色インクにする */
+  --tile-ink-unused: #e6ecf5;
+  --tile-ink-used: #1a1200;
+  --tile-ink-correct: #04120b;
   --bg: #05070f;
   --bg-panel: rgba(14, 20, 38, 0.72);
   --bg-panel-2: rgba(22, 30, 54, 0.85);
@@ -89,6 +100,10 @@ body.theme-pop {
   --tile-unused: #a8b1bd;
   --tile-used: #ffb628;
   --tile-correct: #2dbd6e;
+  /* ビビッドな判定色に白文字ではコントラスト不足（1.8〜2.4:1）のため暗色インクにする */
+  --tile-ink-unused: #1c222b;
+  --tile-ink-used: #201700;
+  --tile-ink-correct: #06281a;
   --bg: #fff4f8;
   --bg-panel: rgba(255, 255, 255, 0.84);
   --bg-panel-2: #ffffff;
@@ -109,6 +124,8 @@ body.theme-pop {
 }
 body.theme-pop.mode-uso {
   --tile-unused: #76637e;
+  /* 裏モードの unused (#76637e) は暗色地なので白文字に戻す */
+  --tile-ink-unused: #fff;
   --bg: #14081f;
   --bg-panel: rgba(34, 13, 45, 0.9);
   --bg-panel-2: #2b1239;
@@ -868,32 +885,23 @@ body.theme-cyber .tile {
   65% { transform: rotateX(-63deg); opacity: 1; }
   100% { transform: rotateX(0); opacity: 1; }
 }
-/* 状態色はテーマの背景指定より必ず優先させる（body 付きで詳細度を上げる） */
-.tile.state-unused, body .tile.state-unused { background: var(--tile-unused); border-color: var(--tile-unused); color: #fff; }
-.tile.state-used, body .tile.state-used { background: var(--tile-used); border-color: var(--tile-used); color: #fff; }
-.tile.state-correct, body .tile.state-correct { background: var(--tile-correct); border-color: var(--tile-correct); color: #fff; }
+/* 状態色はテーマの背景指定より必ず優先させる（body 付きで詳細度を上げる）。
+   文字色はテーマ変数 --tile-ink-* を参照する（定義は冒頭のテーマブロック）。 */
+.tile.state-unused, body .tile.state-unused { background: var(--tile-unused); border-color: var(--tile-unused); color: var(--tile-ink-unused); }
+.tile.state-used, body .tile.state-used { background: var(--tile-used); border-color: var(--tile-used); color: var(--tile-ink-used); }
+.tile.state-correct, body .tile.state-correct { background: var(--tile-correct); border-color: var(--tile-correct); color: var(--tile-ink-correct); }
 body.theme-cyber .tile.state-correct {
   background: var(--tile-correct);
   box-shadow: 0 0 14px color-mix(in srgb, var(--tile-correct) 65%, transparent);
-  color: #04120b;
 }
 body.theme-cyber .tile.state-used {
   background: var(--tile-used);
   box-shadow: 0 0 12px color-mix(in srgb, var(--tile-used) 55%, transparent);
-  color: #1a1200;
 }
 body.theme-cyber .tile.state-unused {
   background: var(--tile-unused);
   box-shadow: none;
-  color: #e6ecf5;
 }
-/* Pop（明背景）: ビビッドな判定色に白文字ではコントラスト不足（1.8〜2.4:1）のため、
-   cyber と同様に暗色文字へ上書きする */
-body.theme-pop .tile.state-unused { color: #1c222b; }
-body.theme-pop .tile.state-used { color: #201700; }
-body.theme-pop .tile.state-correct { color: #06281a; }
-/* 裏モードの unused (#76637e) は暗色地なので白文字のままにする */
-body.theme-pop.mode-uso .tile.state-unused { color: #fff; }
 .row.shake {
   animation: shake var(--shake-ms, 500ms) ease;
 }
@@ -1034,16 +1042,14 @@ body.theme-classic .tile.reveal {
   border-color: var(--key-unused-border);
   color: var(--key-unused-fg);
 }
-.key.state-used { background: var(--tile-used); color: #fff; }
-.key.state-correct { background: var(--tile-correct); color: #fff; }
+/* 判定色キーの文字色も盤面タイルと同じ --tile-ink-* を使う
+   （state-unused だけはキー専用の背景 --key-unused-bg なので --key-unused-fg のまま） */
+.key.state-used { background: var(--tile-used); color: var(--tile-ink-used); }
+.key.state-correct { background: var(--tile-correct); color: var(--tile-ink-correct); }
 body.theme-cyber .key:not(.state-unused):not(.state-used):not(.state-correct) {
   box-shadow: inset 0 0 0 1px rgba(0, 213, 255, 0.08);
 }
-body.theme-cyber .key.state-correct { color: #04120b; box-shadow: 0 0 10px color-mix(in srgb, var(--tile-correct) 45%, transparent); }
-body.theme-cyber .key.state-used { color: #1a1200; }
-/* Pop: 判定色キーもタイルと同じ理由で暗色文字にする（used/correct の背景は裏モードでも同色） */
-body.theme-pop .key.state-used { color: #201700; }
-body.theme-pop .key.state-correct { color: #06281a; }
+body.theme-cyber .key.state-correct { box-shadow: 0 0 10px color-mix(in srgb, var(--tile-correct) 45%, transparent); }
 
 /* ---- モーダル ---- */
 .modal-backdrop {
@@ -2294,17 +2300,10 @@ body.theme-cyber .result-title.clear {
   font-weight: 800;
   text-transform: uppercase;
   background: var(--tile-unused);
-  color: #fff;
+  color: var(--tile-ink-unused);
 }
-.rcell.used { background: var(--tile-used); }
-.rcell.correct { background: var(--tile-correct); }
-body.theme-cyber .rcell.correct { color: #04120b; }
-/* Pop の明るい判定色では、結果・分析・遊び方の小タイルも暗色文字にする。 */
-body.theme-pop .rcell.unused { color: #1c222b; }
-body.theme-pop .rcell.used { color: #201700; }
-body.theme-pop .rcell.correct { color: #06281a; }
-/* DWORDlie Pop の unused は暗い紫なので白文字を維持する。 */
-body.theme-pop.mode-uso .rcell.unused { color: #fff; }
+.rcell.used { background: var(--tile-used); color: var(--tile-ink-used); }
+.rcell.correct { background: var(--tile-correct); color: var(--tile-ink-correct); }
 /* 分析画面のターン見出し内は小さめ */
 .turn-head .rcell {
   width: 20px;

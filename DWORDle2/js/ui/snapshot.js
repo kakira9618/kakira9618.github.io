@@ -3,7 +3,7 @@
 // canvas に再レンダリングして PNG としてダウンロードする。
 // コンテンツ配置は全テーマ共通で、配色・装飾だけを現在のテーマに合わせる。
 
-import { SHARE_URL, tileColorsFor } from "../config.js?v=20260725-b";
+import { SHARE_URL, tileColorsFor, tileInkFor } from "../config.js?v=20260725-b";
 import { MODES, getExtraShot, getExtraShotResult } from "../core/records.js?v=20260725-b";
 import { pidLabel } from "../core/problems.js?v=20260725-b";
 import { CELL } from "../core/logic.js?v=20260725-b";
@@ -110,6 +110,9 @@ export function renderResultCanvas(record, logic, displayRows) {
   const { theme, highContrast } = getSettings();
   const st = THEME_STYLES[theme] ?? THEME_STYLES.cyber;
   const tileColors = tileColorsFor(theme, highContrast);
+  const tileInk = tileInkFor(theme);
+  const inkFor = (state) =>
+    state === CELL.CORRECT ? tileInk.correct : state === CELL.USED ? tileInk.used : tileInk.unused;
   const isUso = record.gameMode === "uso";
   const accent = isUso ? st.accentUso : st.accent;
   const flagColor = theme === "pop" && !isUso ? "#000000" : st.fg;
@@ -237,7 +240,7 @@ export function renderResultCanvas(record, logic, displayRows) {
       roundRect(ctx, x, y, SS.tile, SS.tile, SS.tileRadius);
       ctx.fill();
       ctx.shadowBlur = 0;
-      ctx.fillStyle = theme === "cyber" && s !== CELL.UNUSED ? "#04120b" : "#ffffff";
+      ctx.fillStyle = inkFor(s);
       ctx.fillText(record.guessWord[r][i].toUpperCase(), x + SS.tile / 2, y + SS.tile / 2 + 1);
     }
     y += SS.tile + SS.tileGap;
@@ -270,7 +273,7 @@ export function renderResultCanvas(record, logic, displayRows) {
           stateName === CELL.USED ? tileColors.used : tileColors.unused;
       roundRect(ctx, x, rowY, SS.tile, SS.tile, SS.tileRadius);
       ctx.fill();
-      ctx.fillStyle = theme === "cyber" && stateName !== CELL.UNUSED ? "#04120b" : "#ffffff";
+      ctx.fillStyle = inkFor(stateName);
       ctx.fillText(extraInfo.word[i].toUpperCase(), x + SS.tile / 2, rowY + SS.tile / 2 + 1);
     }
     ctx.fillStyle = st.dim;
