@@ -3,14 +3,14 @@
 // 参照した判定なのかを線とハイライトで順番に示す。
 // DWORDle では解説後、同じパネルを使って「全部緑でも不正解」の例を再生する。
 
-import { el } from "./dom.js?v=20260725-a";
-import { showModal } from "./modal.js?v=20260725-a";
-import { playSfx } from "../audio/sound.js?v=20260725-a";
-import { queryWordPair, usoConvert } from "../core/logic.js?v=20260725-a";
-import { currentLanguage } from "../core/i18n.js?v=20260725-a";
-import { getSettings } from "../core/settings.js?v=20260725-a";
-import { shouldReduceMotion } from "../core/motion.js?v=20260725-a";
-import { isExtraShotUnlocked } from "../core/extra-shot.js?v=20260725-a";
+import { el } from "./dom.js?v=20260725-b";
+import { showModal } from "./modal.js?v=20260725-b";
+import { playSfx } from "../audio/sound.js?v=20260725-b";
+import { queryWordPair, usoConvert } from "../core/logic.js?v=20260725-b";
+import { currentLanguage } from "../core/i18n.js?v=20260725-b";
+import { getSettings } from "../core/settings.js?v=20260725-b";
+import { shouldReduceMotion } from "../core/motion.js?v=20260725-b";
+import { isExtraShotUnlocked } from "../core/extra-shot.js?v=20260725-b";
 
 // 判定色の呼び名。ハイコントラスト設定では 緑→オレンジ / 黄→青 に置き換わる。
 // *Chip は凡例の 1 文字ラベル（日本語はオレンジを「橙」と略記）。

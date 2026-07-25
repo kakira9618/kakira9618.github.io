@@ -1,7 +1,8 @@
 // 実績システム。通常 50 種 + 隠し 20 種。
 //
 // 同日・同問題の再プレイ（achievementCountableRecords のカウント対象外）では、
-// カウント系実績に加えて隠し実績も判定しない（答えを知った再プレイでの稼ぎ防止）。
+// カウント系実績に加えて隠し実績と、1 手/2 手クリア・幻の正解のように答えを知っていれば
+// 狙える実績も判定しない（答えを知った再プレイでの稼ぎ防止）。
 //
 // 解放判定はイベント駆動:
 //   - checkOnGameFinish(ctx): ゲーム終了時（ctx はこのファイル冒頭のコメント参照）
@@ -20,14 +21,15 @@
 //   hadLostBefore, // この問題で過去に敗北していたか
 // }
 
-import { loadJSON, saveJSON, onExternalChange } from "./store.js?v=20260725-a";
-import { isDailyPID, PID } from "./problems.js?v=20260725-a";
-import { getHistory, getExtraShot } from "./records.js?v=20260725-a";
-import { CELL, Logic } from "./logic.js?v=20260725-a";
-import { isDebugMode } from "./debug.js?v=20260725-a";
+import { loadJSON, saveJSON, onExternalChange } from "./store.js?v=20260725-b";
+import { isDailyPID, PID } from "./problems.js?v=20260725-b";
+import { getHistory, getExtraShot } from "./records.js?v=20260725-b";
+import { CELL, Logic } from "./logic.js?v=20260725-b";
+import { isDebugMode } from "./debug.js?v=20260725-b";
 
 // v7: 月間皆勤（30 日）→ 二週間皆勤（14 日）の緩和を既存履歴にも適用する
-const RECONCILE_VERSION = 7;
+// v8: 無限の探求の緩和（5000 → 1000 回）と、新設した DOUBLE CLEAR 系実績を既存履歴に適用する
+const RECONCILE_VERSION = 8;
 export const COLLECTOR_REQUIREMENT = 30;
 
 // 実績画面の見出しに使うカテゴリ。ACHIEVEMENTS はこの順に並べる
@@ -85,17 +87,17 @@ export const ACHIEVEMENTS = [
   { id: "all-gray", cat: "board", icon: "cloud", color: "#a8b0bd", name: "完全なる空振り", desc: "1 回の Guess で 5 文字すべて灰色になる" },
   { id: "rainbow", cat: "board", icon: "palette", color: "#ffb3de", name: "三色盛り", desc: "1 回の Guess で緑・黄・灰をすべて出す" },
   { id: "green-start", cat: "board", icon: "rocket", color: "#8fffb0", name: "ロケットスタート", desc: "初手で緑を 3 つ以上出す" },
-  { id: "green-zero", cat: "board", icon: "moon", color: "#b8c4ff", name: "大逆転", desc: "最終手まで緑が 1 つも無い状態からクリアする" },
-  { id: "all-letters", cat: "board", icon: "type", color: "#ffd0e8", name: "アルファベット制覇", desc: "1 ゲームの Guess で A から Z まで全ての文字を使う" },
+  { id: "green-zero", cat: "board", icon: "moon", color: "#b8c4ff", name: "大逆転", desc: "3 手以上かけて、最終手まで緑が 1 つも無い状態からクリアする" },
+  { id: "h-phantom", cat: "board", icon: "ghost", color: "#baffc9", name: "幻の正解", desc: "正解ではない単語を Guess して、全部緑を出す" },
   // --- モード・難易度 ---
   { id: "uso-clear", cat: "modes", icon: "mask", color: "#ff5f8f", name: "嘘を見抜く", desc: "裏モード DWORDlie をクリアする" },
-  { id: "uso-5", cat: "modes", icon: "layers", color: "#ff7aa8", name: "嘘マスター", desc: "裏モード DWORDlie で通算 5 勝する" },
+  { id: "uso-5", cat: "modes", icon: "mask", color: "#ff7aa8", name: "嘘マスター", desc: "裏モード DWORDlie で通算 5 勝する" },
   { id: "uso-20", cat: "modes", icon: "mask", color: "#ff9ab8", name: "嘘発見器", desc: "裏モード DWORDlie で通算 20 勝する" },
   { id: "extreme-clear", cat: "modes", icon: "mountain", color: "#ff8c66", name: "語彙の深淵", desc: "極 (No.10000-19999) の問題を 1 問クリアする" },
   { id: "level-clear", cat: "modes", icon: "compass", color: "#66e0d5", name: "開拓者", desc: "レベル問題 (No.20000-39999) を 1 問クリアする" },
   // --- 時の記念 ---
-  { id: "night-owl", cat: "calendar", icon: "nightMoon", color: "#9a8fff", name: "真夜中のDWORDler", desc: "深夜 0 時〜4 時にクリアする" },
-  { id: "early-bird", cat: "calendar", icon: "sun", color: "#ffd280", name: "早起きDWORDler", desc: "朝 5 時〜8 時にクリアする" },
+  { id: "night-owl", cat: "calendar", icon: "nightMoon", color: "#9a8fff", name: "真夜中のDWORDler", desc: "深夜 0:00〜3:59 にクリアする" },
+  { id: "early-bird", cat: "calendar", icon: "sun", color: "#ffd280", name: "早起きDWORDler", desc: "朝 5:00〜7:59 にクリアする" },
   { id: "new-year", cat: "calendar", icon: "sunrise", color: "#ffb3a0", name: "初日の出DWORDler", desc: "1 月 1 日にクリアする" },
   { id: "christmas", cat: "calendar", icon: "gift", color: "#ff8f8f", name: "聖夜の贈り物", desc: "12 月 25 日にクリアする" },
   { id: "weekend", cat: "calendar", icon: "calendar", color: "#a0d8ff", name: "週末DWORDler", desc: "土曜日と日曜日の両方でクリアする（別の週でもOK）" },
@@ -106,7 +108,7 @@ export const ACHIEVEMENTS = [
 
   // --- 隠し実績（解放するまで内容非公開）---
   { id: "h-mirror", hidden: true, icon: "mirror", color: "#c0e8ff", name: "鏡の言葉", desc: "回文になっている単語を Guess する" },
-  { id: "h-phantom", hidden: true, icon: "ghost", color: "#baffc9", name: "幻の正解", desc: "正解ではない単語を Guess して、全部緑を出す" },
+  { id: "all-letters", hidden: true, icon: "type", color: "#ffd0e8", name: "アルファベット制覇", desc: "1 ゲームの Guess で A から Z まで全ての文字を使う" },
   { id: "h-anagram", hidden: true, icon: "shuffle", color: "#ffd8a0", name: "並べ替えの妙", desc: "直前の Guess のアナグラム（同じ文字構成の別単語）を Guess する" },
   { id: "h-alphabet", hidden: true, icon: "type", color: "#a0c8ff", name: "アルファベットマラソン", desc: "すべての Guess をしりとりでつなぎ、5 手以上でクリアする" },
   { id: "h-noreuse", hidden: true, icon: "ban", color: "#e8c0ff", name: "潔癖症", desc: "3 手以上のクリアで、全 Guess を通して同じ文字を 2 度使わない" },
@@ -115,17 +117,17 @@ export const ACHIEVEMENTS = [
   { id: "h-abyss", hidden: true, icon: "skull", color: "#ff9090", name: "深淵を一撃", desc: "極 (No.10000-19999) を 4 手以内にクリアする" },
   { id: "h-lightning", hidden: true, icon: "bolt", color: "#fff0a0", name: "電光石火", desc: "3 手以上で、開始から 10 秒以内にクリアする" },
   { id: "h-lexicon", hidden: true, icon: "book", color: "#c0ffd8", name: "語彙の泉", desc: "通算 1000 種類の異なる単語を Guess する" },
-  { id: "h-plays-5000", hidden: true, icon: "layers", color: "#d8b8ff", name: "無限の探求", desc: "通算 5000 回プレイする" },
+  { id: "h-plays-1000", hidden: true, icon: "layers", color: "#d8b8ff", name: "無限の探求", desc: "通算 1000 回プレイする" },
   { id: "h-uso-800", hidden: true, icon: "mask", color: "#ff6f9f", name: "嘘八百", desc: "裏モード DWORDlie で通算 800 勝する" },
-  { id: "h-play-days-365", hidden: true, icon: "footprints", color: "#c0ffe0", name: "365 日の足跡", desc: "通算 365 日プレイする" },
-  { id: "h-play-streak-30", hidden: true, icon: "sunrise", color: "#ffd890", name: "一ヶ月の誓い", desc: "30 日連続でプレイする（1 日 1 回を 30 日）" },
-  { id: "h-play-days-1095", hidden: true, icon: "mountain", color: "#a0d8e8", name: "千日修行", desc: "通算 1095 日プレイする（約 3 年）" },
-  { id: "h-play-days-1825", hidden: true, icon: "crown", color: "#ffe060", name: "五年の伝説", desc: "通算 1825 日プレイする（約 5 年）" },
+  { id: "h-play-days-365", hidden: true, icon: "starTrail", color: "#c0ffe0", name: "365 日の奇跡", desc: "通算 365 日プレイする" },
+  { id: "h-play-streak-30", hidden: true, icon: "sunrise", color: "#ffd890", name: "一ヶ月の誓い", desc: "30 日連続でプレイする" },
   // EXTRA SHOT モード（クリア後の追加推理）関連
-  { id: "h-double-clear", hidden: true, icon: "target", color: "#ffd166", name: "両手に花", desc: "EXTRA SHOT に成功して DOUBLE CLEAR する" },
-  { id: "h-double-uso", hidden: true, icon: "eye", color: "#ff9ad0", name: "すべてお見通し", desc: "DWORDlie で DOUBLE CLEAR する（嘘の判定だけから両方の答えを見抜く）" },
-  { id: "h-double-oneshot", hidden: true, icon: "bolt", color: "#ffe680", name: "神の二手", desc: "1 手クリアから DOUBLE CLEAR する（合計 2 手で両方の答えを当てる）" },
-  { id: "h-double-10", hidden: true, icon: "crown", color: "#ffcf5c", name: "二兎を得る者", desc: "DOUBLE CLEAR を通算 10 回達成する" },
+  { id: "h-double-clear", hidden: true, icon: "twinHearts", color: "#ffd166", name: "両手に花", desc: "EXTRA SHOT に成功して DOUBLE CLEAR する" },
+  { id: "h-double-uso", hidden: true, icon: "binoculars", color: "#ff9ad0", name: "すべてお見通し", desc: "DWORDlie で DOUBLE CLEAR する（嘘の判定だけから両方の答えを見抜く）" },
+  { id: "h-double-oneshot", hidden: true, icon: "comet", color: "#ffe680", name: "神の二手", desc: "1 手クリアから DOUBLE CLEAR する（合計 2 手で両方の答えを当てる）" },
+  { id: "h-double-10", hidden: true, icon: "doubleCheck", color: "#ffcf5c", name: "二兎を得る者", desc: "DOUBLE CLEAR を通算 10 回達成する" },
+  { id: "h-double-abyss", hidden: true, icon: "spiral", color: "#a0d8e8", name: "深淵の両取り", desc: "極 (No.10000-19999) で DOUBLE CLEAR する" },
+  { id: "h-double-streak-3", hidden: true, icon: "chain", color: "#ffb0e0", name: "双璧の連鎖", desc: "3 ゲーム連続で DOUBLE CLEAR する" },
 ];
 
 let unlocked = loadJSON("achievements", {}); // { id: unlockedAt(sec) }
@@ -137,17 +139,25 @@ onExternalChange("achievements", () => {
 
 // 旧バージョンで長期 Streak 実績を解除済みなら、後継の実績へ引き継ぐ。
 // h-play-streak-365（一年の誓い）は難しすぎたため 30 日連続（一ヶ月の誓い）へ緩和。
+// h-plays-5000（無限の探求）は 1000 回へ緩和したので、解除済みならそのまま引き継ぐ。
+// 千日修行・五年の伝説（h-play-days-1095 / 1825）は廃止し、DOUBLE CLEAR 系の実績に差し替えた。
 const achievementIdMigrations = {
   "daily-streak-30": "daily-streak-14",
-  "h-play-streak-1095": "h-play-days-1095",
-  "h-play-streak-1825": "h-play-days-1825",
   "h-play-streak-365": "h-play-streak-30",
+  "h-plays-5000": "h-plays-1000",
 };
+const knownAchievementIds = new Set(ACHIEVEMENTS.map((achievement) => achievement.id));
 let migratedAchievementIds = false;
 for (const [oldId, newId] of Object.entries(achievementIdMigrations)) {
   if (unlocked[oldId] === undefined) continue;
   if (unlocked[newId] === undefined) unlocked[newId] = unlocked[oldId];
   delete unlocked[oldId];
+  migratedAchievementIds = true;
+}
+// 廃止した実績の解除記録は残しておくと実績ハンター（解除数）の数え方がずれるので捨てる
+for (const id of Object.keys(unlocked)) {
+  if (knownAchievementIds.has(id)) continue;
+  delete unlocked[id];
   migratedAchievementIds = true;
 }
 if (migratedAchievementIds) saveJSON("achievements", unlocked);
@@ -201,6 +211,17 @@ function isGuessWordChain(words) {
 function isZorome(pid) {
   const s = String(pid);
   return s.length >= 3 && [...s].every((c) => c === s[0]);
+}
+
+// DOUBLE CLEAR が何ゲーム連続したかの最長記録（モードは問わない）
+function maxDoubleClearStreak(records) {
+  let best = 0;
+  let streak = 0;
+  for (const record of records) {
+    streak = record?.clear && getExtraShot(record)?.success ? streak + 1 : 0;
+    best = Math.max(best, streak);
+  }
+  return best;
 }
 
 function clearedZoromeCount(records) {
@@ -354,8 +375,6 @@ function calendarAndCountIds(records) {
   if (playDays.size >= 30) ids.add("play-days-30");
   if (playDays.size >= 100) ids.add("play-days-100");
   if (playDays.size >= 365) ids.add("h-play-days-365");
-  if (playDays.size >= 1095) ids.add("h-play-days-1095");
-  if (playDays.size >= 1825) ids.add("h-play-days-1825");
   const playStreak = maxConsecutiveDays(playDays);
   if (playStreak >= 3) ids.add("play-streak-3");
   if (playStreak >= 7) ids.add("play-streak-7");
@@ -366,7 +385,7 @@ function calendarAndCountIds(records) {
   if (games >= 30) ids.add("plays-30");
   if (games >= 300) ids.add("plays-300");
   if (games >= 500) ids.add("plays-500");
-  if (games >= 5000) ids.add("h-plays-5000");
+  if (games >= 1000) ids.add("h-plays-1000");
   if (wins >= 200) ids.add("wins-200");
   if (guessTotal >= 1000) ids.add("guesses-1000");
   if (guessTotal >= 3000) ids.add("guesses-3000");
@@ -426,7 +445,7 @@ export function achievementIdsFromHistory(records) {
       if (grays === 5) ids.add("all-gray");
       if (greens > 0 && yellows > 0 && grays > 0) ids.add("rainbow");
       if (turn === 0 && greens >= 3) ids.add("green-start");
-      // 隠し実績は同日・同問題の再プレイ（カウント対象外）では判定しない
+      // 幻の正解などは同日・同問題の再プレイ（カウント対象外）では判定しない
       if (countable && greens === 5 && logic && !logic.isGameClear(record.guessWord[turn])) ids.add("h-phantom");
     }
 
@@ -437,7 +456,7 @@ export function achievementIdsFromHistory(records) {
         if (turn > 0 && isAnagram(record.guessWord[turn - 1], word)) ids.add("h-anagram");
       }
     }
-    if (lettersUsed.size >= 26) ids.add("all-letters");
+    if (countable && lettersUsed.size >= 26) ids.add("all-letters");
     if (
       countable &&
       mode === "uso" &&
@@ -469,8 +488,9 @@ export function achievementIdsFromHistory(records) {
     }
     if (mode === "normal" && pid >= PID.LEVEL_MIN && pid <= PID.LEVEL_MAX) ids.add("level-clear");
 
-    if (guesses === 1) ids.add("one-shot");
-    if (guesses <= 2) ids.add("two-shot");
+    // 1 手・2 手クリアは答えを知っていれば狙えるので、初回プレイ（カウント対象）だけ判定する
+    if (countable && guesses === 1) ids.add("one-shot");
+    if (countable && guesses <= 2) ids.add("two-shot");
     if (guesses <= 4) ids.add("within-4");
     if (guesses === (mode === "uso" ? 15 : 10)) ids.add("last-gasp");
     if (
@@ -505,6 +525,7 @@ export function achievementIdsFromHistory(records) {
       ids.add("h-double-clear");
       if (mode === "uso") ids.add("h-double-uso");
       if (guesses === 1) ids.add("h-double-oneshot");
+      if (mode === "normal" && pid >= PID.HARD_MIN && pid <= PID.HARD_MAX) ids.add("h-double-abyss");
     }
 
     if (countable) {
@@ -520,6 +541,7 @@ export function achievementIdsFromHistory(records) {
   if (wins >= 100) ids.add("wins-100");
   if (usoWins >= 5) ids.add("uso-5");
   if (countableGames.filter((g) => g.clear && getExtraShot(g)?.success).length >= 10) ids.add("h-double-10");
+  if (maxDoubleClearStreak(countableGames) >= 3) ids.add("h-double-streak-3");
   if (words.size >= 1000) ids.add("h-lexicon");
   if (clearedZoromeCount(countableGames) >= 10) ids.add("h-zorome");
   if (maxHistoricalDailyStreak(dailyClears) >= 7) ids.add("daily-7");
@@ -581,7 +603,7 @@ export function checkOnGameFinish(ctx) {
     if (grays === 5) unlock("all-gray", newly);
     if (greens > 0 && yellows > 0 && grays > 0) unlock("rainbow", newly);
     if (t === 0 && greens >= 3) unlock("green-start", newly);
-    // 隠し: 2 語の文字を位置ごとに組み合わせて全緑になったが、正解語そのものではない。
+    // 幻の正解: 2 語の文字を位置ごとに組み合わせて全緑になったが、正解語そのものではない。
     if (countablePlay && greens === 5 && !logic.isGameClear(record.guessWord[t])) unlock("h-phantom", newly);
   }
 
@@ -594,7 +616,7 @@ export function checkOnGameFinish(ctx) {
     }
   }
   const lettersUsed = new Set(record.guessWord.join(""));
-  if (lettersUsed.size >= 26) unlock("all-letters", newly);
+  if (countablePlay && lettersUsed.size >= 26) unlock("all-letters", newly);
   if (countablePlay && isUso && Array.isArray(record.usoResults)) {
     if (record.usoResults.some((row) => row.every((s) => s === CELL.CORRECT))) {
       unlock("h-uso-green", newly);
@@ -617,8 +639,9 @@ export function checkOnGameFinish(ctx) {
       if (countedWins(history, "uso") >= 5) unlock("uso-5", newly);
     }
 
-    if (guesses === 1) unlock("one-shot", newly);
-    if (guesses <= 2) unlock("two-shot", newly);
+    // 1 手・2 手クリアは答えを知っていれば狙えるので、初回プレイだけ判定する
+    if (countablePlay && guesses === 1) unlock("one-shot", newly);
+    if (countablePlay && guesses <= 2) unlock("two-shot", newly);
     if (guesses <= 4) unlock("within-4", newly);
     if (guesses === maxGuess) unlock("last-gasp", newly);
 
@@ -660,10 +683,12 @@ export function checkOnGameFinish(ctx) {
       unlock("h-double-clear", newly);
       if (isUso) unlock("h-double-uso", newly);
       if (guesses === 1) unlock("h-double-oneshot", newly);
+      if (!isUso && pid >= PID.HARD_MIN && pid <= PID.HARD_MAX) unlock("h-double-abyss", newly);
     }
     if (countableHistory.filter((g) => g.clear && getExtraShot(g)?.success).length >= 10) {
       unlock("h-double-10", newly);
     }
+    if (maxDoubleClearStreak(countableHistory) >= 3) unlock("h-double-streak-3", newly);
   }
 
   // 日付・回数系（record は履歴に保存済みなので、現在のゲームも集計に含まれる）

@@ -5,9 +5,9 @@
 //   曲の実体は TRACKS（テンポ・コード進行・1 小節のスケジューラ）に定義する。
 //   設定やモード切替時はバスをクロスフェードしてシームレスに移行する。
 
-import { AUDIO } from "../config.js?v=20260725-a";
-import { getSettings, onSettingsChange } from "../core/settings.js?v=20260725-a";
-import { logBgmTime } from "../core/activity.js?v=20260725-a";
+import { AUDIO } from "../config.js?v=20260725-b";
+import { getSettings, onSettingsChange } from "../core/settings.js?v=20260725-b";
+import { logBgmTime } from "../core/activity.js?v=20260725-b";
 
 // 背面タブのタイマー間引きで BGM ループの間隔が伸びたとき、
 // 実際に鳴っていた先読み分を大きく超えて聴取時間を数えないための上限

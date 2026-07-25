@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { DEFAULT_SETTINGS, HIDDEN_THEMES, normalizeVolume } from "../js/core/settings.js?v=20260725-a";
-import { shouldReduceMotion } from "../js/core/motion.js?v=20260725-a";
+import { DEFAULT_SETTINGS, HIDDEN_THEMES, normalizeVolume } from "../js/core/settings.js?v=20260725-b";
+import { shouldReduceMotion } from "../js/core/motion.js?v=20260725-b";
 
 assert.equal(DEFAULT_SETTINGS.sfxVolume, 100);
 assert.equal(DEFAULT_SETTINGS.bgmVolume, 100);

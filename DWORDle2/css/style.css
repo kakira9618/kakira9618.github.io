@@ -1980,6 +1980,16 @@ body.theme-cyber .num-cell.double-clear {
   margin-top: 2px;
   line-height: 1.45;
 }
+/* 実績は読み物なので、名前・説明・注記を選択してコピーできるようにする */
+.ach-card .name,
+.ach-card .desc,
+.achievement-count-note {
+  user-select: text;
+  -webkit-user-select: text;
+}
+.achievement-count-note {
+  white-space: pre-line;
+}
 body.theme-cyber .ach-card.unlocked {
   border-color: color-mix(in srgb, gold 45%, transparent);
   box-shadow: 0 0 12px rgba(255, 200, 40, 0.18);

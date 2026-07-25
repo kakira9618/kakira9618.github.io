@@ -6,4 +6,4 @@ export {
   extraShotRemainingPlays as finalAnswerRemainingPlays,
   isExtraShotEnabled as isFinalAnswerEnabled,
   claimExtraShotUnlockNotice as claimFinalAnswerUnlockNotice,
-} from "./extra-shot.js?v=20260725-a";
+} from "./extra-shot.js?v=20260725-b";

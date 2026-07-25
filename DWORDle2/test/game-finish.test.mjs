@@ -14,9 +14,9 @@ globalThis.localStorage = {
   removeItem: (key) => storage.delete(key),
 };
 
-const { Logic, CELL } = await import("../js/core/logic.js?v=20260725-a");
-const { ALL_WORDS } = await import("../js/data/words.js?v=20260725-a");
-const records = await import("../js/core/records.js?v=20260725-a");
+const { Logic, CELL } = await import("../js/core/logic.js?v=20260725-b");
+const { ALL_WORDS } = await import("../js/data/words.js?v=20260725-b");
+const records = await import("../js/core/records.js?v=20260725-b");
 const { MODES } = records;
 
 let scenarioSerial = 0;
@@ -239,7 +239,8 @@ function rainbowWord(logic) {
   const replay = finishGameCtx({ pid: 123, guessWords: [palindrome, logic.ans1], startTime: base + 600 });
   const replayIds = idsOf((await scenario([prior, replay.record]))(replay));
   assert.ok(!replayIds.has("h-mirror"), "同日・同問題の再プレイでは隠し実績（鏡の言葉）は解除されないはず");
-  assert.ok(replayIds.has("two-shot"), "通常の 1 局実績は同日再プレイでも解除されるはず");
+  assert.ok(!replayIds.has("two-shot"), "答えを知って狙える 2 手クリアは同日再プレイでは解除されないはず");
+  assert.ok(replayIds.has("within-4"), "通常の 1 局実績は同日再プレイでも解除されるはず");
 
   const nextDay = finishGameCtx({ pid: 123, guessWords: [palindrome, logic.ans1], startTime: base + 86400 });
   const nextDayIds = idsOf((await scenario([prior, nextDay.record]))(nextDay));

@@ -1,8 +1,8 @@
 // Three.js を遅延ロードするエフェクト窓口。
 // WebGL / Three.js が利用できない環境でも、ゲーム本体はクラシック表示で続行する。
 
-import { tileColorsFor } from "../config.js?v=20260725-a";
-import { getSettings, setSetting } from "../core/settings.js?v=20260725-a";
+import { tileColorsFor } from "../config.js?v=20260725-b";
+import { getSettings, setSetting } from "../core/settings.js?v=20260725-b";
 
 let background = null;
 let bursts = null;
@@ -29,8 +29,8 @@ function fallBackToClassic(error) {
 export function initEffects() {
   if (initPromise) return initPromise;
   initPromise = Promise.all([
-    import("./background.js?v=20260725-a"),
-    import("./bursts.js?v=20260725-a"),
+    import("./background.js?v=20260725-b"),
+    import("./bursts.js?v=20260725-b"),
   ])
     .then(([backgroundModule, burstsModule]) => {
       backgroundModule.initBackground(fallBackToClassic);

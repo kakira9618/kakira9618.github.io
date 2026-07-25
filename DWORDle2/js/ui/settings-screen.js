@@ -1,23 +1,23 @@
 // 設定画面。テーマ・サウンド・履歴の移行 / エクスポート / 削除。
 // ルート: #/settings
 
-import { el, clear } from "./dom.js?v=20260725-a";
-import { registerScreen, navigate } from "./app.js?v=20260725-a";
-import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js?v=20260725-a";
-import { importFromLocalStorage, importFromText, scanLegacyHistory } from "../core/migrate.js?v=20260725-a";
-import { exportJSON } from "../core/records.js?v=20260725-a";
-import { removeKey } from "../core/store.js?v=20260725-a";
-import { getUnlocked } from "../core/achievements.js?v=20260725-a";
-import { BGM_TRACKS, playSfx } from "../audio/sound.js?v=20260725-a";
-import { toast } from "./toast.js?v=20260725-a";
-import { showModal, confirmModal } from "./modal.js?v=20260725-a";
-import { icon } from "./icons.js?v=20260725-a";
-import { finishHistoryImport } from "./history-import.js?v=20260725-a";
-import { APP_VERSION } from "../config.js?v=20260725-a";
-import { SOURCE_HASH } from "../version.js?v=20260725-a";
-import { isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js?v=20260725-a";
-import { isDebugMode, tryEnableDebugMode } from "../core/debug.js?v=20260725-a";
-import { isExtraShotUnlocked, extraShotRemainingPlays } from "../core/extra-shot.js?v=20260725-a";
+import { el, clear } from "./dom.js?v=20260725-b";
+import { registerScreen, navigate } from "./app.js?v=20260725-b";
+import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js?v=20260725-b";
+import { importFromLocalStorage, importFromText, scanLegacyHistory } from "../core/migrate.js?v=20260725-b";
+import { exportJSON } from "../core/records.js?v=20260725-b";
+import { removeKey } from "../core/store.js?v=20260725-b";
+import { getUnlocked } from "../core/achievements.js?v=20260725-b";
+import { BGM_TRACKS, playSfx } from "../audio/sound.js?v=20260725-b";
+import { toast } from "./toast.js?v=20260725-b";
+import { showModal, confirmModal } from "./modal.js?v=20260725-b";
+import { icon } from "./icons.js?v=20260725-b";
+import { finishHistoryImport } from "./history-import.js?v=20260725-b";
+import { APP_VERSION } from "../config.js?v=20260725-b";
+import { SOURCE_HASH } from "../version.js?v=20260725-b";
+import { isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js?v=20260725-b";
+import { isDebugMode, tryEnableDebugMode } from "../core/debug.js?v=20260725-b";
+import { isExtraShotUnlocked, extraShotRemainingPlays } from "../core/extra-shot.js?v=20260725-b";
 
 let root = null;
 let debugEntryTaps = 0;

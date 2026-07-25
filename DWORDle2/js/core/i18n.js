@@ -2,7 +2,7 @@
 // language 設定は "system" | "ja" | "en"。"system"（既定）はブラウザの言語に連動し、
 // 日本語なら ja、それ以外はすべて en として扱う。
 
-import { getSettings } from "./settings.js?v=20260725-a";
+import { getSettings } from "./settings.js?v=20260725-b";
 
 // ブラウザ / OS の言語設定から表示言語を決める
 function systemLanguage() {
@@ -68,13 +68,13 @@ const ACHIEVEMENT_EN = {
   "all-gray": ["Complete Miss", "Get five gray tiles in one Guess"],
   rainbow: ["Three Colors", "Get green, yellow, and gray in one Guess"],
   "green-start": ["Rocket Start", "Get at least 3 green tiles on the first Guess"],
-  "green-zero": ["Great Comeback", "Win after having no green tiles before the final Guess"],
+  "green-zero": ["Great Comeback", "Win in 3 or more Guesses with no green tiles before the final Guess"],
   revenge: ["Revenge", "Clear a puzzle you previously lost"],
   "speed-60": ["Speed Star", "Clear a game within 60 seconds"],
   "slow-10": ["Deep Thinker", "Take at least 10 minutes to clear a game"],
-  "night-owl": ["Midnight DWORDler", "Clear a game between midnight and 4 a.m."],
+  "night-owl": ["Midnight DWORDler", "Clear a game between 0:00 and 3:59"],
   "daily-7": ["Perfect Week", "Clear Daily puzzles 7 days in a row"],
-  "early-bird": ["Early Bird", "Clear a game between 5 a.m. and 8 a.m."],
+  "early-bird": ["Early Bird", "Clear a game between 5:00 and 7:59"],
   "new-year": ["First Sunrise", "Clear a game on January 1"],
   christmas: ["Holy Night Gift", "Clear a game on December 25"],
   weekend: ["Weekend DWORDler", "Clear games on both a Saturday and a Sunday (any weeks)"],
@@ -107,16 +107,16 @@ const ACHIEVEMENT_EN = {
   "plays-500": ["Master of the Board", "Finish 500 games total"],
   "guesses-3000": ["Three Thousand Words", "Make 3,000 Guesses total"],
   "all-letters": ["A to Z", "Use every letter of the alphabet within one game"],
-  "h-plays-5000": ["Endless Pursuit", "Finish 5,000 games total"],
+  "h-plays-1000": ["Endless Pursuit", "Finish 1,000 games total"],
   "h-uso-800": ["Eight Hundred Lies", "Win 800 DWORDlie games"],
-  "h-play-days-365": ["365 Days of Footprints", "Play on 365 different days"],
+  "h-play-days-365": ["Miracle of 365 Days", "Play on 365 different days"],
   "h-play-streak-30": ["A Month's Vow", "Play on 30 consecutive days"],
-  "h-play-days-1095": ["Thousand-Day Training", "Play on 1,095 different days (about 3 years)"],
-  "h-play-days-1825": ["Five-Year Legend", "Play on 1,825 different days (about 5 years)"],
   "h-double-clear": ["Twin Triumph", "Succeed at EXTRA SHOT for a DOUBLE CLEAR"],
   "h-double-uso": ["All-Seeing Eye", "Get a DOUBLE CLEAR in DWORDlie (see through the lies to both answers)"],
   "h-double-oneshot": ["Divine Double", "Turn a first-Guess clear into a DOUBLE CLEAR (both answers in 2 Guesses)"],
   "h-double-10": ["Catcher of Both Hares", "Achieve 10 DOUBLE CLEARs total"],
+  "h-double-abyss": ["Double from the Abyss", "Get a DOUBLE CLEAR on an Extreme puzzle (No.10000–19999)"],
+  "h-double-streak-3": ["Chain of Pairs", "Get a DOUBLE CLEAR in 3 games in a row"],
 };
 
 export function localizedAchievement(achievement) {

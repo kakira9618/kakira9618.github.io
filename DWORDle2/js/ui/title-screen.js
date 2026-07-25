@@ -1,29 +1,29 @@
 // タイトル画面。モード選択・問題選択の入り口。
 // 右上のマスクボタンで DWORDlie（裏モード）に切り替わる。
 
-import { el, clear } from "./dom.js?v=20260725-a";
-import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260725-a";
-import { countPlays, getCurrentGame, getHistory, isAlreadyPlayed } from "../core/records.js?v=20260725-a";
-import { isDebugMode } from "../core/debug.js?v=20260725-a";
-import { LEVELS, todayPID, isValidPID, pidLabel, PID } from "../core/problems.js?v=20260725-a";
-import { getSettings, setSetting } from "../core/settings.js?v=20260725-a";
-import { loadJSON, saveJSON } from "../core/store.js?v=20260725-a";
-import { importFromLocalStorage, scanLegacyHistory } from "../core/migrate.js?v=20260725-a";
-import { playSfx } from "../audio/sound.js?v=20260725-a";
-import { toast, extraShotUnlockCelebration } from "./toast.js?v=20260725-a";
-import { claimExtraShotUnlockNotice } from "../core/extra-shot.js?v=20260725-a";
-import { showModal } from "./modal.js?v=20260725-a";
-import { finishHistoryImport } from "./history-import.js?v=20260725-a";
-import { showFirstTutorial, showHelpModal } from "./help.js?v=20260725-a";
-import { confirmAndStart } from "./game-screen.js?v=20260725-a";
-import { soundToggleButton } from "./sound-toggle.js?v=20260725-a";
-import { burstAtElement } from "../fx/effects.js?v=20260725-a";
-import { shouldReduceMotion } from "../core/motion.js?v=20260725-a";
-import { icon } from "./icons.js?v=20260725-a";
-import { APP_VERSION } from "../config.js?v=20260725-a";
-import { SOURCE_HASH } from "../version.js?v=20260725-a";
-import { localizedLevel, tr } from "../core/i18n.js?v=20260725-a";
-import { CARD_UNLOCK_PLAYS } from "./player-card.js?v=20260725-a";
+import { el, clear } from "./dom.js?v=20260725-b";
+import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260725-b";
+import { countPlays, getCurrentGame, getHistory, isAlreadyPlayed } from "../core/records.js?v=20260725-b";
+import { isDebugMode } from "../core/debug.js?v=20260725-b";
+import { LEVELS, todayPID, isValidPID, isDailyPID, pidLabel, PID } from "../core/problems.js?v=20260725-b";
+import { getSettings, setSetting } from "../core/settings.js?v=20260725-b";
+import { loadJSON, saveJSON } from "../core/store.js?v=20260725-b";
+import { importFromLocalStorage, scanLegacyHistory } from "../core/migrate.js?v=20260725-b";
+import { playSfx } from "../audio/sound.js?v=20260725-b";
+import { toast, extraShotUnlockCelebration } from "./toast.js?v=20260725-b";
+import { claimExtraShotUnlockNotice } from "../core/extra-shot.js?v=20260725-b";
+import { showModal } from "./modal.js?v=20260725-b";
+import { finishHistoryImport } from "./history-import.js?v=20260725-b";
+import { showFirstTutorial, showHelpModal } from "./help.js?v=20260725-b";
+import { confirmAndStart } from "./game-screen.js?v=20260725-b";
+import { soundToggleButton } from "./sound-toggle.js?v=20260725-b";
+import { burstAtElement } from "../fx/effects.js?v=20260725-b";
+import { shouldReduceMotion } from "../core/motion.js?v=20260725-b";
+import { icon } from "./icons.js?v=20260725-b";
+import { APP_VERSION } from "../config.js?v=20260725-b";
+import { SOURCE_HASH } from "../version.js?v=20260725-b";
+import { localizedLevel, tr } from "../core/i18n.js?v=20260725-b";
+import { CARD_UNLOCK_PLAYS } from "./player-card.js?v=20260725-b";
 
 let root = null;
 let legacyImportCheckDone = false;
@@ -70,6 +70,12 @@ function numberPrompt(mode) {
         onClick: () => {
           let pid = parseInt(input.value, 10);
           if (pid === 0) pid = todayPID();
+          // 過去の日付（No.YYYYMMDD）を直接入力すれば、Daily 連続クリアの実績を
+          // 一日でまとめて埋められてしまう。Daily は No.0（＝今日）だけ受け付ける。
+          if (isDailyPID(pid) && pid !== todayPID()) {
+            toast(tr("Daily 問題は No.0（今日の問題）のみプレイできます", "Daily puzzles can only be played as No.0 (today's puzzle)"));
+            return false;
+          }
           if (!isValidPID(pid)) {
             toast(tr("0〜39999 の番号を入力してください", "Enter a number from 0 to 39999"));
             return false;

@@ -4,9 +4,9 @@ import {
   COLLECTOR_REQUIREMENT,
   achievementCountableRecords,
   achievementIdsFromHistory,
-} from "../js/core/achievements.js?v=20260725-a";
-import { Logic, queryWordPair } from "../js/core/logic.js?v=20260725-a";
-import { ALL_WORDS } from "../js/data/words.js?v=20260725-a";
+} from "../js/core/achievements.js?v=20260725-b";
+import { Logic, queryWordPair } from "../js/core/logic.js?v=20260725-b";
+import { ALL_WORDS } from "../js/data/words.js?v=20260725-b";
 
 function clearRecord({
   pid = 1,
@@ -53,8 +53,19 @@ assert.equal(
   false,
   "play streak achievements should not require more than one year"
 );
-assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "h-play-days-1095")?.desc, "通算 1095 日プレイする（約 3 年）");
-assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "h-play-days-1825")?.desc, "通算 1825 日プレイする（約 5 年）");
+assert.equal(
+  ACHIEVEMENTS.some((achievement) => /1095|1825/.test(achievement.desc)),
+  false,
+  "multi-year play-day achievements should be retired"
+);
+assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "h-play-days-365")?.name, "365 日の奇跡");
+assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "h-plays-1000")?.desc, "通算 1000 回プレイする");
+assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "h-phantom")?.hidden, undefined, "Phantom Answer should be a normal achievement");
+assert.equal(ACHIEVEMENTS.find((achievement) => achievement.id === "all-letters")?.hidden, true, "A to Z should be a secret achievement");
+assert.equal(
+  ACHIEVEMENTS.find((achievement) => achievement.id === "green-zero")?.desc,
+  "3 手以上かけて、最終手まで緑が 1 つも無い状態からクリアする"
+);
 assert.deepEqual(
   {
     name: ACHIEVEMENTS.find((achievement) => achievement.id === "daily-streak-14")?.name,
@@ -356,32 +367,30 @@ assert.deepEqual(
   );
   const ids = achievementIdsFromHistory(fiveYears);
   assert(ids.has("play-days-100"), "100 play days should restore A Hundred Days");
-  assert(ids.has("h-play-days-365"), "365 play days should restore 365 Days of Footprints");
+  assert(ids.has("h-play-days-365"), "365 play days should restore Miracle of 365 Days");
   assert(ids.has("h-play-streak-30"), "30+ consecutive days should restore A Month's Vow");
-  assert(ids.has("h-play-days-1095"));
-  assert(ids.has("h-play-days-1825"));
   assert(ids.has("wins-200"), "1825 wins should restore Living Legend");
-  assert(!ids.has("h-plays-5000"));
-  assert(!achievementIdsFromHistory(fiveYears.slice(0, 1824)).has("h-play-days-1825"));
+  assert(ids.has("h-plays-1000"), "1825 games should restore Endless Pursuit");
+  assert(!achievementIdsFromHistory(fiveYears.slice(0, 364)).has("h-play-days-365"));
 
-  // 間隔が空いていても、異なるプレイ日が積み上がれば 3 年・5 年の実績を解放する。
-  const nonConsecutiveDays = Array.from({ length: 1825 }, (_, index) =>
+  // 間隔が空いていても、異なるプレイ日が積み上がれば通算日数の実績を解放する。
+  const nonConsecutiveDays = Array.from({ length: 400 }, (_, index) =>
     clearRecord({ pid: (index % 5) + 1, startTime: 1_700_000_000 + index * 2 * 86400 })
   );
   const nonConsecutiveIds = achievementIdsFromHistory(nonConsecutiveDays);
-  assert(nonConsecutiveIds.has("h-play-days-1095"));
-  assert(nonConsecutiveIds.has("h-play-days-1825"));
+  assert(nonConsecutiveIds.has("h-play-days-365"));
   assert(!nonConsecutiveIds.has("h-play-streak-30"), "non-consecutive play days must not restore the monthly streak");
 }
 
 {
   // 通算プレイ回数の隠し実績（同日でも別問題なら回数は積み上がる）
-  const marathon = Array.from({ length: 5000 }, (_, index) =>
+  const marathon = Array.from({ length: 1000 }, (_, index) =>
     clearRecord({ pid: index + 1, guesses: 1, startTime: 1_700_000_000 + index * 30 })
   );
   const ids = achievementIdsFromHistory(marathon);
-  assert(ids.has("h-plays-5000"), "5000 games should restore Endless Pursuit");
+  assert(ids.has("h-plays-1000"), "1000 games should restore Endless Pursuit");
   assert(ids.has("plays-500"));
+  assert(!achievementIdsFromHistory(marathon.slice(0, 999)).has("h-plays-1000"));
 }
 
 {

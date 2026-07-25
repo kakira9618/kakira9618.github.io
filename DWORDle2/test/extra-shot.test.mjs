@@ -4,7 +4,8 @@
 // - モード準拠の判定 / 旧 queryWordSingle 互換 / Logic.otherAnswer
 // - レコードの追加スキーマ（extraShot）の保存・再読込・旧 finalAnswer 互換
 // - 解放条件（10 回プレイ / デバッグモード）と解放通知の一回性
-// - 隠し実績 4 種（h-double-clear / h-double-uso / h-double-oneshot / h-double-10）
+// - 隠し実績 6 種（h-double-clear / h-double-uso / h-double-oneshot / h-double-10 /
+//   h-double-abyss / h-double-streak-3）
 //
 // デバッグモードはプロセス内で解除できない（unlock が恒久スキップになる）ため、
 // デバッグ関連の検証は必ずファイル末尾で行う。
@@ -18,12 +19,12 @@ globalThis.localStorage = {
   removeItem: (key) => storage.delete(key),
 };
 
-const { Logic, CELL, queryWordSingle, displayResultForMode } = await import("../js/core/logic.js?v=20260725-a");
-const records = await import("../js/core/records.js?v=20260725-a");
-const { importFromText } = await import("../js/core/migrate.js?v=20260725-a");
-const { DEFAULT_SETTINGS, getSettings, setSetting } = await import("../js/core/settings.js?v=20260725-a");
-const es = await import("../js/core/extra-shot.js?v=20260725-a");
-const { tryEnableDebugMode } = await import("../js/core/debug.js?v=20260725-a");
+const { Logic, CELL, queryWordSingle, displayResultForMode } = await import("../js/core/logic.js?v=20260725-b");
+const records = await import("../js/core/records.js?v=20260725-b");
+const { importFromText } = await import("../js/core/migrate.js?v=20260725-b");
+const { DEFAULT_SETTINGS, getSettings, setSetting } = await import("../js/core/settings.js?v=20260725-b");
+const es = await import("../js/core/extra-shot.js?v=20260725-b");
+const { tryEnableDebugMode } = await import("../js/core/debug.js?v=20260725-b");
 
 // ---- queryWordSingle: 1 語だけを対象にした Wordle 標準判定 ----
 {
@@ -371,6 +372,50 @@ function fillerWord(logic) {
   const ten = makeRecords(10);
   const tenIds = idsOf((await scenario(ten.map((c) => c.record))).checkOnGameFinish(ten[9]));
   assert.ok(tenIds.has("h-double-10"), "10 回目の DOUBLE CLEAR で h-double-10 が解放されるはず");
+}
+
+// 極 (No.10000-19999) の DOUBLE CLEAR で h-double-abyss
+{
+  const logic = new Logic(10001);
+  const ctx = finishCtx({
+    pid: 10001,
+    guessWords: [logic.ans1],
+    extraShot: { word: logic.ans2, success: true },
+  });
+  const mod = await scenario([ctx.record]);
+  assert.ok(idsOf(mod.checkOnGameFinish(ctx)).has("h-double-abyss"), "極の DOUBLE CLEAR で h-double-abyss が解放されるはず");
+  assert.ok(mod.achievementIdsFromHistory([ctx.record]).has("h-double-abyss"), "履歴復元でも h-double-abyss を推定するはず");
+
+  const easy = finishCtx({ pid: 123, guessWords: [new Logic(123).ans1], extraShot: { word: new Logic(123).ans2, success: true } });
+  const easyIds = idsOf((await scenario([easy.record])).checkOnGameFinish(easy));
+  assert.ok(!easyIds.has("h-double-abyss"), "やさしい問題では h-double-abyss は解放されないはず");
+}
+
+// 3 ゲーム連続の DOUBLE CLEAR で h-double-streak-3
+{
+  const makeCtxs = (successes) =>
+    successes.map((success, i) => {
+      const pid = 300 + i;
+      const logic = new Logic(pid);
+      return finishCtx({
+        pid,
+        guessWords: [fillerWord(logic), logic.ans1],
+        extraShot: success ? { word: logic.ans2, success: true } : { word: fillerWord(logic), success: false },
+        startTime: 1_700_000_000 + i * 600,
+      });
+    });
+  const three = makeCtxs([true, true, true]);
+  const threeIds = idsOf((await scenario(three.map((c) => c.record))).checkOnGameFinish(three[2]));
+  assert.ok(threeIds.has("h-double-streak-3"), "3 連続 DOUBLE CLEAR で h-double-streak-3 が解放されるはず");
+
+  const broken = makeCtxs([true, false, true, true]);
+  const brokenIds = idsOf((await scenario(broken.map((c) => c.record))).checkOnGameFinish(broken[3]));
+  assert.ok(!brokenIds.has("h-double-streak-3"), "間に失敗が挟まると h-double-streak-3 は解放されないはず");
+  const brokenMod = await scenario(broken.map((c) => c.record));
+  assert.ok(
+    !brokenMod.achievementIdsFromHistory(broken.map((c) => c.record)).has("h-double-streak-3"),
+    "履歴復元でも連続が途切れていれば h-double-streak-3 は推定しないはず"
+  );
 }
 
 // 履歴からの復元（achievementIdsFromHistory）でも同じ判定になる

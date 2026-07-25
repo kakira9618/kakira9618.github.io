@@ -1,13 +1,13 @@
 // 実績閲覧モード。通常実績 + 隠し実績（未解放は内容非公開）。
 // ルート: #/achievements
 
-import { el, clear, fmtDateTime } from "./dom.js?v=20260725-a";
-import { registerScreen, navigate } from "./app.js?v=20260725-a";
-import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, getUnlocked } from "../core/achievements.js?v=20260725-a";
-import { playSfx } from "../audio/sound.js?v=20260725-a";
-import { soundToggleButton } from "./sound-toggle.js?v=20260725-a";
-import { icon } from "./icons.js?v=20260725-a";
-import { localizedAchievement, tr } from "../core/i18n.js?v=20260725-a";
+import { el, clear, fmtDateTime } from "./dom.js?v=20260725-b";
+import { registerScreen, navigate } from "./app.js?v=20260725-b";
+import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, getUnlocked } from "../core/achievements.js?v=20260725-b";
+import { playSfx } from "../audio/sound.js?v=20260725-b";
+import { soundToggleButton } from "./sound-toggle.js?v=20260725-b";
+import { icon } from "./icons.js?v=20260725-b";
+import { localizedAchievement, tr } from "../core/i18n.js?v=20260725-b";
 
 let root = null;
 
@@ -79,8 +79,8 @@ function render() {
       "p",
       { class: "card hint achievement-count-note" },
       tr(
-        "カウント系実績と隠し実績は、同じ日に同じ問題 No. を複数回プレイした場合、モードを問わず最初の 1 回だけを対象にします。同日の別問題と、別日の同じ問題はそれぞれ対象になります。",
-        "Count-based and secret achievements only consider the first play of the same puzzle number on the same day, regardless of mode. A different puzzle on that day or the same puzzle on another day counts separately."
+        "カウント系実績・隠し実績と、1 手/2 手クリアなど答えを知っていると狙える実績は、同じ日に同じ問題 No. を複数回プレイした場合、モードを問わず最初の 1 回だけを対象にします。同日の別問題と、別日の同じ問題はそれぞれ対象になります。\n連勝の実績は、同じモード（DWORDle / DWORDlie）内での連勝を数えます。",
+        "Count-based achievements, secret achievements, and achievements you could aim for once you know the answer (such as clearing in 1 or 2 Guesses) only consider the first play of the same puzzle number on the same day, regardless of mode. A different puzzle on that day or the same puzzle on another day counts separately.\nWin-streak achievements count consecutive wins within the same mode (DWORDle / DWORDlie)."
       )
     )
   );
