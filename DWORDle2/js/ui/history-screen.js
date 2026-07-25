@@ -358,6 +358,7 @@ function render() {
         {
           class: key === filter ? "active" : "",
           onclick: () => {
+            playSfx("segment");
             filter = key;
             page = 1;
             render();

@@ -761,6 +761,13 @@ const SFX = {
     tone({ freq: 3135.96, type: "sine", dur: 0.9, gain: 0.1, when: 1.35 });
   },
   ui: () => tone({ freq: 880, type: "sine", dur: 0.06, gain: 0.15 }),
+  // 一覧のカテゴリ切替音（プレイ履歴の すべて / DWORDle / DWORDlie）。
+  // タブを指で送るような、かすかな擦れ + 上がる 2 音（ui の単音とは区別が付く）
+  segment: () => {
+    noise({ dur: 0.035, gain: 0.05, freq: 2600, q: 2.2 });
+    tone({ freq: 523.25, type: "triangle", dur: 0.05, gain: 0.13, attack: 0.004 });
+    tone({ freq: 783.99, type: "sine", dur: 0.09, gain: 0.11, attack: 0.004, when: 0.045 });
+  },
   // 遊び方を開いたときの音（ページめくり風のスウッシュ + 問いかけるような上昇 2 音）
   help: () => {
     noise({ dur: 0.22, gain: 0.08, freq: 1400, q: 0.9 });

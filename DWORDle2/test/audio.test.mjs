@@ -148,6 +148,17 @@ assert.equal(
   oscillatorsBeforeHelp + 2,
   "opening Help should schedule its two-note SFX"
 );
+// 一覧のカテゴリ切替音は、擦れ（ノイズ 1 音源）+ 上がる 2 音で ui の単音と区別する
+{
+  const oscillatorsBeforeSegment = context.startedOscillators;
+  playSfx("segment");
+  assert.equal(
+    context.startedOscillators,
+    oscillatorsBeforeSegment + 2,
+    "switching list category should schedule its two-note SFX"
+  );
+}
+
 setSetting("bgm", true);
 await unlockAudio();
 assert.equal(audioNeedsRecovery(), false, "running BGM should not be restarted on every input");
