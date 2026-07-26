@@ -330,6 +330,58 @@ function render() {
   const unlocked = getUnlocked();
   const analyticsConsent = getStoredConsent();
   const analyticsAvailable = analyticsAllowed();
+  const analyticsSettings = el(
+    "div",
+    { class: "analytics-settings", "aria-labelledby": "analytics-settings-title" },
+    el("div", { id: "analytics-settings-title", class: "analytics-settings-title" }, tr("利用状況の計測", "Usage analytics")),
+    el(
+      "p",
+      { class: "hint analytics-settings-status", role: "status" },
+      !analyticsAvailable
+        ? tr("この環境では Google アナリティクスを読み込みません。", "Google Analytics is not loaded in this environment.")
+        : analyticsConsent === "granted"
+          ? tr("現在: 許可（いつでも停止できます）", "Current: Allowed (you can stop it at any time)")
+          : analyticsConsent === "denied"
+            ? tr("現在: 停止", "Current: Stopped")
+            : tr("現在: 未選択（同意するまで送信しません）", "Current: Not selected (nothing is sent until you consent)")
+    ),
+    el(
+      "div",
+      { class: "analytics-settings-actions" },
+      el(
+        "button",
+        {
+          class: "btn",
+          type: "button",
+          disabled: !analyticsAvailable || analyticsConsent === "denied",
+          onclick: () => {
+            playSfx("ui");
+            setAnalyticsConsent(false);
+            dismissConsentBanner();
+            toast(tr("利用状況の計測を停止し、分析用Cookieを削除しました", "Analytics stopped and analytics cookies deleted"));
+            render();
+          },
+        },
+        tr("計測を停止", "Stop analytics")
+      ),
+      el(
+        "button",
+        {
+          class: "btn",
+          type: "button",
+          disabled: !analyticsAvailable || analyticsConsent === "granted",
+          onclick: () => {
+            playSfx("ui");
+            setAnalyticsConsent(true);
+            dismissConsentBanner();
+            toast(tr("利用状況の計測を許可しました", "Analytics allowed"));
+            render();
+          },
+        },
+        tr("計測を許可", "Allow analytics")
+      )
+    )
+  );
   // 言語は 日本語 / English / システム連動 の 3 択。ラベルは言語設定にかかわらず固定。
   // active 判定は保存値そのもの（system 選択中に ja へ解決されても「System」を光らせる）
   const languageSetting = ["ja", "en", "system"].includes(s.language) ? s.language : "system";
@@ -586,58 +638,6 @@ function render() {
         hidden: activeSettingsTab !== "data",
       },
       el("div", { style: { fontWeight: "800", marginBottom: "4px" } }, tr("データ", "Data")),
-      el(
-        "div",
-        { class: "analytics-settings", "aria-labelledby": "analytics-settings-title" },
-        el("div", { id: "analytics-settings-title", class: "analytics-settings-title" }, tr("利用状況の計測", "Usage analytics")),
-        el(
-          "p",
-          { class: "hint analytics-settings-status", role: "status" },
-          !analyticsAvailable
-            ? tr("この環境では Google アナリティクスを読み込みません。", "Google Analytics is not loaded in this environment.")
-            : analyticsConsent === "granted"
-              ? tr("現在: 許可（いつでも停止できます）", "Current: Allowed (you can stop it at any time)")
-              : analyticsConsent === "denied"
-                ? tr("現在: 停止", "Current: Stopped")
-                : tr("現在: 未選択（同意するまで送信しません）", "Current: Not selected (nothing is sent until you consent)")
-        ),
-        el(
-          "div",
-          { class: "analytics-settings-actions" },
-          el(
-            "button",
-            {
-              class: "btn",
-              type: "button",
-              disabled: !analyticsAvailable || analyticsConsent === "denied",
-              onclick: () => {
-                playSfx("ui");
-                setAnalyticsConsent(false);
-                dismissConsentBanner();
-                toast(tr("利用状況の計測を停止し、分析用Cookieを削除しました", "Analytics stopped and analytics cookies deleted"));
-                render();
-              },
-            },
-            tr("計測を停止", "Stop analytics")
-          ),
-          el(
-            "button",
-            {
-              class: "btn",
-              type: "button",
-              disabled: !analyticsAvailable || analyticsConsent === "granted",
-              onclick: () => {
-                playSfx("ui");
-                setAnalyticsConsent(true);
-                dismissConsentBanner();
-                toast(tr("利用状況の計測を許可しました", "Analytics allowed"));
-                render();
-              },
-            },
-            tr("計測を許可", "Allow analytics")
-          )
-        )
-      ),
       el("div", { style: { display: "flex", flexDirection: "column", gap: "8px", marginTop: "8px" } },
         el("button", { class: "btn", onclick: showImportModal }, icon("box"), tr("履歴をインポート（移行）", "Import history (migration)")),
         el("button", {
@@ -698,6 +698,7 @@ function render() {
           },
         }, icon("trash"), tr("全データ削除", "Delete all data"))
       ),
+      analyticsSettings,
       el(
         "p",
         { class: "hint settings-privacy-note" },

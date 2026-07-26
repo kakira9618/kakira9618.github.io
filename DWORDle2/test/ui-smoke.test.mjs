@@ -2483,6 +2483,16 @@ try {
   await page.waitForURL(/#\/settings$/);
   await page.getByRole("tab", { name: "データ" }).click();
   await page.getByText("この環境では Google アナリティクスを読み込みません。", { exact: true }).waitFor();
+  assert.equal(
+    await page.locator("#settings-panel-data").evaluate((panel) => {
+      const analyticsSettings = panel.querySelector(".analytics-settings");
+      const deleteButton = Array.from(panel.querySelectorAll("button"))
+        .find((button) => button.textContent?.includes("全データ削除"));
+      return Boolean(analyticsSettings?.previousElementSibling?.contains(deleteButton));
+    }),
+    true,
+    "Usage analytics should be the item immediately after Delete all data"
+  );
   assert.equal(await page.getByRole("button", { name: "計測を停止" }).isDisabled(), true);
   assert.equal(await page.getByRole("button", { name: "計測を許可" }).isDisabled(), true);
   assert.equal(
