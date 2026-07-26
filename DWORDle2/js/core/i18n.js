@@ -29,14 +29,14 @@ export function syncDocumentLanguage(language = currentLanguage()) {
   const english = resolved === "en";
   document.documentElement.lang = english ? "en" : "ja";
   // 前作 /DWORDle/ と並んだときに区別が付くよう、タブ・検索結果・ブックマークでも "2" を出す
-  document.title = english ? "DWORDle 2 | A New Kind of Wordle" : "DWORDle 2 | 新感覚Wordle";
+  document.title = english ? "DWORDle 2 | A New Kind of Word Puzzle" : "DWORDle 2 | 新感覚ワードパズル";
   document
     .querySelector('meta[name="description"]')
     ?.setAttribute(
       "content",
       english
         ? "DWORDle 2 is Wordle with two answers. Find either answer within 10 Guesses!"
-        : "DWORDle 2 | 答えが2つある Wordle 強化版。10手以内に「どちらか」を当てればあなたの勝利！"
+        : "DWORDle 2 | 答えが2つある新感覚ワードパズル。10手以内に「どちらか」を当てればあなたの勝利！"
     );
 }
 

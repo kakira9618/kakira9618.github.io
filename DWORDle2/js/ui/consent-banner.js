@@ -1,8 +1,6 @@
-// Cookie 同意バナー。EEA / 英国 / スイスからのアクセスにだけ出す。
-//
-// 表示条件は analytics.js の needsConsentPrompt()（本番ドメイン・DNT 無効・
-// タイムゾーンが対象地域・未選択）。それ以外の地域には一切出さない。
-// 選ぶまで analytics_storage は denied のままなので、待たせても計測が壊れることはない。
+// Google Analytics の同意バナー。計測可能な全地域で、未選択時に出す。
+// 選ぶまで Google タグ自体を読み込まない Basic Consent Mode のため、拒否した場合も
+// 同意状態を含めて Google へ何も送信しない。
 // 画面を覆わない下部のバーにして、ゲームの操作は同意前でも普通に続けられるようにする。
 
 import { el } from "./dom.js?v=20260725-b";
@@ -14,6 +12,10 @@ let banner = null;
 function close() {
   banner?.remove();
   banner = null;
+}
+
+export function dismissConsentBanner() {
+  close();
 }
 
 // 条件を無視して出す（プレビュー・テスト用）
@@ -30,29 +32,28 @@ export function showConsentBanner() {
       "p",
       { class: "consent-banner-text" },
       tr(
-        "利用状況の把握のため Google アナリティクスの Cookie を使ってよろしいですか？プレイ履歴や入力した単語は送信しません。",
-        "May we use Google Analytics cookies to understand how the game is used? Your play history and the words you type are never sent."
+        "利用状況の把握のため Google アナリティクスを使用してよろしいですか？同意するまで Google への送信は行いません。プレイ履歴や入力した単語は送信しません。",
+        "May we use Google Analytics to understand how the game is used? Nothing is sent to Google until you consent. Your play history and the words you type are never sent."
       ),
       " ",
-      // 同意を求める場では、その場から詳細（Google のデータ利用）へ辿れるようにする
       el(
         "a",
-        { href: "https://policies.google.com/technologies/partner-sites", target: "_blank", rel: "noopener noreferrer" },
-        tr("詳細", "Details")
+        { href: "privacy.html", target: "_blank", rel: "noopener noreferrer" },
+        tr("プライバシーポリシー", "Privacy policy")
       )
     ),
     el(
       "div",
       { class: "consent-banner-actions" },
       el("button", { class: "btn", onclick: () => choose(false) }, tr("拒否する", "Decline")),
-      el("button", { class: "btn btn-primary", onclick: () => choose(true) }, tr("同意する", "Accept"))
+      el("button", { class: "btn", onclick: () => choose(true) }, tr("同意する", "Accept"))
     )
   );
   document.body.append(banner);
   return banner;
 }
 
-// 対象地域でまだ選んでいないときだけ出す
+// 計測可能な環境で、まだ選んでいないときだけ出す。
 export function maybeShowConsentBanner() {
   if (!needsConsentPrompt()) return false;
   showConsentBanner();

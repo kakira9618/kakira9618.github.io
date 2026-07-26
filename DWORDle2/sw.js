@@ -2,16 +2,19 @@
 // DWORDle 2 の Service Worker。全資産をインストール時に事前キャッシュし、
 // オフラインでも完全動作させる（キャッシュ優先 + ネットワークフォールバック）。
 // キャッシュ名はコミットのハッシュ入りで、デプロイのたびに新しいキャッシュへ入れ替わる。
-const CACHE_NAME = "dwordle2-42f993c";
+const CACHE_NAME = "dwordle2-28129ce";
 const PRECACHE = [
   "./",
   "index.html",
+  "about.html",
+  "privacy.html",
   "manifest.webmanifest",
   "favicon.png",
   "icon-192.png",
   "icon-512.png",
   "icon-maskable-192.png",
   "icon-maskable-512.png",
+  "css/privacy.css",
   "css/style.css",
   "js/audio/sound.js",
   "js/config.js",

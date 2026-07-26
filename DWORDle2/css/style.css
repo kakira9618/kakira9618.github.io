@@ -819,6 +819,30 @@ body.theme-cyber .icon-btn.menu-locked:hover {
   font-size: 11px;
   line-height: 1.6;
 }
+.analytics-settings {
+  margin: 10px 0 12px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--bg-panel-2) 70%, transparent);
+}
+.analytics-settings-title {
+  font-weight: 750;
+}
+.analytics-settings-status {
+  margin-top: 4px;
+}
+.analytics-settings-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 9px;
+}
+.analytics-settings-actions .btn {
+  min-width: 0;
+  padding: 10px 8px;
+  font-size: 13px;
+}
 .version-note {
   color: var(--fg-dim);
   font-size: 11px;
@@ -1259,7 +1283,7 @@ body.theme-pop.mode-normal .modal input[type="number"] {
   line-height: 1.6;
 }
 
-/* ---- Cookie 同意バナー（EEA 等のみ） ---- */
+/* ---- Google Analytics 同意バナー ---- */
 .consent-banner {
   position: fixed;
   left: 50%;

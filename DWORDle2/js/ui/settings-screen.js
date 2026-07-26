@@ -18,6 +18,8 @@ import { SOURCE_HASH } from "../version.js?v=20260725-b";
 import { isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js?v=20260725-b";
 import { isDebugMode, tryEnableDebugMode } from "../core/debug.js?v=20260725-b";
 import { isExtraShotUnlocked, extraShotRemainingPlays } from "../core/extra-shot.js?v=20260725-b";
+import { analyticsAllowed, getStoredConsent, setAnalyticsConsent } from "../core/analytics.js?v=20260725-b";
+import { dismissConsentBanner } from "./consent-banner.js?v=20260725-b";
 
 let root = null;
 let debugEntryTaps = 0;
@@ -326,6 +328,8 @@ function render() {
 
   const s = getSettings();
   const unlocked = getUnlocked();
+  const analyticsConsent = getStoredConsent();
+  const analyticsAvailable = analyticsAllowed();
   // 言語は 日本語 / English / システム連動 の 3 択。ラベルは言語設定にかかわらず固定。
   // active 判定は保存値そのもの（system 選択中に ja へ解決されても「System」を光らせる）
   const languageSetting = ["ja", "en", "system"].includes(s.language) ? s.language : "system";
@@ -582,6 +586,58 @@ function render() {
         hidden: activeSettingsTab !== "data",
       },
       el("div", { style: { fontWeight: "800", marginBottom: "4px" } }, tr("データ", "Data")),
+      el(
+        "div",
+        { class: "analytics-settings", "aria-labelledby": "analytics-settings-title" },
+        el("div", { id: "analytics-settings-title", class: "analytics-settings-title" }, tr("利用状況の計測", "Usage analytics")),
+        el(
+          "p",
+          { class: "hint analytics-settings-status", role: "status" },
+          !analyticsAvailable
+            ? tr("この環境では Google アナリティクスを読み込みません。", "Google Analytics is not loaded in this environment.")
+            : analyticsConsent === "granted"
+              ? tr("現在: 許可（いつでも停止できます）", "Current: Allowed (you can stop it at any time)")
+              : analyticsConsent === "denied"
+                ? tr("現在: 停止", "Current: Stopped")
+                : tr("現在: 未選択（同意するまで送信しません）", "Current: Not selected (nothing is sent until you consent)")
+        ),
+        el(
+          "div",
+          { class: "analytics-settings-actions" },
+          el(
+            "button",
+            {
+              class: "btn",
+              type: "button",
+              disabled: !analyticsAvailable || analyticsConsent === "denied",
+              onclick: () => {
+                playSfx("ui");
+                setAnalyticsConsent(false);
+                dismissConsentBanner();
+                toast(tr("利用状況の計測を停止し、分析用Cookieを削除しました", "Analytics stopped and analytics cookies deleted"));
+                render();
+              },
+            },
+            tr("計測を停止", "Stop analytics")
+          ),
+          el(
+            "button",
+            {
+              class: "btn",
+              type: "button",
+              disabled: !analyticsAvailable || analyticsConsent === "granted",
+              onclick: () => {
+                playSfx("ui");
+                setAnalyticsConsent(true);
+                dismissConsentBanner();
+                toast(tr("利用状況の計測を許可しました", "Analytics allowed"));
+                render();
+              },
+            },
+            tr("計測を許可", "Allow analytics")
+          )
+        )
+      ),
       el("div", { style: { display: "flex", flexDirection: "column", gap: "8px", marginTop: "8px" } },
         el("button", { class: "btn", onclick: showImportModal }, icon("box"), tr("履歴をインポート（移行）", "Import history (migration)")),
         el("button", {
@@ -608,6 +664,8 @@ function render() {
               )
             );
             if (!ok) return;
+            // 過去に許可していた場合も、先に計測を停止して GA Cookie を消す。
+            setAnalyticsConsent(false);
             for (const key of [
               "history",
               "achievements",
@@ -631,7 +689,7 @@ function render() {
               "playerCard", // プレイヤーカード（名前・発行情報・確認済みランク）
               "playerId", // プレイヤー ID も新規プレイヤーとして発番し直す
               "activity", // 行動ログ（クリック・画面滞在などの端末内記録）
-              "analyticsConsent", // Cookie 同意の選択（対象地域では再び確認する）
+              "analyticsConsent", // 分析の選択も削除し、次回本番起動時に改めて確認する
             ]) {
               removeKey(key);
             }
@@ -640,25 +698,24 @@ function render() {
           },
         }, icon("trash"), tr("全データ削除", "Delete all data"))
       ),
-      // Google アナリティクスの利用告知（GA の規約で開示が必要。設定・履歴は端末内のみ）
       el(
         "p",
         { class: "hint settings-privacy-note" },
         tr(
-          "プライバシー: プレイ履歴・実績・設定はこの端末内にだけ保存され、サーバーには送信されません。"
-            + "利用状況の把握のため Google アナリティクスを使用しており、画面の閲覧やゲーム結果（モード・勝敗・手数）を、"
-            + "個人を直接特定しない利用統計として送信します。"
-            + "プレイヤー名や入力した単語は送信しません。広告目的の利用はしません。",
-          "Privacy: your play history, achievements, and settings are stored only on this device and are never sent to a server. "
-            + "This site uses Google Analytics to understand usage, sending usage statistics that do not directly identify you, "
-            + "such as screen views and game results (mode, win/loss, number of Guesses). "
-            + "Your player name and the words you type are never sent. No advertising use."
+          "プレイ履歴・実績・設定はこの端末内に保存されます。Google アナリティクスは、上で許可した場合だけ読み込まれます。",
+          "Play history, achievements, and settings are stored on this device. Google Analytics is loaded only if you allow it above."
         ),
         el("br"),
         el(
           "a",
-          { href: "https://policies.google.com/technologies/partner-sites", target: "_blank", rel: "noopener noreferrer" },
-          tr("Google のデータ利用について", "How Google uses data")
+          { href: "privacy.html", target: "_blank", rel: "noopener noreferrer" },
+          tr("プライバシーポリシー・外部送信表記", "Privacy policy and external transfer notice")
+        ),
+        el("br"),
+        el(
+          "a",
+          { href: "about.html", target: "_blank", rel: "noopener noreferrer" },
+          tr("このゲームについて・クレジット", "About and credits")
         )
       )
     ),

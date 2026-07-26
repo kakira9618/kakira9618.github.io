@@ -1,6 +1,6 @@
 # DWORDle 2
 
-答えが 2 つある Wordle「[DWORDle](https://kakira9618.github.io/DWORDle/)」の強化版。
+答えが 2 つある新感覚ワードパズル「[DWORDle](https://kakira9618.github.io/DWORDle/)」の続編。
 裏モードとして、判定が必ず嘘をつく「[DWORDlie](https://kakira9618.github.io/DWORDlie/)」も搭載しています。
 
 ## 原作から継承した仕様
@@ -134,4 +134,4 @@ test/                 互換性テスト
 変更した場合は `node test/parity.test.mjs` が検出します。
 
 ---
-原作: [@kakira9618](https://github.com/kakira9618) / 単語リスト出典: powerlanguage/word-lists
+原作: [@kakira9618](https://github.com/kakira9618) / 単語リスト出典: [powerlanguage/word-lists](https://github.com/powerlanguage/word-lists)

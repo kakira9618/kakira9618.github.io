@@ -85,6 +85,8 @@ export async function listPrecacheAssets() {
   const assets = [
     "./",
     "index.html",
+    "about.html",
+    "privacy.html",
     "manifest.webmanifest",
     "favicon.png",
     "icon-192.png",

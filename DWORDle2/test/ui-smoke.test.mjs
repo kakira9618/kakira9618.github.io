@@ -203,6 +203,34 @@ async function passGate(target) {
 }
 
 try {
+  // 法令・プライバシー表記は JS 無効でも読める独立ページとして公開する。
+  const privacyPage = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
+  await privacyPage.addInitScript({ path: axePath });
+  await privacyPage.goto(`${baseUrl}privacy.html`, { waitUntil: "networkidle" });
+  await privacyPage.getByRole("heading", { name: "プライバシーポリシー・外部送信表記", exact: true }).waitFor();
+  await privacyPage.getByText("拡張計測: 無効", { exact: true }).waitFor();
+  assert.equal(
+    await privacyPage.getByRole("link", { name: "kurokuro917@gmail.com", exact: true }).first().getAttribute("href"),
+    "mailto:kurokuro917@gmail.com",
+    "privacy contact email should be actionable"
+  );
+  assert.equal(await privacyPage.getByRole("link", { name: "「このゲームについて・クレジット」" }).getAttribute("href"), "about.html");
+  const privacyAxe = await privacyPage.evaluate(async () => window.axe.run(document, { resultTypes: ["violations"] }));
+  const privacySerious = privacyAxe.violations.filter((violation) => ["serious", "critical"].includes(violation.impact));
+  assert.equal(privacySerious.length, 0, `Privacy page has serious accessibility violations: ${privacySerious.map((v) => v.id).join(", ")}`);
+  await privacyPage.goto(`${baseUrl}about.html`, { waitUntil: "networkidle" });
+  await privacyPage.getByRole("heading", { name: "このゲームについて・クレジット", exact: true }).waitFor();
+  assert.equal(
+    await privacyPage.getByRole("link", { name: "powerlanguage/word-lists", exact: true }).first().getAttribute("href"),
+    "https://github.com/powerlanguage/word-lists",
+    "word-list attribution should link to its source"
+  );
+  await privacyPage.getByText("承認・後援を受けたものではありません。", { exact: false }).waitFor();
+  const aboutAxe = await privacyPage.evaluate(async () => window.axe.run(document, { resultTypes: ["violations"] }));
+  const aboutSerious = aboutAxe.violations.filter((violation) => ["serious", "critical"].includes(violation.impact));
+  assert.equal(aboutSerious.length, 0, `About page has serious accessibility violations: ${aboutSerious.map((v) => v.id).join(", ")}`);
+  await privacyPage.close();
+
   await page.goto(baseUrl, { waitUntil: "networkidle" });
   const iconSafeAreas = await page.evaluate(async () => {
     const measure = (src) => new Promise((resolve, reject) => {
@@ -365,19 +393,19 @@ try {
       statuses,
     };
   });
-  assert.equal(publicEntry.title, "DWORDle 2 | 新感覚Wordle");
-  assert.equal(publicEntry.ogTitle, "DWORDle 2 | 新感覚Wordle");
+  assert.equal(publicEntry.title, "DWORDle 2 | 新感覚ワードパズル");
+  assert.equal(publicEntry.ogTitle, "DWORDle 2 | 新感覚ワードパズル");
   assert.equal(
     publicEntry.ogImage,
     "https://kakira9618.github.io/DWORDle2/og.jpg",
     "横長カードを出すクライアントには 1.91:1 の画像を渡す"
   );
-  assert.equal(publicEntry.ogImageAlt, "DWORDle 2 | 新感覚Wordle");
-  assert.equal(publicEntry.ogDescription, "答えは2つ。盤面は1つ。新感覚Wordle！");
+  assert.equal(publicEntry.ogImageAlt, "DWORDle 2 | 新感覚ワードパズル");
+  assert.equal(publicEntry.ogDescription, "答えは2つ。盤面は1つ。新感覚ワードパズル！");
   assert.equal(publicEntry.twitterCard, "summary", "X は正方形アイコンの小さいカードにする");
-  assert.equal(publicEntry.twitterTitle, "DWORDle 2 | 新感覚Wordle");
+  assert.equal(publicEntry.twitterTitle, "DWORDle 2 | 新感覚ワードパズル");
   assert.equal(publicEntry.twitterImage, "https://kakira9618.github.io/DWORDle2/og-square.png", "X には正方形アイコンを渡す");
-  assert.equal(publicEntry.twitterDescription, "答えは2つ。盤面は1つ。新感覚Wordle！");
+  assert.equal(publicEntry.twitterDescription, "答えは2つ。盤面は1つ。新感覚ワードパズル！");
   assert.equal(publicEntry.manifest, "manifest.webmanifest");
   assert.deepEqual(publicEntry.statuses, [200, 200, 200, 200], "Public metadata assets should be served");
   // Android Chrome の PWA インストール（WebAPK 生成）には 192x192 と 512x512 の
@@ -2426,13 +2454,43 @@ try {
   await manyUnlock.getByRole("button", { name: "OK" }).click();
   await page.locator(".ach-unlock").waitFor({ state: "detached" });
 
+  // バナーは本番ドメインだけ自動表示されるため、ローカル UI テストでは明示表示する。
+  await page.evaluate(async () => {
+    const { showConsentBanner } = await import("./js/ui/consent-banner.js?v=20260725-b");
+    showConsentBanner();
+  });
+  const consentBanner = page.getByRole("region", { name: "Cookie の設定" });
+  await consentBanner.waitFor();
+  assert.equal(await consentBanner.getByRole("link", { name: "プライバシーポリシー" }).getAttribute("href"), "privacy.html");
+  assert.deepEqual(
+    await consentBanner.locator("button").evaluateAll((buttons) => buttons.map((button) => button.className)),
+    ["btn", "btn"],
+    "Accept and decline should have equal visual weight"
+  );
+  await consentBanner.getByRole("button", { name: "拒否する" }).click();
+  const deniedConsent = await page.evaluate(() => JSON.parse(localStorage.getItem("dwordle2.analyticsConsent")));
+  assert.equal(deniedConsent.state, "denied");
+  assert.equal(deniedConsent.policyVersion, 1);
+
   await page.evaluate(() => { location.hash = "#/settings"; });
   await page.waitForURL(/#\/settings$/);
   await page.getByRole("tab", { name: "データ" }).click();
+  await page.getByText("この環境では Google アナリティクスを読み込みません。", { exact: true }).waitFor();
+  assert.equal(await page.getByRole("button", { name: "計測を停止" }).isDisabled(), true);
+  assert.equal(await page.getByRole("button", { name: "計測を許可" }).isDisabled(), true);
+  assert.equal(
+    await page.getByRole("link", { name: "プライバシーポリシー・外部送信表記" }).getAttribute("href"),
+    "privacy.html"
+  );
+  assert.equal(
+    await page.getByRole("link", { name: "このゲームについて・クレジット" }).getAttribute("href"),
+    "about.html"
+  );
   // プレイヤーカードのデータも全データ削除で消えることを確認するため事前に置く
   await page.evaluate(() => {
     localStorage.setItem("dwordle2.playerCard", JSON.stringify({ name: "テスト", issuedAt: 1, seenRankTier: 1 }));
     localStorage.setItem("dwordle2.playerId", JSON.stringify("0123ABCD"));
+    document.cookie = "_ga=smoke; Path=/; SameSite=Lax";
   });
   await page.getByRole("button", { name: "全データ削除" }).click();
   const deleteDialog = page.getByRole("dialog", { name: "全データ削除" });
@@ -2444,11 +2502,18 @@ try {
   assert.match(page.url(), /#\/$/, "Deleting all data should reload at the title route");
   await passGate(page); // 全データ削除はページを再読み込みするので扉絵から始まる
   await page.locator("#screen-title.active").waitFor();
-  const cardLeftovers = await page.evaluate(() => [
-    localStorage.getItem("dwordle2.playerCard"),
-    localStorage.getItem("dwordle2.playerId"),
-  ]);
-  assert.deepEqual(cardLeftovers, [null, null], "Deleting all data must also remove the player card name and player ID");
+  const deletedData = await page.evaluate(() => ({
+    card: localStorage.getItem("dwordle2.playerCard"),
+    playerId: localStorage.getItem("dwordle2.playerId"),
+    analyticsConsent: localStorage.getItem("dwordle2.analyticsConsent"),
+    cookie: document.cookie,
+  }));
+  assert.deepEqual(
+    [deletedData.card, deletedData.playerId, deletedData.analyticsConsent],
+    [null, null, null],
+    "Deleting all data must remove player-card data and the analytics choice"
+  );
+  assert.equal(deletedData.cookie.includes("_ga="), false, "Deleting all data must remove the GA cookie");
 
   // 判定オープン中の先行入力: 次の 1 行分をバッファし、オープン完了後に自動で確定する
   await page.getByRole("dialog", { name: "基本ルール | DWORDle" }).getByRole("button", { name: "わかった" }).click();
@@ -3689,6 +3754,12 @@ try {
     await swPage.waitForURL(/#\/settings$/);
     await swPage.getByRole("tab", { name: "サウンド" }).click();
     await swPage.getByRole("switch", { name: "BGM" }).waitFor();
+    // 法令表記と About も事前キャッシュされ、オフラインのまま読める。
+    await swPage.goto(`${baseUrl}privacy.html`, { waitUntil: "load" });
+    await swPage.getByRole("heading", { name: "プライバシーポリシー・外部送信表記", exact: true }).waitFor();
+    await swPage.goto(`${baseUrl}about.html`, { waitUntil: "load" });
+    await swPage.getByRole("heading", { name: "このゲームについて・クレジット", exact: true }).waitFor();
+    await swPage.getByText("承認・後援を受けたものではありません。", { exact: false }).waitFor();
     await swContext.setOffline(false);
     await swContext.close();
   }
