@@ -48,6 +48,9 @@ const TIMING = {
   holdMs: 1700,
   switchOutMs: 160,
   switchInMs: 240,
+  // 「全部緑でも不正解」の例の読ませ時間（文章なので、判定の解説より長めに取る）
+  allGreenCaptionMs: 2500, // 「各文字がどちらかと一致し全部緑ですが……」を見せる時間
+  allGreenOutroMs: 3900, // 「ゲーム継続！」を見せてから最初の例へ戻るまで
 };
 
 let timers = [];
@@ -381,10 +384,10 @@ function buildExample(mode, language) {
       caption.textContent = isEnglish
         ? "...but it is neither answer, so the game goes on!"
         : "どちらの答えでもないので、ゲーム継続！";
-    }, reactionDone + 1250);
+    }, reactionDone + TIMING.allGreenCaptionMs);
     later(
       () => switchExample(playPrimaryExample),
-      reactionDone + 1250 + TIMING.holdMs + 900
+      reactionDone + TIMING.allGreenCaptionMs + TIMING.allGreenOutroMs
     );
   }
 
