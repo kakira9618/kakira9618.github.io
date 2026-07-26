@@ -53,6 +53,7 @@ p, ul { margin: 0.65rem 0; }
 }
 .summary ul { margin-bottom: 0; padding-left: 1.4rem; }
 .table-wrap { overflow-x: auto; margin: 1rem 0; border: 1px solid var(--border); border-radius: 12px; }
+.table-wrap:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 table { width: 100%; min-width: 650px; border-collapse: collapse; background: rgba(17, 24, 39, 0.78); }
 th, td { padding: 11px 13px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
 th { background: var(--panel-2); font-size: 0.88rem; }

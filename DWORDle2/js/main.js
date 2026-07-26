@@ -213,7 +213,9 @@ showEntryGate(
     const recoveredAchievements = await appReady;
     startRouter();
     initAnalytics(); // Google Analytics（明示同意済みの場合だけ、アイドル時間に読み込む）
-    maybeShowConsentBanner(); // 本番で未選択の場合に表示。拒否してもゲーム機能は変わらない
+    // 本番で未選択の場合に表示。初回ルール・履歴移行のモーダルがある間は待ち、
+    // すべて閉じた後でバナーを出す。拒否してもゲーム機能は変わらない。
+    maybeShowConsentBanner();
     if (recoveredAchievements.length) {
       setTimeout(async () => {
         const { achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } =

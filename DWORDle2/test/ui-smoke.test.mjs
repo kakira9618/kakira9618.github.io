@@ -2598,8 +2598,18 @@ try {
     });
     await freshPage.goto(baseUrl, { waitUntil: "networkidle" });
     await passGate(freshPage);
+    // 本番のGA条件はローカルでは無効なので、表示待機だけを明示的に開始する。
+    await freshPage.evaluate(async () => {
+      const { showConsentBannerAfterModals } = await import("./js/ui/consent-banner.js?v=20260725-b");
+      showConsentBannerAfterModals();
+    });
     const freshTutorial = freshPage.getByRole("dialog", { name: "基本ルール | DWORDle" });
     await freshTutorial.waitFor();
+    assert.equal(
+      await freshPage.getByRole("region", { name: "Cookie の設定" }).count(),
+      0,
+      "analytics consent must not overlap the first tutorial"
+    );
     assert.equal(
       await freshPage.getByRole("dialog", { name: "旧作のプレイ履歴が見つかりました" }).count(),
       0,
@@ -2608,7 +2618,15 @@ try {
     await freshTutorial.getByRole("button", { name: "わかった" }).click();
     const importDialog = freshPage.getByRole("dialog", { name: "旧作のプレイ履歴が見つかりました" });
     await importDialog.waitFor();
+    assert.equal(
+      await freshPage.getByRole("region", { name: "Cookie の設定" }).count(),
+      0,
+      "analytics consent must not overlap the legacy import dialog"
+    );
     await importDialog.getByRole("button", { name: "スキップ" }).click();
+    const deferredConsent = freshPage.getByRole("region", { name: "Cookie の設定" });
+    await deferredConsent.waitFor();
+    await deferredConsent.getByRole("button", { name: "拒否する" }).click();
 
     // タイトルメニューの段階解放: 0 プレイでは基本項目以外がロックされている
     await freshPage.getByRole("button", { name: "本日の問題", exact: true }).waitFor();

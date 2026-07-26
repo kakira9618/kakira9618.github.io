@@ -8,6 +8,12 @@ import { needsConsentPrompt, setAnalyticsConsent } from "../core/analytics.js?v=
 import { tr } from "../core/i18n.js?v=20260725-b";
 
 let banner = null;
+let cancelDeferredShow = null;
+
+function cancelPendingShow() {
+  cancelDeferredShow?.();
+  cancelDeferredShow = null;
+}
 
 function close() {
   banner?.remove();
@@ -15,11 +21,13 @@ function close() {
 }
 
 export function dismissConsentBanner() {
+  cancelPendingShow();
   close();
 }
 
 // 条件を無視して出す（プレビュー・テスト用）
 export function showConsentBanner() {
+  cancelPendingShow();
   if (banner) return banner;
   const choose = (granted) => {
     setAnalyticsConsent(granted);
@@ -53,9 +61,56 @@ export function showConsentBanner() {
   return banner;
 }
 
+// 初回ルールや履歴移行などのモーダルが開いている間は同意バナーを重ねない。
+// モーダルが閉じた直後に次のモーダルが連鎖する場合があるため、DOM が空になっても
+// 1 タスク待ってから再確認し、すべての案内が終わった時点で表示する。
+function deferUntilModalsClose(shouldShow) {
+  if (banner || cancelDeferredShow) return;
+  const layer = document.getElementById("modal-layer");
+  let timer = null;
+  let observer = null;
+  const hasOpenModal = () => Boolean(layer?.querySelector(".modal-backdrop"));
+  const cleanup = () => {
+    if (timer !== null) clearTimeout(timer);
+    observer?.disconnect();
+    timer = null;
+    observer = null;
+    cancelDeferredShow = null;
+  };
+  const check = () => {
+    if (hasOpenModal()) {
+      if (timer !== null) clearTimeout(timer);
+      timer = null;
+      return;
+    }
+    if (timer !== null) return;
+    timer = setTimeout(() => {
+      timer = null;
+      if (hasOpenModal()) return;
+      if (!shouldShow()) {
+        cleanup();
+        return;
+      }
+      cleanup();
+      showConsentBanner();
+    }, 0);
+  };
+  cancelDeferredShow = cleanup;
+  observer = new MutationObserver(check);
+  if (layer) observer.observe(layer, { childList: true });
+  check();
+}
+
+// UI テスト・プレビュー用。条件を無視する点は showConsentBanner と同じだが、
+// 初回モーダルとの表示順を本番と同じ方法で制御する。
+export function showConsentBannerAfterModals() {
+  deferUntilModalsClose(() => true);
+}
+
 // 計測可能な環境で、まだ選んでいないときだけ出す。
 export function maybeShowConsentBanner() {
   if (!needsConsentPrompt()) return false;
-  showConsentBanner();
+  // 待機中に設定画面から選択された場合も、表示直前に条件を再確認する。
+  deferUntilModalsClose(needsConsentPrompt);
   return true;
 }
