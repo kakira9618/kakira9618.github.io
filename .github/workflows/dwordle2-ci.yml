@@ -48,3 +48,28 @@ jobs:
 
       - name: Run all tests
         run: npm test
+
+  dist:
+    name: Built output smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: DWORDle2/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      # 公開されるのは minify 済みの dist なので、そちらでも UI が動くことを確認する
+      - name: Build and smoke-test the built output
+        run: npm run test:dist

@@ -5,15 +5,18 @@
   "type": "module",
   "scripts": {
     "dev": "python3 -m http.server 8642",
+    "build": "node tools/build.mjs",
     "hash": "node tools/make-source-hash.mjs",
     "bump": "node tools/bump-version.mjs",
     "changes": "node tools/bump-version.mjs --changes",
     "test": "npm run test:unit && npm run test:ui",
     "test:unit": "node test/parity.test.mjs && node test/analysis.test.mjs && node test/achievements.test.mjs && node test/game-finish.test.mjs && node test/discard.test.mjs && node test/extra-shot.test.mjs && node test/settings.test.mjs && node test/debug.test.mjs && node test/activity.test.mjs && node test/migrate.test.mjs && node test/audio.test.mjs && node test/pop-background.test.mjs && node test/analytics.test.mjs",
-    "test:ui": "node test/ui-smoke.test.mjs"
+    "test:ui": "node test/ui-smoke.test.mjs",
+    "test:dist": "npm run build && DWORDLE2_SERVE_ROOT=dist node test/ui-smoke.test.mjs"
   },
   "devDependencies": {
     "axe-core": "^4.12.1",
+    "esbuild": "^0.28.1",
     "playwright": "^1.61.1"
   }
 }

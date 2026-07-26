@@ -14,6 +14,10 @@ import { pidLabel, todayPID } from "../js/core/problems.js?v=20260725-b";
 const require = createRequire(import.meta.url);
 const axePath = require.resolve("axe-core/axe.min.js");
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+// 既定はソースをそのまま配信する。DWORDLE2_SERVE_ROOT=dist を渡すと
+// ビルド成果物（minify 済み）を配信して同じテストを通す（npm run test:dist）。
+const serveRoot = path.resolve(projectRoot, process.env.DWORDLE2_SERVE_ROOT || ".");
+if (serveRoot !== projectRoot) console.log(`  note: 配信ルート ${path.relative(projectRoot, serveRoot)}`);
 const mimeTypes = {
   ".css": "text/css; charset=utf-8",
   ".html": "text/html; charset=utf-8",
@@ -29,8 +33,8 @@ const server = createServer(async (request, response) => {
   try {
     const requestUrl = new URL(request.url, "http://127.0.0.1");
     const relativePath = decodeURIComponent(requestUrl.pathname === "/" ? "index.html" : requestUrl.pathname.slice(1));
-    let filePath = path.resolve(projectRoot, relativePath);
-    if (!filePath.startsWith(`${projectRoot}${path.sep}`) && filePath !== path.join(projectRoot, "index.html")) {
+    let filePath = path.resolve(serveRoot, relativePath);
+    if (!filePath.startsWith(`${serveRoot}${path.sep}`) && filePath !== path.join(serveRoot, "index.html")) {
       response.writeHead(403).end("Forbidden");
       return;
     }

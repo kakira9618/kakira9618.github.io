@@ -62,7 +62,8 @@
 
 ## 開発
 
-ビルド不要の静的サイト（ES Modules + import map）。
+静的サイト（ES Modules + import map）。開発中はソースをそのまま配信するのでビルドは不要で、
+公開時だけ minify したものへ差し替える（後述）。
 
 ```sh
 # ローカル実行（Web Worker を使うため file:// では動きません）
@@ -79,7 +80,26 @@ npm test
 # 個別実行
 npm run test:unit
 npm run test:ui
+npm run test:dist   # ビルド成果物（minify 済み）に対して UI スモークを回す
 ```
+
+### 公開（デプロイ）
+
+`master` への push で `.github/workflows/pages.yml` が動き、GitHub Actions が Pages へ配信する。
+
+```sh
+npm run build   # dist/ に公開用の成果物を作る（ワークフローと同じもの）
+```
+
+`tools/build.mjs` は **ディレクトリ構成とファイル名を保ったまま各 `.js` / `.css` を個別に
+minify する**（バンドルしない）。そのため import 文の指定がそのまま残り、import map・
+Web Worker・動的 import・`sw.js` の事前キャッシュ一覧がソースのまま通用する。
+開発者ツールにはコメントの無い圧縮コードだけが見える。`test/` `tools/` `package.json`
+`reference-orig-*` は公開されない（除外リストは `tools/build.mjs` 冒頭の `BUILD`）。
+
+リポジトリ (kakira9618.github.io) は複数サイトの共用なので、ワークフローは
+**リポジトリ全体を `_site` へ複製してから `DWORDle2/` だけをビルド成果物に差し替える**。
+DWORDle2 の `dist` だけを成果物にすると他のサイトが Pages から消えるので注意。
 
 ### バージョンとリリース
 
@@ -125,6 +145,7 @@ js/data/words.js      原作から抽出した単語リスト（順序変更禁�
 js/data/levels.js     頻度順データ（再生成禁止）
 reference-orig-*/     原作の Tonyu ソース（参照用スナップショット）
 test/                 互換性テスト
+tools/build.mjs       公開用ビルド（構成を保ったまま minify して dist/ へ）
 ```
 
 ### 互換性に関する注意

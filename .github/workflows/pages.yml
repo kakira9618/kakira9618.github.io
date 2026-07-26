@@ -1,0 +1,99 @@
+name: Deploy GitHub Pages
+
+# このリポジトリは複数サイトを一括で公開している（/DWORDle2/ ほか）。
+# DWORDle2 だけビルド（minify）して差し替え、他のサイトはリポジトリの中身を
+# そのまま配信する。DWORDle2/dist だけを成果物にすると他サイトが消えるので、
+# 必ずリポジトリ全体を _site へ複製してから DWORDle2 を置き換えること。
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 進行中のデプロイは中断しない（公開途中で止まると中途半端な状態になるため）
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build site
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: DWORDle2/package-lock.json
+
+      - name: Install DWORDle 2 dependencies
+        run: npm ci
+        working-directory: DWORDle2
+
+      - name: Build DWORDle 2
+        run: npm run build
+        working-directory: DWORDle2
+
+      - name: Assemble site
+        run: |
+          set -euo pipefail
+          # リポジトリ全体を複製する（.git / .github / ドットファイル、および
+          # 個別にビルドする DWORDle2 は除く）。legacy Pages の Jekyll も
+          # ドット始まりのファイルは配信しないので、これで従来と同じ内容になる。
+          rsync -a \
+            --exclude='.*' \
+            --exclude='_site/' \
+            --exclude='DWORDle2/' \
+            ./ _site/
+          cp -r DWORDle2/dist _site/DWORDle2
+
+          # 主要なサイトが揃っているかの最低限の確認（1 つでも欠けたら公開しない）
+          for page in index.html DWORDle2/index.html DWORDle2/js/main.js DWORDle2/sw.js \
+                      DWORDle/index.html DWORDlie/index.html; do
+            if [ ! -f "_site/$page" ]; then
+              echo "公開物に $page が無い"
+              exit 1
+            fi
+          done
+
+          # 開発用ファイル・sourcemap が混ざっていないこと
+          for unwanted in DWORDle2/test DWORDle2/tools DWORDle2/node_modules DWORDle2/package.json; do
+            if [ -e "_site/$unwanted" ]; then
+              echo "公開物に $unwanted が混ざっている"
+              exit 1
+            fi
+          done
+          # sourcemap の確認は DWORDle2 だけ（他サイトは元から .map を公開している）
+          if [ -n "$(find _site/DWORDle2 -name '*.map' -print -quit)" ]; then
+            echo "公開物に sourcemap が混ざっている"
+            exit 1
+          fi
+
+          echo "_site: $(find _site -type f | wc -l) files, $(du -sh _site | cut -f1)"
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v5
