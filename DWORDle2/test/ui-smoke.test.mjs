@@ -2057,13 +2057,19 @@ try {
     await touchKey("o");
     await lateClick("p"); // 指を離した P の合成 click が O のあとに届く
     assert.equal(await typedRow(), "PO", "a late synthetic click must not repeat an earlier key");
-    // 同じキーの連打では、合成 click を打った数だけ打ち消す
+    // 1 タップに対して合成 click が複数届いても増えない（iOS で実際に起きる）
+    for (let i = 0; i < 5; i++) await touchPage.locator('#keyboard [data-key="backspace"]').click();
+    await touchKey("s");
+    await lateClick("s");
+    await lateClick("s");
+    assert.equal(await typedRow(), "S", "multiple synthetic clicks from one touch must not repeat the key");
+    // 同じキーを 2 回タッチしたぶんは 2 文字入る
     for (let i = 0; i < 5; i++) await touchPage.locator('#keyboard [data-key="backspace"]').click();
     await touchKey("s");
     await touchKey("s");
     await lateClick("s");
     await lateClick("s");
-    assert.equal(await typedRow(), "SS", "each touch should swallow exactly one synthetic click");
+    assert.equal(await typedRow(), "SS", "two real touches should still type two letters");
     // 合成 click が来ない環境（Android など）でもタッチだけで入力できる
     for (let i = 0; i < 5; i++) await touchPage.locator('#keyboard [data-key="backspace"]').click();
     for (const key of ["b", "l", "o", "o", "d"]) await touchKey(key);
