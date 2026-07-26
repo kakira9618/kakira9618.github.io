@@ -362,8 +362,8 @@ function buildExample(mode, language) {
     later(() => {
       clearReaction();
       caption.textContent = isEnglish
-        ? `Each tile matches one word → all ${c.green}`
-        : `各文字がどちらかと一致 → 全部${c.green}`;
+        ? `Every tile matches one of the answers, so they all turn ${c.green}...`
+        : `各文字がどちらかと一致し全部${c.green}ですが……`;
     }, reactionDone);
     later(() => {
       // CSS の reduce-motion クランプは Web Animations API には効かないため個別に抑制する
@@ -379,8 +379,8 @@ function buildExample(mode, language) {
         );
       }
       caption.textContent = isEnglish
-        ? "Not either answer → keep playing"
-        : "どちらの答えでもない → 続行";
+        ? "...but it is neither answer, so the game goes on!"
+        : "どちらの答えでもないので、ゲーム継続！";
     }, reactionDone + 1250);
     later(
       () => switchExample(playPrimaryExample),

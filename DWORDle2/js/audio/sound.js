@@ -1600,12 +1600,15 @@ function scheduleBarVelvet(t0, chord, bar, bus) {
     bgmTone(bus, { midi: m, t: t0 + b * beat, dur: beat * 0.85, type: "triangle", gain: b === 0 ? 0.105 : 0.08, attack: 0.012 });
   });
   if (!breakBar) {
-    // ライドのスウィング + 2・4 拍のブラシ + 1・3 拍の柔らかいキック
+    // ライドのスウィング + 2・4 拍のブラシ + 1・3 拍の柔らかいキック。
+    // ノイズ系は Q を上げて（帯域を狭めて）音量も下げてある。以前は Q 0.8 の広帯域で
+    // 音量も大きく、静かな編成の中で高域だけが突出して「サッ」というノイズに聞こえていた
+    // （高域ピークが他曲より 9〜26dB 高い状態だった）。
     for (let b = 0; b < 4; b++) {
-      bgmNoise(bus, { t: t0 + b * beat, dur: 0.1, gain: b % 2 ? 0.026 : 0.017, freq: 9000, q: 0.8 });
-      bgmNoise(bus, { t: t0 + b * beat + sw, dur: 0.05, gain: 0.013, freq: 9500, q: 0.8 });
+      bgmNoise(bus, { t: t0 + b * beat, dur: 0.1, gain: b % 2 ? 0.013 : 0.009, freq: 7200, q: 3.2 });
+      bgmNoise(bus, { t: t0 + b * beat + sw, dur: 0.05, gain: 0.0065, freq: 7600, q: 3.2 });
     }
-    for (const b of [1, 3]) bgmNoise(bus, { t: t0 + b * beat, dur: 0.12, gain: 0.02, freq: 3000, q: 0.5 });
+    for (const b of [1, 3]) bgmNoise(bus, { t: t0 + b * beat, dur: 0.12, gain: 0.011, freq: 3000, q: 1.6 });
     for (const b of [0, 2]) bgmTone(bus, { midi: 33, t: t0 + b * beat, dur: 0.09, type: "sine", gain: 0.045, bend: -8 });
   }
   // FM エレピ: シンコペーションでコンピング
