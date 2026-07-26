@@ -181,6 +181,19 @@ async function assertNoSeriousA11yViolations(stage) {
   assert.equal(violations.length, 0, `${stage} has serious accessibility violations:\n${details}`);
 }
 
+// 解放カードの初期フォーカスは表示直後の requestAnimationFrame で入る。
+// 待たずに activeElement を読むとフレーム待ちに負けることがあるので、移るまで待ってから確かめる
+// （待てなかった場合は呼び出し側の assert がそのまま失敗を報告する）。
+async function waitForDialogFocus(selector) {
+  await page
+    .waitForFunction(
+      (target) => document.querySelector(target)?.contains(document.activeElement) === true,
+      selector,
+      { timeout: 2000 }
+    )
+    .catch(() => {});
+}
+
 // エントリーゲート（扉絵）はすべてのロードで最初に表示される。「開始」で通過する
 async function passGate(target) {
   const start = target.locator("#entry-gate .entry-gate-start");
@@ -998,6 +1011,16 @@ try {
   assert.ok(
     historyOverflowLayout.scrollable,
     `The history body should scroll instead of collapsing its controls: ${JSON.stringify(historyOverflowLayout)}`
+  );
+  // 一覧の行は詰めずに間隔を空ける（.history-list ラッパを挟んだときに落としやすい）
+  const historyRowGaps = await page.locator("#screen-history").evaluate((screen) => {
+    const rects = [...screen.querySelectorAll(".history-item")].map((item) => item.getBoundingClientRect());
+    return rects.slice(1).map((rect, index) => Math.round(rect.top - rects[index].bottom));
+  });
+  assert.ok(historyRowGaps.length >= 1, "the history list should have several rows to compare");
+  assert.ok(
+    historyRowGaps.every((gap) => gap >= 6),
+    `History rows must keep a visible gap between them: ${JSON.stringify(historyRowGaps)}`
   );
   const historyItem = page.locator("button.history-item").first();
   await historyItem.waitFor();
@@ -2307,6 +2330,8 @@ try {
     "rgba(0, 0, 0, 0)",
     "The unlock dialog should have a separately rendered backdrop"
   );
+  // 初期フォーカスは表示直後の requestAnimationFrame で入るので、移るまで待ってから確かめる
+  await waitForDialogFocus(".bgm-unlock");
   assert.equal(
     await firstUnlock.evaluate((node) => node.contains(document.activeElement)),
     true,
@@ -2347,6 +2372,7 @@ try {
   await achUnlock.waitFor({ timeout: 1600 });
   assert.equal(await page.locator(".ach-unlock").count(), 1, "A single achievement should show one celebration card");
   assert.equal(await page.locator(".ach-unlock .ach-confetti i").count() > 0, true, "The celebration should include confetti");
+  await waitForDialogFocus(".ach-unlock");
   assert.equal(
     await achUnlock.evaluate((node) => node.contains(document.activeElement)),
     true,

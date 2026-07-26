@@ -1688,6 +1688,16 @@ body.theme-cyber .card.tappable:hover {
 }
 
 /* ---- 履歴一覧 ---- */
+/* 検索条件だけを描き直せるよう一覧を専用のラッパに入れているので、
+   行間とスクロール時の非縮小は .list-screen-body と同じ指定をここでも持たせる */
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.history-list > * {
+  flex-shrink: 0;
+}
 /* 一覧の行は枠線を持たず、背景の面とバッジの色だけで区切ってシンプルに見せる */
 .history-item {
   display: flex;
