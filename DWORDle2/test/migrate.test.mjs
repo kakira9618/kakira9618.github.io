@@ -120,6 +120,62 @@ assert(achievementIds.has("uso-clear"));
   );
 }
 
+// ---- 壊れた usoResults: 画面が各行を配列として反復するので、形が完全なものだけ通す ----
+{
+  const { importFromText } = await import("../js/core/migrate.js?v=20260725-b");
+  const { CELL } = await import("../js/core/logic.js?v=20260725-b");
+  const goodRow = [CELL.UNUSED, CELL.USED, CELL.CORRECT, CELL.UNUSED, CELL.USED];
+  const { added } = importFromText(
+    JSON.stringify({
+      app: "dwordle2",
+      version: 1,
+      history: [
+        // 行が配列ですらない / 長さ違い / 未知の状態 / 手数と行数が合わない
+        { startTime: 1_770_000_000, endTime: 1_770_000_030, gameMode: "uso", problemID: 21, guessWord: ["about"], usoResults: [42] },
+        { startTime: 1_770_000_100, endTime: 1_770_000_130, gameMode: "uso", problemID: 22, guessWord: ["about"], usoResults: [["correct"]] },
+        { startTime: 1_770_000_200, endTime: 1_770_000_230, gameMode: "uso", problemID: 23, guessWord: ["about"], usoResults: [["correct", "used", "unused", "used", "nope"]] },
+        { startTime: 1_770_000_300, endTime: 1_770_000_330, gameMode: "uso", problemID: 24, guessWord: ["about"], usoResults: [goodRow, goodRow] },
+        // 形が完全なものはそのまま残す
+        { startTime: 1_770_000_400, endTime: 1_770_000_430, gameMode: "uso", problemID: 25, guessWord: ["about"], usoResults: [goodRow] },
+      ],
+    })
+  );
+  assert.equal(added, 5, "records with a malformed usoResults should still be imported (without the broken field)");
+  const cellStates = new Set([CELL.UNUSED, CELL.USED, CELL.CORRECT]);
+  for (const problemID of [21, 22, 23, 24]) {
+    const record = getHistory().find((r) => r.problemID === problemID);
+    assert.equal(record.usoResults, undefined, `malformed usoResults must be dropped (No.${problemID})`);
+  }
+  assert.deepEqual(getHistory().find((r) => r.problemID === 25).usoResults, [goodRow], "well-formed usoResults must be kept");
+  assert.ok(
+    getHistory().every(
+      (record) =>
+        record.usoResults === undefined ||
+        (Array.isArray(record.usoResults) &&
+          record.usoResults.length === record.guessWord.length &&
+          record.usoResults.every((row) => Array.isArray(row) && row.length === 5 && row.every((s) => cellStates.has(s))))
+    ),
+    "history must never contain a usoResults shape the screens cannot render"
+  );
+}
+
+// ---- 旧作形式の startTime: 非数値キーで startTime も無いレコードは取り込まない ----
+{
+  const { importFromText } = await import("../js/core/migrate.js?v=20260725-b");
+  const before = getHistory().length;
+  const { added } = importFromText(
+    JSON.stringify({
+      version: 1,
+      "not-a-time": { complete: true, gameMode: "normal", problemID: 31, guessWord: ["about"] },
+      "1780000000": { complete: true, gameMode: "normal", problemID: 32, guessWord: ["about"] },
+    })
+  );
+  assert.equal(added, 1, "a legacy record whose startTime resolves to NaN must be rejected");
+  assert.equal(getHistory().length, before + 1);
+  assert.equal(getHistory().find((r) => r.problemID === 31), undefined);
+  assert.equal(getHistory().find((r) => r.problemID === 32).startTime, 1_780_000_000, "the key should be used as startTime");
+}
+
 // ---- 実績を解除しないインポート: noAchievements が付き、実績判定から恒久的に除外される ----
 {
   const { importFromText } = await import("../js/core/migrate.js?v=20260725-b");

@@ -12,6 +12,7 @@
 
 import { addImportedGames } from "./records.js?v=20260725-b";
 import { isValidPID } from "./problems.js?v=20260725-b";
+import { CELL } from "./logic.js?v=20260725-b";
 
 // オブジェクトが旧作の 1 ゲームレコードかどうか
 function looksLikeGame(v) {
@@ -46,6 +47,22 @@ function normalizeGameMode(gameMode) {
   return gameMode === "uso" ? "uso" : "normal";
 }
 
+const CELL_STATES = new Set([CELL.UNUSED, CELL.USED, CELL.CORRECT]);
+
+// uso の「表示された嘘の判定」。履歴のミニ盤面・結果・分析画面はこの各行を
+// 5 要素の配列として反復するので、行が配列でない/長さ違い/未知の状態を含む
+// レコードを持ち込むと画面が例外で開けなくなる。形が完全なものだけ通し、
+// 壊れていれば undefined にして真の判定へフォールバックさせる
+// （usoResults を持たない旧作インポートと同じ扱い）。
+function usableUsoResults(game) {
+  const rows = game.usoResults;
+  if (!Array.isArray(rows) || rows.length !== game.guessWord.length) return undefined;
+  const wellFormed = rows.every(
+    (row) => Array.isArray(row) && row.length === 5 && row.every((state) => CELL_STATES.has(state))
+  );
+  return wellFormed ? rows.map((row) => row.slice()) : undefined;
+}
+
 // オブジェクトが旧作の履歴ファイル（{ version, <time>: game, ... }）かどうか
 function looksLikeHistoryFile(obj) {
   if (!obj || typeof obj !== "object" || Array.isArray(obj)) return false;
@@ -61,13 +78,18 @@ function convertHistoryFile(obj, importedTag, withAchievements = true) {
   for (const [key, game] of Object.entries(obj)) {
     if (key === "version" || !isImportableGame(game)) continue;
     if (!game.complete || game.guessWord.length === 0) continue; // 途中放棄は取り込まない
+    // 旧作形式でも startTime は履歴のキーになるので、本作エクスポートと同じ強さで検証する
+    // （非数値キーで startTime も無いレコードは NaN → 保存後 null になり、結果画面から開けない）
+    const startTime = Number(game.startTime ?? key);
+    if (!hasUsableStartTime({ startTime })) continue;
+    const gameMode = normalizeGameMode(game.gameMode);
     records.push({
-      startTime: Number(game.startTime ?? key),
-      endTime: Number(game.endTime ?? game.startTime ?? key),
-      gameMode: normalizeGameMode(game.gameMode),
+      startTime,
+      endTime: Number.isFinite(Number(game.endTime)) ? Number(game.endTime) : startTime,
+      gameMode,
       problemID: game.problemID,
       guessWord: game.guessWord.slice(),
-      usoResults: Array.isArray(game.usoResults) ? game.usoResults : undefined,
+      usoResults: gameMode === "uso" ? usableUsoResults(game) : undefined,
       imported: importedTag,
       ...(withAchievements ? {} : { noAchievements: true }),
     });
@@ -133,18 +155,22 @@ export function importFromText(text, { withAchievements = true } = {}) {
   }
   if (obj && obj.app === "dwordle2" && Array.isArray(obj.history)) {
     // 本作のエクスポート形式。レコード既存の noAchievements（過去の選択）は維持する。
-    // 手で編集された JSON も想定し、履歴のキーになる startTime と gameMode は
-    // 旧作形式と同じ強さで検証・正規化してから取り込む。
+    // 手で編集された JSON も想定し、履歴のキーになる startTime と gameMode、
+    // 画面が配列として反復する usoResults を検証・正規化してから取り込む。
     const records = obj.history
       .filter((g) => isImportableGame(g) && hasUsableStartTime(g))
-      .map((g) => ({
-        ...g,
-        startTime: Number(g.startTime),
-        endTime: Number.isFinite(Number(g.endTime)) ? Number(g.endTime) : Number(g.startTime),
-        gameMode: normalizeGameMode(g.gameMode),
-        imported: g.imported ?? "json",
-        ...(withAchievements ? {} : { noAchievements: true }),
-      }));
+      .map((g) => {
+        const gameMode = normalizeGameMode(g.gameMode);
+        return {
+          ...g,
+          startTime: Number(g.startTime),
+          endTime: Number.isFinite(Number(g.endTime)) ? Number(g.endTime) : Number(g.startTime),
+          gameMode,
+          usoResults: gameMode === "uso" ? usableUsoResults(g) : undefined,
+          imported: g.imported ?? "json",
+          ...(withAchievements ? {} : { noAchievements: true }),
+        };
+      });
     return { added: addImportedGames(records), total: records.length };
   }
   if (looksLikeHistoryFile(obj)) {
