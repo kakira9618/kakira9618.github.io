@@ -25,7 +25,7 @@
       <strong>要点</strong>
       <ul>
         <li>ゲームは、Google アナリティクスへの同意がなくても全機能を利用できます。</li>
-        <li>同意するまで Google のタグを読み込まず、Google へデータを送信しません。</li>
+        <li>同意するまで Google アナリティクスによる情報収集は行いません。</li>
         <li>プレイ履歴、入力した単語、答え、プレイヤー名・IDは Google アナリティクスへ送信しません。</li>
         <li>同意はゲーム内の「設定 → データ」からいつでも変更できます。</li>
       </ul>
@@ -35,7 +35,7 @@
     <p>本ポリシーは、@kakira9618（以下「運営者」）が提供する Web ゲーム「DWORDle 2」に適用されます。お問い合わせは <a href="mailto:kurokuro917@gmail.com">kurokuro917@gmail.com</a> または <a href="https://x.com/kakira9618" target="_blank" rel="noopener noreferrer">X（@kakira9618）</a> へお願いします。</p>
 
     <h2>2. 端末内に保存するデータ</h2>
-    <p>次のデータは、ゲームを継続して利用するため、ブラウザの localStorage に保存します。運営者のサーバーや Google アナリティクスには送信しません。</p>
+    <p>次のデータは、ゲームを継続して利用するため、利用端末のブラウザ内に保存します。運営者のサーバーや Google アナリティクスには送信しません。</p>
     <div class="table-wrap"><table>
       <thead><tr><th>データ</th><th>目的</th><th>保存期間・削除</th></tr></thead>
       <tbody>
@@ -43,37 +43,28 @@
         <tr><td>実績、解放状態、チュートリアル既読状態</td><td>進行・解放内容の維持</td></tr>
         <tr><td>表示、ゲーム、音声などの設定</td><td>選択した環境の維持</td></tr>
         <tr><td>プレイヤーカードの名前・ID・発行情報</td><td>端末内のカード作成・表示</td></tr>
-        <tr><td>端末内アクティビティ、分析同意の選択・日時・ポリシー版</td><td>利用回数等の端末内機能、同意選択の維持</td></tr>
+        <tr><td>端末内の利用記録、分析利用の選択</td><td>利用回数等の端末内機能、同意選択の維持</td></tr>
       </tbody>
     </table></div>
     <p>履歴のエクスポート、結果画像、共有文は利用者の操作で作成されます。利用者が自ら共有・保存したデータは、共有先・保存先の規約と設定に従います。</p>
 
     <h2>3. Google アナリティクス（任意）</h2>
-    <p>品質改善と利用傾向の把握のため Google Analytics 4を使用します。ただし、Google タグは利用者が明示的に「同意する」または「計測を許可」を選んだ後にだけ読み込みます。拒否時は、同意状態を含め Google へ送信しません（Basic Consent Mode）。ブラウザが Do Not Track を送る場合も読み込みません。</p>
-    <p>同意後に送信する内容は、画面名、パラメータを除いた本サイトの画面 URL、ゲームモード、勝敗、手数、デイリー問題かどうかです。通信に伴い、Google は IP アドレス、ユーザーエージェント、時刻、参照元、Google が生成するクライアントID・セッション情報、国・都市程度の概算地域、ブラウザ・端末情報等を処理する場合があります。プレイヤー名・ID、入力単語、問題の答え、プレイ履歴、端末内アクティビティは送信しません。</p>
-    <p>利用目的は、画面・機能の利用傾向やゲームバランスを集計し、ゲームを改善することです。利用者単位の広告、販売、プロファイリング、自動的な意思決定には使用しません。適用法上必要な場合の処理根拠は利用者の同意です。</p>
+    <p>品質改善と利用傾向の把握のため、Google Analytics 4を使用します。Google アナリティクスによる収集は、利用者が「同意する」または「計測を許可」を選んだ場合だけ開始します。拒否・停止しても、ゲームの全機能を利用できます。</p>
 
-    <h3>現在の GA4 管理設定</h3>
+    <h3>収集される情報</h3>
     <ul>
-      <li>拡張計測: 無効</li>
-      <li>Google シグナル: OFF</li>
-      <li>広告パーソナライズ: OFF</li>
-      <li>Google 広告とのリンク: なし</li>
-      <li>データ保持: イベントデータ 2か月／ユーザーデータ 14か月</li>
-      <li>不要な Google データ共有設定: OFF</li>
-      <li>Google のデータ処理規約: 確認済み</li>
+      <li>閲覧した画面、ゲームモード、勝敗、手数、デイリー問題かどうか</li>
+      <li>ブラウザ・端末情報、国や都市程度の概算地域、IPアドレス、参照元、Cookie等の識別情報</li>
     </ul>
-    <p class="note">保持期間の設定は、GA4 のユーザー単位・イベント単位の詳細データに適用されます。Google の標準集計レポート等には同じ形で適用されない場合があります。</p>
+    <p>プレイヤー名・ID、入力した単語、問題の答え、プレイ履歴、端末内の利用記録は送信しません。</p>
 
-    <h3>Cookie と同意の変更</h3>
-    <div class="table-wrap"><table>
-      <thead><tr><th>Cookie</th><th>目的</th><th>Google の標準有効期間</th></tr></thead>
-      <tbody>
-        <tr><td><code>_ga</code></td><td>利用者を区別する</td><td>2年（ブラウザにより短縮される場合があります）</td></tr>
-        <tr><td><code>_ga_&lt;container-id&gt;</code></td><td>セッション状態を維持する</td><td>2年（ブラウザにより短縮される場合があります）</td></tr>
-      </tbody>
-    </table></div>
-    <p>「設定 → データ → 計測を停止」を選ぶと、以後の計測を止め、本サイトが設定した上記分析用 Cookie の削除を試みます。「全データ削除」でも同様に停止・削除します。ブラウザ設定からサイトデータを削除することもできます。</p>
+    <h3>利用目的とGoogleによる処理</h3>
+    <p>収集した情報は、画面・機能の利用傾向やゲームバランスを集計し、ゲームを改善するために利用します。広告のパーソナライズ、利用者単位の広告配信、情報の販売、自動的な意思決定には使用しません。適用法上必要な場合の処理根拠は、利用者の同意です。</p>
+    <p>Googleは、送信された情報をGoogleの規約とポリシーに基づいて処理します。詳しくは、<a href="https://policies.google.com/technologies/partner-sites?hl=ja" target="_blank" rel="noopener noreferrer">Googleのサービスを使用するサイトやアプリから収集した情報のGoogleによる使用</a>をご確認ください。</p>
+    <p>Google アナリティクスの情報を広告目的には利用せず、Google広告とも連携していません。データ保持期間は、イベントデータ2か月、ユーザーデータ14か月に設定しています。</p>
+
+    <h3>Cookieと同意の変更</h3>
+    <p>同意した場合、Google アナリティクスは利用者やセッションを区別するためのCookieを使用します。保存期間はGoogleの仕様やブラウザ設定によって異なります。「設定 → データ → 計測を停止」を選ぶと、以後の計測を停止し、本サイトが設定した分析用Cookieを削除します。「全データ削除」またはブラウザのサイトデータ削除でも消去できます。</p>
 
     <h2>4. 外部送信</h2>
     <div class="table-wrap"><table>
@@ -107,7 +98,7 @@
       <strong>At a glance</strong>
       <ul>
         <li>All game features work without consenting to Google Analytics.</li>
-        <li>No Google tag is loaded and no data is sent to Google until you consent.</li>
+        <li>Google Analytics does not collect information until you consent.</li>
         <li>Your play history, typed words, answers, player name, and player ID are not sent to Google Analytics.</li>
         <li>You can change your choice at any time under Settings → Data.</li>
       </ul>
@@ -117,14 +108,16 @@
     <p>This policy applies to DWORDle 2, a web game provided by @kakira9618 (the “Operator”). Contact the Operator at <a href="mailto:kurokuro917@gmail.com">kurokuro917@gmail.com</a> or via <a href="https://x.com/kakira9618" target="_blank" rel="noopener noreferrer">X (@kakira9618)</a>.</p>
 
     <h2>2. Data stored on your device</h2>
-    <p>Current games, play history and statistics, achievements and unlocks, tutorial state, preferences, player-card name and ID, local activity, and your analytics choice are stored in browser localStorage. They support game continuity and are not sent to the Operator’s server or Google Analytics. They remain until you use Settings → Data → Delete all data, clear site data in your browser, or browser storage is otherwise removed.</p>
+    <p>Current games, play history and statistics, achievements and unlocks, tutorial state, preferences, player-card name and ID, local activity, and your analytics choice are stored within the browser on your device. They support game continuity and are not sent to the Operator’s server or Google Analytics. They remain until you use Settings → Data → Delete all data, clear site data in your browser, or browser storage is otherwise removed.</p>
     <p>History exports, result images, and share text are created only at your request. Data you choose to save or share is then governed by the destination you select.</p>
 
     <h2>3. Optional Google Analytics</h2>
-    <p>Google Analytics 4 is used to understand aggregate usage and improve the game. The Google tag is loaded only after you explicitly accept or select “Allow analytics.” If you decline, nothing—including the refusal signal—is sent to Google (Basic Consent Mode). It is also not loaded when your browser sends Do Not Track.</p>
-    <p>After consent, DWORDle 2 sends screen names, a sanitized site URL without route parameters, game mode, result, number of guesses, and whether a puzzle is daily. Google may also process request metadata such as IP address, user agent, time, and referrer; Google-generated client and session identifiers; approximate country/city; and browser or device information. Player name or ID, typed words, puzzle answers, play history, and local activity are never included in analytics events.</p>
-    <p>The current GA4 configuration has Enhanced Measurement, Google Signals, ad personalization, and unnecessary Google data sharing disabled; it has no Google Ads link. Event-data retention is set to two months and user-data retention to 14 months. Google’s data processing terms have been reviewed. Retention controls apply to user- and event-level data and may not apply in the same way to standard aggregated reports.</p>
-    <p>With consent, GA4 may set <code>_ga</code> and <code>_ga_&lt;container-id&gt;</code> first-party cookies to distinguish users and preserve session state. Google lists a default duration of two years, subject to shorter browser limits. Selecting Settings → Data → Stop analytics stops future game events and attempts to delete these analytics cookies.</p>
+    <p>Google Analytics 4 is used to understand aggregate usage and improve the game. Collection begins only after you explicitly accept or select “Allow analytics.” Declining or stopping analytics does not limit any game feature.</p>
+    <p>Information collected after consent includes screens viewed, game mode, result, number of guesses, whether a puzzle is daily, browser and device information, approximate country or city, IP address, referrer, and identifiers stored in cookies. Player name or ID, typed words, puzzle answers, play history, and local activity are not sent.</p>
+    <p>The information is used to understand feature usage and game balance and to improve the game. It is not used for personalized advertising, individual ad targeting, sale of information, or automated decision-making. Where required by applicable law, the legal basis is your consent.</p>
+    <p>Google processes the transmitted information under its terms and policies. See <a href="https://policies.google.com/technologies/partner-sites?hl=en" target="_blank" rel="noopener noreferrer">How Google uses information from sites or apps that use its services</a>.</p>
+    <p>Google Analytics information is not used for advertising, and the property is not linked to Google Ads. Data retention is set to two months for event data and 14 months for user data.</p>
+    <p>When you consent, Google Analytics uses cookies to distinguish users and sessions. Their duration depends on Google’s specifications and browser settings. Settings → Data → Stop analytics stops future measurement and deletes analytics cookies set by this site. Delete all data and your browser’s site-data controls can also remove them.</p>
 
     <h2>4. External transfers</h2>
     <ul>
@@ -137,7 +130,7 @@
     <p>You may decline or withdraw analytics consent without losing game functionality. You can view, export, or delete locally stored game data in the app. Contact the Operator for requests available under applicable data-protection law. A request may not be fulfillable where the data cannot be identified or is not held by the Operator. Minors should consult a guardian where appropriate before consenting; declining does not change gameplay.</p>
 
     <h2>6. Security and changes</h2>
-    <p>Analytics fields are kept to the minimum described above, and typed words are excluded by design. The date on this page will be updated when this policy changes. Material changes to collection purposes or recipients will prompt renewed consent where required.</p>
+    <p>The information sent for analytics is limited to what is described above, and typed words are excluded. The date on this page will be updated when this policy changes. Material changes to collection purposes or recipients will prompt renewed consent where required.</p>
 
     <h2>7. About and credits</h2>
     <p>See <a href="about.html#english">About and Credits</a> for ownership, unofficial and non-affiliation notices, word-data sources, and third-party licenses.</p>

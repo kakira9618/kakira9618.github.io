@@ -208,7 +208,14 @@ try {
   await privacyPage.addInitScript({ path: axePath });
   await privacyPage.goto(`${baseUrl}privacy.html`, { waitUntil: "networkidle" });
   await privacyPage.getByRole("heading", { name: "プライバシーポリシー・外部送信表記", exact: true }).waitFor();
-  await privacyPage.getByText("拡張計測: 無効", { exact: true }).waitFor();
+  assert.equal(
+    await privacyPage.getByRole("link", {
+      name: "Googleのサービスを使用するサイトやアプリから収集した情報のGoogleによる使用",
+      exact: true,
+    }).getAttribute("href"),
+    "https://policies.google.com/technologies/partner-sites?hl=ja",
+    "privacy policy should link to Google's required Analytics disclosure"
+  );
   assert.equal(
     await privacyPage.getByRole("link", { name: "kurokuro917@gmail.com", exact: true }).first().getAttribute("href"),
     "mailto:kurokuro917@gmail.com",
