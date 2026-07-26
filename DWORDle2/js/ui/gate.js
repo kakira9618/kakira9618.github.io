@@ -105,9 +105,9 @@ export function showEntryGate(onEnter, { ready = Promise.resolve() } = {}) {
             href: "https://x.com/kakira9618",
             target: "_blank",
             rel: "noopener noreferrer",
-            "aria-label": "@kakira9618 on X",
+            "aria-label": "kakira9618 on X",
           },
-          "@kakira9618"
+          "kakira9618"
         )
       )
     ),

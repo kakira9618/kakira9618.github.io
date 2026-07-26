@@ -207,11 +207,11 @@ async function passGate(target) {
 }
 
 try {
-  // 法令・プライバシー表記は JS 無効でも読める独立ページとして公開する。
+  // プライバシーポリシーは JS 無効でも読める独立ページとして公開する。
   const privacyPage = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
   await privacyPage.addInitScript({ path: axePath });
   await privacyPage.goto(`${baseUrl}privacy.html`, { waitUntil: "networkidle" });
-  await privacyPage.getByRole("heading", { name: "プライバシーポリシー・外部送信表記", exact: true }).waitFor();
+  await privacyPage.getByRole("heading", { name: "プライバシーポリシー", exact: true }).waitFor();
   assert.equal(
     await privacyPage.getByRole("link", {
       name: "Googleのサービスを使用するサイトやアプリから収集した情報のGoogleによる使用",
@@ -225,7 +225,8 @@ try {
     "mailto:kurokuro917@gmail.com",
     "privacy contact email should be actionable"
   );
-  assert.equal(await privacyPage.getByRole("link", { name: "「このゲームについて・クレジット」" }).getAttribute("href"), "about.html");
+  await privacyPage.getByText("Google アナリティクスは、利用者やセッションを区別するためにCookieを使用します。", { exact: false }).waitFor();
+  await privacyPage.getByRole("heading", { name: "データが収集・処理される仕組み", exact: true }).waitFor();
   const privacyAxe = await privacyPage.evaluate(async () => window.axe.run(document, { resultTypes: ["violations"] }));
   const privacySerious = privacyAxe.violations.filter((violation) => ["serious", "critical"].includes(violation.impact));
   assert.equal(privacySerious.length, 0, `Privacy page has serious accessibility violations: ${privacySerious.map((v) => v.id).join(", ")}`);
@@ -2507,7 +2508,7 @@ try {
   assert.equal(await page.getByRole("button", { name: "計測を停止" }).isDisabled(), true);
   assert.equal(await page.getByRole("button", { name: "計測を許可" }).isDisabled(), true);
   assert.equal(
-    await page.getByRole("link", { name: "プライバシーポリシー・外部送信表記" }).getAttribute("href"),
+    await page.getByRole("link", { name: "プライバシーポリシー" }).getAttribute("href"),
     "privacy.html"
   );
   assert.equal(
@@ -3814,9 +3815,9 @@ try {
     await swPage.waitForURL(/#\/settings$/);
     await swPage.getByRole("tab", { name: "サウンド" }).click();
     await swPage.getByRole("switch", { name: "BGM" }).waitFor();
-    // 法令表記と About も事前キャッシュされ、オフラインのまま読める。
+    // プライバシーポリシーと About も事前キャッシュされ、オフラインのまま読める。
     await swPage.goto(`${baseUrl}privacy.html`, { waitUntil: "load" });
-    await swPage.getByRole("heading", { name: "プライバシーポリシー・外部送信表記", exact: true }).waitFor();
+    await swPage.getByRole("heading", { name: "プライバシーポリシー", exact: true }).waitFor();
     await swPage.goto(`${baseUrl}about.html`, { waitUntil: "load" });
     await swPage.getByRole("heading", { name: "このゲームについて・クレジット", exact: true }).waitFor();
     await swPage.getByText("承認・後援を受けたものではありません。", { exact: false }).waitFor();

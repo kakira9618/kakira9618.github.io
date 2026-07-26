@@ -155,4 +155,4 @@ tools/build.mjs       公開用ビルド（構成を保ったまま minify し�
 変更した場合は `node test/parity.test.mjs` が検出します。
 
 ---
-原作: [@kakira9618](https://github.com/kakira9618) / 単語リスト出典: [powerlanguage/word-lists](https://github.com/powerlanguage/word-lists)
+原作: [kakira9618](https://github.com/kakira9618) / 単語リスト出典: [powerlanguage/word-lists](https://github.com/powerlanguage/word-lists)

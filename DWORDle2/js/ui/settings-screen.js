@@ -710,7 +710,7 @@ function render() {
         el(
           "a",
           { href: "privacy.html", target: "_blank", rel: "noopener noreferrer" },
-          tr("プライバシーポリシー・外部送信表記", "Privacy policy and external transfer notice")
+          tr("プライバシーポリシー", "Privacy policy")
         ),
         el("br"),
         el(
@@ -741,9 +741,9 @@ function render() {
           href: "https://x.com/kakira9618",
           target: "_blank",
           rel: "noopener noreferrer",
-          "aria-label": "@kakira9618 on X",
+          "aria-label": "kakira9618 on X",
         },
-        "@kakira9618"
+        "kakira9618"
       )
     )
   );
