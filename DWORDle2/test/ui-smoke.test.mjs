@@ -3136,13 +3136,21 @@ try {
       await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
       await cardPage.waitForTimeout(70);
     }
-    const zoomBeforePinch = await cardPage.locator(".player-card-stage.is-zoomed").evaluate((stage) => {
-      const tilt = stage.querySelector(".player-card-tilt");
-      return {
-        scale: new DOMMatrix(getComputedStyle(tilt).transform).a,
-        wrapAnimation: getComputedStyle(stage.querySelector(".player-card-wrap")).animationName,
-      };
-    });
+    // 拡大は CSS トランジションなので、遅いマシンでは途中の倍率を読んでしまう。
+    // 目標倍率に届くまで少し待つ（届かないまま打ち切れば下の assert が理由付きで落ちる）。
+    const readZoom = () =>
+      cardPage.locator(".player-card-stage.is-zoomed").evaluate((stage) => {
+        const tilt = stage.querySelector(".player-card-tilt");
+        return {
+          scale: new DOMMatrix(getComputedStyle(tilt).transform).a,
+          wrapAnimation: getComputedStyle(stage.querySelector(".player-card-wrap")).animationName,
+        };
+      });
+    let zoomBeforePinch = await readZoom();
+    for (let i = 0; i < 40 && zoomBeforePinch.scale <= 2.8; i++) {
+      await cardPage.waitForTimeout(50);
+      zoomBeforePinch = await readZoom();
+    }
     assert.ok(
       zoomBeforePinch.scale > 2.8 && zoomBeforePinch.scale < 3.2,
       `Double-tap should zoom the card to 3x: ${JSON.stringify(zoomBeforePinch)}`
