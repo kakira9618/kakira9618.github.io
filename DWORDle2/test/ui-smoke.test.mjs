@@ -1675,6 +1675,11 @@ try {
     await finalUnlockDialog.waitFor();
     const finalUnlockCopy = await finalUnlockDialog.textContent();
     assert.doesNotMatch(finalUnlockCopy, /[ー―]{2}/, "EXTRA SHOT unlock copy should not use a double dash");
+    assert.match(
+      finalUnlockCopy,
+      /早く当てるか、両方を見抜くまで粘るか/,
+      "EXTRA SHOT unlock copy should tell the player that the strategy changes"
+    );
     await finalUnlockDialog.getByRole("button", { name: "あとで" }).click();
     await successPage.evaluate(() => { location.hash = "#/problems"; });
     await successPage.waitForURL(/#\/problems$/);

@@ -385,6 +385,15 @@ export function extraShotUnlockCelebration() {
             tr(
               "設定に「EXTRA SHOT」が追加されました。ONにすると、クリア後に追加推理タイムが発動。当てなかったもう一つの答えを 1 回のチャンスで見抜けば、大成功の DOUBLE CLEAR!（DWORDle / DWORDlie 共通。失敗しても通常クリアのまま）",
               "A new “EXTRA SHOT” setting has been added. When ON, clearing a game triggers one extra deduction: name the other hidden answer in a single try for a DOUBLE CLEAR! (Applies to DWORDle & DWORDlie. Failing still counts as a normal clear.)"
+            ),
+            // 遊び方が変わることを一言添える（速さ重視か、両方を絞り切るか）
+            el(
+              "div",
+              { class: "unlock-strategy" },
+              tr(
+                "早く当てるか、両方を見抜くまで粘るか。Guess の選び方が変わります。",
+                "Clear it fast, or hold out until you can see both answers — it changes how you pick your Guesses."
+              )
             )
           ),
           el(

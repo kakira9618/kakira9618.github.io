@@ -1428,6 +1428,12 @@ body.theme-cyber .toast {
   color: var(--unlock-card-fg-dim);
   font-size: 12.5px;
 }
+/* 解放カードの結びの一文（EXTRA SHOT の「戦略が変わる」など）。説明文より少し強調する */
+.unlock-strategy {
+  margin-top: 8px;
+  color: #ffe38a;
+  font-weight: 700;
+}
 .bgm-unlock-actions {
   position: relative;
   display: flex;
