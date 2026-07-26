@@ -119,10 +119,7 @@ function render() {
       : el(
           "p",
           { class: "card hint ach-hidden-empty" },
-          tr(
-            "まだ解放した隠し実績はありません。いくつ隠れているかも秘密です…",
-            "No secret achievements unlocked yet. Even how many are hidden is a secret…"
-          )
+          tr("まだ解放した隠し実績はありません。", "No secret achievements unlocked yet.")
         )
   );
   root.append(header, body);

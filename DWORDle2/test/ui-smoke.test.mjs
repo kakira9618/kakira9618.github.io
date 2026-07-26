@@ -340,6 +340,7 @@ try {
       title: document.title,
       ogTitle: document.querySelector('meta[property="og:title"]')?.content,
       ogImage: document.querySelector('meta[property="og:image"]')?.content,
+      ogImageAlt: document.querySelector('meta[property="og:image:alt"]')?.content,
       ogDescription: document.querySelector('meta[property="og:description"]')?.content,
       twitterCard: document.querySelector('meta[name="twitter:card"]')?.content,
       twitterTitle: document.querySelector('meta[name="twitter:title"]')?.content,
@@ -358,6 +359,7 @@ try {
     "https://kakira9618.github.io/DWORDle2/og.jpg",
     "横長カードを出すクライアントには 1.91:1 の画像を渡す"
   );
+  assert.equal(publicEntry.ogImageAlt, "DWORDle 2 | 新感覚Wordle");
   assert.equal(publicEntry.ogDescription, "答えは2つ。盤面は1つ。新感覚Wordle！");
   assert.equal(publicEntry.twitterCard, "summary", "X は正方形アイコンの小さいカードにする");
   assert.equal(publicEntry.twitterTitle, "DWORDle 2 | 新感覚Wordle");
