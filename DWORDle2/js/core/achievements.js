@@ -11,6 +11,10 @@
 //   - checkOnEvent(type): 分析モード使用・履歴移行などの単発イベント
 // 新規解放された実績の配列を返すので、呼び出し側がトースト表示する。
 //
+// 隠し実績は「何個あるか」もプレイヤーには伏せる。実績画面には解放済みの隠し実績だけを並べ、
+// 進捗表示は通常実績の「15 / 50」に解放済みの隠し実績を「+ 3」として添える
+// （achievementProgress() 参照）。
+//
 // icon は js/ui/icons.js のアイコン名、color はバッジのアクセント色。
 // 同じアイコンを共有する系列（嘘系の仮面、やり込みの本など）は、色相を変えて見分けられる
 // ようにする。系列の最下位と最上位だけは元の色で揃え、最上位には glow: true を付けて
@@ -180,6 +184,31 @@ export function getUnlocked() {
 
 export function isUnlocked(id) {
   return isDebugMode() || (knownAchievementIds.has(id) && unlocked[id] !== undefined);
+}
+
+export const NORMAL_ACHIEVEMENTS = ACHIEVEMENTS.filter((achievement) => !achievement.hidden);
+export const HIDDEN_ACHIEVEMENTS = ACHIEVEMENTS.filter((achievement) => achievement.hidden);
+
+// 実績の進捗。隠し実績は総数を伏せる方針なので、表示に使うのは解放済みの個数だけ。
+// hiddenTotal はバッジ判定など内部用（画面には出さない）。
+export function achievementProgress(unlockedMap = getUnlocked()) {
+  const countUnlocked = (list) => list.filter((achievement) => unlockedMap[achievement.id] !== undefined).length;
+  const normalUnlocked = countUnlocked(NORMAL_ACHIEVEMENTS);
+  const hiddenUnlocked = countUnlocked(HIDDEN_ACHIEVEMENTS);
+  return {
+    normalUnlocked,
+    normalTotal: NORMAL_ACHIEVEMENTS.length,
+    hiddenUnlocked,
+    hiddenTotal: HIDDEN_ACHIEVEMENTS.length,
+    // 「実績を全部解除したか」の判定（プレイヤーカードの MASTER / KING ランク）
+    allUnlocked: normalUnlocked + hiddenUnlocked >= ACHIEVEMENTS.length,
+  };
+}
+
+// 進捗の表示文字列。「15 / 50 + 3」（+ の後ろは解放済みの隠し実績の数）
+export function formatAchievementProgress(progress, { spaced = true } = {}) {
+  const slash = spaced ? " / " : "/";
+  return `${progress.normalUnlocked}${slash}${progress.normalTotal} + ${progress.hiddenUnlocked}`;
 }
 
 function unlock(id, newly) {

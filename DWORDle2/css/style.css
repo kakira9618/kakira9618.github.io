@@ -3251,7 +3251,7 @@ body.reduce-motion .guess-flag-cloth {
   }
 }
 
-/* ---- 隠し実績 ---- */
+/* ---- 実績バッジ ---- */
 .ach-card .badge-icon {
   width: 42px;
   height: 42px;
@@ -3265,9 +3265,6 @@ body.reduce-motion .guess-flag-cloth {
 .ach-card.locked .badge-icon {
   color: var(--fg-dim) !important;
   opacity: 0.6;
-}
-.ach-card.hidden-locked .badge-icon {
-  border-style: dashed;
 }
 /* 系列の最上位実績（glow）は、同じ色・同じアイコンの下位と見分けが付くよう
    バッジを光らせる。box-shadow の色を直接アニメーションさせると補間が粗くて

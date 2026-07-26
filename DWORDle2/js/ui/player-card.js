@@ -6,7 +6,12 @@
 import { el, clear } from "./dom.js?v=20260725-b";
 import { registerScreen, navigate, redirect } from "./app.js?v=20260725-b";
 import { getHistory, countPlays, localDayNumber } from "../core/records.js?v=20260725-b";
-import { ACHIEVEMENTS, getUnlocked } from "../core/achievements.js?v=20260725-b";
+import {
+  ACHIEVEMENTS,
+  achievementProgress,
+  formatAchievementProgress,
+  getUnlocked,
+} from "../core/achievements.js?v=20260725-b";
 import { HIDDEN_THEMES } from "../core/settings.js?v=20260725-b";
 import { favoriteBgmTrackId, favoriteThemeId } from "../core/activity.js?v=20260725-b";
 import { BGM_TRACKS, currentBgmTrackId, playSfx } from "../audio/sound.js?v=20260725-b";
@@ -222,8 +227,11 @@ function collectStats() {
     playDays: days.length,
     maxStreak,
     playMinutes: Math.round(playSeconds / 60),
+    // achUnlocked / achTotal は隠し実績も含む全体（ランク判定用）。
+    // カードに印字するのは「通常実績 / 総数 + 解放した隠し実績」で、隠し実績の総数は出さない。
     achUnlocked: Object.keys(getUnlocked()).length,
     achTotal: ACHIEVEMENTS.length,
+    achProgress: achievementProgress(),
     firstPlay: history.length ? history[0].startTime : null,
   };
 }
@@ -613,7 +621,7 @@ export async function renderPlayerCardCanvas(name) {
     [`${stats.winRate}%`, tr("勝率", "Win rate")],
     [String(stats.playDays), tr("プレイ日数", "Days played")],
     [String(stats.maxStreak), "Max Streak"],
-    [`${stats.achUnlocked}/${stats.achTotal}`, tr("実績", "Achievements")],
+    [formatAchievementProgress(stats.achProgress, { spaced: false }), tr("実績", "Achievements")],
     [fmtPlayTime(stats.playMinutes), tr("総プレイ時間", "Play time")],
     [favoriteTheme ? themeLabel(favoriteTheme) : "-", tr("お気に入りテーマ", "Favorite theme"), true],
     [favoriteBgm ? bgmLabel(favoriteBgm) : "-", tr("お気に入りBGM", "Favorite BGM"), true],

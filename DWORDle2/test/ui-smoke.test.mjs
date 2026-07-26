@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { chromium } from "playwright";
 import { Logic } from "../js/core/logic.js?v=20260725-b";
-import { ACHIEVEMENTS } from "../js/core/achievements.js?v=20260725-b";
+import { ACHIEVEMENTS, HIDDEN_ACHIEVEMENTS, NORMAL_ACHIEVEMENTS } from "../js/core/achievements.js?v=20260725-b";
 // 隠し要素の文字列はテストにも平文で置かない（js/core/secret.js 参照）
 import { reveal } from "../js/core/secret.js?v=20260725-b";
 import { pidLabel, todayPID } from "../js/core/problems.js?v=20260725-b";
@@ -2566,7 +2566,16 @@ try {
 
     await freshPage.evaluate(() => { location.hash = "#/achievements"; });
     await freshPage.waitForURL(/#\/achievements$/);
-    await freshPage.locator("#screen-achievements .header .sub").filter({ hasText: `${ACHIEVEMENTS.length} / ${ACHIEVEMENTS.length}` }).waitFor();
+    // 進捗は「通常実績 / 総数 + 解放した隠し実績」。デバッグモードでは全解放なので隠し実績も全部並ぶ
+    await freshPage
+      .locator("#screen-achievements .header .sub")
+      .filter({ hasText: `${NORMAL_ACHIEVEMENTS.length} / ${NORMAL_ACHIEVEMENTS.length} + ${HIDDEN_ACHIEVEMENTS.length}` })
+      .waitFor();
+    assert.equal(
+      await freshPage.locator("#screen-achievements .ach-card").count(),
+      ACHIEVEMENTS.length,
+      "debug mode should list every achievement including the secret ones"
+    );
     await freshPage.getByText("only consider the first play of the same puzzle number on the same day, regardless of mode", { exact: false }).waitFor();
     const achievementTextSelection = await freshPage.locator("#screen-achievements").evaluate((screen) => ({
       screen: getComputedStyle(screen).userSelect,
@@ -2583,7 +2592,22 @@ try {
 
     await freshPage.reload({ waitUntil: "networkidle" });
     await passGate(freshPage);
-    await freshPage.locator("#screen-achievements .header .sub").filter({ hasText: `0 / ${ACHIEVEMENTS.length}` }).waitFor();
+    await freshPage
+      .locator("#screen-achievements .header .sub")
+      .filter({ hasText: `0 / ${NORMAL_ACHIEVEMENTS.length} + 0` })
+      .waitFor();
+    // 未解放の隠し実績は「？？？」の枠すら出さず、個数も伏せる
+    assert.equal(
+      await freshPage.locator("#screen-achievements .ach-card").count(),
+      NORMAL_ACHIEVEMENTS.length,
+      "locked secret achievements must not appear in the list"
+    );
+    await freshPage.locator("#screen-achievements .ach-hidden-empty").waitFor();
+    assert.equal(
+      await freshPage.getByText(`Secret achievements ${HIDDEN_ACHIEVEMENTS.length}`, { exact: false }).count(),
+      0,
+      "the number of secret achievements must not be shown"
+    );
     await freshPage.evaluate(() => { location.hash = "#/settings"; });
     await freshPage.waitForURL(/#\/settings$/);
     assert.equal(await freshPage.locator(".debug-status").count(), 0, "reload should turn debug mode off");

@@ -2,8 +2,12 @@ import assert from "node:assert/strict";
 import {
   ACHIEVEMENTS,
   COLLECTOR_REQUIREMENT,
+  HIDDEN_ACHIEVEMENTS,
+  NORMAL_ACHIEVEMENTS,
   achievementCountableRecords,
   achievementIdsFromHistory,
+  achievementProgress,
+  formatAchievementProgress,
 } from "../js/core/achievements.js?v=20260725-b";
 import { Logic, queryWordPair } from "../js/core/logic.js?v=20260725-b";
 // 隠し実績の名前・条件はソースに平文を置かない方針なので、テストでも符号化して比較する
@@ -76,6 +80,37 @@ assert.deepEqual(
   },
   { name: "二週間皆勤", desc: "デイリー問題を 14 日連続でクリアする" }
 );
+
+// ---- 進捗表示: 隠し実績は「解放した個数」だけを + で添える（総数は伏せる）----
+{
+  assert.equal(NORMAL_ACHIEVEMENTS.length + HIDDEN_ACHIEVEMENTS.length, ACHIEVEMENTS.length);
+  const someUnlocked = {
+    [NORMAL_ACHIEVEMENTS[0].id]: 1,
+    [NORMAL_ACHIEVEMENTS[1].id]: 2,
+    [HIDDEN_ACHIEVEMENTS[0].id]: 3,
+  };
+  const progress = achievementProgress(someUnlocked);
+  assert.deepEqual(
+    {
+      normalUnlocked: progress.normalUnlocked,
+      normalTotal: progress.normalTotal,
+      hiddenUnlocked: progress.hiddenUnlocked,
+      allUnlocked: progress.allUnlocked,
+    },
+    { normalUnlocked: 2, normalTotal: NORMAL_ACHIEVEMENTS.length, hiddenUnlocked: 1, allUnlocked: false }
+  );
+  assert.equal(formatAchievementProgress(progress), `2 / ${NORMAL_ACHIEVEMENTS.length} + 1`);
+  assert.equal(formatAchievementProgress(progress, { spaced: false }), `2/${NORMAL_ACHIEVEMENTS.length} + 1`);
+
+  const all = Object.fromEntries(ACHIEVEMENTS.map((achievement) => [achievement.id, 1]));
+  const allProgress = achievementProgress(all);
+  assert.equal(allProgress.allUnlocked, true, "unlocking everything should satisfy the MASTER rank condition");
+  assert.equal(
+    formatAchievementProgress(allProgress),
+    `${NORMAL_ACHIEVEMENTS.length} / ${NORMAL_ACHIEVEMENTS.length} + ${HIDDEN_ACHIEVEMENTS.length}`
+  );
+  assert.equal(achievementProgress({}).hiddenUnlocked, 0);
+}
 
 {
   const ids = achievementIdsFromHistory([clearRecord({ pid: 10000, guesses: 3, duration: 10 })]);
