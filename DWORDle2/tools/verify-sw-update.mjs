@@ -12,6 +12,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
+import { listPrecacheAssets } from "./make-source-hash.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PORT = 8963;
@@ -73,9 +74,14 @@ async function pageSourceHash(page) {
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function main() {
-  // sw.js が全資産を素の URL で取るため、サイト一式を一時ディレクトリへコピーして配信する
+  // sw.js が全資産を素の URL で取るため、サイト一式を一時ディレクトリへコピーして配信する。
+  // 事前キャッシュ対象を 1 つでも取りこぼすと install が失敗し、serviceWorker.ready で
+  // 永久に待つことになるので、コピーする顔ぶれは sw.js と同じ一覧から作る。
   const siteRoot = await mkdtemp(path.join(os.tmpdir(), "dwordle2-sw-verify-"));
-  for (const entry of ["index.html", "manifest.webmanifest", "favicon.png", "sw.js", "css", "js", "vendor", "tools"]) {
+  const precachedTopLevel = (await listPrecacheAssets())
+    .filter((asset) => asset !== "./" && !asset.includes("/"));
+  const entries = new Set([...precachedTopLevel, "sw.js", "css", "js", "vendor", "tools"]);
+  for (const entry of entries) {
     await cp(path.join(root, entry), path.join(siteRoot, entry), { recursive: true });
   }
   const server = await serve(siteRoot);
@@ -88,7 +94,13 @@ async function main() {
     // 初回訪問: SW が install（事前キャッシュ）を終えるまで待つ
     const oldHash = await readSourceHash(siteRoot);
     await page.goto(baseUrl, { waitUntil: "networkidle" });
-    await page.evaluate(() => navigator.serviceWorker.ready);
+    // install が失敗した場合 ready は永遠に解決しないので、上限を付けて原因ごと落とす
+    await page.evaluate(async () => {
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Service Worker の install が 30 秒で終わらない（事前キャッシュ対象の取りこぼし？）")), 30000)
+      );
+      await Promise.race([navigator.serviceWorker.ready, timeout]);
+    });
     console.log(`初回訪問: v=${oldHash} を事前キャッシュ済み`);
 
     // デプロイを再現: ソースを変更してハッシュ類を再生成する。
