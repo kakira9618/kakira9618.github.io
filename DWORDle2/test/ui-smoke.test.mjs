@@ -2813,6 +2813,41 @@ try {
     await firstGuideContext.close();
   }
 
+  // 逆に、タイトルの基本ルールを読んだ人には詳しい遊び方を強制しない（説明の二重表示を防ぐ）
+  const tutorialFirstContext = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
+  const tutorialFirstPage = await tutorialFirstContext.newPage();
+  try {
+    await tutorialFirstPage.addInitScript(() => {
+      localStorage.setItem("dwordle2.settings", JSON.stringify({
+        theme: "classic", sfx: false, sfxVolume: 0, bgm: false, bgmVolume: 0, language: "ja", reduceFx: true,
+      }));
+      localStorage.setItem("dwordle2.legacyImportPrompted", "true");
+      localStorage.setItem("dwordle2.playCount", "99");
+      localStorage.setItem("dwordle2.menuUnlockSeen", "99");
+      localStorage.setItem("dwordle2.extraShotUnlockSeen", "true");
+      localStorage.setItem("dwordle2.achievements.reconcileVersion", "99");
+    });
+    await tutorialFirstPage.goto(baseUrl, { waitUntil: "networkidle" });
+    await passGate(tutorialFirstPage);
+    const basicRules = tutorialFirstPage.getByRole("dialog", { name: "基本ルール | DWORDle" });
+    await basicRules.waitFor();
+    await basicRules.getByRole("button", { name: "わかった" }).click();
+    await basicRules.waitFor({ state: "detached" });
+    await tutorialFirstPage.getByRole("button", { name: "本日の問題", exact: true }).click();
+    await tutorialFirstPage.waitForURL(/#\/game$/);
+    await tutorialFirstPage.locator("#screen-game.active .row").last().waitFor();
+    assert.equal(
+      await tutorialFirstPage.getByRole("dialog", { name: "DWORDle 遊び方" }).count(),
+      0,
+      "the full guide must not be forced after the basic rules were acknowledged"
+    );
+    // 自分で開くときは従来どおり開ける
+    await tutorialFirstPage.getByRole("button", { name: "遊び方" }).click();
+    await tutorialFirstPage.getByRole("dialog", { name: "DWORDle 遊び方" }).waitFor();
+  } finally {
+    await tutorialFirstContext.close();
+  }
+
   // DWORDlie 解放の瞬間（seenPlays 1 → plays 2）はモーダルで案内し、そのまま裏モードへ切り替えられる
   const usoUnlockContext = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
   const usoUnlockPage = await usoUnlockContext.newPage();

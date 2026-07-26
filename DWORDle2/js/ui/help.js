@@ -507,8 +507,14 @@ export function hasSeenHelp(mode) {
   return loadJSON(helpSeenKey(mode), false);
 }
 
-export function showHelpModal(mode, afterClose = null) {
+// ルール説明を見せたことを記録する。基本ルール（初回チュートリアル）も
+// 説明を見せた扱いにして、盤面に入った直後に詳しい遊び方を二重に強制しない。
+export function markHelpSeen(mode) {
   saveJSON(helpSeenKey(mode), true);
+}
+
+export function showHelpModal(mode, afterClose = null) {
+  markHelpSeen(mode);
   stopAnimation();
   playSfx("help");
   const language = currentLanguage();
@@ -530,6 +536,8 @@ export function showHelpModal(mode, afterClose = null) {
 }
 
 export function showFirstTutorial(mode, afterClose = null) {
+  // これを読めばルールは分かるので、盤面側の遊び方強制表示はもう起こさない
+  markHelpSeen(mode);
   const point = (number, title, text) =>
     el(
       "li",
