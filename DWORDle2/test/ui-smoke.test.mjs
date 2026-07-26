@@ -634,6 +634,13 @@ try {
   await usoPopHelp.evaluate((dialog) => {
     dialog.style.height = "120px";
     dialog.style.maxHeight = "120px";
+  });
+  // 縮めた高さがレイアウトに反映されるのを待ってから下端へ送る（遅いマシンで先に読むと 0 のまま）
+  await page.waitForFunction(() => {
+    const dialog = document.querySelector('[role="dialog"][aria-labelledby]');
+    return dialog && dialog.scrollHeight > dialog.clientHeight + 8;
+  });
+  await usoPopHelp.evaluate((dialog) => {
     dialog.scrollTop = dialog.scrollHeight;
   });
   assert.ok(await usoPopHelp.evaluate((dialog) => dialog.scrollTop > 0), "help dialog should be scrollable for the reopen test");
@@ -3318,11 +3325,17 @@ try {
       y: playerCardStageBox.y + playerCardStageBox.height / 2,
     };
     await cardPage.mouse.dblclick(desktopCenter.x, desktopCenter.y);
-    await cardPage.waitForTimeout(80);
-    const desktopZoomStart = await playerCardTilt.evaluate((tilt) => {
-      const matrix = new DOMMatrix(getComputedStyle(tilt).transform);
-      return { scale: matrix.a, x: matrix.e, y: matrix.f };
-    });
+    // タッチ側と同じく、拡大のトランジションが終わるまで待ってから読む
+    const readDesktopZoom = () =>
+      playerCardTilt.evaluate((tilt) => {
+        const matrix = new DOMMatrix(getComputedStyle(tilt).transform);
+        return { scale: matrix.a, x: matrix.e, y: matrix.f };
+      });
+    let desktopZoomStart = await readDesktopZoom();
+    for (let i = 0; i < 40 && desktopZoomStart.scale <= 2.8; i++) {
+      await cardPage.waitForTimeout(50);
+      desktopZoomStart = await readDesktopZoom();
+    }
     assert.ok(
       desktopZoomStart.scale > 2.8 && desktopZoomStart.scale < 3.2,
       `Desktop double-click should zoom the card to 3x: ${JSON.stringify(desktopZoomStart)}`
