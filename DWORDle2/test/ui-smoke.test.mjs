@@ -723,8 +723,28 @@ try {
     await page.evaluate(() => document.getElementById("screen-game").classList.contains("kbd-collapsed")),
     "the toggle should mark the game screen as keyboard-collapsed"
   );
-  const kbdCollapsed = await page.evaluate(() => document.getElementById("keyboard").getBoundingClientRect().height);
-  assert.ok(kbdCollapsed < 5, `the keyboard should fold away (height: ${kbdCollapsed})`);
+  // 完全には消さず、上辺だけを覗かせる（キーボードの在り処が分かるように）
+  const kbdCollapsedMetrics = await page.evaluate(() => {
+    const keyboard = document.getElementById("keyboard");
+    const toggle = document.getElementById("kbd-toggle");
+    return {
+      height: keyboard.getBoundingClientRect().height,
+      opacity: Number(getComputedStyle(keyboard).opacity),
+      rowsOpacity: Number(getComputedStyle(keyboard.querySelector(".kbd-row")).opacity),
+      // トグルは残した縁のすぐ上に載る
+      gapUnderToggle: Math.round(keyboard.getBoundingClientRect().bottom - toggle.getBoundingClientRect().bottom),
+    };
+  });
+  assert.ok(
+    kbdCollapsedMetrics.height > 4 && kbdCollapsedMetrics.height < 40,
+    `the collapsed keyboard should leave a thin sliver visible: ${JSON.stringify(kbdCollapsedMetrics)}`
+  );
+  assert.equal(kbdCollapsedMetrics.opacity, 1, "the sliver must stay visible");
+  assert.equal(kbdCollapsedMetrics.rowsOpacity, 0, "the keys themselves should be hidden while collapsed");
+  assert.ok(
+    Math.abs(kbdCollapsedMetrics.gapUnderToggle - kbdCollapsedMetrics.height) <= 2,
+    `the toggle should sit right on top of the sliver: ${JSON.stringify(kbdCollapsedMetrics)}`
+  );
   await page.locator("#kbd-toggle").click();
   await page.waitForTimeout(450);
   const kbdRestored = await page.evaluate(() => document.getElementById("keyboard").getBoundingClientRect().height);
@@ -2052,6 +2072,13 @@ try {
       document.querySelector(`#keyboard [data-key="${k}"]`)
         .dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     }, [key]);
+    // iOS の合成 click は時刻の基準がずれることがある（ページ基準ではなく別の値）。
+    // 時刻を見て打ち消す実装だと、この click が素通りして二重入力になる。
+    const lateClickWithOddTime = (key) => touchPage.evaluate(([k]) => {
+      const event = new MouseEvent("click", { bubbles: true, cancelable: true });
+      Object.defineProperty(event, "timeStamp", { get: () => Date.now() });
+      document.querySelector(`#keyboard [data-key="${k}"]`).dispatchEvent(event);
+    }, [key]);
 
     await touchKey("p");
     await touchKey("o");
@@ -2063,6 +2090,11 @@ try {
     await lateClick("s");
     await lateClick("s");
     assert.equal(await typedRow(), "S", "multiple synthetic clicks from one touch must not repeat the key");
+    // 時刻の基準がずれた合成 click でも増えない
+    for (let i = 0; i < 5; i++) await touchPage.locator('#keyboard [data-key="backspace"]').click();
+    await touchKey("t");
+    await lateClickWithOddTime("t");
+    assert.equal(await typedRow(), "T", "a synthetic click with an odd timeStamp must not repeat the key");
     // 同じキーを 2 回タッチしたぶんは 2 文字入る
     for (let i = 0; i < 5; i++) await touchPage.locator('#keyboard [data-key="backspace"]').click();
     await touchKey("s");

@@ -10,6 +10,8 @@
   --app-height: 100vh;
   --header-h: 52px;
   --kbd-h: clamp(150px, 24vh, 200px);
+  /* キーボードを畳んだときに残す高さ。上辺の枠線とパネルの縁だけが覗く量 */
+  --kbd-collapsed-h: 10px;
   --tile-size: clamp(44px, min(11.5vw, 7.2vh), 62px);
   --tile-gap: 8px;
   --radius: 10px;
@@ -980,13 +982,19 @@ body.theme-classic .tile.reveal {
   overflow: hidden;
   transition: height 0.28s cubic-bezier(0.3, 0.9, 0.3, 1), padding 0.28s cubic-bezier(0.3, 0.9, 0.3, 1), opacity 0.22s ease;
 }
-/* キーボード折りたたみ（盤面を全画面で見たいとき用）。画面下へシュッと畳む */
+/* キーボード折りたたみ（盤面を全画面で見たいとき用）。画面下へシュッと畳む。
+   完全に消すと「そこにキーボードがある」ことが分からなくなるので、
+   上辺の枠線とパネルの縁を --kbd-collapsed-h ぶんだけ残す */
 #screen-game.kbd-collapsed #keyboard {
-  height: 0;
+  height: calc(var(--kbd-collapsed-h) + env(safe-area-inset-bottom));
   padding-top: 0;
   padding-bottom: env(safe-area-inset-bottom);
+  opacity: 1;
+}
+/* 覗いている部分にキーの一部が見えると中途半端なので、中身は隠す */
+#screen-game.kbd-collapsed #keyboard .kbd-row {
   opacity: 0;
-  border-top-color: transparent;
+  transition: opacity 0.16s ease;
 }
 /* 折りたたみボタン: キーボード上端の左に密着した角丸タブ（▼）。
    下辺に枠線を引かず、キーボードのパネルと一体に見せる。畳むと画面下端に残って ▲ になる */
@@ -1011,7 +1019,8 @@ body.theme-classic .tile.reveal {
   transition: bottom 0.28s cubic-bezier(0.3, 0.9, 0.3, 1);
 }
 #screen-game.kbd-collapsed #kbd-toggle {
-  bottom: env(safe-area-inset-bottom);
+  /* 残した縁のすぐ上に載せる（展開中と同じ「キーボードの上辺に密着」した見た目） */
+  bottom: calc(var(--kbd-collapsed-h) + env(safe-area-inset-bottom));
 }
 /* 展開中は ▼（畳む）、折りたたみ中は ▲（開く）。回転もアニメーションさせる */
 #kbd-toggle svg {

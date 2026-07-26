@@ -64,13 +64,16 @@ let extraShotFinishPending = false;
 let extraShotSkipReveal = null; // 2周目以降のタップによる判定演出スキップ
 let gatherSession = 0;
 let pendingKeys = []; // 判定オープン中の先行入力（次の 1 行分だけ保持）
-// タッチ/ペンで処理済みのキーと、その最後の時刻。
-// キーごとに持つのが要点で、直前の 1 キーだけを覚える方式だと P → O と速く打ったときに
-// P の合成 click が O のあとに届いて素通りし、"POP" のように増える。
-// また、時間窓の間に届いた click は何件でも捨てる（iOS は 1 タップに対して複数の
-// 合成 click を出すことがあり、1 件だけ打ち消す方式では 2 件目が入力されてしまう）。
-const TOUCH_CLICK_WINDOW_MS = 700;
-const touchHandledKeys = new Map(); // key -> 最後にタッチで処理した timeStamp
+// タッチ/ペンで処理済みのキー。あとから届く合成 click をここで打ち消す。
+// 設計の要点（いずれも実機で二重入力になった経緯がある）:
+//  - キーごとに持つ: 直前の 1 キーだけだと、P → O と速く打ったときに P の合成 click が
+//    O のあとに届いて素通りし "POP" になる
+//  - 件数を数えない: iOS は 1 タップに対して複数の合成 click を出すことがある
+//  - event.timeStamp を見ない: 合成イベントの時刻は基準がずれることがある。
+//    タイマーで期限を切る
+const TOUCH_CLICK_WINDOW_MS = 1200;
+const touchHandledKeys = new Set(); // タッチで処理済みのキー
+const touchHandledTimers = new Map(); // key -> 期限切れタイマー
 
 function build() {
   root = document.getElementById("screen-game");
@@ -148,17 +151,22 @@ function applyKeyboardCollapsed() {
   );
 }
 
-function markTouchHandled(key, timeStamp) {
-  touchHandledKeys.set(key, timeStamp);
+function markTouchHandled(key) {
+  clearTimeout(touchHandledTimers.get(key));
+  touchHandledKeys.add(key);
+  touchHandledTimers.set(
+    key,
+    setTimeout(() => {
+      touchHandledKeys.delete(key);
+      touchHandledTimers.delete(key);
+    }, TOUCH_CLICK_WINDOW_MS)
+  );
 }
 
 // そのキーを直近でタッチ処理していれば、この click は合成 click なので捨てる。
-// timeStamp が信頼できない環境（iOS の合成イベントは 0 になることがある）でも、
-// 差が負なら窓の内側として扱う。
-function isSyntheticTouchClick(key, timeStamp) {
-  const handledAt = touchHandledKeys.get(key);
-  if (handledAt === undefined) return false;
-  return timeStamp - handledAt < TOUCH_CLICK_WINDOW_MS;
+// キーボード・支援技術からの click は、直前にタッチが無いのでそのまま通る。
+function isSyntheticTouchClick(key) {
+  return touchHandledKeys.has(key);
 }
 
 function buildKeyboard() {
@@ -177,7 +185,7 @@ function buildKeyboard() {
           onclick: (event) => {
             // タッチ/ペンの pointerdown ですでに処理済みのタップの合成 click は無視する
             // （抑止が効かない環境での二重入力防止）。キーボード・支援技術の click は通す。
-            if (isSyntheticTouchClick(k, event.timeStamp)) return;
+            if (isSyntheticTouchClick(k)) return;
             handleKey(k);
           },
         },
@@ -189,7 +197,7 @@ function buildKeyboard() {
       btn.addEventListener("pointerdown", (event) => {
         if (event.pointerType === "mouse") return; // マウスは従来どおり click で処理
         event.preventDefault(); // 合成 click を抑止する
-        markTouchHandled(k, event.timeStamp);
+        markTouchHandled(k);
         handleKey(k);
       });
       keyEls[k] = btn;
@@ -271,15 +279,16 @@ async function askLeaveGame() {
         el(
           "div",
           { class: "hint", style: { fontSize: "14px" } },
-          tr("進行中のゲームに対する操作を選択", "Choose an action for the game in progress")
+          tr("進行中のゲームに対する操作を選択：", "Choose an action for the game in progress:")
         ),
         el(
           "ul",
           { class: "hint", style: { fontSize: "14px", margin: "0", paddingLeft: "18px" } },
+          // 並び順はボタンの並び（キャンセル / 破棄 / 中断）と揃える
           el(
             "li",
             {},
-            tr("中断：あとで再開できます", "Pause: resume later")
+            tr("キャンセル：ゲームに戻ります", "Cancel: return to the game")
           ),
           el(
             "li",
@@ -289,7 +298,7 @@ async function askLeaveGame() {
           el(
             "li",
             {},
-            tr("キャンセル：ゲームに戻ります", "Cancel: return to the game")
+            tr("中断：あとで再開できます", "Pause: resume later")
           )
         ),
       ],
