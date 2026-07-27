@@ -142,6 +142,10 @@ for (const [filename, size] of [["icon-192.png", 192], ["icon-512.png", 512], ["
   assert.equal(png.readUInt32BE(offset + 8), size, `${filename} height`);
 }
 
+// 計測（GA4）は本番ドメインでしか有効にならないので、その画面を見るテストだけ
+// 名前解決をここへ向けたブラウザを別に立てる（js/core/analytics.js の PRODUCTION_HOSTS）
+const PRODUCTION_HOST = "kakira9618.github.io";
+
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
 const runtimeErrors = [];
@@ -498,7 +502,7 @@ try {
     });
     const contrastHelp = page.getByRole("dialog", { name: "DWORDle 遊び方" });
     await contrastHelp.getByText(
-      "オレンジ・青の判定は Word 1 / 2 のどちらか、灰は両方に対する情報です。判定は オレンジ → 青 → 灰 の順で行われます。",
+      "オレンジ・青の判定は Word 1 / 2 のどちらか、灰は両方に対する情報です。判定は オレンジ > 青 > 灰 の優先度で行われます。",
       { exact: false }
     ).waitFor();
     await contrastHelp.locator(".modal-actions").getByRole("button", { name: "閉じる" }).click();
@@ -741,7 +745,7 @@ try {
   await popHelp.getByText(/ルールはほぼ Wordle と同じですが/).waitFor();
   // 灰が両方の答えについての情報であることと、判定の順番を冒頭で説明する
   await popHelp.getByText(
-    "緑・黄の判定は Word 1 / 2 のどちらか、灰は両方に対する情報です。判定は 緑 → 黄 → 灰 の順で行われます。",
+    "緑・黄の判定は Word 1 / 2 のどちらか、灰は両方に対する情報です。判定は 緑 > 黄 > 灰 の優先度で行われます。",
     { exact: false }
   ).waitFor();
   const popHelpTileBackground = await popHelp.locator(".help-answers .htile").first().evaluate(
@@ -2606,6 +2610,53 @@ try {
     await page.getByRole("link", { name: "このゲームについて・クレジット" }).getAttribute("href"),
     "about.html"
   );
+  // 同意バナーで選んだら、開いたままの設定画面がその場で追随する（リロード不要）。
+  // 計測は本番ホストでしか有効にならないので、名前解決だけ本番ドメインへ向けた
+  // ブラウザを別に立てて、本番と同じ表示を確かめる。
+  {
+    const productionBrowser = await chromium.launch({
+      headless: true,
+      args: [`--host-resolver-rules=MAP ${PRODUCTION_HOST} 127.0.0.1`],
+    });
+    try {
+      const productionPage = await productionBrowser.newPage({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
+      await productionPage.addInitScript(() => {
+        localStorage.setItem("dwordle2.tutorialSeen", "true");
+        localStorage.setItem("dwordle2.helpSeen", "true");
+        localStorage.setItem("dwordle2.helpSeenUso", "true");
+        localStorage.setItem("dwordle2.legacyImportPrompted", "true");
+      });
+      await productionPage.goto(`http://${PRODUCTION_HOST}:${address.port}/`, { waitUntil: "networkidle" });
+      await passGate(productionPage);
+      await productionPage.evaluate(() => { location.hash = "#/settings"; });
+      await productionPage.waitForURL(/#\/settings$/);
+      await productionPage.getByRole("tab", { name: "データ" }).click();
+      await productionPage.getByText("現在: 未選択（同意するまで送信しません）", { exact: true }).waitFor();
+
+      // 設定画面を開いたままバナーを出して「同意する」を押す
+      await productionPage.evaluate(async () => {
+        const { showConsentBanner } = await import("./js/ui/consent-banner.js?v=20260725-b");
+        showConsentBanner();
+      });
+      const productionBanner = productionPage.getByRole("region", { name: "Cookie の設定" });
+      await productionBanner.getByRole("button", { name: "同意する" }).click();
+      await productionPage.getByText("現在: 許可（いつでも停止できます）", { exact: true }).waitFor();
+      assert.equal(
+        await productionPage.getByRole("button", { name: "計測を許可" }).isDisabled(),
+        true,
+        "allowing from the banner should disable the allow button without a reload"
+      );
+      assert.equal(await productionPage.getByRole("button", { name: "計測を停止" }).isDisabled(), false);
+
+      // 設定画面のボタンからの変更も同じ経路で反映される
+      await productionPage.getByRole("button", { name: "計測を停止" }).click();
+      await productionPage.getByText("現在: 停止", { exact: true }).waitFor();
+      assert.equal(await productionPage.getByRole("button", { name: "計測を停止" }).isDisabled(), true);
+    } finally {
+      await productionBrowser.close();
+    }
+  }
+
   // プレイヤーカードのデータも全データ削除で消えることを確認するため事前に置く
   await page.evaluate(() => {
     localStorage.setItem("dwordle2.playerCard", JSON.stringify({ name: "テスト", issuedAt: 1, seenRankTier: 1 }));

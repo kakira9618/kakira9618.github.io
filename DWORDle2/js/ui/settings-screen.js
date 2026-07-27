@@ -2,7 +2,7 @@
 // ルート: #/settings
 
 import { el, clear } from "./dom.js?v=20260725-b";
-import { registerScreen, navigate } from "./app.js?v=20260725-b";
+import { registerScreen, navigate, currentScreenName } from "./app.js?v=20260725-b";
 import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js?v=20260725-b";
 import { importFromLocalStorage, importFromText, scanLegacyHistory } from "../core/migrate.js?v=20260725-b";
 import { exportJSON } from "../core/records.js?v=20260725-b";
@@ -18,7 +18,12 @@ import { SOURCE_HASH } from "../version.js?v=20260725-b";
 import { isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js?v=20260725-b";
 import { isDebugMode, tryEnableDebugMode } from "../core/debug.js?v=20260725-b";
 import { isExtraShotUnlocked, extraShotRemainingPlays } from "../core/extra-shot.js?v=20260725-b";
-import { analyticsAllowed, getStoredConsent, setAnalyticsConsent } from "../core/analytics.js?v=20260725-b";
+import {
+  analyticsAllowed,
+  getStoredConsent,
+  onAnalyticsConsentChange,
+  setAnalyticsConsent,
+} from "../core/analytics.js?v=20260725-b";
 import { dismissConsentBanner } from "./consent-banner.js?v=20260725-b";
 
 let root = null;
@@ -360,10 +365,10 @@ function render() {
           disabled: !analyticsAvailable || analyticsConsent === "denied",
           onclick: () => {
             playSfx("ui");
+            // 表示の更新は onAnalyticsConsentChange 側でまとめて行う
             setAnalyticsConsent(false);
             dismissConsentBanner();
             toast(tr("利用状況の計測を停止し、分析用Cookieを削除しました", "Analytics stopped and analytics cookies deleted"));
-            render();
           },
         },
         tr("計測を停止", "Stop analytics")
@@ -379,7 +384,6 @@ function render() {
             setAnalyticsConsent(true);
             dismissConsentBanner();
             toast(tr("利用状況の計測を許可しました", "Analytics allowed"));
-            render();
           },
         },
         tr("計測を許可", "Allow analytics")
@@ -756,6 +760,12 @@ function render() {
 
   root.append(header, body);
 }
+
+// 同意バナーから選んだときも、開いたままの設定画面をその場で描き直す
+// （リロードするまで「現在: 未選択」のままだった問題の対策）。
+onAnalyticsConsentChange(() => {
+  if (root && currentScreenName() === "settings") render();
+});
 
 registerScreen("settings", {
   get element() {

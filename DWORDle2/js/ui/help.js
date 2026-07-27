@@ -483,8 +483,8 @@ function localizedBody(mode, language) {
       "p",
       { class: "hint" },
       isEnglish
-        ? `The rules are like Wordle, but there are two answer words. ${c.Green} and ${c.yellow} feedback refers to either answer, while gray refers to both. Feedback is decided in the order ${c.green} → ${c.yellow} → gray.`
-        : `ルールはほぼ Wordle と同じですが、正解単語が 2 つあります。${c.green}・${c.yellow}の判定は Word 1 / 2 のどちらか、灰は両方に対する情報です。判定は ${c.green} → ${c.yellow} → 灰 の順で行われます。`
+        ? `The rules are like Wordle, but there are two answer words. ${c.Green} and ${c.yellow} feedback refers to either answer, while gray refers to both. Feedback is decided by the priority ${c.green} > ${c.yellow} > gray.`
+        : `ルールはほぼ Wordle と同じですが、正解単語が 2 つあります。${c.green}・${c.yellow}の判定は Word 1 / 2 のどちらか、灰は両方に対する情報です。判定は ${c.green} > ${c.yellow} > 灰 の優先度で行われます。`
     ),
     buildExample("normal", language),
     el(

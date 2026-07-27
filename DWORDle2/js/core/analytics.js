@@ -150,6 +150,15 @@ export function deleteAnalyticsCookies() {
   }
 }
 
+// 選択が変わったことを知りたい画面（設定画面の表示）に伝える。
+// バナーで選んでも設定画面がその場で追随するように、保存経路をここ 1 つにまとめている。
+const consentListeners = new Set();
+
+export function onAnalyticsConsentChange(listener) {
+  consentListeners.add(listener);
+  return () => consentListeners.delete(listener);
+}
+
 // 同意バナー／設定の選択を保存し、その場で計測状態へ反映する。
 export function setAnalyticsConsent(granted) {
   saveJSON(CONSENT_KEY, {
@@ -157,6 +166,8 @@ export function setAnalyticsConsent(granted) {
     updatedAt: new Date().toISOString(),
     policyVersion: ANALYTICS_POLICY_VERSION,
   });
+  // 計測の開始・停止より先に通知する（表示の更新は保存済みの選択だけで決まる）
+  for (const listener of consentListeners) listener(granted ? "granted" : "denied");
 
   if (granted) {
     if (!initialized) {
