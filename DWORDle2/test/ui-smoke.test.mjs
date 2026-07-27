@@ -3705,8 +3705,8 @@ try {
     assert.equal(ranks.kingNormal, "KING:DWORDleの王", "mostly-DWORDle players should become the DWORDle king");
     assert.equal(ranks.kingUso, "KING:DWORDlieの王", "mostly-DWORDlie players should become the DWORDlie king");
     assert.equal(ranks.kingTie, "KING:DWORDleの王", "an even split should crown the DWORDle king");
-    assert.equal(ranks.masterBelowKingPlays, "MASTER:伝説のWORDler", "under 1000 plays should stay MASTER even with all achievements");
-    assert.equal(ranks.diamondWithoutAllAchievements, "DIAMOND:頂のWORDler", "the king requires every achievement, not just plays");
+    assert.equal(ranks.masterBelowKingPlays, "MASTER:伝説のDWORDler", "under 1000 plays should stay MASTER even with all achievements");
+    assert.equal(ranks.diamondWithoutAllAchievements, "DIAMOND:頂のDWORDler", "the king requires every achievement, not just plays");
 
     // 昇格演出: 前回カードを見たときよりランクが上がっていたら RANK UP 演出が 1 回だけ出る
     await cardPage.evaluate(() => {

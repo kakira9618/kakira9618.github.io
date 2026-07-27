@@ -136,19 +136,19 @@ const CARD = {
 // さらに通算 1000 プレイに到達すると最上位 KING（王）になる。
 // 王の称号は多くプレイしている方のモードで決まる（同数なら DWORDle）。
 const RANKS = [
-  { min: 5, tier: 1, id: "BRONZE", frame: ["#f0a35e", "#9a5b2d"], accent: "#f0a35e", titleJa: "見習いDWORDler", titleEn: "Apprentice WORDler", titleSize: 26, icon: "star" },
-  { min: 25, tier: 2, id: "SILVER", frame: ["#eef3fa", "#8fa3b8"], accent: "#c9d6e8", titleJa: "一人前WORDler", titleEn: "Seasoned WORDler", icon: "shield" },
-  { min: 75, tier: 3, id: "GOLD", frame: ["#ffe08a", "#d99a1b"], accent: "#ffd166", titleJa: "凄腕WORDler", titleEn: "Ace WORDler", icon: "swords" },
-  { min: 200, tier: 4, id: "PLATINUM", frame: ["#c5fff2", "#4fc3d8"], accent: "#8ee9dd", titleJa: "達人WORDler", titleEn: "Master WORDler", icon: "flame" },
-  { min: 500, tier: 5, id: "DIAMOND", frame: ["#b9e0ff", "#8a6bff"], accent: "#a8ccff", titleJa: "頂のWORDler", titleEn: "Peerless WORDler", icon: "gem" },
+  { min: 5, tier: 1, id: "BRONZE", frame: ["#f0a35e", "#9a5b2d"], accent: "#f0a35e", titleJa: "見習いDWORDler", titleEn: "Apprentice DWORDler", titleSize: 26, icon: "star" },
+  { min: 25, tier: 2, id: "SILVER", frame: ["#eef3fa", "#8fa3b8"], accent: "#c9d6e8", titleJa: "一人前DWORDler", titleEn: "Seasoned DWORDler", icon: "shield" },
+  { min: 75, tier: 3, id: "GOLD", frame: ["#ffe08a", "#d99a1b"], accent: "#ffd166", titleJa: "凄腕DWORDler", titleEn: "Ace DWORDler", icon: "swords" },
+  { min: 200, tier: 4, id: "PLATINUM", frame: ["#c5fff2", "#4fc3d8"], accent: "#8ee9dd", titleJa: "達人DWORDler", titleEn: "Master DWORDler", icon: "flame" },
+  { min: 500, tier: 5, id: "DIAMOND", frame: ["#b9e0ff", "#8a6bff"], accent: "#a8ccff", titleJa: "頂のDWORDler", titleEn: "Peerless DWORDler", icon: "gem" },
 ];
 const RANK_MASTER = {
   tier: 6,
   id: "MASTER",
   frame: ["#ff5f8f", "#ffd166", "#00e68a", "#00d5ff", "#b45cff"],
   accent: "#ffd166",
-  titleJa: "伝説のWORDler",
-  titleEn: "Legendary WORDler",
+  titleJa: "伝説のDWORDler",
+  titleEn: "Legendary DWORDler",
   icon: "trophy",
 };
 // KING に必要な通算プレイ回数（実績全解除も必要）
