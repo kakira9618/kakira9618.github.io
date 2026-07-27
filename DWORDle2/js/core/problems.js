@@ -40,9 +40,9 @@ export const PID = {
 // 時計やタイムゾーンで同じ日付の答えが変わると、全員で同じ問題を解く前提と、
 // 履歴からの再現（分析画面・実績の再集計）が崩れる。
 export const NEW_ERA = {
-  dailyFromPID: 20260729,
+  dailyFromPID: 20260801,
   // 実績カットオフ（秒）。レコードの startTime / endTime と同じ単位・ローカル基準で比べる
-  achievementCutoffSec: Math.floor(new Date(2026, 6, 29, 0, 0, 0, 0).getTime() / 1000),
+  achievementCutoffSec: Math.floor(new Date(2026, 7, 1, 0, 0, 0, 0).getTime() / 1000),
 };
 
 // レベル定義。topK はレベル別候補リストに使う頻度上位語数（levels.js 参照）。

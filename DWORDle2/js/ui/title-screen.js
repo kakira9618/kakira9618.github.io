@@ -92,8 +92,8 @@ function numberPrompt(mode) {
     "p",
     { class: "hint problem-set-note" },
     tr(
-      "Cls. は原作 DWORDle 互換の旧出題です。2026-07-29 以降のプレイは実績の対象になりません（通算プレイ日数・連続プレイは数えます）。",
-      "Cls. puzzles use the original DWORDle generator. Plays on or after 2026-07-29 do not count toward achievements (play days and play streaks still count)."
+      "Cls. は原作 DWORDle 互換の旧出題です。2026-08-01 以降のプレイは実績の対象になりません（通算プレイ日数・連続プレイは数えます）。",
+      "Cls. puzzles use the original DWORDle generator. Plays on or after 2026-08-01 do not count toward achievements (play days and play streaks still count)."
     )
   );
   const setButtons = [

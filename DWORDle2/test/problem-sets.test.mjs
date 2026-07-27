@@ -87,10 +87,16 @@ for (const level of LEVELS) {
 assert.equal(usesNewGenerator(1), false, "Cls. は原作 LCG のまま");
 assert.equal(usesNewGenerator(39999), false);
 assert.equal(usesNewGenerator(100001), true);
-assert.equal(usesNewGenerator(NEW_ERA.dailyFromPID - 1), false, "切り替え日の前日のデイリーは旧のまま");
-assert.equal(usesNewGenerator(NEW_ERA.dailyFromPID), true, "切り替え日のデイリーから新しい抽選");
-assert.equal(usesNewGenerator(NEW_ERA.dailyFromPID + 1), true);
-assert.equal(NEW_ERA.dailyFromPID, 20260729);
+assert.equal(NEW_ERA.dailyFromPID, 20260801);
+assert.equal(usesNewGenerator(20260731), false, "切り替え日の前日のデイリーは旧のまま");
+assert.equal(usesNewGenerator(20260801), true, "切り替え日のデイリーから新しい抽選");
+assert.equal(usesNewGenerator(20260802), true);
+// 実績カットオフはデイリーの切り替えと同じ日の 0 時
+assert.equal(
+  new Date(NEW_ERA.achievementCutoffSec * 1000).toDateString(),
+  new Date(2026, 7, 1).toDateString(),
+  "実績カットオフとデイリーの切り替え日をずらさない"
+);
 
 // ---- Cls. の出題は 1 問も変わらない ----
 // 原作互換の実装そのものは parity.test.mjs が原作コードと突き合わせている。
@@ -102,7 +108,8 @@ const CLASSIC_FIXTURES = [
   [19999, "frayn", "plash"],
   [20000, "reach", "point"],
   [39999, "wayne", "piton"],
-  [20260728, "track", "woman"], // 切り替え日の前日のデイリー
+  [20260728, "track", "woman"],
+  [20260731, "other", "stood"], // 切り替え日の前日のデイリー
 ];
 for (const [pid, ans1, ans2] of CLASSIC_FIXTURES) {
   const logic = new Logic(pid);
@@ -167,10 +174,10 @@ for (const [lo, hi] of [[100001, 100200], [110000, 110200], [120000, 120200], [1
 
 // デイリーは切り替え日から新しい抽選になる。同じ答えの組が短期間で戻ってこない
 {
-  const before = new Logic(20260728);
-  assert.deepEqual([before.ans1, before.ans2], ["track", "woman"], "切り替え前のデイリーは動かさない");
+  const before = new Logic(20260731);
+  assert.deepEqual([before.ans1, before.ans2], ["other", "stood"], "切り替え前のデイリーは動かさない");
   const pairs = new Set();
-  const start = new Date(2026, 6, 29);
+  const start = new Date(2026, 7, 1);
   for (let i = 0; i < 365; i++) {
     const date = new Date(start.getTime() + i * 86400000);
     const pid = date.getFullYear() * 10000 + (date.getMonth() + 1) * 100 + date.getDate();

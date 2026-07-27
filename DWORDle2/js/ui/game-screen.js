@@ -382,8 +382,14 @@ function updateHeader() {
     counterEl.textContent = `${game.guessWord.length + (state === "finish" ? 0 : 1)} / ${mode.maxGuess}`;
     counterEl.removeAttribute("aria-label");
   }
-  // 伏せるのは番号だけ。Cls.（旧出題）は実績の扱いが変わるので接頭辞は残す
-  const label = seedHidden ? `${numberPrefix(isClassicPID(game.problemID))}????` : pidLabel(game.problemID);
+  // 伏せるのは番号（デイリーなら日付）だけ。どの出題かは隠さない
+  // ―― Cls.（旧出題）は実績の扱いが変わるうえ、"No.????" だけだとデイリーが
+  // 新出題の番号付き問題に見えてしまう。
+  const label = seedHidden
+    ? isDailyPID(game.problemID)
+      ? "Daily ????-??-??"
+      : `${numberPrefix(isClassicPID(game.problemID))}????`
+    : pidLabel(game.problemID);
   // "Daily 2026-07-22" のような 2 語ラベルは 2 行 + 小さめの文字で表示し、
   // 狭い端末でもタイトルや右側のボタン群を削らずに収める
   const words = label.split(" ");
