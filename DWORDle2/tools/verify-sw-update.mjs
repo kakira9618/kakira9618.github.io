@@ -4,6 +4,8 @@
 //   1) 新しい事前キャッシュに HTTP キャッシュ経由の旧ファイルが混入しないこと
 //   2) 扉絵の表示中に更新が届いたら自動リロードでそのまま最新版になること
 //   3) プレイ開始後に更新が届いたらリロードせずトーストで知らせること
+//   4) 緊急フラグ付き（--force-reload）ならプレイ開始後でも強制リロードし、
+//      同じ版ではリロードを繰り返さないこと
 // を確認する。使い方: node tools/verify-sw-update.mjs（npm test とは独立の手動検証）
 import { spawnSync } from "node:child_process";
 import http from "node:http";
@@ -16,6 +18,8 @@ import { listPrecacheAssets } from "./make-source-hash.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PORT = 8963;
+// 緊急更新の予告（5 秒）より長く待って、二度目のリロードが来ないことを見る
+const CRITICAL_LOOP_WATCH_MS = 9000;
 const CONTENT_TYPES = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -177,6 +181,48 @@ async function main() {
     }
     if (!(await page.evaluate(() => Boolean(window.__beforeAutoReload)).catch(() => false))) {
       failures.push("プレイ開始後の更新で勝手にリロードされた");
+    }
+
+    // 緊急フラグ付きのデプロイは、プレイ開始後でも強制的にリロードさせる
+    await wait(1100);
+    await appendFile(path.join(siteRoot, "js", "config.js"), `\n// critical marker ${Date.now()}\n`);
+    const regen3 = spawnSync(
+      "node",
+      [path.join("tools", "make-source-hash.mjs"), "--force-reload"],
+      { cwd: siteRoot }
+    );
+    if (regen3.status !== 0) throw new Error(`make-source-hash に失敗: ${regen3.stderr}`);
+    const criticalHash = await readSourceHash(siteRoot);
+    console.log(`緊急更新を配信: v=${criticalHash}`);
+    await page.evaluate(() => { window.__beforeCriticalReload = true; });
+    await page.evaluate(() => navigator.serviceWorker.getRegistration().then((registration) => registration.update()));
+    const criticalDeadline = Date.now() + 30000;
+    let criticalReloaded = false;
+    let criticalVisibleHash = null;
+    while (Date.now() < criticalDeadline) {
+      criticalReloaded = !(await page.evaluate(() => Boolean(window.__beforeCriticalReload)).catch(() => true));
+      criticalVisibleHash = await pageSourceHash(page);
+      if (criticalReloaded && criticalVisibleHash === criticalHash) break;
+      await wait(400);
+    }
+    if (!criticalReloaded) {
+      failures.push("緊急フラグ付きの更新でも強制リロードされない");
+    } else if (criticalVisibleHash !== criticalHash) {
+      failures.push(`強制リロード後も古い版のまま: ${criticalVisibleHash}（期待: ${criticalHash}）`);
+    } else {
+      console.log(`緊急更新: OK（プレイ中でも自動で v=${criticalHash} に更新）`);
+    }
+
+    // 同じ版の緊急フラグを受け取り続けてもリロードループにならない
+    if (criticalReloaded) {
+      await page.evaluate(() => { window.__afterCriticalReload = true; });
+      await page.evaluate(() => navigator.serviceWorker.getRegistration().then((registration) => registration.update()));
+      await wait(CRITICAL_LOOP_WATCH_MS);
+      if (!(await page.evaluate(() => Boolean(window.__afterCriticalReload)).catch(() => false))) {
+        failures.push("同じ版の緊急フラグでリロードを繰り返す（リロードループ）");
+      } else {
+        console.log("リロードループ防止: OK（同じ版では二度目のリロードをしない）");
+      }
     }
 
     if (failures.length > 0) {

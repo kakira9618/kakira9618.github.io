@@ -16,6 +16,7 @@
 //     --dry-run       何もせず、実行予定の内容だけ表示する
 //     --no-push       コミットとタグまで作り、push はしない
 //     --skip-tests    npm test を省略する（普段は付けない）
+//     --force-reload  緊急更新。開いているページを（安全な瞬間を待って）強制リロードさせる
 //     --force         現在より小さい / 同じバージョンでも許可する（手動の切り戻し用）
 //     --note "..."    タグのメッセージに追記する一行
 //     --range A..B    リリースノート / 変更表示の対象範囲（既定は「直近のタグ..HEAD」）
@@ -275,6 +276,7 @@ function parseArgs(argv) {
     changes: false,
     notes: false,
     range: null,
+    forceReload: false,
   };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -286,6 +288,7 @@ function parseArgs(argv) {
     else if (arg === "--skip-tests") opts.tests = false;
     else if (arg === "--force") opts.force = true;
     else if (arg === "--note") opts.note = argv[++i] ?? null;
+    else if (arg === "--force-reload") opts.forceReload = true;
     else if (arg.startsWith("--")) throw new Error(`不明なオプション: ${arg}`);
     else if (opts.target === null) opts.target = arg;
     else throw new Error(`引数が多すぎる: ${arg}`);
@@ -335,7 +338,10 @@ async function main() {
     for (const site of sites) console.log(`  書き換え: ${site.file}`);
     console.log(`  ${opts.tests ? "npm test" : "npm test はスキップ"}`);
     console.log(`  commit: バージョンを v${next} に更新`);
-    console.log(`  node tools/make-source-hash.mjs → commit: バージョン表示のハッシュを更新`);
+    console.log(
+      `  node tools/make-source-hash.mjs${opts.forceReload ? " --force-reload" : ""}` +
+        " → commit: バージョン表示のハッシュを更新"
+    );
     console.log(`  tag: ${tag}（メッセージに上のリリースノートを入れる）`);
     console.log(`  ${opts.push ? `push: origin ${branch} と ${tag}` : "push はしない"}`);
     return;
@@ -364,7 +370,10 @@ async function main() {
   await git(["commit", "-m", `バージョンを v${next} に更新`]);
 
   // ハッシュ表示とプリキャッシュ（Service Worker）を、いま作ったコミットに合わせて更新する
-  await run("node", [path.join("tools", "make-source-hash.mjs")]);
+  await run("node", [
+    path.join("tools", "make-source-hash.mjs"),
+    ...(opts.forceReload ? ["--force-reload"] : []),
+  ]);
   const generated = await git(["status", "--porcelain", "--", "js/version.js", "sw.js"]);
   if (generated) {
     await git(["add", "--", "js/version.js", "sw.js"]);

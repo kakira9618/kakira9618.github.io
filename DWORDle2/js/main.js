@@ -89,6 +89,29 @@ if (/Android/i.test(navigator.userAgent)) document.body.classList.add("android-f
       });
       setInterval(checkForUpdate, UPDATE_CHECK_INTERVAL_MS);
     }).catch(() => {});
+    // 緊急フラグ付きのデプロイ（`npm run hash -- --force-reload`）だけは、プレイ中でも
+    // 強制的に最新版へ載せ替える。安全な瞬間まで待つ・同じ版で繰り返さないの 2 点は
+    // critical-update.js が持つ。
+    navigator.serviceWorker.addEventListener("message", (event) => {
+      if (event.data?.type !== "critical-update") return;
+      void import("./core/critical-update.js?v=20260728-a").then((m) => {
+        m.requestCriticalReload(event.data.hash, {
+          notify: () =>
+            notify(
+              tr(
+                "重要な更新があります。まもなく自動で再読み込みします",
+                "An important update is ready. The page will reload shortly."
+              )
+            ),
+        });
+      });
+    });
+    // activate 時の通知は、この listener を付ける前に飛んでいることがある
+    // （旧キャッシュから開いた直後に新 SW が有効化された場合）。取りこぼしを自分から拾う。
+    navigator.serviceWorker.ready.then((registration) => {
+      registration.active?.postMessage({ type: "query-critical-update" });
+    }).catch(() => {});
+
     // 新しい SW への切替 = 新デプロイの事前キャッシュ完了。扉絵の間なら再読み込みだけで
     // 最新版になるので自動で行い、プレイが始まっていたらトーストで知らせるに留める。
     const hadController = Boolean(navigator.serviceWorker.controller);

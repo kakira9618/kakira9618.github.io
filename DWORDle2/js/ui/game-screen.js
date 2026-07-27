@@ -12,6 +12,7 @@ import { Logic, CELL, displayResultForMode } from "../core/logic.js?v=20260728-a
 import { MODES, saveCurrentGame, clearCurrentGame, getCurrentGame, addFinishedGame, addDiscardedGame, isAlreadyPlayed, getHistory, getExtraShot } from "../core/records.js?v=20260728-a";
 import { NEW_ERA, isClassicPID, isDailyPID, numberPrefix, pidLabel, todayPID } from "../core/problems.js?v=20260728-a";
 import { checkOnGameFinish } from "../core/achievements.js?v=20260728-a";
+import { addReloadBlocker } from "../core/critical-update.js?v=20260728-a";
 import { registerScreen, navigate, redirect, getAppMode, currentScreenName } from "./app.js?v=20260728-a";
 import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration, extraShotUnlockCelebration } from "./toast.js?v=20260728-a";
 import { isExtraShotEnabled, claimExtraShotUnlockNotice } from "../core/extra-shot.js?v=20260728-a";
@@ -265,6 +266,11 @@ function toggleSeed() {
 function isExtraShotActive() {
   return state === "extraCutin" || state === "extraGuess" || state === "extraChecking";
 }
+
+// 緊急更新の強制リロードは、EXTRA SHOT が終わるまで待たせる。
+// 盤面は 1 手ごとに保存されるので通常の入力中は妨げないが、追加推理タイムだけは
+// 途中で離脱するとチャンスが消滅してしまう（このファイル冒頭の仕様）。
+addReloadBlocker(isExtraShotActive);
 
 // 進行中のゲームを持ってタイトルへ戻るときの選択。
 // 中断 = 保存を残して「つづきから」で再開できる（従来の挙動）／破棄 = 履歴へ残して終了する。

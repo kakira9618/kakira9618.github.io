@@ -2,7 +2,12 @@
 // DWORDle 2 の Service Worker。全資産をインストール時に事前キャッシュし、
 // オフラインでも完全動作させる（キャッシュ優先 + ネットワークフォールバック）。
 // キャッシュ名はコミットのハッシュ入りで、デプロイのたびに新しいキャッシュへ入れ替わる。
-const CACHE_NAME = "dwordle2-c49418c";
+const CACHE_NAME = "dwordle2-bbaccdf";
+const SOURCE_HASH = "bbaccdf";
+// 緊急更新フラグ。true なら、開いているページに強制リロードを促す
+// （make-source-hash.mjs --force-reload で立てる。既定は false）。
+// 実際にいつリロードするかはページ側の js/core/critical-update.js が決める。
+const CRITICAL_UPDATE = false;
 const PRECACHE = [
   "./",
   "index.html",
@@ -24,6 +29,7 @@ const PRECACHE = [
   "js/core/analysis-core.js",
   "js/core/analysis.worker.js",
   "js/core/analytics.js",
+  "js/core/critical-update.js",
   "js/core/debug.js",
   "js/core/extra-shot.js",
   "js/core/i18n.js",
@@ -72,6 +78,24 @@ const PRECACHE = [
   "vendor/three.module.min.js"
 ];
 
+async function announceCriticalUpdate(target) {
+  if (!CRITICAL_UPDATE) return;
+  const message = { type: "critical-update", hash: SOURCE_HASH };
+  if (target) {
+    target.postMessage(message);
+    return;
+  }
+  for (const client of await self.clients.matchAll({ type: "window" })) {
+    client.postMessage(message);
+  }
+}
+
+// ページ側からの問い合わせ。activate の通知を受け損ねたページを取りこぼさない。
+self.addEventListener("message", (event) => {
+  if (event.data?.type !== "query-critical-update") return;
+  event.waitUntil(announceCriticalUpdate(event.source));
+});
+
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
@@ -89,6 +113,7 @@ self.addEventListener("activate", (event) => {
       if (name !== CACHE_NAME) await caches.delete(name);
     }
     await self.clients.claim();
+    await announceCriticalUpdate();
   })());
 });
 

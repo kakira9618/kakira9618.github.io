@@ -102,13 +102,36 @@ export async function listPrecacheAssets() {
   return assets;
 }
 
-function swSource(sourceHash, precache) {
+function swSource(sourceHash, precache, criticalUpdate) {
   return `// 自動生成ファイル。tools/make-source-hash.mjs が書き出す（手で編集しない）。
 // DWORDle 2 の Service Worker。全資産をインストール時に事前キャッシュし、
 // オフラインでも完全動作させる（キャッシュ優先 + ネットワークフォールバック）。
 // キャッシュ名はコミットのハッシュ入りで、デプロイのたびに新しいキャッシュへ入れ替わる。
 const CACHE_NAME = "dwordle2-${sourceHash}";
+const SOURCE_HASH = "${sourceHash}";
+// 緊急更新フラグ。true なら、開いているページに強制リロードを促す
+// （make-source-hash.mjs --force-reload で立てる。既定は false）。
+// 実際にいつリロードするかはページ側の js/core/critical-update.js が決める。
+const CRITICAL_UPDATE = ${criticalUpdate ? "true" : "false"};
 const PRECACHE = ${JSON.stringify(precache, null, 2)};
+
+async function announceCriticalUpdate(target) {
+  if (!CRITICAL_UPDATE) return;
+  const message = { type: "critical-update", hash: SOURCE_HASH };
+  if (target) {
+    target.postMessage(message);
+    return;
+  }
+  for (const client of await self.clients.matchAll({ type: "window" })) {
+    client.postMessage(message);
+  }
+}
+
+// ページ側からの問い合わせ。activate の通知を受け損ねたページを取りこぼさない。
+self.addEventListener("message", (event) => {
+  if (event.data?.type !== "query-critical-update") return;
+  event.waitUntil(announceCriticalUpdate(event.source));
+});
 
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
@@ -127,6 +150,7 @@ self.addEventListener("activate", (event) => {
       if (name !== CACHE_NAME) await caches.delete(name);
     }
     await self.clients.claim();
+    await announceCriticalUpdate();
   })());
 });
 
@@ -156,6 +180,9 @@ self.addEventListener("fetch", (event) => {
 }
 
 async function main() {
+  // --force-reload: 出題や保存データが壊れているなど、古いコードのまま遊ばせたくない
+  // デプロイでだけ立てる。開いているページを（安全な瞬間を待って）強制リロードさせる。
+  const criticalUpdate = process.argv.includes("--force-reload");
   const sourceHash = await computeVersionHash();
   const body =
     "// 自動生成ファイル。tools/make-source-hash.mjs が書き出す（手で編集しない）。\n" +
@@ -163,8 +190,11 @@ async function main() {
     `export const SOURCE_HASH = "${sourceHash}";\n`;
   await writeFile(path.join(root, VERSION_FILE), body);
   const precache = await listPrecacheAssets();
-  await writeFile(path.join(root, "sw.js"), swSource(sourceHash, precache));
-  console.log(`js/version.js と sw.js を更新しました (${sourceHash}, precache ${precache.length} 件)`);
+  await writeFile(path.join(root, "sw.js"), swSource(sourceHash, precache, criticalUpdate));
+  console.log(
+    `js/version.js と sw.js を更新しました (${sourceHash}, precache ${precache.length} 件` +
+      `${criticalUpdate ? ", 緊急更新フラグ ON" : ""})`
+  );
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

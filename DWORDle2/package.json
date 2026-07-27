@@ -11,7 +11,7 @@
     "changes": "node tools/bump-version.mjs --changes",
     "notes": "node tools/bump-version.mjs --notes",
     "test": "npm run test:unit && npm run test:ui",
-    "test:unit": "node test/parity.test.mjs && node test/problem-sets.test.mjs && node test/analysis.test.mjs && node test/achievements.test.mjs && node test/game-finish.test.mjs && node test/discard.test.mjs && node test/extra-shot.test.mjs && node test/settings.test.mjs && node test/debug.test.mjs && node test/activity.test.mjs && node test/migrate.test.mjs && node test/audio.test.mjs && node test/pop-background.test.mjs && node test/analytics.test.mjs && node test/release-notes.test.mjs && node test/signature.test.mjs && node test/achievement-mark.test.mjs",
+    "test:unit": "node test/parity.test.mjs && node test/problem-sets.test.mjs && node test/critical-update.test.mjs && node test/analysis.test.mjs && node test/achievements.test.mjs && node test/game-finish.test.mjs && node test/discard.test.mjs && node test/extra-shot.test.mjs && node test/settings.test.mjs && node test/debug.test.mjs && node test/activity.test.mjs && node test/migrate.test.mjs && node test/audio.test.mjs && node test/pop-background.test.mjs && node test/analytics.test.mjs && node test/release-notes.test.mjs && node test/signature.test.mjs && node test/achievement-mark.test.mjs",
     "test:ui": "node test/ui-smoke.test.mjs",
     "test:dist": "npm run build && DWORDLE2_SERVE_ROOT=dist node test/ui-smoke.test.mjs"
   },
