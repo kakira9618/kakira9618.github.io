@@ -32,13 +32,13 @@
 //   hadLostBefore, // この問題で過去に敗北していたか
 // }
 
-import { loadJSON, saveJSON, onExternalChange } from "./store.js?v=20260725-b";
-import { isDailyPID, PID } from "./problems.js?v=20260725-b";
-import { getHistory, getExtraShot, MODES } from "./records.js?v=20260725-b";
-import { CELL, Logic } from "./logic.js?v=20260725-b";
-import { isDebugMode } from "./debug.js?v=20260725-b";
-import { reveal } from "./secret.js?v=20260725-b";
-import { MARK, signAchievement, verifyAchievementMark } from "./achievement-mark.js?v=20260725-b";
+import { loadJSON, saveJSON, onExternalChange } from "./store.js?v=20260728-a";
+import { isClassicPID, isDailyPID, NEW_ERA, PID, problemNumber } from "./problems.js?v=20260728-a";
+import { getHistory, getExtraShot, MODES } from "./records.js?v=20260728-a";
+import { CELL, Logic } from "./logic.js?v=20260728-a";
+import { isDebugMode } from "./debug.js?v=20260728-a";
+import { reveal } from "./secret.js?v=20260728-a";
+import { MARK, signAchievement, verifyAchievementMark } from "./achievement-mark.js?v=20260728-a";
 
 // v7: 月間皆勤（30 日）→ 二週間皆勤（14 日）の緩和を既存履歴にも適用する
 // v8: 無限の探求の緩和（5000 → 1000 回）と、新設した DOUBLE CLEAR 系実績を既存履歴に適用する
@@ -316,8 +316,23 @@ function isGuessWordChain(words) {
   });
 }
 
+// 帯・ゾロ目の判定は、内部 PID ではなく表示上の番号で行う
+// （新出題の内部 PID には NEW_OFFSET が乗っているため）。
+function inNumberRange(pid, min, max) {
+  const number = problemNumber(pid);
+  return !isDailyPID(pid) && number >= min && number <= max;
+}
+
+function isExtremeProblem(pid) {
+  return inNumberRange(pid, PID.HARD_MIN, PID.HARD_MAX);
+}
+
+function isLevelProblem(pid) {
+  return inNumberRange(pid, PID.LEVEL_MIN, PID.LEVEL_MAX);
+}
+
 function isZorome(pid) {
-  const s = String(pid);
+  const s = String(problemNumber(pid));
   return s.length >= 3 && [...s].every((c) => c === s[0]);
 }
 
@@ -407,10 +422,24 @@ function achievementDayProblemKey(record) {
   return `${day}:${pid}`;
 }
 
+// 出題の内容に関わる実績の対象になるプレイか。
+// Cls.（旧出題）は原作互換の偏った抽選で作られているので、新出題へ切り替えた
+// 2026-07-29 以降のプレイは実績に数えない。切り替え前のプレイ（リリース済みの履歴）は
+// そのまま有効なので、既に解除した実績が取り消されることはない。
+// 完了時刻の分からない移行レコードは、必ず切り替え前のものなので数える。
+export function isScoredRecord(record) {
+  if (!isClassicPID(record?.problemID)) return true;
+  const at = completedAtSec(record);
+  return at === null || at < NEW_ERA.achievementCutoffSec;
+}
+
 // 破棄レコード自体と、その後に同じローカル日付・問題 No. で行われたプレイを、
 // モードを問わずすべての実績判定から除外する。破棄より前に完了していたプレイまでは
 // 遡って無効にしないため、既に解除した実績との整合性も保たれる。
-export function achievementEligibleRecords(records) {
+//
+// 「通算プレイ日数」「連続プレイ」のように遊んだ事実だけが条件の実績は、Cls. のプレイも
+// 数えるのでこちらを使う（Cls. だけ遊んだ日で連続記録が途切れないようにする）。
+export function habitEligibleRecords(records) {
   const blocked = new Set();
   return records
     .filter((record) => Array.isArray(record?.guessWord) && record.guessWord.length > 0)
@@ -426,18 +455,32 @@ export function achievementEligibleRecords(records) {
     });
 }
 
-// カウント系実績では、同じローカル日付・問題 No. の再プレイをモードを問わず除外する。
+// 上に加えて、切り替え後の Cls. プレイを除いたもの。継続系以外はすべてこちらで判定する。
+export function achievementEligibleRecords(records) {
+  return habitEligibleRecords(records).filter(isScoredRecord);
+}
+
+// 同じローカル日付・問題 No. の再プレイをモードを問わず除外する。
 // 日付や問題 No. を判定できない移行レコードは、誤ってまとめないよう個別に数える。
-export function achievementCountableRecords(records) {
+function dedupeByDayProblem(records) {
   const seen = new Set();
-  return achievementEligibleRecords(records)
-    .filter((record) => {
-      const key = achievementDayProblemKey(record);
-      if (key === null) return true;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
+  return records.filter((record) => {
+    const key = achievementDayProblemKey(record);
+    if (key === null) return true;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+// カウント系実績の母数。
+export function achievementCountableRecords(records) {
+  return dedupeByDayProblem(achievementEligibleRecords(records));
+}
+
+// 継続系実績の母数（Cls. のプレイも数える）。
+function habitCountableRecords(records) {
+  return dedupeByDayProblem(habitEligibleRecords(records));
 }
 
 function countedWins(records, mode = null) {
@@ -486,6 +529,15 @@ function calendarAndCountIds(records) {
     if (date.getMonth() === 11 && date.getDate() === 25) ids.add("christmas");
   }
 
+  // 遊んだ日そのものが条件の実績は Cls. のプレイも数える（実績の対象外なのは出題の内容に
+  // 関わるものだけで、遊んだ事実まで無かったことにはしない）
+  for (const record of habitCountableRecords(records)) {
+    const at = completedAtSec(record);
+    if (at === null) continue;
+    const date = new Date(at * 1000);
+    playDays.add(Math.floor(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000));
+  }
+
   const countableRecords = achievementCountableRecords(eligibleRecords);
   for (const record of countableRecords) {
     if (!Array.isArray(record?.guessWord) || record.guessWord.length === 0) continue;
@@ -493,7 +545,6 @@ function calendarAndCountIds(records) {
     guessTotal += record.guessWord.length;
     const at = completedAtSec(record);
     const date = at === null ? null : new Date(at * 1000);
-    if (date) playDays.add(Math.floor(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000));
     if (!record.clear) continue;
     wins++;
     if (record.gameMode === "uso") usoWins++;
@@ -529,9 +580,14 @@ function calendarAndCountIds(records) {
 // 分析モード利用など、履歴に情報が残らない条件は対象外。
 // noAchievements 付きレコード（「実績は解除しない」を選んだインポート）は判定に使わない。
 export function achievementIdsFromHistory(records) {
-  const games = achievementEligibleRecords(records.filter((record) => !record?.noAchievements));
+  const source = records.filter((record) => !record?.noAchievements);
+  const games = achievementEligibleRecords(source);
   const ids = new Set();
-  if (games.length === 0) return ids;
+  // 実績の対象になるプレイが 1 つも無くても、Cls. だけを遊んだ日は継続系に効く
+  if (games.length === 0) {
+    for (const id of calendarAndCountIds(source)) ids.add(id);
+    return ids;
+  }
   const countableGames = achievementCountableRecords(games);
   const countableGameSet = new Set(countableGames);
 
@@ -610,11 +666,11 @@ export function achievementIdsFromHistory(records) {
       ids.add("daily-clear");
       if (countable) dailyClears.push(pid);
     }
-    if (mode === "normal" && pid >= PID.HARD_MIN && pid <= PID.HARD_MAX) {
+    if (mode === "normal" && isExtremeProblem(pid)) {
       ids.add("extreme-clear");
       if (countable && guesses <= 4) ids.add("h-abyss");
     }
-    if (mode === "normal" && pid >= PID.LEVEL_MIN && pid <= PID.LEVEL_MAX) ids.add("level-clear");
+    if (mode === "normal" && isLevelProblem(pid)) ids.add("level-clear");
 
     // 1 手・2 手クリアは答えを知っていれば狙えるので、初回プレイ（カウント対象）だけ判定する
     if (countable && guesses === 1) ids.add("one-shot");
@@ -654,7 +710,7 @@ export function achievementIdsFromHistory(records) {
       ids.add("h-double-clear");
       if (mode === "uso") ids.add("h-double-uso");
       if (guesses === 1) ids.add("h-double-oneshot");
-      if (pid >= PID.HARD_MIN && pid <= PID.HARD_MAX) ids.add("h-double-abyss");
+      if (isExtremeProblem(pid)) ids.add("h-double-abyss");
     }
 
     if (countable) {
@@ -674,7 +730,8 @@ export function achievementIdsFromHistory(records) {
   if (words.size >= 1000) ids.add("h-lexicon");
   if (clearedZoromeCount(countableGames) >= 10) ids.add("h-zorome");
   if (maxHistoricalDailyStreak(dailyClears) >= 7) ids.add("daily-7");
-  for (const id of calendarAndCountIds(games)) ids.add(id);
+  // 継続系のために、Cls. を除く前の履歴を渡す（内部で対象を選び分ける）
+  for (const id of calendarAndCountIds(source)) ids.add(id);
   return ids;
 }
 
@@ -711,12 +768,18 @@ function checkOnGameFinishInner(ctx) {
   const guesses = record.guessWord.length;
   const logic = new Logic(pid);
   const history = getHistory();
-  const eligibleHistory = achievementEligibleRecords(history);
+  const habitHistory = habitEligibleRecords(history);
+  const isThisPlay = (game) =>
+    Number(game.startTime) === Number(record.startTime) && game.gameMode === record.gameMode;
   // 先に破棄した同日・同問題の再挑戦は、盤面・日時・勝敗を含む全実績の対象外。
-  const eligiblePlay = eligibleHistory.some(
-    (game) => Number(game.startTime) === Number(record.startTime) && game.gameMode === record.gameMode
-  );
-  if (!eligiblePlay) return [];
+  if (!habitHistory.some(isThisPlay)) return [];
+  // Cls.（旧出題）のプレイは、遊んだ日として継続系だけ数え、他はいっさい解除しない。
+  if (!isScoredRecord(record)) {
+    const habitOnly = [];
+    for (const id of calendarAndCountIds(history)) unlock(id, habitOnly);
+    return finalize(habitOnly);
+  }
+  const eligibleHistory = habitHistory.filter(isScoredRecord);
   const countableHistory = achievementCountableRecords(eligibleHistory);
   // 同日・同問題の再プレイか（achievementCountableRecords と同じ「その日の初回だけ」基準）。
   // 答えを知った再プレイでチャレンジ系の隠し実績を稼げないよう、隠し実績は初回プレイだけ判定する。
@@ -788,8 +851,8 @@ function checkOnGameFinishInner(ctx) {
   if (record.clear) {
     unlock("first-clear", newly);
     if (isDailyPID(pid)) unlock("daily-clear", newly);
-    if (!isUso && pid >= PID.HARD_MIN && pid <= PID.HARD_MAX) unlock("extreme-clear", newly);
-    if (!isUso && pid >= PID.LEVEL_MIN && pid <= PID.LEVEL_MAX) unlock("level-clear", newly);
+    if (!isUso && isExtremeProblem(pid)) unlock("extreme-clear", newly);
+    if (!isUso && isLevelProblem(pid)) unlock("level-clear", newly);
     if (isUso) {
       unlock("uso-clear", newly);
       if (countedWins(history, "uso") >= 5) unlock("uso-5", newly);
@@ -829,7 +892,7 @@ function checkOnGameFinishInner(ctx) {
     if (clearedZoromeCount(countableHistory) >= 10) unlock("h-zorome", newly);
     if (countablePlay) {
       if (isGuessWordChain(record.guessWord)) unlock("h-alphabet", newly);
-      if (!isUso && pid >= PID.HARD_MIN && pid <= PID.HARD_MAX && guesses <= 4) unlock("h-abyss", newly);
+      if (!isUso && isExtremeProblem(pid) && guesses <= 4) unlock("h-abyss", newly);
       if (guesses >= 3 && durationSec <= 10) unlock("h-lightning", newly);
       if (guesses >= 3 && lettersUsed.size === guesses * 5) unlock("h-noreuse", newly);
     }
@@ -839,7 +902,7 @@ function checkOnGameFinishInner(ctx) {
       unlock("h-double-clear", newly);
       if (isUso) unlock("h-double-uso", newly);
       if (guesses === 1) unlock("h-double-oneshot", newly);
-      if (pid >= PID.HARD_MIN && pid <= PID.HARD_MAX) unlock("h-double-abyss", newly);
+      if (isExtremeProblem(pid)) unlock("h-double-abyss", newly);
     }
     if (countableHistory.filter((g) => g.clear && getExtraShot(g)?.success).length >= 10) {
       unlock("h-double-10", newly);
@@ -848,7 +911,7 @@ function checkOnGameFinishInner(ctx) {
   }
 
   // 日付・回数系（record は履歴に保存済みなので、現在のゲームも集計に含まれる）
-  for (const id of calendarAndCountIds(eligibleHistory)) unlock(id, newly);
+  for (const id of calendarAndCountIds(history)) unlock(id, newly);
 
   return finalize(newly);
 }

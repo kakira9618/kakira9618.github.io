@@ -3,12 +3,12 @@
 // canvas に再レンダリングして PNG としてダウンロードする。
 // コンテンツ配置は全テーマ共通で、配色・装飾だけを現在のテーマに合わせる。
 
-import { SHARE_URL, tileColorsFor, tileInkFor } from "../config.js?v=20260725-b";
-import { MODES, getExtraShot, getExtraShotResult } from "../core/records.js?v=20260725-b";
-import { pidLabel } from "../core/problems.js?v=20260725-b";
-import { CELL } from "../core/logic.js?v=20260725-b";
-import { getSettings } from "../core/settings.js?v=20260725-b";
-import { drawCrown3D } from "./crown.js?v=20260725-b";
+import { SHARE_URL, tileColorsFor, tileInkFor } from "../config.js?v=20260728-a";
+import { MODES, getExtraShot, getExtraShotResult } from "../core/records.js?v=20260728-a";
+import { pidLabel } from "../core/problems.js?v=20260728-a";
+import { CELL } from "../core/logic.js?v=20260728-a";
+import { getSettings } from "../core/settings.js?v=20260728-a";
+import { drawCrown3D } from "./crown.js?v=20260728-a";
 
 // レイアウト定数（すべて基準幅 720px に対する px）
 const SS = {
@@ -312,7 +312,9 @@ export async function downloadResultPNG(record, logic, displayRows) {
   const a = document.createElement("a");
   a.href = url;
   const name = record.gameMode === "uso" ? "DWORDlie2" : "DWORDle2";
-  a.download = `${name}_${record.problemID}_${record.startTime}.png`;
+  // 内部 PID ではなく表示上の番号で名付ける（記号は入れない: Cls.123 → Cls123）
+  const number = pidLabel(record.problemID).replace(/[^0-9A-Za-z]/g, "");
+  a.download = `${name}_${number}_${record.startTime}.png`;
   document.body.append(a);
   a.click();
   a.remove();

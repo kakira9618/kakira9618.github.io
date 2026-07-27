@@ -5,11 +5,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { chromium } from "playwright";
-import { Logic } from "../js/core/logic.js?v=20260725-b";
-import { ACHIEVEMENTS, HIDDEN_ACHIEVEMENTS, NORMAL_ACHIEVEMENTS } from "../js/core/achievements.js?v=20260725-b";
+import { Logic } from "../js/core/logic.js?v=20260728-a";
+import { ACHIEVEMENTS, HIDDEN_ACHIEVEMENTS, NORMAL_ACHIEVEMENTS } from "../js/core/achievements.js?v=20260728-a";
 // 隠し要素の文字列はテストにも平文で置かない（js/core/secret.js 参照）
-import { reveal } from "../js/core/secret.js?v=20260725-b";
-import { pidLabel, todayPID } from "../js/core/problems.js?v=20260725-b";
+import { reveal } from "../js/core/secret.js?v=20260728-a";
+import { pidForNumber, pidLabel, todayPID } from "../js/core/problems.js?v=20260728-a";
 
 const require = createRequire(import.meta.url);
 const axePath = require.resolve("axe-core/axe.min.js");
@@ -69,7 +69,7 @@ const ogJpg = await readFile(path.join(projectRoot, "og.jpg"));
 // バージョン表示のハッシュ（DWORDle2 を最後に変更したコミット）と sw.js の整合
 {
   const { computeVersionHash, isKnownCommit } = await import("../tools/make-source-hash.mjs");
-  const { SOURCE_HASH } = await import("../js/version.js?v=20260725-b");
+  const { SOURCE_HASH } = await import("../js/version.js?v=20260728-a");
   assert.match(SOURCE_HASH, /^[0-9a-f]{7,40}$/, "the version hash should be a short hex hash");
   // コミット直後は HEAD が先へ進むので「最新と一致」は課さず、実在するコミットかだけ見る。
   // （生成物のコミットは自分のハッシュを含められないため。手順は tools/make-source-hash.mjs 参照）
@@ -105,7 +105,7 @@ const ogJpg = await readFile(path.join(projectRoot, "og.jpg"));
 
 // バージョン番号（APP_VERSION）の整合。上げ方は tools/bump-version.mjs 参照
 {
-  const { APP_VERSION } = await import("../js/config.js?v=20260725-b");
+  const { APP_VERSION } = await import("../js/config.js?v=20260728-a");
   const pkg = JSON.parse(await readFile(path.join(projectRoot, "package.json"), "utf8"));
   assert.match(APP_VERSION, /^\d+\.\d+\.\d+$/, "APP_VERSION は x.y.z 形式であること");
   assert.equal(pkg.version, APP_VERSION, "package.json の version が APP_VERSION と揃っていない");
@@ -347,7 +347,7 @@ try {
   await page.mouse.click(30, 200);
   assert.equal(
     await page.evaluate(async () => {
-      const mod = await import("./js/audio/sound.js?v=20260725-b");
+      const mod = await import("./js/audio/sound.js?v=20260728-a");
       return mod.audioNeedsRecovery();
     }),
     true,
@@ -357,7 +357,7 @@ try {
   // 「開始」は音オフ設定からでも音を復帰する（音無しのまま入るのは「音無しで開始」の役割）
   assert.deepEqual(
     await page.evaluate(async () => {
-      const s = (await import("./js/core/settings.js?v=20260725-b")).getSettings();
+      const s = (await import("./js/core/settings.js?v=20260728-a")).getSettings();
       return { bgm: s.bgm, sfx: s.sfx };
     }),
     { bgm: true, sfx: true },
@@ -477,7 +477,7 @@ try {
   // ハイコントラスト配色: 設定 ON で全テーマの判定色が 緑→オレンジ / 黄→青 に置き換わる
   const normalTileCorrect = await page.evaluate(() => getComputedStyle(document.body).getPropertyValue("--tile-correct").trim());
   await page.evaluate(async () => {
-    const mod = await import("./js/core/settings.js?v=20260725-b");
+    const mod = await import("./js/core/settings.js?v=20260728-a");
     mod.setSetting("highContrast", true);
   });
   assert.ok(
@@ -497,7 +497,7 @@ try {
   // 遊び方の本文の色の呼び名も置き換わる（判定の順番の説明を含む）
   {
     await page.evaluate(async () => {
-      const { showHelpModal } = await import("./js/ui/help.js?v=20260725-b");
+      const { showHelpModal } = await import("./js/ui/help.js?v=20260728-a");
       showHelpModal("normal");
     });
     const contrastHelp = page.getByRole("dialog", { name: "DWORDle 遊び方" });
@@ -509,7 +509,7 @@ try {
     await contrastHelp.waitFor({ state: "detached" });
   }
   await page.evaluate(async () => {
-    const mod = await import("./js/core/settings.js?v=20260725-b");
+    const mod = await import("./js/core/settings.js?v=20260728-a");
     mod.setSetting("highContrast", false);
   });
   assert.equal(
@@ -601,7 +601,7 @@ try {
     const screenColor = getComputedStyle(marker).color;
     marker.remove();
 
-    const { renderResultCanvas } = await import("./js/ui/snapshot.js?v=20260725-b");
+    const { renderResultCanvas } = await import("./js/ui/snapshot.js?v=20260728-a");
     const canvas = renderResultCanvas(
       {
         gameMode: "normal",
@@ -624,7 +624,7 @@ try {
   assert.ok(normalPopFlag.savedBlackPixels > 50, "The Pop saved-image flag should also be black");
 
   await page.evaluate(async () => {
-    const { setAppMode } = await import("./js/ui/app.js?v=20260725-b");
+    const { setAppMode } = await import("./js/ui/app.js?v=20260728-a");
     setAppMode("uso");
   });
   await page.locator("body.theme-pop.mode-uso").waitFor();
@@ -732,12 +732,12 @@ try {
   await page.waitForURL(/#\/settings$/);
 
   await page.evaluate(async () => {
-    const { setAppMode } = await import("./js/ui/app.js?v=20260725-b");
+    const { setAppMode } = await import("./js/ui/app.js?v=20260728-a");
     setAppMode("normal");
   });
   await page.locator("body.theme-pop.mode-normal").waitFor();
   await page.evaluate(async () => {
-    const { showHelpModal } = await import("./js/ui/help.js?v=20260725-b");
+    const { showHelpModal } = await import("./js/ui/help.js?v=20260728-a");
     showHelpModal("normal");
   });
   const popHelp = page.getByRole("dialog", { name: "DWORDle 遊び方" });
@@ -882,7 +882,7 @@ try {
   const kbdRestored = await page.evaluate(() => document.getElementById("keyboard").getBoundingClientRect().height);
   assert.ok(kbdRestored > 100, "the keyboard should expand again");
 
-  const answer = new Logic(1).ans1;
+  const answer = new Logic(pidForNumber(1)).ans1; // 番号 1 を入力 = 新出題の No.1
   await page.keyboard.type(answer);
   await page.keyboard.press("Enter");
   await page.waitForURL(/#\/result\/normal\/\d+$/, { timeout: 15000 });
@@ -911,8 +911,8 @@ try {
     "The flag meaning should also be exposed to assistive technology"
   );
   const savedImageFlagPixels = await page.evaluate(async ({ guessedWord }) => {
-    const settings = await import("./js/core/settings.js?v=20260725-b");
-    const { renderResultCanvas } = await import("./js/ui/snapshot.js?v=20260725-b");
+    const settings = await import("./js/core/settings.js?v=20260728-a");
+    const { renderResultCanvas } = await import("./js/ui/snapshot.js?v=20260728-a");
     settings.setSetting("theme", "cyber");
     const canvas = renderResultCanvas(
       {
@@ -962,7 +962,7 @@ try {
 
   // ハイコントラスト配色ではシェア文字列の絵文字も 🟧 / 🟦 になる（灰は ⬜ のまま）
   await page.evaluate(async () => {
-    const mod = await import("./js/core/settings.js?v=20260725-b");
+    const mod = await import("./js/core/settings.js?v=20260728-a");
     mod.setSetting("highContrast", true);
     navigator.clipboard.writeText = (text) => {
       window.__copiedShareText = text;
@@ -974,17 +974,18 @@ try {
   assert.ok(hcShareText.includes("🟧"), `high-contrast share text should use the orange emoji: ${hcShareText}`);
   assert.ok(!hcShareText.includes("🟩") && !hcShareText.includes("🟨"), "high-contrast share text must not contain green/yellow emojis");
   await page.evaluate(async () => {
-    const mod = await import("./js/core/settings.js?v=20260725-b");
+    const mod = await import("./js/core/settings.js?v=20260728-a");
     mod.setSetting("highContrast", false);
   });
 
   // 結果フィルターで EXTRA SHOT 成功（DOUBLE CLEAR）だけを抽出できる。
   await page.evaluate(async () => {
     const [{ Logic: BrowserLogic }, records] = await Promise.all([
-      import("./js/core/logic.js?v=20260725-b"),
-      import("./js/core/records.js?v=20260725-b"),
+      import("./js/core/logic.js?v=20260728-a"),
+      import("./js/core/records.js?v=20260728-a"),
     ]);
-    const pid = 2;
+    const { pidForNumber } = await import("./js/core/problems.js?v=20260728-a");
+    const pid = pidForNumber(2);
     const logic = new BrowserLogic(pid);
     const startTime = Math.max(
       Math.floor(Date.now() / 1000) - 10,
@@ -1164,8 +1165,8 @@ try {
     + historicalDailyDate.getDate();
   await page.evaluate(async ({ pid }) => {
     const [{ Logic }, records] = await Promise.all([
-      import("./js/core/logic.js?v=20260725-b"),
-      import("./js/core/records.js?v=20260725-b"),
+      import("./js/core/logic.js?v=20260728-a"),
+      import("./js/core/records.js?v=20260728-a"),
     ]);
     const logic = new Logic(pid);
     records.addFinishedGame({
@@ -1252,7 +1253,7 @@ try {
   assert.equal(await page.locator(".daily-calendar-day.selected").count(), 1, "the picked date should stay highlighted");
   assert.equal(
     await page.evaluate(async ({ pid }) => {
-      const { confirmAndStart } = await import("./js/ui/game-screen.js?v=20260725-b");
+      const { confirmAndStart } = await import("./js/ui/game-screen.js?v=20260728-a");
       return confirmAndStart(pid, "normal");
     }, { pid: historicalDailyPid }),
     false,
@@ -1292,9 +1293,9 @@ try {
   // 開始時は矛盾した「プレイ済み」ではなく、別モードでの当日プレイだと明示する。
   await page.evaluate(async ({ pid }) => {
     const [{ Logic: BrowserLogic }, records, app] = await Promise.all([
-      import("./js/core/logic.js?v=20260725-b"),
-      import("./js/core/records.js?v=20260725-b"),
-      import("./js/ui/app.js?v=20260725-b"),
+      import("./js/core/logic.js?v=20260728-a"),
+      import("./js/core/records.js?v=20260728-a"),
+      import("./js/ui/app.js?v=20260728-a"),
     ]);
     const logic = new BrowserLogic(pid);
     const startTime = Math.floor(Date.now() / 1000) - 30;
@@ -1330,7 +1331,7 @@ try {
   ).waitFor();
   await crossModeDailyDialog.getByRole("button", { name: "キャンセル" }).click();
   await page.evaluate(async () => {
-    const app = await import("./js/ui/app.js?v=20260725-b");
+    const app = await import("./js/ui/app.js?v=20260728-a");
     app.setAppMode("normal");
     location.hash = "#/";
   });
@@ -1351,6 +1352,23 @@ try {
 
   await page.locator(".problem-level-tabs").getByRole("button", { name: "やさしい", exact: true }).click();
   await page.getByText("No.1 - No.9999", { exact: true }).waitFor();
+
+  // 出題セットの切り替え: 既定は新出題で、Classic を選ぶと Cls. 表記と実績対象外の注意が出る
+  {
+    const setTabs = page.locator(".problem-set-tabs");
+    await setTabs.waitFor();
+    assert.match(
+      await setTabs.locator("button.active").first().textContent(),
+      /新出題/,
+      "the New puzzle set should be selected by default"
+    );
+    assert.equal(await page.locator(".problem-set-note").count(), 0, "the New set needs no achievement warning");
+    await setTabs.getByRole("button", { name: /Classic/ }).click();
+    await page.getByText("Cls.1 - Cls.9999", { exact: true }).waitFor();
+    await page.getByText("2026-07-29 以降のプレイは実績の対象になりません", { exact: false }).first().waitFor();
+    await setTabs.getByRole("button", { name: /新出題/ }).click();
+    await page.getByText("No.1 - No.9999", { exact: true }).waitFor();
+  }
   assert.equal(
     await page.getByText("だれでも知っている単語だけ", { exact: true }).count(),
     0,
@@ -1423,7 +1441,7 @@ try {
     // 設定を ON にすると、viewport メタと touch-action の両方が即座に切り替わる。
     // スクロールコンテナは祖先の指定が届かないので、そこも一緒に切り替わることを見る。
     const zoomLock = await page.evaluate(async () => {
-      const { setSetting } = await import("./js/core/settings.js?v=20260725-b");
+      const { setSetting } = await import("./js/core/settings.js?v=20260728-a");
       const scroller = document.querySelector(".modal, .list-screen-body, #board-scroll");
       setSetting("lockZoom", true);
       const locked = {
@@ -1457,7 +1475,7 @@ try {
 
   // EXTRA SHOT 中の戻る操作: 確認後に棄権し、元のゲームだけを通常クリアとして記録する
   {
-    const pid = 321;
+    const pid = pidForNumber(321);
     const logic = new Logic(pid);
     const startTime = 1_800_000_000;
     const forfeitPage = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
@@ -1540,7 +1558,7 @@ try {
 
   // EXTRA SHOT 成功: 最後の 1 枚だけ溜め、結果・保存画像を通常盤面の下へ表示する
   {
-    const pid = 322;
+    const pid = pidForNumber(322);
     const logic = new Logic(pid);
     const successPage = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
     await successPage.addInitScript(
@@ -1633,7 +1651,7 @@ try {
     const earlyGaps = revealTimes.slice(1, 4).map((time, index) => time - revealTimes[index]);
     const finalGap = revealTimes[4] - revealTimes[3];
     assert.equal(
-      await successPage.evaluate(async () => (await import("./js/config.js?v=20260725-b")).FX.extraShot.lastTilePauseMs),
+      await successPage.evaluate(async () => (await import("./js/config.js?v=20260728-a")).FX.extraShot.lastTilePauseMs),
       720,
       "The final tile pause should be twice the former 360ms pause"
     );
@@ -1657,7 +1675,7 @@ try {
     assert.equal(await crown.getAttribute("data-crown-verticals"), "8");
     assert.equal(await successPage.locator(".answer-row .fa-star").count(), 0, "The old EXTRA SHOT star should be removed");
     const crownGeometry = await successPage.evaluate(async () => {
-      const { CROWN_POINT_COUNT, CROWN_VALLEY_COUNT, crownPoints } = await import("./js/ui/crown.js?v=20260725-b");
+      const { CROWN_POINT_COUNT, CROWN_VALLEY_COUNT, crownPoints } = await import("./js/ui/crown.js?v=20260728-a");
       const points = crownPoints(0, 0, 0, 40);
       const gaps = points.map((point, index) => {
         const next = points[(index + 1) % points.length];
@@ -1729,9 +1747,9 @@ try {
     const snapshotExtraShot = await successPage.evaluate(async () => {
       const history = JSON.parse(localStorage.getItem("dwordle2.history") || "[]");
       const record = history[0];
-      const { Logic } = await import("./js/core/logic.js?v=20260725-b");
-      const { renderResultCanvas } = await import("./js/ui/snapshot.js?v=20260725-b");
-      const settings = await import("./js/core/settings.js?v=20260725-b");
+      const { Logic } = await import("./js/core/logic.js?v=20260728-a");
+      const { renderResultCanvas } = await import("./js/ui/snapshot.js?v=20260728-a");
+      const settings = await import("./js/core/settings.js?v=20260728-a");
       const gameLogic = new Logic(record.problemID);
       const displayRows = record.guessWord.map((word) => gameLogic.queryWord(word));
       const textCalls = [];
@@ -1834,7 +1852,7 @@ try {
     assert.deepEqual(snapshotExtraShot.savedResult, Array(5).fill("correct"), "EXTRA SHOT feedback should be saved with the record");
     assert.ok(snapshotExtraShot.goldCrownPixels > 20, "The saved image should draw a gold crown for the other answer");
     await successPage.evaluate(async () => {
-      (await import("./js/ui/toast.js?v=20260725-b")).extraShotUnlockCelebration();
+      (await import("./js/ui/toast.js?v=20260728-a")).extraShotUnlockCelebration();
     });
     const finalUnlockDialog = successPage.getByRole("dialog", { name: "EXTRA SHOT" });
     await finalUnlockDialog.waitFor();
@@ -1850,7 +1868,7 @@ try {
     await successPage.waitForURL(/#\/problems$/);
     await successPage.locator(".problem-level-tabs").getByRole("button", { name: "やさしい", exact: true }).click();
     await successPage.getByRole("button", { name: /問題 301 から 400/ }).click();
-    const doubleClearCell = successPage.getByRole("button", { name: "問題 322、DOUBLE CLEAR済み" });
+    const doubleClearCell = successPage.getByRole("button", { name: "問題 No.322、DOUBLE CLEAR済み" });
     await doubleClearCell.waitFor();
     assert.equal(await doubleClearCell.evaluate((cell) => cell.classList.contains("double-clear")), true);
     const doubleClearCellStyle = await doubleClearCell.evaluate((cell) => {
@@ -1950,7 +1968,7 @@ try {
   // DWORDlie の EXTRA SHOT も通常判定と同じく両回答を参照し、表示する全マスで嘘を貫く。
   // 先頭 4 枚が緑ではないので、5 枚目直前の追加のタメは入れない。
   {
-    const pid = 323;
+    const pid = pidForNumber(323);
     const logic = new Logic(pid);
     const usoPage = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
     await usoPage.addInitScript(({ puzzleId }) => {
@@ -2096,13 +2114,13 @@ try {
   );
   await shortPage.waitForTimeout(50);
   const flightsBeforeLeave = await shortPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260725-b")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260728-a")).activeTileFlightCount()
   );
   assert.ok(flightsBeforeLeave > 0, "Tile gather animation should be active before leaving the game");
   await shortPage.getByRole("button", { name: "タイトルへ戻る" }).click();
   await shortPage.waitForURL(/#\/$/);
   const flightsAfterLeave = await shortPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260725-b")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260728-a")).activeTileFlightCount()
   );
   assert.equal(flightsAfterLeave, 0, "Tile gather animation should be removed when leaving the game");
   await shortPage.close();
@@ -2449,13 +2467,13 @@ try {
   await reducedDialog.getByRole("button", { name: "スタート" }).click();
   await reducedPage.locator("#screen-game.active .row").last().waitFor();
   const reducedFlights = await reducedPage.evaluate(async () =>
-    (await import("./js/fx/effects.js?v=20260725-b")).activeTileFlightCount()
+    (await import("./js/fx/effects.js?v=20260728-a")).activeTileFlightCount()
   );
   assert.equal(reducedFlights, 0, "Reduced motion should suppress tile gather flights");
   await reducedContext.close();
 
   await page.evaluate(async () => {
-    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260725-b");
+    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260728-a");
     bgmUnlockCelebration([{ id: "queue-test-a", name: "Queue Test A", desc: "First unlock" }]);
     bgmUnlockCelebration([{ id: "queue-test-b", name: "Queue Test B", desc: "Second unlock" }]);
   });
@@ -2488,7 +2506,7 @@ try {
 
   // 2 曲以上の同時解放（履歴インポート等）は 1 枚のまとめカードで報告する
   await page.evaluate(async () => {
-    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260725-b");
+    const { bgmUnlockCelebration } = await import("./js/ui/toast.js?v=20260728-a");
     bgmUnlockCelebration([
       { id: "multi-a", name: "Multi Track A", desc: "" },
       { id: "multi-b", name: "Multi Track B", desc: "" },
@@ -2505,7 +2523,7 @@ try {
 
   // 実績解放セレブレーション: 単発は大型カード、3 個以上は 1 枚にまとめる
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260725-b");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260728-a");
     achievementCelebration([
       { id: "smoke-single", icon: "trophy", color: "#ffd166", name: "スモーク実績", desc: "テスト用の実績です" },
     ]);
@@ -2524,7 +2542,7 @@ try {
   await page.locator(".ach-unlock").waitFor({ state: "detached" });
 
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260725-b");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260728-a");
     achievementCelebration([
       { id: "smoke-a", icon: "star", color: "#ffd166", name: "実績A", desc: "" },
       { id: "smoke-b", icon: "gem", color: "#7ee8ff", name: "実績B", desc: "" },
@@ -2546,7 +2564,7 @@ try {
 
   // リストが溢れるときは下端フェードで続きを示し、最下部まで送るとフェードが消える
   await page.evaluate(async () => {
-    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260725-b");
+    const { achievementCelebration } = await import("./js/ui/toast.js?v=20260728-a");
     achievementCelebration(
       Array.from({ length: 9 }, (_, i) => ({ id: `smoke-many-${i}`, icon: "star", color: "#ffd166", name: `実績${i + 1}`, desc: "" }))
     );
@@ -2570,7 +2588,7 @@ try {
 
   // バナーは本番ドメインだけ自動表示されるため、ローカル UI テストでは明示表示する。
   await page.evaluate(async () => {
-    const { showConsentBanner } = await import("./js/ui/consent-banner.js?v=20260725-b");
+    const { showConsentBanner } = await import("./js/ui/consent-banner.js?v=20260728-a");
     showConsentBanner();
   });
   const consentBanner = page.getByRole("region", { name: "Cookie の設定" });
@@ -2635,7 +2653,7 @@ try {
 
       // 設定画面を開いたままバナーを出して「同意する」を押す
       await productionPage.evaluate(async () => {
-        const { showConsentBanner } = await import("./js/ui/consent-banner.js?v=20260725-b");
+        const { showConsentBanner } = await import("./js/ui/consent-banner.js?v=20260728-a");
         showConsentBanner();
       });
       const productionBanner = productionPage.getByRole("region", { name: "Cookie の設定" });
@@ -2689,7 +2707,7 @@ try {
   // 判定オープン中の先行入力: 次の 1 行分をバッファし、オープン完了後に自動で確定する
   await page.getByRole("dialog", { name: "基本ルール | DWORDle" }).getByRole("button", { name: "わかった" }).click();
   await page.evaluate(async () => {
-    const { setSetting } = await import("./js/core/settings.js?v=20260725-b");
+    const { setSetting } = await import("./js/core/settings.js?v=20260728-a");
     setSetting("theme", "classic");
     setSetting("sfx", false);
     setSetting("bgm", false);
@@ -2754,7 +2772,7 @@ try {
     await passGate(freshPage);
     // 本番のGA条件はローカルでは無効なので、表示待機だけを明示的に開始する。
     await freshPage.evaluate(async () => {
-      const { showConsentBannerAfterModals } = await import("./js/ui/consent-banner.js?v=20260725-b");
+      const { showConsentBannerAfterModals } = await import("./js/ui/consent-banner.js?v=20260728-a");
       showConsentBannerAfterModals();
     });
     const freshTutorial = freshPage.getByRole("dialog", { name: "基本ルール | DWORDle" });
@@ -3180,7 +3198,7 @@ try {
 
     // 署名の合わない JSON は 1 件も取り込まない（実績も解除しない）
     const exportedText = await importOptOutPage.evaluate(async () => {
-      const { exportJSON } = await import("./js/core/records.js?v=20260725-b");
+      const { exportJSON } = await import("./js/core/records.js?v=20260728-a");
       return exportJSON();
     });
     const exportedJson = JSON.parse(exportedText);
@@ -3282,7 +3300,7 @@ try {
     await cardPage.getByRole("button", { name: "プレイヤーカード", exact: true }).click();
     await cardPage.waitForURL(/#\/card$/);
     await cardPage.evaluate(async () => {
-      const { setSetting } = await import("./js/core/settings.js?v=20260725-b");
+      const { setSetting } = await import("./js/core/settings.js?v=20260728-a");
       setSetting("theme", "pop");
     });
     await cardPage.locator("body.theme-pop.mode-normal").waitFor();
@@ -3682,7 +3700,7 @@ try {
     // 称号ラダー: 最上位は王（実績全解除 + 1000 プレイ）。多い方のモードの王になり、
     // 同数なら DWORDle。1000 未満は伝説のまま、実績未コンプはプレイ数ランクのまま。
     const ranks = await cardPage.evaluate(async () => {
-      const mod = await import("./js/ui/player-card.js?v=20260725-b");
+      const mod = await import("./js/ui/player-card.js?v=20260728-a");
       const pick = (stats) => {
         const rank = mod.rankForStats(stats);
         return `${rank.id}:${rank.titleJa}`;
@@ -3808,8 +3826,8 @@ try {
     // カテゴリバッジ: 実績 9 カテゴリ + 隠しの計 10 個。この時点では実績未解除なのですべて未獲得
     const badgeInfo = await cardPage.evaluate(async () => {
       const [cardMod, achMod] = await Promise.all([
-        import("./js/ui/player-card.js?v=20260725-b"),
-        import("./js/core/achievements.js?v=20260725-b"),
+        import("./js/ui/player-card.js?v=20260728-a"),
+        import("./js/core/achievements.js?v=20260728-a"),
       ]);
       const states = cardMod.categoryBadgeStates();
       return {
@@ -3824,7 +3842,7 @@ try {
 
     // 実績を全解除すると 10 個すべて獲得になる
     await cardPage.evaluate(async () => {
-      const mod = await import("./js/core/achievements.js?v=20260725-b");
+      const mod = await import("./js/core/achievements.js?v=20260728-a");
       const all = {};
       for (const a of mod.ACHIEVEMENTS) all[a.id] = 1750000000;
       localStorage.setItem("dwordle2.achievements", JSON.stringify(all));
@@ -3835,7 +3853,7 @@ try {
     await cardPage.waitForURL(/#\/card$/);
     await cardPage.locator(".player-card-canvas").waitFor();
     const earnedAll = await cardPage.evaluate(async () => {
-      const mod = await import("./js/ui/player-card.js?v=20260725-b");
+      const mod = await import("./js/ui/player-card.js?v=20260728-a");
       return mod.categoryBadgeStates().every((b) => b.earned);
     });
     assert.ok(earnedAll, "unlocking every achievement must earn all 10 category badges");
@@ -3905,7 +3923,7 @@ try {
     );
     assert.equal(
       await moodPage.evaluate(async () => {
-        const mod = await import("./js/core/activity.js?v=20260725-b");
+        const mod = await import("./js/core/activity.js?v=20260728-a");
         return mod.favoriteThemeId();
       }),
       "cyber",
@@ -3975,7 +3993,7 @@ try {
     await mutedStartPage.locator("#entry-gate").waitFor({ state: "detached" });
     assert.deepEqual(
       await mutedStartPage.evaluate(async () => {
-        const s = (await import("./js/core/settings.js?v=20260725-b")).getSettings();
+        const s = (await import("./js/core/settings.js?v=20260728-a")).getSettings();
         return { bgm: s.bgm, sfx: s.sfx };
       }),
       { bgm: false, sfx: false },

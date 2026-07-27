@@ -10,7 +10,7 @@
 // - Do Not Track を送っているブラウザ、本番ドメイン以外では読み込まない。
 // - gtag.js は同意後もアイドル時間まで遅延し、オフラインやブロック時は何もしない。
 
-import { loadJSON, saveJSON } from "./store.js?v=20260725-b";
+import { loadJSON, saveJSON } from "./store.js?v=20260728-a";
 
 const MEASUREMENT_ID = "G-JKQEWRGDSM";
 const PRODUCTION_HOSTS = new Set(["kakira9618.github.io"]);

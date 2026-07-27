@@ -6,27 +6,27 @@
 // 原作と同じく、Guess は確定するたびに保存され、リロードしても再開できる。
 // 追加推理タイムの途中でリロード・離脱した場合、チャンスは消滅して通常クリアで記録される。
 
-import { el, clear } from "./dom.js?v=20260725-b";
-import { APP_VERSION, UI, FX } from "../config.js?v=20260725-b";
-import { Logic, CELL, displayResultForMode } from "../core/logic.js?v=20260725-b";
-import { MODES, saveCurrentGame, clearCurrentGame, getCurrentGame, addFinishedGame, addDiscardedGame, isAlreadyPlayed, getHistory, getExtraShot } from "../core/records.js?v=20260725-b";
-import { isDailyPID, pidLabel, todayPID } from "../core/problems.js?v=20260725-b";
-import { checkOnGameFinish } from "../core/achievements.js?v=20260725-b";
-import { registerScreen, navigate, redirect, getAppMode, currentScreenName } from "./app.js?v=20260725-b";
-import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration, extraShotUnlockCelebration } from "./toast.js?v=20260725-b";
-import { isExtraShotEnabled, claimExtraShotUnlockNotice } from "../core/extra-shot.js?v=20260725-b";
-import { playExtraShotCutin, playDoubleClearCutin, cancelExtraShotFx } from "./extra-shot-fx.js?v=20260725-b";
-import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js?v=20260725-b";
-import { hiddenThemesUnlockedBy } from "../core/settings.js?v=20260725-b";
-import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/effects.js?v=20260725-b";
-import { showHelpModal, hasSeenHelp } from "./help.js?v=20260725-b";
-import { trackEvent } from "../core/analytics.js?v=20260725-b";
-import { soundToggleButton } from "./sound-toggle.js?v=20260725-b";
-import { icon } from "./icons.js?v=20260725-b";
-import { tr } from "../core/i18n.js?v=20260725-b";
-import { getSettings } from "../core/settings.js?v=20260725-b";
-import { shouldReduceMotion } from "../core/motion.js?v=20260725-b";
-import { announce, feedbackName, rowAriaLabel, tileAriaLabel } from "./a11y.js?v=20260725-b";
+import { el, clear } from "./dom.js?v=20260728-a";
+import { APP_VERSION, UI, FX } from "../config.js?v=20260728-a";
+import { Logic, CELL, displayResultForMode } from "../core/logic.js?v=20260728-a";
+import { MODES, saveCurrentGame, clearCurrentGame, getCurrentGame, addFinishedGame, addDiscardedGame, isAlreadyPlayed, getHistory, getExtraShot } from "../core/records.js?v=20260728-a";
+import { NEW_ERA, isClassicPID, isDailyPID, numberPrefix, pidLabel, todayPID } from "../core/problems.js?v=20260728-a";
+import { checkOnGameFinish } from "../core/achievements.js?v=20260728-a";
+import { registerScreen, navigate, redirect, getAppMode, currentScreenName } from "./app.js?v=20260728-a";
+import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration, extraShotUnlockCelebration } from "./toast.js?v=20260728-a";
+import { isExtraShotEnabled, claimExtraShotUnlockNotice } from "../core/extra-shot.js?v=20260728-a";
+import { playExtraShotCutin, playDoubleClearCutin, cancelExtraShotFx } from "./extra-shot-fx.js?v=20260728-a";
+import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js?v=20260728-a";
+import { hiddenThemesUnlockedBy } from "../core/settings.js?v=20260728-a";
+import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/effects.js?v=20260728-a";
+import { showHelpModal, hasSeenHelp } from "./help.js?v=20260728-a";
+import { trackEvent } from "../core/analytics.js?v=20260728-a";
+import { soundToggleButton } from "./sound-toggle.js?v=20260728-a";
+import { icon } from "./icons.js?v=20260728-a";
+import { tr } from "../core/i18n.js?v=20260728-a";
+import { getSettings } from "../core/settings.js?v=20260728-a";
+import { shouldReduceMotion } from "../core/motion.js?v=20260728-a";
+import { announce, feedbackName, rowAriaLabel, tileAriaLabel } from "./a11y.js?v=20260728-a";
 
 const KEY_ROWS = [
   [..."qwertyuiop".split(""), "backspace"],
@@ -270,7 +270,7 @@ function isExtraShotActive() {
 // 中断 = 保存を残して「つづきから」で再開できる（従来の挙動）／破棄 = 履歴へ残して終了する。
 // × ・背景タップ・Escape・キャンセルはどれも「ゲームに戻る」。
 async function askLeaveGame() {
-  const { showModal } = await import("./modal.js?v=20260725-b");
+  const { showModal } = await import("./modal.js?v=20260728-a");
   return new Promise((resolve) => {
     let decided = null;
     showModal({
@@ -349,7 +349,7 @@ async function requestBackToTitle() {
   }
   if (extraShotLeavePromptOpen) return;
   extraShotLeavePromptOpen = true;
-  const { confirmModal } = await import("./modal.js?v=20260725-b");
+  const { confirmModal } = await import("./modal.js?v=20260728-a");
   const forfeit = await confirmModal(
     tr("EXTRA SHOTを棄権しますか？", "Forfeit EXTRA SHOT?"),
     tr(
@@ -382,7 +382,8 @@ function updateHeader() {
     counterEl.textContent = `${game.guessWord.length + (state === "finish" ? 0 : 1)} / ${mode.maxGuess}`;
     counterEl.removeAttribute("aria-label");
   }
-  const label = seedHidden ? "No.????" : pidLabel(game.problemID);
+  // 伏せるのは番号だけ。Cls.（旧出題）は実績の扱いが変わるので接頭辞は残す
+  const label = seedHidden ? `${numberPrefix(isClassicPID(game.problemID))}????` : pidLabel(game.problemID);
   // "Daily 2026-07-22" のような 2 語ラベルは 2 行 + 小さめの文字で表示し、
   // 狭い端末でもタイトルや右側のボタン群を削らずに収める
   const words = label.split(" ");
@@ -1034,7 +1035,7 @@ export async function confirmAndStart(pid, mode) {
   if (playedInCurrentMode || playedToday) {
     // 注意: 動的 import にも必ず ?v= トークンを付ける。素の URL だと古いキャッシュの
     // modal.js（旧トークンで sound.js を import する）が混ざり、BGM が二重再生される。
-    const { confirmModal } = await import("./modal.js?v=20260725-b");
+    const { confirmModal } = await import("./modal.js?v=20260728-a");
     const label = pidLabel(pid);
     const countNote = discardedToday
       ? tr(
@@ -1076,7 +1077,7 @@ export async function confirmAndStart(pid, mode) {
   }
   const current = getCurrentGame(mode);
   if (current && current.guessWord.length > 0) {
-    const { confirmModal } = await import("./modal.js?v=20260725-b");
+    const { confirmModal } = await import("./modal.js?v=20260728-a");
     const ok = await confirmModal(
       tr("進行中のゲーム", "Game in progress"),
       tr(
@@ -1088,6 +1089,15 @@ export async function confirmAndStart(pid, mode) {
     discardGame(current);
   }
   startNewGame(pid, mode);
+  // Cls.（旧出題）は実績の対象外。始めた時点で毎回知らせる（ヘッダの "Cls." だけでは伝わらない）
+  if (isClassicPID(pid) && Date.now() / 1000 >= NEW_ERA.achievementCutoffSec) {
+    toast(
+      tr(
+        "Cls.（旧出題）は実績の対象外です",
+        "Cls. (original generator) puzzles do not count toward achievements"
+      )
+    );
+  }
   return true;
 }
 

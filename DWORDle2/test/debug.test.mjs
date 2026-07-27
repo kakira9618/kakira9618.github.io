@@ -7,12 +7,12 @@ globalThis.localStorage = {
   removeItem: (key) => data.delete(key),
 };
 
-const { ACHIEVEMENTS, getUnlocked } = await import("../js/core/achievements.js?v=20260725-b");
-const { getSettings, setSetting } = await import("../js/core/settings.js?v=20260725-b");
-const { isDebugMode, tryEnableDebugMode } = await import("../js/core/debug.js?v=20260725-b");
+const { ACHIEVEMENTS, getUnlocked } = await import("../js/core/achievements.js?v=20260728-a");
+const { getSettings, setSetting } = await import("../js/core/settings.js?v=20260728-a");
+const { isDebugMode, tryEnableDebugMode } = await import("../js/core/debug.js?v=20260728-a");
 // キーワードはソースの全文検索に出ないよう符号化して持つ（js/core/secret.js と同じ方針）
-const { reveal } = await import("../js/core/secret.js?v=20260725-b");
-const { loadJSON, removeKey, saveJSON } = await import("../js/core/store.js?v=20260725-b");
+const { reveal } = await import("../js/core/secret.js?v=20260728-a");
+const { loadJSON, removeKey, saveJSON } = await import("../js/core/store.js?v=20260728-a");
 
 setSetting("theme", "classic");
 const savedBeforeDebug = data.get("dwordle2.settings");

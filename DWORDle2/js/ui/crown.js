@@ -1,7 +1,7 @@
 // EXTRA SHOT で当てた答えに付ける立体王冠。
 // 16 個の頂点を楕円軌道上へ等間隔に置き、前後の y 座標と交互の高さを持たせる。
 
-import { shouldReduceMotion } from "../core/motion.js?v=20260725-b";
+import { shouldReduceMotion } from "../core/motion.js?v=20260728-a";
 
 export const CROWN_POINT_COUNT = 16;
 export const CROWN_VALLEY_COUNT = CROWN_POINT_COUNT / 2;

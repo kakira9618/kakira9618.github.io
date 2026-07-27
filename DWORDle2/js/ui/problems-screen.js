@@ -3,17 +3,28 @@
 // 2 段ドリルダウンで一覧・選択しやすくしている。
 // ルート: #/problems
 
-import { el, clear, fmtDateTime } from "./dom.js?v=20260725-b";
-import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260725-b";
-import { buildProblemStatus, MODES } from "../core/records.js?v=20260725-b";
-import { LEVELS, isDailyPID, isValidPID, pidLabel, todayPID } from "../core/problems.js?v=20260725-b";
-import { playSfx } from "../audio/sound.js?v=20260725-b";
-import { showModal } from "./modal.js?v=20260725-b";
-import { confirmAndStart } from "./game-screen.js?v=20260725-b";
-import { toast } from "./toast.js?v=20260725-b";
-import { soundToggleButton } from "./sound-toggle.js?v=20260725-b";
-import { icon } from "./icons.js?v=20260725-b";
-import { localizedLevel, tr } from "../core/i18n.js?v=20260725-b";
+import { el, clear, fmtDateTime } from "./dom.js?v=20260728-a";
+import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260728-a";
+import { buildProblemStatus, MODES } from "../core/records.js?v=20260728-a";
+import {
+  LEVELS,
+  PID,
+  isDailyPID,
+  isValidPID,
+  numberPrefix,
+  pidForNumber,
+  pidLabel,
+  pidRangeForLevel,
+  problemNumber,
+  todayPID,
+} from "../core/problems.js?v=20260728-a";
+import { playSfx } from "../audio/sound.js?v=20260728-a";
+import { showModal } from "./modal.js?v=20260728-a";
+import { confirmAndStart } from "./game-screen.js?v=20260728-a";
+import { toast } from "./toast.js?v=20260728-a";
+import { soundToggleButton } from "./sound-toggle.js?v=20260728-a";
+import { icon } from "./icons.js?v=20260728-a";
+import { localizedLevel, tr } from "../core/i18n.js?v=20260728-a";
 
 const BLOCK_SIZE = 100;
 
@@ -23,6 +34,7 @@ const SUPPORTS_COLOR_MIX = CSS.supports("color", "color-mix(in srgb, red 50%, wh
 
 let root = null;
 let levelIdx = -1; // -1 は Daily、0 以上は LEVELS のインデックス
+let classicSet = false; // true なら Cls.（旧出題）を並べる。Daily には無い区別
 let blockStart = null; // ブロック表示中の先頭 No.（null なら ブロック一覧）
 let statusFilter = "all"; // "all" | "cleared" | "failed" | "unplayed"
 let dailyCalendarMonth = null; // year * 12 + month。null は今月
@@ -34,6 +46,18 @@ const DAILY_CALENDAR_MAX_MONTHS_AHEAD = 120;
 
 function build() {
   root = document.getElementById("screen-problems");
+}
+
+// Cls.（旧出題）を選んでいるときに、実績の対象外であることを添える
+function classicNote() {
+  return el(
+    "p",
+    { class: "hint problem-set-note" },
+    tr(
+      "Cls. は原作 DWORDle 互換の旧出題です。2026-07-29 以降のプレイは実績の対象になりません（通算プレイ日数・連続プレイは数えます）。",
+      "Cls. puzzles use the original DWORDle generator. Plays on or after 2026-07-29 do not count toward achievements (play days and play streaks still count)."
+    )
+  );
 }
 
 function statusOf(statusMap, pid) {
@@ -71,11 +95,12 @@ function openProblemMenu(pid, statusMap) {
         icon("play"),
         tr("この問題をプレイ", "Play this puzzle")
       ),
+      classicSet ? classicNote() : null,
       historyItems.length
         ? el("div", { class: "hint", style: { marginTop: "6px" } }, tr("プレイ履歴:", "Play history:"))
         : el("p", { class: "hint" }, tr("この問題はまだプレイしていません。", "This puzzle has not been played yet.")),
       ...historyItems,
-    ],
+    ].filter(Boolean),
     actions: [{ label: tr("閉じる", "Close"), onClick: () => {} }],
   });
 }
@@ -296,7 +321,7 @@ function render() {
   const mode = getAppMode();
   const statusMap = buildProblemStatus(mode);
   const level = levelIdx >= 0 ? LEVELS[levelIdx] : null;
-  const [lo, hi] = level?.range ?? [null, null];
+  const [lo, hi] = level ? pidRangeForLevel(level, classicSet) : [null, null];
 
   const header = el(
     "div",
@@ -382,6 +407,31 @@ function render() {
     ]
   );
 
+  // 出題セットの切り替え。デイリーは日付で決まるので出さない。
+  const setSeg = el(
+    "div",
+    { class: "seg problem-set-tabs" },
+    [
+      [false, tr("新出題", "New"), "No."],
+      [true, "Classic", "Cls."],
+    ].map(([value, label, prefix]) =>
+      el(
+        "button",
+        {
+          class: classicSet === value ? "active" : "",
+          onclick: () => {
+            playSfx("ui");
+            classicSet = value;
+            blockStart = null;
+            render();
+          },
+        },
+        el("span", { class: "problem-set-name" }, label),
+        el("span", { class: "problem-set-prefix" }, prefix)
+      )
+    )
+  );
+
   const body = el("div", { class: "list-screen-body" });
   body.append(levelSeg);
   if (levelIdx === -1) {
@@ -389,6 +439,8 @@ function render() {
     root.append(header, body);
     return;
   }
+  body.append(setSeg);
+  if (classicSet) body.append(classicNote());
 
   // 帯全体の進捗
   let clearedCount = 0;
@@ -403,7 +455,7 @@ function render() {
     el(
       "div",
       { class: "progress-note", style: { display: "flex", justifyContent: "space-between" } },
-      el("span", {}, `No.${lo} - No.${hi}`),
+      el("span", {}, `${numberPrefix(classicSet)}${problemNumber(lo)} - ${numberPrefix(classicSet)}${problemNumber(hi)}`),
       el(
         "span",
         {},
@@ -435,8 +487,8 @@ function render() {
           {
             class: `block-cell ${complete ? "complete" : ""}`,
             "aria-label": complete
-              ? tr(`問題 ${s} から ${e}、全問クリア`, `Puzzles ${s} to ${e}, all cleared`)
-              : tr(`問題 ${s} から ${e}、クリア ${c}、プレイ ${p}`, `Puzzles ${s} to ${e}, ${c} cleared, ${p} played`),
+              ? tr(`問題 ${problemNumber(s)} から ${problemNumber(e)}、全問クリア`, `Puzzles ${problemNumber(s)} to ${problemNumber(e)}, all cleared`)
+              : tr(`問題 ${problemNumber(s)} から ${problemNumber(e)}、クリア ${c}、プレイ ${p}`, `Puzzles ${problemNumber(s)} to ${problemNumber(e)}, ${c} cleared, ${p} played`),
             style: !complete && ratio > 0 && SUPPORTS_COLOR_MIX ? { background: `color-mix(in srgb, var(--tile-correct) ${Math.round(8 + ratio * 42)}%, var(--bg-panel))` } : {},
             onclick: () => {
               playSfx("ui");
@@ -444,7 +496,7 @@ function render() {
               render();
             },
           },
-          el("div", { class: "bn" }, `${s}`),
+          el("div", { class: "bn" }, `${problemNumber(s)}`),
           el("div", { class: "bp" }, complete ? `★${c}/${total}` : p > 0 ? `✓${c}/${p}` : "—")
         )
       );
@@ -489,12 +541,12 @@ function render() {
           {
             class: `num-cell ${st === "unplayed" ? "" : st} ${doubleClear ? "double-clear" : ""}`,
             "aria-label": tr(
-              `問題 ${pid}、${doubleClear ? "DOUBLE CLEAR済み" : st === "cleared" ? "クリア済み" : st === "failed" ? "未クリア" : "未プレイ"}`,
-              `Puzzle ${pid}, ${doubleClear ? "DOUBLE CLEAR" : st === "cleared" ? "cleared" : st === "failed" ? "failed" : "unplayed"}`
+              `問題 ${pidLabel(pid)}、${doubleClear ? "DOUBLE CLEAR済み" : st === "cleared" ? "クリア済み" : st === "failed" ? "未クリア" : "未プレイ"}`,
+              `Puzzle ${pidLabel(pid)}, ${doubleClear ? "DOUBLE CLEAR" : st === "cleared" ? "cleared" : st === "failed" ? "failed" : "unplayed"}`
             ),
             onclick: () => openProblemMenu(pid, statusMap),
           },
-          String(pid)
+          String(problemNumber(pid))
         )
       );
     }
@@ -502,7 +554,10 @@ function render() {
       el(
         "div",
         { class: "progress-note problem-block-head" },
-        tr(`ブロック No.${s} - No.${e}`, `Block No.${s} - No.${e}`)
+        tr(
+          `ブロック ${numberPrefix(classicSet)}${problemNumber(s)} - ${numberPrefix(classicSet)}${problemNumber(e)}`,
+          `Block ${numberPrefix(classicSet)}${problemNumber(s)} - ${numberPrefix(classicSet)}${problemNumber(e)}`
+        )
       ),
       cells.length
         ? el("div", { class: "num-grid" }, cells)
@@ -529,8 +584,8 @@ function jumpPrompt() {
         "p",
         { class: "hint" },
         tr(
-          "No.1-9999: やさしい / No.10000-19999: 極 / No.20000-39999: レベル別",
-          "No.1–9999: Easy / No.10000–19999: Extreme / No.20000–39999: Level-based"
+          `1-9999: やさしい / 10000-19999: 極 / 20000-39999: レベル別（いま開いているのは ${numberPrefix(classicSet)} の一覧です）`,
+          `1–9999: Easy / 10000–19999: Extreme / 20000–39999: Level-based (currently viewing the ${numberPrefix(classicSet)} set)`
         )
       ),
     ],
@@ -540,13 +595,15 @@ function jumpPrompt() {
         label: tr("ジャンプ", "Jump"),
         primary: true,
         onClick: () => {
-          const pid = parseInt(input.value, 10);
-          if (!isValidPID(pid) || pid < 1 || pid > 39999) {
+          const number = parseInt(input.value, 10);
+          const pid = pidForNumber(number, classicSet);
+          if (!Number.isInteger(number) || number < PID.EASY_MIN || number > PID.NUMBER_MAX || !isValidPID(pid)) {
             toast(tr("1〜39999 の番号を入力してください", "Enter a number from 1 to 39999"));
             return false;
           }
-          levelIdx = LEVELS.findIndex((lv) => pid >= lv.range[0] && pid <= lv.range[1]);
-          blockStart = Math.floor((pid - LEVELS[levelIdx].range[0]) / BLOCK_SIZE) * BLOCK_SIZE + LEVELS[levelIdx].range[0];
+          levelIdx = LEVELS.findIndex((lv) => number >= lv.range[0] && number <= lv.range[1]);
+          const [lo] = pidRangeForLevel(LEVELS[levelIdx], classicSet);
+          blockStart = Math.floor((pid - lo) / BLOCK_SIZE) * BLOCK_SIZE + lo;
           render();
         },
       },
@@ -564,6 +621,7 @@ registerScreen("problems", {
   onLeave() {
     // レベル帯（カテゴリ）とその配下の絞り込みは持ち越さず、次に開いたときは必ず Daily から始める
     levelIdx = -1;
+    classicSet = false;
     blockStart = null;
     statusFilter = "all";
     dailyCalendarMonth = null;

@@ -9,14 +9,14 @@
 // 「音無しで開始」は音を止めたまま入る。
 // 初回訪問でも「いきなり基本ルールモーダル」ではなく、まず扉絵で迎える体裁になる。
 
-import { el } from "./dom.js?v=20260725-b";
-import { getAppMode } from "./app.js?v=20260725-b";
-import { APP_VERSION } from "../config.js?v=20260725-b";
-import { SOURCE_HASH } from "../version.js?v=20260725-b";
-import { playSfx, rewindBgm, unlockAudio } from "../audio/sound.js?v=20260725-b";
-import { muteAllSounds, unmuteAllSounds } from "./sound-toggle.js?v=20260725-b";
-import { shouldReduceMotion } from "../core/motion.js?v=20260725-b";
-import { tr } from "../core/i18n.js?v=20260725-b";
+import { el } from "./dom.js?v=20260728-a";
+import { getAppMode } from "./app.js?v=20260728-a";
+import { APP_VERSION } from "../config.js?v=20260728-a";
+import { SOURCE_HASH } from "../version.js?v=20260728-a";
+import { playSfx, rewindBgm, unlockAudio } from "../audio/sound.js?v=20260728-a";
+import { muteAllSounds, unmuteAllSounds } from "./sound-toggle.js?v=20260728-a";
+import { shouldReduceMotion } from "../core/motion.js?v=20260728-a";
+import { tr } from "../core/i18n.js?v=20260728-a";
 
 // 退場フェードの長さ（CSS の #entry-gate transition と同期）
 const GATE_EXIT_MS = 340;

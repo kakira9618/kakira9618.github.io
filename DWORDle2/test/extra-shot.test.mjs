@@ -19,14 +19,14 @@ globalThis.localStorage = {
   removeItem: (key) => storage.delete(key),
 };
 
-const { Logic, CELL, queryWordSingle, displayResultForMode } = await import("../js/core/logic.js?v=20260725-b");
-const records = await import("../js/core/records.js?v=20260725-b");
-const { importFromText } = await import("../js/core/migrate.js?v=20260725-b");
-const { DEFAULT_SETTINGS, getSettings, setSetting } = await import("../js/core/settings.js?v=20260725-b");
-const es = await import("../js/core/extra-shot.js?v=20260725-b");
-const { tryEnableDebugMode } = await import("../js/core/debug.js?v=20260725-b");
+const { Logic, CELL, queryWordSingle, displayResultForMode } = await import("../js/core/logic.js?v=20260728-a");
+const records = await import("../js/core/records.js?v=20260728-a");
+const { importFromText } = await import("../js/core/migrate.js?v=20260728-a");
+const { DEFAULT_SETTINGS, getSettings, setSetting } = await import("../js/core/settings.js?v=20260728-a");
+const es = await import("../js/core/extra-shot.js?v=20260728-a");
+const { tryEnableDebugMode } = await import("../js/core/debug.js?v=20260728-a");
 // 隠し要素の文字列はテストにも平文で置かない（js/core/secret.js 参照）
-const { reveal } = await import("../js/core/secret.js?v=20260725-b");
+const { reveal } = await import("../js/core/secret.js?v=20260728-a");
 
 // ---- queryWordSingle: 1 語だけを対象にした Wordle 標準判定 ----
 {

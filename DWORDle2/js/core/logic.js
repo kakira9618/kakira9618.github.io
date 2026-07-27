@@ -5,9 +5,13 @@
 // - 答えの選び方: 1 語目を選んだ後、リスト末尾と交換してから 2 語目を選ぶ
 // - queryWord: 緑（両答えのどちらかと位置一致）→ 黄（両答えの未消費文字に存在）
 //   の順で、ans1 のフラグを優先して消費する
+//
+// 出題の選び方だけは 2 系統ある（判定ルールは共通）。Cls.（旧出題）と 2026-07-29 より前の
+// デイリーは上の原作 LCG、それ以外は下の pickAnsNew。どの PID がどちらかは
+// problems.js の usesNewGenerator() が決める。
 
-import { ALL_WORDS } from "../data/words.js?v=20260725-b";
-import { candidateWordsForPID, isDailyPID } from "./problems.js?v=20260725-b";
+import { ALL_WORDS } from "../data/words.js?v=20260728-a";
+import { candidateWordsForPID, isDailyPID, problemNumber, usesNewGenerator } from "./problems.js?v=20260728-a";
 
 export const CELL = {
   GUESSING: "guessing",
@@ -17,6 +21,47 @@ export const CELL = {
 };
 
 const allWordsSet = new Set(ALL_WORDS);
+
+// ---- 新出題の乱数 ----
+//
+// 原作 LCG は i2 が i1 だけから決まるため、出題の組み合わせが候補語数どまりだった
+// （やさしい語彙は 236 語しかないので、No.1-9999 に 236 通りの出題が 43 回ずつ繰り返されていた）。
+// さらに番号を 1 増やすと答えの位置が一定量だけずれる等差数列なので、今日の答えから
+// 明日の答えを逆算できた。ここでは番号をハッシュしてから 2 語を独立に引き、どちらも解消する。
+//
+// 32bit 整数演算（Math.imul）だけで組み立て、浮動小数を挟まない。どの端末・どのブラウザでも
+// 同じ番号から必ず同じ出題になることが、この機能の前提なので崩さないこと。
+//
+// シード文字列の "r1" は出題の世代。将来また抽選を作り直すときはここを上げる
+// （既存の出題を保ったまま、新しい世代を別セットとして足せる）。
+const NEW_SEED_PREFIX = "dw2r1:";
+
+// FNV-1a。番号の近さをビットの近さとして残さないための撹拌
+function hashSeedText(text) {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) hash = Math.imul(hash ^ text.charCodeAt(i), 0x01000193) >>> 0;
+  return hash >>> 0;
+}
+
+function splitmix32(state) {
+  let x = state >>> 0;
+  return () => {
+    x = (x + 0x9e3779b9) >>> 0;
+    let z = x;
+    z = Math.imul(z ^ (z >>> 16), 0x21f0aaad) >>> 0;
+    z = Math.imul(z ^ (z >>> 15), 0x735a2d97) >>> 0;
+    return (z ^ (z >>> 15)) >>> 0;
+  };
+}
+
+// [0, n) の一様乱数。単純な剰余だと端数のぶんだけ小さい番号が出やすくなるので、
+// 割り切れない上端を捨ててから剰余を取る。
+function nextBelow(next, n) {
+  const limit = 0x100000000 - (0x100000000 % n);
+  let value = next();
+  while (value >= limit) value = next();
+  return value % n;
+}
 
 export class Logic {
   constructor(seed) {
@@ -28,7 +73,20 @@ export class Logic {
   setSeed(seed) {
     this.seed = seed;
     this.candWords = candidateWordsForPID(seed);
-    this.#pickAns(seed);
+    if (usesNewGenerator(seed)) this.#pickAnsNew(seed);
+    else this.#pickAns(seed);
+  }
+
+  // 新出題の抽選。2 語を独立に引くので、組み合わせは N×(N-1) 通りになる。
+  #pickAnsNew(seed) {
+    const words = this.candWords; // 交換しないので、共有リストをコピーせずそのまま読める
+    const n = words.length;
+    const next = splitmix32(hashSeedText(NEW_SEED_PREFIX + problemNumber(seed)));
+    const i1 = nextBelow(next, n);
+    let i2 = nextBelow(next, n - 1);
+    if (i2 >= i1) i2++; // i1 を欠番にした番号として読み替える（2 語が同じにならない）
+    this.ans1 = words[i1];
+    this.ans2 = words[i2];
   }
 
   // 原作 Logic.pickAns() の移植。cand リストのコピー上で同じ手順を踏む。
