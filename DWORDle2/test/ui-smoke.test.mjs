@@ -199,6 +199,31 @@ async function waitForDialogFocus(selector) {
 }
 
 // エントリーゲート（扉絵）はすべてのロードで最初に表示される。「開始」で通過する
+// プレイヤーカード左上の装飾ミニタイル 5 枚それぞれについて、中心付近にタイルの地色と違う画素
+// （＝焼き込まれた DEBUG の文字）が何ピクセルあるかを数える。ページ内で動かすので自己完結させる。
+// 座標・色は js/ui/player-card.js の CARD.miniTile* と CARD.scale = 2 に対応。
+function countMiniTileGlyphPixels(canvas) {
+  const context = canvas.getContext("2d");
+  const tileColors = [[0, 230, 138], [255, 194, 51], [58, 67, 86], [0, 230, 138], [255, 194, 51]];
+  const size = 24 * 2;
+  const step = (24 + 8) * 2;
+  const origin = 42 * 2;
+  const inset = 12; // 角丸の外に出ないよう内側を見る
+  return tileColors.map(([r, g, b], index) => {
+    const { data } = context.getImageData(
+      origin + index * step + inset,
+      origin + inset,
+      size - inset * 2,
+      size - inset * 2
+    );
+    let different = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      if (Math.abs(data[i] - r) + Math.abs(data[i + 1] - g) + Math.abs(data[i + 2] - b) > 60) different++;
+    }
+    return different;
+  });
+}
+
 async function passGate(target) {
   const start = target.locator("#entry-gate .entry-gate-start");
   await start.waitFor();
@@ -220,10 +245,21 @@ try {
     "https://policies.google.com/technologies/partner-sites?hl=ja",
     "privacy policy should link to Google's required Analytics disclosure"
   );
+  // 連絡先はアドレスを直に晒さず、「メール」「X」の 2 リンクで案内する
   assert.equal(
-    await privacyPage.getByRole("link", { name: "kurokuro917@gmail.com", exact: true }).first().getAttribute("href"),
+    await privacyPage.getByRole("link", { name: "メール", exact: true }).getAttribute("href"),
     "mailto:kurokuro917@gmail.com",
     "privacy contact email should be actionable"
+  );
+  assert.equal(
+    await privacyPage.locator("#japanese").getByRole("link", { name: "X", exact: true }).getAttribute("href"),
+    "https://x.com/kakira9618",
+    "privacy contact should also link to X"
+  );
+  assert.equal(
+    await privacyPage.getByText("kurokuro917@gmail.com", { exact: false }).count(),
+    0,
+    "the raw contact address should not be printed on the privacy page"
   );
   await privacyPage.getByText("Google アナリティクスは、利用者やセッションを区別するためにCookieを使用します。", { exact: false }).waitFor();
   await privacyPage.getByRole("heading", { name: "データが収集・処理される仕組み", exact: true }).waitFor();
@@ -236,6 +272,11 @@ try {
     await privacyPage.getByRole("link", { name: "powerlanguage/word-lists", exact: true }).first().getAttribute("href"),
     "https://github.com/powerlanguage/word-lists",
     "word-list attribution should link to its source"
+  );
+  assert.equal(
+    await privacyPage.getByRole("link", { name: "メール", exact: true }).getAttribute("href"),
+    "mailto:kurokuro917@gmail.com",
+    "the credits contact should be a mail link rather than a bare address"
   );
   await privacyPage.getByText("承認・後援を受けたものではありません。", { exact: false }).waitFor();
   const aboutAxe = await privacyPage.evaluate(async () => window.axe.run(document, { resultTypes: ["violations"] }));
@@ -2781,18 +2822,13 @@ try {
     );
     await freshPage.locator(".player-card-issue").click();
     await freshPage.locator(".player-card-canvas").waitFor();
-    // フッター左端に琥珀色（#ffcf5c）の DEBUG ピルが焼き込まれているかを画素で見る
-    const debugCardMarkPixels = await freshPage.locator(".player-card-canvas").evaluate((cv) => {
-      const { data } = cv.getContext("2d").getImageData(120, 1250, 320, 80);
-      let amber = 0;
-      for (let i = 0; i < data.length; i += 4) {
-        if (data[i] > 200 && data[i + 1] > 150 && data[i + 2] < 150) amber++;
-      }
-      return amber;
-    });
-    assert.ok(
-      debugCardMarkPixels > 100,
-      `the player card image should carry a DEBUG mark in debug mode (${debugCardMarkPixels} amber px)`
+    // 左上の装飾ミニタイル 5 枚に「D E B U G」が 1 文字ずつ入る。
+    // 各タイルの中心付近に、タイル地色とは違う画素（＝文字）があるかを見る。
+    const debugCardMarkPixels = await freshPage.locator(".player-card-canvas").evaluate(countMiniTileGlyphPixels);
+    assert.deepEqual(
+      debugCardMarkPixels.map((count) => count > 50),
+      [true, true, true, true, true],
+      `every mini tile should carry a DEBUG letter in debug mode (${JSON.stringify(debugCardMarkPixels)})`
     );
     await freshPage.evaluate(() => { location.hash = "#/achievements"; });
     await freshPage.waitForURL(/#\/achievements$/);
@@ -3182,16 +3218,13 @@ try {
     assert.equal(painted.width, 2400, "the card image should be rendered at 2x width");
     assert.equal(painted.height, 1350, "the card image should be rendered at 2x height");
     assert.ok(painted.colorCount > 4, `the card should actually be painted (sampled colors: ${painted.colorCount})`);
-    // 通常プレイのカードには DEBUG の印を焼き込まない（デバッグ中の検証は上の debug モードのテスト）
-    const normalCardMarkPixels = await cardCanvas.evaluate((cv) => {
-      const { data } = cv.getContext("2d").getImageData(120, 1250, 320, 80);
-      let amber = 0;
-      for (let i = 0; i < data.length; i += 4) {
-        if (data[i] > 200 && data[i + 1] > 150 && data[i + 2] < 150) amber++;
-      }
-      return amber;
-    });
-    assert.equal(normalCardMarkPixels, 0, "a card issued outside debug mode must not carry the DEBUG mark");
+    // 通常プレイのカードのミニタイルは無地のまま（DEBUG の文字を焼き込まない）
+    const normalCardMarkPixels = await cardCanvas.evaluate(countMiniTileGlyphPixels);
+    assert.deepEqual(
+      normalCardMarkPixels,
+      [0, 0, 0, 0, 0],
+      `a card issued outside debug mode must not carry the DEBUG letters (${JSON.stringify(normalCardMarkPixels)})`
+    );
     assert.equal(
       await cardPage.locator("#screen-card .header .debug-status").count(),
       0,

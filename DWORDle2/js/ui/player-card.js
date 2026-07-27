@@ -97,15 +97,6 @@ const CARD = {
   },
   footerDividerY: 622, // フッター上の細い区切り線
   footerY: 644, // URL・発行日（右寄せ）
-  // DEBUG モード中に発行したカードだと分かる印（フッター左端のピル。設定画面のバッジと同じ配色）
-  debug: {
-    text: "DEBUG",
-    size: 15,
-    height: 30,
-    padX: 14,
-    color: "#ffcf5c",
-    glow: "rgba(255, 207, 92, 0.35)",
-  },
   sinceSize: 17, // 初プレイ日（PLAYER ラベルの隣）の文字サイズ
   idEdgeX: 26, // プレイヤー ID の右端からの距離（縦書きで印字）
   idSize: 12,
@@ -114,6 +105,14 @@ const CARD = {
   miniTileX: 42, // コーナーからの距離
   miniTileY: 42,
   miniTileColors: ["#00e68a", "#ffc233", "#3a4356", "#00e68a", "#ffc233"],
+  // DEBUG モード中に発行したカードだと分かる印。
+  // 装飾ミニタイル（5 枚）へ 1 文字ずつ入れるので、文字数はタイル数と揃えること。
+  debug: {
+    text: "DEBUG",
+    size: 16,
+    onLight: "#0a0e1f", // 明るいタイルに乗せる文字色
+    onDark: "#eef4ff", // 暗いタイルに乗せる文字色
+  },
   // カテゴリバッジ棚（中段右側に右揃えで 5 列 x 2 行）。
   // 未獲得スロットは埋め込み用の跡（窪み）だけを描き、獲得すると色付きバッジが埋まる。
   badges: {
@@ -300,6 +299,13 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.roundRect(x, y, w, h, r);
 }
 
+// #rrggbb の明暗判定（タイルの上に乗せる文字色を選ぶのに使う）
+function isLightColor(hex) {
+  const value = parseInt(hex.slice(1), 16);
+  const [r, g, b] = [(value >> 16) & 255, (value >> 8) & 255, value & 255];
+  return (r * 299 + g * 587 + b * 114) / 1000 > 140;
+}
+
 function frameGradient(ctx, rank) {
   const grad = ctx.createLinearGradient(0, 0, CARD.width, CARD.height);
   const colors = rank.frame;
@@ -378,10 +384,18 @@ export async function renderPlayerCardCanvas(name) {
   // ---- ヘッダ: 判定タイル装飾（左上コーナーに密着）+ ロゴ / PLAYER CARD（右上・光沢なし）----
   ctx.textBaseline = "middle";
   const tiles = CARD.miniTileColors;
+  // DEBUG 中はミニタイルに「D E B U G」を 1 文字ずつ入れて、そのカードだと分かるようにする
+  const debugLetters = isDebugMode() ? [...CARD.debug.text] : null;
   tiles.forEach((color, i) => {
+    const x = CARD.miniTileX + i * (CARD.miniTileSize + CARD.miniTileGap);
     ctx.fillStyle = color;
-    roundRect(ctx, CARD.miniTileX + i * (CARD.miniTileSize + CARD.miniTileGap), CARD.miniTileY, CARD.miniTileSize, CARD.miniTileSize, 6);
+    roundRect(ctx, x, CARD.miniTileY, CARD.miniTileSize, CARD.miniTileSize, 6);
     ctx.fill();
+    if (!debugLetters?.[i]) return;
+    ctx.font = `900 ${CARD.debug.size}px "Avenir Next", "Helvetica Neue", sans-serif`;
+    ctx.textAlign = "center";
+    ctx.fillStyle = isLightColor(color) ? CARD.debug.onLight : CARD.debug.onDark;
+    ctx.fillText(debugLetters[i], x + CARD.miniTileSize / 2, CARD.miniTileY + CARD.miniTileSize / 2);
   });
 
   // タイトル画面のロゴに合わせ、「2」は小さめ + 上付きで右肩に置く（全体は右揃え）
@@ -673,25 +687,6 @@ export async function renderPlayerCardCanvas(name) {
     right,
     CARD.footerY
   );
-
-  // ---- DEBUG モードの印（フッター左端。URL・発行日は右寄せなので重ならない）----
-  if (isDebugMode()) {
-    const dbg = CARD.debug;
-    ctx.save();
-    ctx.font = `800 ${dbg.size}px "SF Mono", "Menlo", "Consolas", monospace`;
-    ctx.textAlign = "left";
-    const textW = [...dbg.text].reduce((total, ch) => total + ctx.measureText(ch).width + 1.5, -1.5);
-    ctx.shadowColor = dbg.glow;
-    ctx.shadowBlur = 10;
-    ctx.strokeStyle = dbg.color;
-    ctx.lineWidth = 1.5;
-    roundRect(ctx, left, CARD.footerY - dbg.height / 2, textW + dbg.padX * 2, dbg.height, dbg.height / 2);
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = dbg.color;
-    drawSpaced(ctx, dbg.text, left + dbg.padX, CARD.footerY);
-    ctx.restore();
-  }
 
   // ---- プレイヤー ID（右端に縦書きで小さく印字）----
   ctx.save();
