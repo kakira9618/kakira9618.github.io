@@ -51,9 +51,10 @@ function randomPID(lo, hi, mode) {
   return lo + Math.floor(Math.random() * (hi - lo + 1));
 }
 
-// 番号の割り当て表。デイリーを先頭に、あとはレベル順（Lv.1→Lv.6）で並べる。
+// 番号の割り当て表。レベル順（Lv.1→Lv.6）で並べる。
 // 左右の列を通しで揃えるため、行ラッパーを作らず 2 列グリッドへ直接並べる。
 // classic を指定すると Cls.（旧出題）側の表記になる。
+// デイリーはここに載せない（番号を持たず、タイトルの「本日の問題」から遊ぶ）。
 function numberGuide(classic = false) {
   const cells = [];
   const addRow = (range, name, desc) => {
@@ -67,11 +68,6 @@ function numberGuide(classic = false) {
       )
     );
   };
-  addRow(
-    "0",
-    tr("今日のデイリー問題", "Today's Daily puzzle"),
-    tr("毎日 0 時に切り替わる共通問題", "A shared puzzle that changes at midnight")
-  );
   const prefix = numberPrefix(classic);
   for (const level of LEVELS.slice().sort((a, b) => a.id - b.id)) {
     const localized = localizedLevel(level);
@@ -87,7 +83,7 @@ function numberPrompt(mode) {
   const input = el("input", {
     type: "number",
     value: String(problemNumber(randomPID(easyMin, easyMax, mode))),
-    min: "0",
+    min: String(PID.EASY_MIN),
     max: String(PID.NUMBER_MAX),
     "aria-label": tr("問題番号", "Puzzle number"),
   });
@@ -102,7 +98,7 @@ function numberPrompt(mode) {
   );
   const setButtons = [
     [false, tr("新出題", "New"), "No."],
-    [true, "Classic", "Cls."],
+    [true, tr("旧出題", "Classic"), "Cls."],
   ].map(([value, label, prefix]) =>
     el(
       "button",
@@ -139,10 +135,12 @@ function numberPrompt(mode) {
         label: tr("スタート", "Start"),
         primary: true,
         onClick: () => {
+          // デイリーはここからは選べない（番号を持たない共通問題なので、
+          // タイトルの「本日の問題」から遊ぶ）
           const number = parseInt(input.value, 10);
-          const pid = number === 0 ? todayPID() : pidForNumber(number, classic);
-          if (!Number.isInteger(number) || number < 0 || number > PID.NUMBER_MAX || !isValidPID(pid)) {
-            toast(tr("0〜39999 の番号を入力してください", "Enter a number from 0 to 39999"));
+          const pid = pidForNumber(number, classic);
+          if (!Number.isInteger(number) || number < PID.EASY_MIN || number > PID.NUMBER_MAX || !isValidPID(pid)) {
+            toast(tr("1〜39999 の番号を入力してください", "Enter a number from 1 to 39999"));
             return false;
           }
           return confirmAndStart(pid, mode);

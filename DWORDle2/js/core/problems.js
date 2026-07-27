@@ -9,7 +9,6 @@
 // 旧出題の PID を据え置くことで、リリース済みの履歴・実績・エクスポート JSON を
 // 一切書き換えずに「今までの No.123 = Cls.123」として読み替えられる。
 //
-// - 0                : 入力用エイリアス（今日のデイリー問題に変換される）
 // - 1-9999           : Cls. やさしい（原作 DWORDle の Easy と同一の出題）
 // - 10000-19999      : Cls. 極・全語彙（原作 DWORDle の Hard と同一の出題）
 // - 20000-39999      : Cls. レベル別（DWORDle 2 で追加した帯）
@@ -22,7 +21,6 @@ import { ALL_WORDS, EASY_WORDS } from "../data/words.js?v=20260728-a";
 import { FREQ_ORDER } from "../data/levels.js?v=20260728-a";
 
 export const PID = {
-  DAILY_ALIAS: 0,
   EASY_MIN: 1,
   EASY_MAX: 9999,
   HARD_MIN: 10000,
@@ -113,8 +111,8 @@ export function usesNewGenerator(pid) {
   return isDailyPID(pid) ? pid >= NEW_ERA.dailyFromPID : isNewPID(pid);
 }
 
-// No.0（デイリーエイリアス）は入力時に todayPID() へ変換される一時的な表記であり、
-// プレイ・保存される PID としては無効（レコードに混入すると別問題として扱われてしまう）。
+// 0 は問題番号として無効。かつて「今日のデイリー」への入力エイリアスだったので、
+// 古い履歴に混ざっていることがある（レコードに残ると別問題として扱われてしまう）。
 export function isValidPID(pid) {
   if (!Number.isInteger(pid)) return false;
   if (isDailyPID(pid)) return true;

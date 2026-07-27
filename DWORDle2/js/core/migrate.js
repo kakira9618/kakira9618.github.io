@@ -25,7 +25,7 @@ function looksLikeGame(v) {
   );
 }
 
-// 実際に取り込んでよいレコードかどうか。壊れた PID（No.0 エイリアスや範囲外）や
+// 実際に取り込んでよいレコードかどうか。壊れた PID（0 や範囲外）や
 // 5 文字の英単語でない Guess が混ざった行を履歴へ持ち込まない。
 function isImportableGame(v) {
   return (

@@ -4,7 +4,7 @@
 
 import { ALL_WORDS, EASY_WORDS } from "../js/data/words.js?v=20260728-a";
 import { Logic, queryWordPair } from "../js/core/logic.js?v=20260728-a";
-import { todayPID, isDailyPID, candidateWordsForPID } from "../js/core/problems.js?v=20260728-a";
+import { todayPID, isDailyPID, candidateWordsForPID, usesNewGenerator } from "../js/core/problems.js?v=20260728-a";
 
 // ---- 参照実装: 原作 WordList.tonyu / Logic.tonyu の逐語移植 ----
 // 原作は defaultCandWordsList / defaultAllWordsList を共有参照し、pickAns が
@@ -106,7 +106,9 @@ for (let s = 20000; s <= 39999; s += 777) seedsToTest.push(s);
 
 for (const seed of seedsToTest) {
   const mine = new Logic(seed);
-  if (seed <= 19999 || isDailyPID(seed)) {
+  // 新出題へ切り替えたあとのデイリーは、原作の抽選とは意図的に別物になる
+  // （切り替え日と新しい抽選の性質は problem-sets.test.mjs が見ている）
+  if ((seed <= 19999 || isDailyPID(seed)) && !usesNewGenerator(seed)) {
     const orig = new OrigLogic(seed);
     check(
       mine.ans1 === orig.ans1 && mine.ans2 === orig.ans2,

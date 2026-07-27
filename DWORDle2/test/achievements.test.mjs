@@ -14,6 +14,7 @@ import { Logic, queryWordPair } from "../js/core/logic.js?v=20260728-a";
 // （符号化は node tools/make-secret.mjs encode "<文章>"）
 import { reveal } from "../js/core/secret.js?v=20260728-a";
 import { ALL_WORDS } from "../js/data/words.js?v=20260728-a";
+import { pidForNumber } from "../js/core/problems.js?v=20260728-a";
 
 function clearRecord({
   pid = 1,
@@ -399,9 +400,11 @@ assert.deepEqual(
 }
 
 {
-  // 1 日 1 回を 5 年続けた履歴（1 年 Streak と長期の通算日数実績をまとめて確認）
+  // 1 日 1 回を 5 年続けた履歴（1 年 Streak と長期の通算日数実績をまとめて確認）。
+  // 5 年ぶんは新出題への切り替え日をまたぐので、番号は新出題側で作る
+  // （Cls. だとカットオフ後のプレイが通算回数に入らず、この確認の意図から外れる）。
   const fiveYears = Array.from({ length: 1825 }, (_, index) =>
-    clearRecord({ pid: (index % 5) + 1, startTime: 1_700_000_000 + index * 86400 })
+    clearRecord({ pid: pidForNumber((index % 5) + 1), startTime: 1_700_000_000 + index * 86400 })
   );
   const ids = achievementIdsFromHistory(fiveYears);
   assert(ids.has("play-days-100"), "100 play days should restore A Hundred Days");

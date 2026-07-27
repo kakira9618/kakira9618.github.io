@@ -1363,7 +1363,7 @@ try {
       "the New puzzle set should be selected by default"
     );
     assert.equal(await page.locator(".problem-set-note").count(), 0, "the New set needs no achievement warning");
-    await setTabs.getByRole("button", { name: /Classic/ }).click();
+    await setTabs.getByRole("button", { name: /旧出題/ }).click();
     await page.getByText("Cls.1 - Cls.9999", { exact: true }).waitFor();
     await page.getByText("2026-07-29 以降のプレイは実績の対象になりません", { exact: false }).first().waitFor();
     await setTabs.getByRole("button", { name: /新出題/ }).click();

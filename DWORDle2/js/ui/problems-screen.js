@@ -413,7 +413,7 @@ function render() {
     { class: "seg problem-set-tabs" },
     [
       [false, tr("新出題", "New"), "No."],
-      [true, "Classic", "Cls."],
+      [true, tr("旧出題", "Classic"), "Cls."],
     ].map(([value, label, prefix]) =>
       el(
         "button",

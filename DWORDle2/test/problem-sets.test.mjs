@@ -51,7 +51,7 @@ assert.equal(isNewPID(100000), false, "オフセットちょうどは番号 0 �
 assert.equal(isClassicPID(20260729), false, "デイリーは Cls. でも新出題でもない");
 
 // 保存・インポートで受け付ける PID
-assert.equal(isValidPID(0), false, "No.0 はデイリーへの入力エイリアスなので保存されない");
+assert.equal(isValidPID(0), false, "0 は問題番号として無効（古い履歴に混ざっていることがある）");
 assert.equal(isValidPID(1), true);
 assert.equal(isValidPID(39999), true);
 assert.equal(isValidPID(40000), false);
