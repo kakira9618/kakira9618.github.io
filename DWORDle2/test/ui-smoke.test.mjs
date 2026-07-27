@@ -490,6 +490,20 @@ try {
     "#85c0f9",
     "high contrast should replace yellow with blue"
   );
+  // 遊び方の本文の色の呼び名も置き換わる（判定の順番の説明を含む）
+  {
+    await page.evaluate(async () => {
+      const { showHelpModal } = await import("./js/ui/help.js?v=20260725-b");
+      showHelpModal("normal");
+    });
+    const contrastHelp = page.getByRole("dialog", { name: "DWORDle 遊び方" });
+    await contrastHelp.getByText(
+      "オレンジ・青の判定は Word 1 / 2 のどちらか、灰は両方に対する情報です。判定は オレンジ → 青 → 灰 の順で行われます。",
+      { exact: false }
+    ).waitFor();
+    await contrastHelp.locator(".modal-actions").getByRole("button", { name: "閉じる" }).click();
+    await contrastHelp.waitFor({ state: "detached" });
+  }
   await page.evaluate(async () => {
     const mod = await import("./js/core/settings.js?v=20260725-b");
     mod.setSetting("highContrast", false);
@@ -725,12 +739,11 @@ try {
   const popHelp = page.getByRole("dialog", { name: "DWORDle 遊び方" });
   await popHelp.waitFor();
   await popHelp.getByText(/ルールはほぼ Wordle と同じですが/).waitFor();
-  // 1 文字が複数に当てはまるときの優先順（緑 → 黄 → 灰）を凡例の下に 1 行で添える
-  assert.equal(
-    await popHelp.locator(".help-priority-note").innerText(),
-    "1 つの文字は、当てはまるもののうち 緑 → 黄 → 灰 の順に優先されます。",
-    "the help legend should state the judgment priority"
-  );
+  // 灰が両方の答えについての情報であることと、判定の順番を冒頭で説明する
+  await popHelp.getByText(
+    "緑・黄の判定は Word 1 / 2 のどちらか、灰は両方に対する情報です。判定は 緑 → 黄 → 灰 の順で行われます。",
+    { exact: false }
+  ).waitFor();
   const popHelpTileBackground = await popHelp.locator(".help-answers .htile").first().evaluate(
     (node) => getComputedStyle(node).backgroundColor
   );
@@ -3114,7 +3127,7 @@ try {
       .filter({ hasText: "旧 DWORDle / DWORDlie の履歴は「自動検出」から取り込んでください" })
       .waitFor();
 
-    // 書き出した JSON はそのまま取り込め、1 文字でも変えると注意が出る（コピー漏れの検知）
+    // 署名の合わない JSON は 1 件も取り込まない（実績も解除しない）
     const exportedText = await importOptOutPage.evaluate(async () => {
       const { exportJSON } = await import("./js/core/records.js?v=20260725-b");
       return exportJSON();
@@ -3122,15 +3135,32 @@ try {
     const exportedJson = JSON.parse(exportedText);
     assert.match(exportedJson.signature, /^[0-9a-f]{64}$/, "the export should carry a signature");
     assert.ok(exportedJson.achievements, "the export should carry the achievement records");
+    const stateBeforeTamper = await importOptOutPage.evaluate(() => ({
+      history: localStorage.getItem("dwordle2.history"),
+      achievements: localStorage.getItem("dwordle2.achievements"),
+    }));
     const tampered = JSON.stringify({
       ...exportedJson,
-      history: exportedJson.history.map((game) => ({ ...game, problemID: 999 })),
+      history: [
+        ...exportedJson.history,
+        // 実績が付くように仕立てた偽レコード（1 手クリア）を足す
+        { startTime: 1700009000, endTime: 1700009010, gameMode: "normal", problemID: 4, guessWord: ["point"], clear: true },
+      ],
     });
     await pasteBox.fill(tampered);
     await pasteDialog.getByRole("button", { name: "JSONを取り込む" }).click();
     await importOptOutPage.locator("#toast-layer .toast")
       .filter({ hasText: "JSON が書き出したときと違います" })
       .waitFor();
+    assert.deepEqual(
+      await importOptOutPage.evaluate(() => ({
+        history: localStorage.getItem("dwordle2.history"),
+        achievements: localStorage.getItem("dwordle2.achievements"),
+      })),
+      stateBeforeTamper,
+      "an edited export must change neither the history nor the achievements"
+    );
+    await importOptOutPage.locator('[role="dialog"]').waitFor({ state: "visible" });
   } finally {
     await importOptOutContext.close();
   }

@@ -234,15 +234,8 @@ function showImportModal() {
       return;
     }
     try {
-      const { added, signature } = await importFromText(ta.value, { withAchievements: achievementsCheck.checked });
+      const { added } = await importFromText(ta.value, { withAchievements: achievementsCheck.checked });
       complete(added);
-      // 取り込み自体は止めない。コピーし損ねた JSON を黙って取り込まないための注意書き
-      if (signature === "invalid") {
-        toast(tr(
-          "JSON が書き出したときと違います。貼り直してみてください",
-          "This JSON differs from the export. Try pasting it again"
-        ));
-      }
     } catch (e) {
       const englishMessage = e.message === "JSON として読み取れませんでした"
         ? "Could not parse this as JSON"
@@ -250,7 +243,9 @@ function showImportModal() {
           ? "Use “Auto-detect” to import history from the original DWORDle / DWORDlie"
           : e.message === "DWORDle 2 のエクスポート JSON ではないようです"
             ? "This does not appear to be a DWORDle 2 export JSON"
-            : "Could not import this history data";
+            : e.message === "JSON が書き出したときと違います。貼り直してみてください"
+              ? "This JSON differs from the export. Try pasting it again"
+              : "Could not import this history data";
       toast(tr(e.message, englishMessage));
     }
   };

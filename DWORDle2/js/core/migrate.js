@@ -160,8 +160,8 @@ async function checkExportSignature(obj) {
 
 // 貼り付けたテキストからの取り込み。本作のエクスポート JSON 専用
 // （旧作の履歴は署名を持たないので自動検出だけを入り口にする）。
-// 成功時 { added, total, signature }、解釈できなければ Error を投げる。
-// signature は checkExportSignature の戻り値（呼び出し側が警告表示に使う）。
+// 成功時 { added, total, signature }、解釈できない場合と署名が合わない場合は Error を投げる。
+// signature は checkExportSignature の戻り値（"invalid" は投げるので返らない）。
 export async function importFromText(text, { withAchievements = true } = {}) {
   let obj;
   try {
@@ -170,8 +170,10 @@ export async function importFromText(text, { withAchievements = true } = {}) {
     throw new Error("JSON として読み取れませんでした");
   }
   if (obj && obj.app === "dwordle2" && Array.isArray(obj.history)) {
-    // 署名は取り込みの前に見る（結果は呼び出し側が伝える。取り込み自体は止めない）
+    // 署名が合わない JSON は 1 件も取り込まない（実績も解除しない）。
+    // 照合は履歴を触る前に済ませ、部分的に入った状態を残さないようにする。
     const signature = await checkExportSignature(obj);
+    if (signature === "invalid") throw new Error("JSON が書き出したときと違います。貼り直してみてください");
     // 本作のエクスポート形式。レコード既存の noAchievements（過去の選択）は維持する。
     // 手で編集された JSON も想定し、履歴のキーになる startTime と gameMode、
     // 画面が配列として反復する usoResults を検証・正規化してから取り込む。

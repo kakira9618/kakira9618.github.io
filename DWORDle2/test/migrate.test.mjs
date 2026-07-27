@@ -264,9 +264,20 @@ assert(achievementIds.has("uso-clear"));
     "reformatting the file must not be reported as a change"
   );
 
-  // 中身をいじると合わなくなる（取り込み自体は続ける）
+  // 中身をいじった JSON は 1 件も取り込まない（実績も解除させない）
   const edited = { ...exported, history: exported.history.map((game, index) => (index === 0 ? { ...game, problemID: 12345 } : game)) };
-  assert.equal((await importFromText(JSON.stringify(edited))).signature, "invalid", "an edited export must be detected");
+  const beforeEdited = getHistory().length;
+  await assert.rejects(
+    () => importFromText(JSON.stringify(edited)),
+    /JSON が書き出したときと違います/,
+    "an edited export must be rejected instead of imported"
+  );
+  assert.equal(getHistory().length, beforeEdited, "a rejected export must not add any record");
+  assert.equal(
+    getHistory().some((record) => record.problemID === 12345),
+    false,
+    "no record from a rejected export may reach the history"
+  );
 
   // 署名の無い JSON（署名を入れる前のエクスポート）は missing。取り込みは通す
   const { signature: _dropped, ...unsigned } = exported;

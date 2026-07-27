@@ -3002,13 +3002,6 @@ body.theme-pop .htile:not(.unused):not(.used):not(.correct) {
   gap: 12px;
   align-items: center;
 }
-/* 判定の優先順（緑 → 黄 → 灰）。凡例の直下に 1 行だけ添える */
-.help-priority-note {
-  align-self: center;
-  max-width: 100%;
-  margin-top: 8px;
-  text-align: center;
-}
 .help-localized {
   display: flex;
   flex-direction: column;
