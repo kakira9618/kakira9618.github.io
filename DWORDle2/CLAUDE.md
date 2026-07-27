@@ -70,6 +70,20 @@ git show dwordle2-v2.1.0        # 発行時のノートはタグのメッセー�
 バージョンを上げずにデプロイするときは `node tools/make-source-hash.mjs`。
 コミットは自分自身のハッシュを含められないので「コードをコミット → 生成 → 生成物をコミット」の順で回す。
 
+## エクスポート JSON の署名
+
+`node tools/verify-export.mjs <ファイル>`（標準入力も可）で、書き出した JSON を 2 段階で調べる。
+
+- **ファイル全体の署名**: `js/core/signature.js` の HMAC-SHA-256。書き出したあとで中身が
+  変わっていないかを見る。インポート時にも照合し、合わなければトーストで知らせる
+  （取り込み自体は止めない）。旧 DWORDle / DWORDlie の履歴には署名が無いので照合しない。
+- **実績ごとの署名**: `js/core/achievement-mark.js`。1 局の内容で決まる実績
+  （`PLAY_ACHIEVEMENT_IDS`）に、初見の問題で達成したか（fresh / replay / restored）を
+  8 桁 16 進で埋め込む。実績 ID と解除時刻を混ぜるので、同じ状態でも実績ごとに違う値になる。
+
+どちらも鍵がソースに入っているので偽造は防げない。狙いは「JSON を眺めても分からない」まで。
+`MARK_SALT` や `HMAC_KEY`、署名の作り方を変えると、それ以前の署名がすべて読めなくなるので変えない。
+
 ## 公開（ビルド）について
 
 `master` への push で `.github/workflows/pages.yml` が GitHub Actions から Pages へ配信する。

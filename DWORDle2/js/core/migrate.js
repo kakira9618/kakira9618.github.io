@@ -13,6 +13,7 @@
 import { addImportedGames } from "./records.js?v=20260725-b";
 import { isValidPID } from "./problems.js?v=20260725-b";
 import { CELL } from "./logic.js?v=20260725-b";
+import { signatureAvailable, verifyPayload } from "./signature.js?v=20260725-b";
 
 // オブジェクトが旧作の 1 ゲームレコードかどうか
 function looksLikeGame(v) {
@@ -136,6 +137,7 @@ export function scanLegacyHistory() {
 }
 
 // 自動検出 → 取り込み。追加された件数を返す。
+// 原作の履歴が対象なので署名の照合はしない
 export function importFromLocalStorage({ withAchievements = true } = {}) {
   let added = 0;
   for (const { obj } of scanLegacyHistory()) {
@@ -144,9 +146,23 @@ export function importFromLocalStorage({ withAchievements = true } = {}) {
   return added;
 }
 
-// テキスト（旧作の履歴 JSON / 本作のエクスポート JSON）からの取り込み。
-// 成功時 { added, total }、解釈できなければ Error を投げる。
-export function importFromText(text, { withAchievements = true } = {}) {
+// エクスポート JSON の署名を照合する。返す値の意味:
+//   "ok"       署名があり、書き出したときのままだった
+//   "invalid"  署名はあるが合わない（あとから中身に手が入っている）
+//   "missing"  署名が無い（署名を入れる前のエクスポート、または手で作った JSON）
+//   "skipped"  照合しない（旧 DWORDle / DWORDlie の履歴、または crypto.subtle が無い環境）
+async function checkExportSignature(obj) {
+  if (!signatureAvailable()) return "skipped";
+  const { signature, ...payload } = obj;
+  if (typeof signature !== "string") return "missing";
+  return (await verifyPayload(payload, signature)) ? "ok" : "invalid";
+}
+
+// 貼り付けたテキストからの取り込み。本作のエクスポート JSON 専用
+// （旧作の履歴は署名を持たないので自動検出だけを入り口にする）。
+// 成功時 { added, total, signature }、解釈できなければ Error を投げる。
+// signature は checkExportSignature の戻り値（呼び出し側が警告表示に使う）。
+export async function importFromText(text, { withAchievements = true } = {}) {
   let obj;
   try {
     obj = JSON.parse(text);
@@ -154,6 +170,8 @@ export function importFromText(text, { withAchievements = true } = {}) {
     throw new Error("JSON として読み取れませんでした");
   }
   if (obj && obj.app === "dwordle2" && Array.isArray(obj.history)) {
+    // 署名は取り込みの前に見る（結果は呼び出し側が伝える。取り込み自体は止めない）
+    const signature = await checkExportSignature(obj);
     // 本作のエクスポート形式。レコード既存の noAchievements（過去の選択）は維持する。
     // 手で編集された JSON も想定し、履歴のキーになる startTime と gameMode、
     // 画面が配列として反復する usoResults を検証・正規化してから取り込む。
@@ -171,11 +189,13 @@ export function importFromText(text, { withAchievements = true } = {}) {
           ...(withAchievements ? {} : { noAchievements: true }),
         };
       });
-    return { added: addImportedGames(records), total: records.length };
+    return { added: addImportedGames(records), total: records.length, signature };
   }
+  // 貼り付けからの取り込みは本作のエクスポート JSON 専用。
+  // 原作 DWORDle / DWORDlie の履歴は署名を持たないので、自動検出（同一オリジンの
+  // localStorage を読む importFromLocalStorage）だけを入り口にする。
   if (looksLikeHistoryFile(obj)) {
-    const records = convertHistoryFile(obj, "json", withAchievements);
-    return { added: addImportedGames(records), total: records.length };
+    throw new Error("旧 DWORDle / DWORDlie の履歴は「自動検出」から取り込んでください");
   }
-  throw new Error("DWORDle / DWORDlie / DWORDle 2 の履歴形式ではないようです");
+  throw new Error("DWORDle 2 のエクスポート JSON ではないようです");
 }

@@ -78,7 +78,7 @@ assert(achievementIds.has("uso-clear"));
 {
   const { importFromText } = await import("../js/core/migrate.js?v=20260725-b");
   const before = getHistory().length;
-  const { added } = await (async () => importFromText(JSON.stringify({
+  const { added } = await importFromText(JSON.stringify({
     app: "dwordle2",
     version: 1,
     history: [
@@ -86,7 +86,7 @@ assert(achievementIds.has("uso-clear"));
       { startTime: 1_800_000_100, endTime: 1_800_000_130, gameMode: "normal", problemID: 99999, guessWord: ["about"] },
       { startTime: 1_800_000_200, endTime: 1_800_000_230, gameMode: "normal", problemID: 7, guessWord: ["ABCDE!"] },
     ],
-  })))();
+  }));
   assert.equal(added, 0, "records with an invalid PID or malformed Guesses must be rejected");
   assert.equal(getHistory().length, before);
 }
@@ -98,7 +98,7 @@ assert(achievementIds.has("uso-clear"));
   const { importFromText } = await import("../js/core/migrate.js?v=20260725-b");
   const { MODES } = await import("../js/core/records.js?v=20260725-b");
   const before = getHistory().length;
-  const { added } = importFromText(
+  const { added } = await importFromText(
     JSON.stringify({
       app: "dwordle2",
       version: 1,
@@ -125,7 +125,7 @@ assert(achievementIds.has("uso-clear"));
   const { importFromText } = await import("../js/core/migrate.js?v=20260725-b");
   const { CELL } = await import("../js/core/logic.js?v=20260725-b");
   const goodRow = [CELL.UNUSED, CELL.USED, CELL.CORRECT, CELL.UNUSED, CELL.USED];
-  const { added } = importFromText(
+  const { added } = await importFromText(
     JSON.stringify({
       app: "dwordle2",
       version: 1,
@@ -160,16 +160,19 @@ assert(achievementIds.has("uso-clear"));
 }
 
 // ---- 旧作形式の startTime: 非数値キーで startTime も無いレコードは取り込まない ----
+// 旧作の履歴の入り口は自動検出だけ（貼り付けは本作のエクスポート専用）なので、
+// localStorage に置いてから importFromLocalStorage で取り込む。
 {
-  const { importFromText } = await import("../js/core/migrate.js?v=20260725-b");
   const before = getHistory().length;
-  const { added } = importFromText(
+  storage.set(
+    "/Tonyu/Projects/dwordle/history_2.json",
     JSON.stringify({
       version: 1,
       "not-a-time": { complete: true, gameMode: "normal", problemID: 31, guessWord: ["about"] },
       "1780000000": { complete: true, gameMode: "normal", problemID: 32, guessWord: ["about"] },
     })
   );
+  const added = importFromLocalStorage();
   assert.equal(added, 1, "a legacy record whose startTime resolves to NaN must be rejected");
   assert.equal(getHistory().length, before + 1);
   assert.equal(getHistory().find((r) => r.problemID === 31), undefined);
@@ -180,7 +183,8 @@ assert(achievementIds.has("uso-clear"));
 {
   const { importFromText } = await import("../js/core/migrate.js?v=20260725-b");
   const logic = new Logic(11);
-  const { added } = importFromText(
+  storage.set(
+    "/Tonyu/Projects/dwordle/history_3.json",
     JSON.stringify({
       version: 1,
       "1750000000": {
@@ -191,9 +195,9 @@ assert(achievementIds.has("uso-clear"));
         problemID: 11,
         guessWord: ["about", "brick", logic.ans1],
       },
-    }),
-    { withAchievements: false }
+    })
   );
+  const added = importFromLocalStorage({ withAchievements: false });
   assert.equal(added, 1);
   const record = getHistory().find((r) => r.problemID === 11);
   assert.equal(record.noAchievements, true, "records imported without achievements must carry the flag");
@@ -201,7 +205,7 @@ assert(achievementIds.has("uso-clear"));
   assert(!ids.has("h-lightning"), "flagged records must not unlock achievements in later reconciles");
 
   // 本作エクスポート形式の再インポートでも、レコード既存の noAchievements は維持される
-  const { added: reAdded } = importFromText(
+  const { added: reAdded } = await importFromText(
     JSON.stringify({ app: "dwordle2", version: 1, history: [{ ...record, startTime: 1_750_100_000 }] }),
     { withAchievements: true }
   );
@@ -226,6 +230,47 @@ assert(achievementIds.has("uso-clear"));
   play();
   play(); // 同じ問題の再プレイ（startTime は自動で 1 秒ずれる）
   assert.equal(countPlays(), 3, "same-puzzle replays must count toward menu unlock plays");
+}
+
+// ---- 貼り付けからの取り込みは本作のエクスポート専用（旧作の履歴は自動検出へ誘導する）----
+{
+  const { importFromText } = await import("../js/core/migrate.js?v=20260725-b");
+  const before = getHistory().length;
+  await assert.rejects(
+    () => importFromText(JSON.stringify({
+      version: 1,
+      "1790000000": { complete: true, gameMode: "normal", problemID: 41, guessWord: ["about"] },
+    })),
+    /自動検出/,
+    "the original games' history must be turned away with a pointer to auto-detect"
+  );
+  await assert.rejects(() => importFromText(JSON.stringify({ hello: "world" })), /DWORDle 2 のエクスポート/);
+  await assert.rejects(() => importFromText("{ not json"), /JSON として読み取れませんでした/);
+  assert.equal(getHistory().length, before, "a rejected paste must not change the history");
+}
+
+// ---- エクスポート JSON の署名: 書き出したままなら ok、1 文字でも変われば invalid ----
+{
+  const { exportJSON } = await import("../js/core/records.js?v=20260725-b");
+  const { importFromText } = await import("../js/core/migrate.js?v=20260725-b");
+  const exported = JSON.parse(await exportJSON());
+  assert.match(exported.signature, /^[0-9a-f]{64}$/, "the export should carry an HMAC signature");
+
+  // 整形し直しただけ（キーの順番・空白が変わっただけ）なら「そのまま」と扱う
+  const reordered = { signature: exported.signature, history: exported.history, app: exported.app, version: exported.version, exportedAt: exported.exportedAt, achievements: exported.achievements };
+  assert.equal(
+    (await importFromText(JSON.stringify(reordered))).signature,
+    "ok",
+    "reformatting the file must not be reported as a change"
+  );
+
+  // 中身をいじると合わなくなる（取り込み自体は続ける）
+  const edited = { ...exported, history: exported.history.map((game, index) => (index === 0 ? { ...game, problemID: 12345 } : game)) };
+  assert.equal((await importFromText(JSON.stringify(edited))).signature, "invalid", "an edited export must be detected");
+
+  // 署名の無い JSON（署名を入れる前のエクスポート）は missing。取り込みは通す
+  const { signature: _dropped, ...unsigned } = exported;
+  assert.equal((await importFromText(JSON.stringify(unsigned))).signature, "missing");
 }
 
 console.log("履歴移行テスト: OK");

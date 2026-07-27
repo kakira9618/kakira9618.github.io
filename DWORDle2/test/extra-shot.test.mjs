@@ -151,7 +151,7 @@ const { reveal } = await import("../js/core/secret.js?v=20260725-b");
       },
     ],
   });
-  const { added } = importFromText(exported);
+  const { added } = await importFromText(exported);
   assert.equal(added, 1);
   const imported = records.findGame(1_700_000_500, "uso");
   assert.deepEqual(imported.extraShot, { word: logic.ans1, success: true }, "インポートで extraShot が失われないはず");
@@ -174,7 +174,7 @@ const { reveal } = await import("../js/core/secret.js?v=20260725-b");
       finalAnswer: { word: logic.ans2, success: true },
     }],
   });
-  assert.equal(importFromText(legacyExport).added, 1);
+  assert.equal((await importFromText(legacyExport)).added, 1);
   const imported = records.findGame(1_700_001_000, "normal");
   assert.deepEqual(imported.extraShot, { word: logic.ans2, success: true });
   assert.equal(Object.hasOwn(imported, "finalAnswer"), false);

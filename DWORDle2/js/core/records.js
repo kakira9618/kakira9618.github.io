@@ -19,6 +19,7 @@
 import { loadJSON, saveJSON, onExternalChange } from "./store.js?v=20260725-b";
 import { Logic, CELL, queryWordSingle } from "./logic.js?v=20260725-b";
 import { isDailyPID } from "./problems.js?v=20260725-b";
+import { signatureAvailable, signPayload } from "./signature.js?v=20260725-b";
 
 export const MODES = {
   normal: { key: "normal", title: "DWORDle", maxGuess: 10 },
@@ -303,8 +304,31 @@ export function dailyClearStreak() {
 
 // ---- エクスポート ----
 
-export function exportJSON() {
-  return JSON.stringify({ app: "dwordle2", version: 2, exportedAt: Math.floor(Date.now() / 1000), history: ensureLoaded() }, null, 2);
+// 実績は achievements.js が持っているが、あちらがこのファイルを読んでいるので
+// import すると循環する。保存領域から直接読む（形は achievements.js 側のコメント参照）。
+function exportedAchievements() {
+  const unlocked = loadJSON("achievements", {});
+  const signatures = loadJSON("achievements.sig", {});
+  const entries = Object.entries(unlocked)
+    .filter(([, unlockedAt]) => Number.isFinite(Number(unlockedAt)))
+    .map(([id, unlockedAt]) => [id, { at: Number(unlockedAt), ...(signatures[id] ? { sig: signatures[id] } : {}) }]);
+  return Object.fromEntries(entries);
+}
+
+// エクスポート JSON。signature は「signature 以外のフィールド全体」に対する HMAC で、
+// 書き出したあとに手を入れられていないかをインポート時に調べるために付ける
+// （js/core/signature.js）。crypto.subtle が無い環境では署名なしで書き出す。
+export async function exportJSON() {
+  const payload = {
+    app: "dwordle2",
+    version: 2,
+    exportedAt: Math.floor(Date.now() / 1000),
+    history: ensureLoaded(),
+    achievements: exportedAchievements(),
+  };
+  if (!signatureAvailable()) return JSON.stringify(payload, null, 2);
+  const signature = await signPayload(payload);
+  return JSON.stringify({ ...payload, signature }, null, 2);
 }
 
 // テスト用: キャッシュ破棄

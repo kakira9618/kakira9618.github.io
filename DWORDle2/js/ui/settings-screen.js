@@ -216,8 +216,8 @@ function handleDebugEntryTap() {
 function showImportModal() {
   const ta = el("textarea", {
     placeholder: tr(
-      "旧作または DWORDle 2 の履歴 JSON を貼り付け",
-      "Paste history JSON from an original game or DWORDle 2"
+      "DWORDle 2 のエクスポート JSON を貼り付け",
+      "Paste an export JSON from DWORDle 2"
     ),
   });
   let closeModal = () => {};
@@ -227,21 +227,30 @@ function showImportModal() {
     finishHistoryImport(added, { withAchievements: achievementsCheck.checked });
     render();
   };
-  const manualImport = () => {
+  const manualImport = async () => {
     playSfx("ui");
     if (!ta.value.trim()) {
       toast(tr("JSON を貼り付けてください", "Paste the JSON first"));
       return;
     }
     try {
-      const { added } = importFromText(ta.value, { withAchievements: achievementsCheck.checked });
+      const { added, signature } = await importFromText(ta.value, { withAchievements: achievementsCheck.checked });
       complete(added);
+      // 取り込み自体は止めない。コピーし損ねた JSON を黙って取り込まないための注意書き
+      if (signature === "invalid") {
+        toast(tr(
+          "JSON が書き出したときと違います。貼り直してみてください",
+          "This JSON differs from the export. Try pasting it again"
+        ));
+      }
     } catch (e) {
       const englishMessage = e.message === "JSON として読み取れませんでした"
         ? "Could not parse this as JSON"
-        : e.message === "DWORDle / DWORDlie / DWORDle 2 の履歴形式ではないようです"
-          ? "This does not appear to be DWORDle / DWORDlie / DWORDle 2 history data"
-          : "Could not import this history data";
+        : e.message === "旧 DWORDle / DWORDlie の履歴は「自動検出」から取り込んでください"
+          ? "Use “Auto-detect” to import history from the original DWORDle / DWORDlie"
+          : e.message === "DWORDle 2 のエクスポート JSON ではないようです"
+            ? "This does not appear to be a DWORDle 2 export JSON"
+            : "Could not import this history data";
       toast(tr(e.message, englishMessage));
     }
   };
@@ -252,8 +261,8 @@ function showImportModal() {
         "p",
         { class: "hint" },
         tr(
-          "旧 DWORDle / DWORDlie の履歴や DWORDle 2 のエクスポート JSON を、現在の履歴にマージします。既存の履歴は上書きされません。",
-          "Merge play history from the original DWORDle / DWORDlie or a DWORDle 2 export JSON into your current history. Existing records are never overwritten."
+          "旧 DWORDle / DWORDlie の履歴（自動検出）と、DWORDle 2 のエクスポート JSON（貼り付け）を、現在の履歴にマージします。既存の履歴は上書きされません。",
+          "Merge history from the original DWORDle / DWORDlie (auto-detect) or a DWORDle 2 export JSON (paste) into your current history. Existing records are never overwritten."
         )
       ),
       el(
@@ -296,8 +305,8 @@ function showImportModal() {
             "p",
             { class: "hint" },
             tr(
-              "自動検出を使えない場合は、旧作または DWORDle 2 の履歴 JSON を貼り付けてください。",
-              "If auto-detect is unavailable, paste history JSON from an original game or DWORDle 2."
+              "別の端末でエクスポートした DWORDle 2 の JSON を貼り付けてください。旧 DWORDle / DWORDlie の履歴は上の「自動検出」から取り込みます。",
+              "Paste a DWORDle 2 export JSON from another device. History from the original DWORDle / DWORDlie is imported with “Auto-detect” above."
             )
           ),
           ta,
@@ -639,19 +648,19 @@ function render() {
       },
       el("div", { style: { fontWeight: "800", marginBottom: "4px" } }, tr("データ", "Data")),
       el("div", { style: { display: "flex", flexDirection: "column", gap: "8px", marginTop: "8px" } },
-        el("button", { class: "btn", onclick: showImportModal }, icon("box"), tr("履歴をインポート（移行）", "Import history (migration)")),
+        el("button", { class: "btn", onclick: showImportModal }, icon("box"), tr("プレイ履歴をインポート（移行）", "Import play history (migration)")),
         el("button", {
           class: "btn",
-          onclick: () => {
-            const blob = new Blob([exportJSON()], { type: "application/json" });
+          onclick: async () => {
+            const blob = new Blob([await exportJSON()], { type: "application/json" });
             const url = URL.createObjectURL(blob);
             const a = el("a", { href: url, download: `dwordle2_history_${Date.now()}.json` });
             a.click();
             // ダウンロード開始後に解放する（エクスポート連打で Blob が溜まらないように）
             setTimeout(() => URL.revokeObjectURL(url), 1000);
-            toast(tr("履歴をダウンロードしました", "History downloaded"));
+            toast(tr("プレイ履歴をダウンロードしました", "Play history downloaded"));
           },
-        }, icon("download"), tr("履歴をエクスポート", "Export history")),
+        }, icon("download"), tr("プレイ履歴をエクスポート", "Export play history")),
         el("button", {
           class: "btn",
           style: { borderColor: "var(--danger)", color: "#ff8888" },
@@ -670,6 +679,8 @@ function render() {
               "history",
               "achievements",
               "achievements.reconcileVersion",
+              "achievements.sig", // 実績ごとの達成状況の署名
+              "achievements.sigVersion",
               "settings",
               "current.normal",
               "current.uso",

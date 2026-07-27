@@ -416,6 +416,15 @@ function buildExample(mode, language) {
           ["unused", "灰", "どちらの答えにも含まれない"],
         ];
 
+  // 1 文字が複数の判定に当てはまるときの優先順（js/core/logic.js の queryWordPair と同じ順）
+  const priorityNote = mode === "uso"
+    ? isEnglish
+      ? `The true judgment takes the first that fits: ${c.Green} → ${c.Yellow} → gray.`
+      : `本当の判定は、当てはまるもののうち ${c.green} → ${c.yellow} → 灰 の順に優先されます。`
+    : isEnglish
+      ? `A letter takes the first judgment that fits: ${c.Green} → ${c.Yellow} → gray.`
+      : `1 つの文字は、当てはまるもののうち ${c.green} → ${c.yellow} → 灰 の順に優先されます。`;
+
   box.append(
     el(
       "div",
@@ -428,7 +437,8 @@ function buildExample(mode, language) {
           el("span", { class: "hint" }, text)
         )
       )
-    )
+    ),
+    el("p", { class: "hint help-priority-note" }, priorityNote)
   );
   later(playPrimaryExample, 80);
   return box;

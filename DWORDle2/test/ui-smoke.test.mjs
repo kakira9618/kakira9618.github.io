@@ -725,6 +725,12 @@ try {
   const popHelp = page.getByRole("dialog", { name: "DWORDle 遊び方" });
   await popHelp.waitFor();
   await popHelp.getByText(/ルールはほぼ Wordle と同じですが/).waitFor();
+  // 1 文字が複数に当てはまるときの優先順（緑 → 黄 → 灰）を凡例の下に 1 行で添える
+  assert.equal(
+    await popHelp.locator(".help-priority-note").innerText(),
+    "1 つの文字は、当てはまるもののうち 緑 → 黄 → 灰 の順に優先されます。",
+    "the help legend should state the judgment priority"
+  );
   const popHelpTileBackground = await popHelp.locator(".help-answers .htile").first().evaluate(
     (node) => getComputedStyle(node).backgroundColor
   );
@@ -3090,6 +3096,41 @@ try {
       [],
       "a later reconcile must not unlock achievements the player declined"
     );
+
+    // 貼り付けからの取り込みは本作のエクスポート専用。旧作の履歴は自動検出へ案内する
+    await importOptOutPage.evaluate(() => { location.hash = "#/settings"; });
+    await importOptOutPage.waitForURL(/#\/settings$/);
+    await importOptOutPage.getByRole("tab", { name: "データ" }).click();
+    await importOptOutPage.getByRole("button", { name: "プレイ履歴をインポート（移行）", exact: true }).click();
+    const pasteDialog = importOptOutPage.getByRole("dialog", { name: "履歴のインポート（移行）" });
+    await pasteDialog.getByText("JSONから手動で取り込む").click();
+    const pasteBox = pasteDialog.locator("textarea");
+    await pasteBox.fill(JSON.stringify({
+      version: 1,
+      1700000900: { startTime: 1700000900, endTime: 1700000930, gameMode: "normal", problemID: 3, guessWord: ["point"], complete: true },
+    }));
+    await pasteDialog.getByRole("button", { name: "JSONを取り込む" }).click();
+    await importOptOutPage.locator("#toast-layer .toast")
+      .filter({ hasText: "旧 DWORDle / DWORDlie の履歴は「自動検出」から取り込んでください" })
+      .waitFor();
+
+    // 書き出した JSON はそのまま取り込め、1 文字でも変えると注意が出る（コピー漏れの検知）
+    const exportedText = await importOptOutPage.evaluate(async () => {
+      const { exportJSON } = await import("./js/core/records.js?v=20260725-b");
+      return exportJSON();
+    });
+    const exportedJson = JSON.parse(exportedText);
+    assert.match(exportedJson.signature, /^[0-9a-f]{64}$/, "the export should carry a signature");
+    assert.ok(exportedJson.achievements, "the export should carry the achievement records");
+    const tampered = JSON.stringify({
+      ...exportedJson,
+      history: exportedJson.history.map((game) => ({ ...game, problemID: 999 })),
+    });
+    await pasteBox.fill(tampered);
+    await pasteDialog.getByRole("button", { name: "JSONを取り込む" }).click();
+    await importOptOutPage.locator("#toast-layer .toast")
+      .filter({ hasText: "JSON が書き出したときと違います" })
+      .waitFor();
   } finally {
     await importOptOutContext.close();
   }

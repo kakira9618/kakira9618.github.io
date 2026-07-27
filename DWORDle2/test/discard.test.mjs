@@ -30,7 +30,7 @@ assert.equal(discarded.clear, false, "破棄レコードは入力内容にかか
 assert.equal(records.countPlays(), 0, "破棄はメニュー解放用の完了プレイ数に加算しないはず");
 assert.equal(records.findGame(base, "normal")?.discarded, true, "破棄レコードを履歴キーから取得できるはず");
 
-const exported = JSON.parse(records.exportJSON());
+const exported = JSON.parse(await records.exportJSON());
 assert.equal(exported.version, 2, "破棄フィールドを含む履歴エクスポートは v2 形式になるはず");
 assert.equal(exported.history[0].discarded, true, "エクスポートでも破棄状態を維持するはず");
 
@@ -97,7 +97,7 @@ assert.deepEqual(
 storage.clear();
 records._reload();
 const { importFromText } = await import("../js/core/migrate.js?v=20260725-b");
-assert.equal(importFromText(JSON.stringify(exported)).added, 1);
+assert.equal((await importFromText(JSON.stringify(exported))).added, 1);
 assert.equal(records.getHistory()[0].discarded, true, "インポート後も破棄状態を維持するはず");
 assert.equal(records.getHistory()[0].clear, false, "インポート後も破棄をクリア扱いにしないはず");
 

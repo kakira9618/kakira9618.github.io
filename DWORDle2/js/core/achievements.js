@@ -38,6 +38,7 @@ import { getHistory, getExtraShot, MODES } from "./records.js?v=20260725-b";
 import { CELL, Logic } from "./logic.js?v=20260725-b";
 import { isDebugMode } from "./debug.js?v=20260725-b";
 import { reveal } from "./secret.js?v=20260725-b";
+import { MARK, signAchievement, verifyAchievementMark } from "./achievement-mark.js?v=20260725-b";
 
 // v7: 月間皆勤（30 日）→ 二週間皆勤（14 日）の緩和を既存履歴にも適用する
 // v8: 無限の探求の緩和（5000 → 1000 回）と、新設した DOUBLE CLEAR 系実績を既存履歴に適用する
@@ -168,6 +169,66 @@ for (const [oldId, newId] of Object.entries(achievementIdMigrations)) {
 }
 if (migratedAchievementIds) saveJSON("achievements", unlocked);
 
+// ---- 達成状況の署名（achievement-mark.js）----
+//
+// 1 局の内容で決まる実績には、「その問題を遊ぶのが初めてだったか」を署名にして残す。
+// 通算回数・連勝などのカウント系と、分析モード利用のようなイベント系には付けない
+// （1 局に紐付かないので、初見かどうかを言えない）。
+const PLAY_ACHIEVEMENT_IDS = new Set([
+  // 入門・モード・難易度（その 1 局でクリアしたことが条件）
+  "first-play", "first-clear", "daily-clear", "uso-clear", "extreme-clear", "level-clear",
+  // 手数・スピード
+  "one-shot", "two-shot", "within-4", "last-gasp", "speed-60", "slow-10",
+  // 盤面の模様
+  "all-gray", "rainbow", "green-start", "green-zero", "h-phantom",
+  // 深夜のクリア（現在のゲームの終了時刻で判定する）
+  "night-owl",
+  // 一度負けた問題のクリア（定義上つねに再プレイになる）
+  "revenge",
+  // Guess の単語そのものが条件の隠し実績
+  "h-mirror", "h-anagram", "h-alphabet", "h-noreuse", "all-letters", "h-uso-green",
+  // 1 局の難度・速さが条件の隠し実績
+  "h-abyss", "h-lightning",
+  // EXTRA SHOT（DOUBLE CLEAR）
+  "h-double-clear", "h-double-uso", "h-double-oneshot", "h-double-abyss",
+]);
+
+let marks = loadJSON("achievements.sig", {}); // { id: signature }
+// ゲーム終了時の判定中だけ MARK.FRESH / MARK.REPLAY が入る。それ以外の経路（履歴からの
+// 復元・インポート）は 1 局に紐付かないので MARK.RESTORED になる。
+let currentPlayMark = null;
+let marksDirty = false;
+
+onExternalChange("achievements.sig", () => {
+  marks = { ...loadJSON("achievements.sig", {}), ...marks };
+});
+
+// この機能を入れる前から遊んでいた人の解除済み実績は、すべて「初見で達成」とみなして
+// 署名を付ける（あとから初見だったかを言い当てられないため）。一度だけ実行する。
+const MARK_BACKFILL_VERSION = 1;
+// 解除済みが 1 つも無いうち（新規プレイヤー）は何もしない。
+// 以降の解除はすべて unlock() が署名を付けるので、後から走っても対象は残らない。
+if (Object.keys(unlocked).length > 0 && loadJSON("achievements.sigVersion", 0) < MARK_BACKFILL_VERSION) {
+  for (const id of PLAY_ACHIEVEMENT_IDS) {
+    if (unlocked[id] === undefined || marks[id] !== undefined) continue;
+    marks[id] = signAchievement(id, MARK.FRESH, unlocked[id]);
+    marksDirty = true;
+  }
+  if (marksDirty) saveJSON("achievements.sig", marks);
+  saveJSON("achievements.sigVersion", MARK_BACKFILL_VERSION);
+  marksDirty = false;
+}
+
+// 実績ごとの署名（そのままエクスポートに載せる。中身は verifyAchievementMark で読む）
+export function getAchievementMarks() {
+  return { ...marks };
+}
+
+// 署名がどの状態を指しているか。付いていない / 合わなければ null
+export function achievementMarkState(id) {
+  return verifyAchievementMark(id, marks[id], unlocked[id]);
+}
+
 export function getUnlocked() {
   if (isDebugMode()) {
     const debugUnlockedAt = Math.floor(Date.now() / 1000);
@@ -215,6 +276,11 @@ function unlock(id, newly) {
   if (isDebugMode()) return;
   if (unlocked[id] !== undefined) return;
   unlocked[id] = Math.floor(Date.now() / 1000);
+  // 1 局で決まる実績には、その 1 局が初見の問題だったかを署名で残す
+  if (PLAY_ACHIEVEMENT_IDS.has(id)) {
+    marks[id] = signAchievement(id, currentPlayMark ?? MARK.RESTORED, unlocked[id]);
+    marksDirty = true;
+  }
   newly.push(ACHIEVEMENTS.find((a) => a.id === id));
 }
 
@@ -223,6 +289,10 @@ function finalize(newly) {
   const knownUnlockedCount = ACHIEVEMENTS.filter((achievement) => unlocked[achievement.id] !== undefined).length;
   if (knownUnlockedCount >= COLLECTOR_REQUIREMENT) unlock("collector", newly);
   if (newly.length > 0) saveJSON("achievements", unlocked);
+  if (marksDirty) {
+    saveJSON("achievements.sig", marks);
+    marksDirty = false;
+  }
   return newly;
 }
 
@@ -626,6 +696,14 @@ export function reconcileAchievementsOnce() {
 }
 
 export function checkOnGameFinish(ctx) {
+  try {
+    return checkOnGameFinishInner(ctx);
+  } finally {
+    currentPlayMark = null; // 1 局に紐付く署名は、この判定の中だけで付ける
+  }
+}
+
+function checkOnGameFinishInner(ctx) {
   const newly = [];
   const { record, results, durationSec, endDate, maxGuess, hadLostBefore } = ctx;
   const pid = record.problemID;
@@ -655,6 +733,18 @@ export function checkOnGameFinish(ctx) {
         localDayKey(g) === day
     );
   })();
+
+  // その問題を遊ぶのが初めてのプレイか（モードは問わない。答えは表裏で共通なので、
+  // 片方で遊んだ時点で以降は初見ではない）。1 局で決まる実績の署名に使う。
+  const firstSightPlay = !history.some(
+    (game) =>
+      game !== record &&
+      Array.isArray(game?.guessWord) &&
+      game.guessWord.length > 0 &&
+      Number(game.startTime) < Number(record.startTime) &&
+      String(game.problemID) === String(pid)
+  );
+  currentPlayMark = firstSightPlay ? MARK.FRESH : MARK.REPLAY;
 
   unlock("first-play", newly);
   if (countableHistory.length >= 100) unlock("plays-100", newly);
