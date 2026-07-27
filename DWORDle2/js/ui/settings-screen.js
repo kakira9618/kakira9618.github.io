@@ -757,4 +757,8 @@ registerScreen("settings", {
     return root;
   },
   render,
+  onLeave() {
+    // カテゴリ（タブ）の選択は持ち越さず、次に開いたときは必ず「表示」から始める
+    activeSettingsTab = SETTINGS_TABS[0].key;
+  },
 });

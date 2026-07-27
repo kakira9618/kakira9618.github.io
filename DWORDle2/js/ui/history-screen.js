@@ -479,4 +479,9 @@ registerScreen("history", {
     return root;
   },
   render,
+  onLeave() {
+    // カテゴリ（モード）の選択は持ち越さず、次に開いたときは必ず「すべて」から始める
+    filter = "all";
+    page = 1;
+  },
 });

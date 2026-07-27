@@ -561,4 +561,12 @@ registerScreen("problems", {
     return root;
   },
   render,
+  onLeave() {
+    // レベル帯（カテゴリ）とその配下の絞り込みは持ち越さず、次に開いたときは必ず Daily から始める
+    levelIdx = -1;
+    blockStart = null;
+    statusFilter = "all";
+    dailyCalendarMonth = null;
+    dailySelectedPid = null;
+  },
 });

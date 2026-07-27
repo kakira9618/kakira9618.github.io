@@ -97,6 +97,15 @@ const CARD = {
   },
   footerDividerY: 622, // フッター上の細い区切り線
   footerY: 644, // URL・発行日（右寄せ）
+  // DEBUG モード中に発行したカードだと分かる印（フッター左端のピル。設定画面のバッジと同じ配色）
+  debug: {
+    text: "DEBUG",
+    size: 15,
+    height: 30,
+    padX: 14,
+    color: "#ffcf5c",
+    glow: "rgba(255, 207, 92, 0.35)",
+  },
   sinceSize: 17, // 初プレイ日（PLAYER ラベルの隣）の文字サイズ
   idEdgeX: 26, // プレイヤー ID の右端からの距離（縦書きで印字）
   idSize: 12,
@@ -665,6 +674,25 @@ export async function renderPlayerCardCanvas(name) {
     CARD.footerY
   );
 
+  // ---- DEBUG モードの印（フッター左端。URL・発行日は右寄せなので重ならない）----
+  if (isDebugMode()) {
+    const dbg = CARD.debug;
+    ctx.save();
+    ctx.font = `800 ${dbg.size}px "SF Mono", "Menlo", "Consolas", monospace`;
+    ctx.textAlign = "left";
+    const textW = [...dbg.text].reduce((total, ch) => total + ctx.measureText(ch).width + 1.5, -1.5);
+    ctx.shadowColor = dbg.glow;
+    ctx.shadowBlur = 10;
+    ctx.strokeStyle = dbg.color;
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, left, CARD.footerY - dbg.height / 2, textW + dbg.padX * 2, dbg.height, dbg.height / 2);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = dbg.color;
+    drawSpaced(ctx, dbg.text, left + dbg.padX, CARD.footerY);
+    ctx.restore();
+  }
+
   // ---- プレイヤー ID（右端に縦書きで小さく印字）----
   ctx.save();
   ctx.translate(W - CARD.idEdgeX, H / 2);
@@ -1159,6 +1187,8 @@ function render() {
     ),
     el("h1", { class: "title" }, tr("プレイヤーカード", "Player Card")),
     el("span", { class: "spacer" }),
+    // DEBUG 中はランク・バッジが全解放された見た目になるので、設定画面と同じバッジで見分けが付くようにする
+    isDebugMode() ? el("span", { class: "debug-status" }, "DEBUG ON") : null,
     soundToggleButton()
   );
 

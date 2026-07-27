@@ -16,6 +16,7 @@ import { playSfx } from "../audio/sound.js?v=20260725-b";
 import { soundToggleButton } from "./sound-toggle.js?v=20260725-b";
 import { icon } from "./icons.js?v=20260725-b";
 import { localizedAchievement, tr } from "../core/i18n.js?v=20260725-b";
+import { isDebugMode } from "../core/debug.js?v=20260725-b";
 
 let root = null;
 
@@ -71,6 +72,8 @@ function render() {
     ),
     el("h1", { class: "title" }, tr("実績", "Achievements")),
     el("span", { class: "spacer" }),
+    // DEBUG 中は実績が全解放されているので、設定画面と同じバッジで見分けが付くようにする
+    isDebugMode() ? el("span", { class: "debug-status" }, "DEBUG ON") : null,
     el("span", { class: "sub" }, formatAchievementProgress(progress)),
     soundToggleButton()
   );
@@ -95,8 +98,8 @@ function render() {
       "p",
       { class: "card hint achievement-count-note" },
       tr(
-        "右上の数は「通常実績 / 通常実績の総数 + 解放した隠し実績」です。隠し実績がいくつ用意されているかは秘密で、一覧にも解放したものだけが並びます。\nカウント系実績・隠し実績と、1 手/2 手クリアなど答えを知っていると狙える実績は、同じ日に同じ問題 No. を複数回プレイした場合、モードを問わず最初の 1 回だけを対象にします。同日の別問題と、別日の同じ問題はそれぞれ対象になります。\n連勝の実績は、同じモード（DWORDle / DWORDlie）内での連勝を数えます。",
-        "The count at the top right is “normal achievements / total normal achievements + secret achievements unlocked”. How many secret achievements exist is a secret, and only the ones you have unlocked appear in the list.\nCount-based achievements, secret achievements, and achievements you could aim for once you know the answer (such as clearing in 1 or 2 Guesses) only consider the first play of the same puzzle number on the same day, regardless of mode. A different puzzle on that day or the same puzzle on another day counts separately.\nWin-streak achievements count consecutive wins within the same mode (DWORDle / DWORDlie)."
+        "カウント系実績・隠し実績と、1 手/2 手クリアなど答えを知っていると狙える実績は、同じ日に同じ問題 No. を複数回プレイした場合、モードを問わず最初の 1 回だけを対象にします。同日の別問題と、別日の同じ問題はそれぞれ対象になります。\n連勝の実績は、同じモード（DWORDle / DWORDlie）内での連勝を数えます。",
+        "Count-based achievements, secret achievements, and achievements you could aim for once you know the answer (such as clearing in 1 or 2 Guesses) only consider the first play of the same puzzle number on the same day, regardless of mode. A different puzzle on that day or the same puzzle on another day counts separately.\nWin-streak achievements count consecutive wins within the same mode (DWORDle / DWORDlie)."
       )
     )
   );

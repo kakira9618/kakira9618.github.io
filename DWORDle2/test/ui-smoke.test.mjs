@@ -749,6 +749,12 @@ try {
   await popPuzzleDialog.getByRole("button", { name: "キャンセル" }).click();
   await page.getByRole("button", { name: "設定" }).click();
   await page.waitForURL(/#\/settings$/);
+  // カテゴリ（タブ）は覚えない: 前回「データ」で離れていても、開き直すと「表示」から始まる
+  assert.equal(
+    await page.getByRole("tab", { name: "表示" }).getAttribute("aria-selected"),
+    "true",
+    "the settings category must reset to Display when the screen is reopened"
+  );
   await page.getByRole("tab", { name: "表示" }).click();
   await page.getByRole("radio", { name: "クラシック", exact: true }).click();
   await page.locator("body.theme-classic").waitFor();
@@ -943,7 +949,16 @@ try {
       `Filters & sorting should be available in ${modeLabel}`
     );
   }
-  await historyModeTabs.getByRole("button", { name: "すべて", exact: true }).click();
+  // カテゴリ（モード）は覚えない: 一度画面を離れて戻ると必ず「すべて」から始まる
+  await page.evaluate(() => { location.hash = "#/"; });
+  await page.waitForURL(/#\/$/);
+  await page.evaluate(() => { location.hash = "#/history"; });
+  await page.waitForURL(/#\/history$/);
+  assert.equal(
+    await historyModeTabs.locator("button.active").innerText(),
+    "すべて",
+    "the history category must reset to All when the screen is reopened"
+  );
   await page.locator("#screen-history .history-controls-summary").click();
   const historyFilterLayout = await page.locator("#screen-history .history-controls").evaluate((controls) => {
     const box = (element) => {
@@ -1288,6 +1303,22 @@ try {
   await block.focus();
   await page.keyboard.press("Enter");
   await page.locator("button.num-cell").first().waitFor();
+
+  // カテゴリ（レベル帯）とその配下のドリルダウンは覚えない: 戻ると必ず Daily から始まる
+  await page.evaluate(() => { location.hash = "#/"; });
+  await page.waitForURL(/#\/$/);
+  await page.evaluate(() => { location.hash = "#/problems"; });
+  await page.waitForURL(/#\/problems$/);
+  assert.equal(
+    await page.locator(".problem-level-tabs button.active").innerText(),
+    "Daily",
+    "the puzzle category must reset to Daily when the screen is reopened"
+  );
+  assert.equal(
+    await page.locator("button.num-cell").count(),
+    0,
+    "the drilled-down puzzle block must not be restored"
+  );
 
   await page.evaluate(() => { location.hash = "#/achievements"; });
   await page.waitForURL(/#\/achievements$/);
@@ -2721,6 +2752,11 @@ try {
       ACHIEVEMENTS.length,
       "debug mode should list every achievement including the secret ones"
     );
+    assert.equal(
+      await freshPage.locator("#screen-achievements .header .debug-status").count(),
+      1,
+      "the achievements screen should carry the DEBUG badge while debug mode is on"
+    );
     await freshPage.getByText("only consider the first play of the same puzzle number on the same day, regardless of mode", { exact: false }).waitFor();
     const achievementTextSelection = await freshPage.locator("#screen-achievements").evaluate((screen) => ({
       screen: getComputedStyle(screen).userSelect,
@@ -2734,6 +2770,32 @@ try {
       { screen: "text", header: "text", category: "text", name: "text", button: "none" },
       "all achievement text should be selectable while controls remain non-selectable"
     );
+
+    // プレイヤーカードも、画面ヘッダのバッジとカード画像の中の印で DEBUG 中だと分かる
+    await freshPage.evaluate(() => { location.hash = "#/card"; });
+    await freshPage.waitForURL(/#\/card$/);
+    assert.equal(
+      await freshPage.locator("#screen-card .header .debug-status").count(),
+      1,
+      "the player card screen should carry the DEBUG badge while debug mode is on"
+    );
+    await freshPage.locator(".player-card-issue").click();
+    await freshPage.locator(".player-card-canvas").waitFor();
+    // フッター左端に琥珀色（#ffcf5c）の DEBUG ピルが焼き込まれているかを画素で見る
+    const debugCardMarkPixels = await freshPage.locator(".player-card-canvas").evaluate((cv) => {
+      const { data } = cv.getContext("2d").getImageData(120, 1250, 320, 80);
+      let amber = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        if (data[i] > 200 && data[i + 1] > 150 && data[i + 2] < 150) amber++;
+      }
+      return amber;
+    });
+    assert.ok(
+      debugCardMarkPixels > 100,
+      `the player card image should carry a DEBUG mark in debug mode (${debugCardMarkPixels} amber px)`
+    );
+    await freshPage.evaluate(() => { location.hash = "#/achievements"; });
+    await freshPage.waitForURL(/#\/achievements$/);
 
     await freshPage.reload({ waitUntil: "networkidle" });
     await passGate(freshPage);
@@ -3120,6 +3182,21 @@ try {
     assert.equal(painted.width, 2400, "the card image should be rendered at 2x width");
     assert.equal(painted.height, 1350, "the card image should be rendered at 2x height");
     assert.ok(painted.colorCount > 4, `the card should actually be painted (sampled colors: ${painted.colorCount})`);
+    // 通常プレイのカードには DEBUG の印を焼き込まない（デバッグ中の検証は上の debug モードのテスト）
+    const normalCardMarkPixels = await cardCanvas.evaluate((cv) => {
+      const { data } = cv.getContext("2d").getImageData(120, 1250, 320, 80);
+      let amber = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        if (data[i] > 200 && data[i + 1] > 150 && data[i + 2] < 150) amber++;
+      }
+      return amber;
+    });
+    assert.equal(normalCardMarkPixels, 0, "a card issued outside debug mode must not carry the DEBUG mark");
+    assert.equal(
+      await cardPage.locator("#screen-card .header .debug-status").count(),
+      0,
+      "the player card screen must not show the DEBUG badge outside debug mode"
+    );
     const androidCardEffects = await cardPage.locator(".player-card-wrap").evaluate((wrap) => {
       const wrapStyle = getComputedStyle(wrap);
       const shineStyle = getComputedStyle(wrap, "::after");
