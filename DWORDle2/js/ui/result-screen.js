@@ -85,7 +85,7 @@ function buildShareText(record, logic, cleared) {
   // EXTRA SHOT は挑戦した記録なら成功・失敗どちらの判定も載せる（惜しかったのが伝わる）
   const extraShot = getExtraShot(record);
   const extraResult = extraShot ? getExtraShotResult(record, logic) : null;
-  const extraLine = extraResult ? `EXTRA SHOT ${rowEmoji(extraResult)}\n` : "";
+  const extraLine = extraResult ? `EX:\n${rowEmoji(extraResult)}\n` : "";
   const doubleLine = extraShot?.success ? "DOUBLE ⭐️ CLEAR!!\n" : "";
 
   const full = `${text}${extraLine}${doubleLine}${SHARE_URL}`;

@@ -1001,7 +1001,7 @@ try {
   });
 
   // シェア文は X の 1 ツイート（280 文字）に収まる。絵文字は 2 文字、URL は t.co の 23 文字
-  // として数えられるため、DWORDlie の 15 手 + EXTRA SHOT が最悪ケースになる。
+  // として数えられるため、DWORDlie・Daily（見出しが一番長い）・15 手・EXTRA SHOT が最悪ケース。
   // ここでの数え方は result-screen.js の実装とは独立に書いて、取り違えを検出できるようにする。
   const tweetLength = (text) => {
     let length = 0;
@@ -1021,12 +1021,12 @@ try {
   const playCountBeforeShareFixtures = await page.evaluate(() => localStorage.getItem("dwordle2.playCount"));
   const shareTextOf = async (game) => {
     const startTime = await page.evaluate(async (fixture) => {
-      const [{ Logic: BrowserLogic }, records, { pidForNumber }] = await Promise.all([
+      const [{ Logic: BrowserLogic }, records, { pidForNumber, todayPID }] = await Promise.all([
         import("./js/core/logic.js?v=20260728-a"),
         import("./js/core/records.js?v=20260728-a"),
         import("./js/core/problems.js?v=20260728-a"),
       ]);
-      const pid = pidForNumber(3);
+      const pid = fixture.daily ? todayPID() : pidForNumber(3);
       const logic = new BrowserLogic(pid);
       const startTime = Math.max(
         Math.floor(Date.now() / 1000) - 10,
@@ -1059,21 +1059,21 @@ try {
     return page.evaluate(() => window.__copiedShareText);
   };
 
-  const worstShareText = await shareTextOf({ mode: "uso", guesses: 15, extraSuccess: true });
+  const worstShareText = await shareTextOf({ mode: "uso", guesses: 15, extraSuccess: true, daily: true });
   assert.ok(
     tweetLength(worstShareText) <= 280,
     `the worst-case share text must fit in a tweet: ${tweetLength(worstShareText)}\n${worstShareText}`
   );
   assert.ok(worstShareText.includes("DOUBLE ⭐️ CLEAR!!"), `the DOUBLE CLEAR line should be announced: ${worstShareText}`);
   assert.ok(
-    !worstShareText.includes("EXTRA SHOT"),
+    !worstShareText.includes("EX:"),
     `the EXTRA SHOT row must be dropped when it would not fit: ${worstShareText}`
   );
 
   // 余裕がある長さなら EXTRA SHOT の判定行も入る（失敗した挑戦も載せる）
   const roomyShareText = await shareTextOf({ mode: "uso", guesses: 8, extraSuccess: false });
   assert.ok(
-    /EXTRA SHOT [🟩🟨⬜]{5}/u.test(roomyShareText),
+    /EX:\n[🟩🟨⬜]{5}/u.test(roomyShareText),
     `the EXTRA SHOT row should be included when there is room: ${roomyShareText}`
   );
   assert.ok(!roomyShareText.includes("DOUBLE"), `a missed EXTRA SHOT is not a DOUBLE CLEAR: ${roomyShareText}`);
