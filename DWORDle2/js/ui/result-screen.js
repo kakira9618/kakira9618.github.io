@@ -34,10 +34,10 @@ function displayResults(record, logic) {
 
 // シェア文の長さの目安。X は絵文字を 2 文字、URL を t.co の長さで数えるため、
 // DWORDlie の 15 手 + EXTRA SHOT だと 280 文字に収まらない。収まらないときは
-// EXTRA SHOT の判定行から落とす（無くても勝敗と手数は伝わる、という優先順）。
+// 「You guessed → Guessed に短縮」→「EXTRA SHOT の判定行を落とす」の順に削る。
 const TWEET = {
   limit: 280, // X の 1 ツイートの上限（重み付き文字数）
-  margin: 8, // ひとこと添えたり、共有先が文言を足したりするぶんの余裕
+  margin: 2, // 共有先が文言を足したときのための最低限の余裕
   urlWeight: 23, // URL は t.co に置き換えられて常にこの長さになる
   // 重み 1 で数える符号位置（twitter-text と同じ）。外れる文字（絵文字・全角）は 2。
   lightRanges: [[0, 4351], [8192, 8205], [8208, 8223], [8242, 8247]],
@@ -76,23 +76,28 @@ function buildShareText(record, logic, cleared) {
   const rowEmoji = (row) =>
     row.map((s) => (s === CELL.CORRECT ? correctEmoji : s === CELL.USED ? usedEmoji : "⬜")).join("");
 
-  let text = `${name} ${seedLabel} ${countText}\n\n`;
-  for (const row of results) text += `${rowEmoji(row)}\n`;
-  text += "\n";
-  if (cleared) {
-    text += `You guessed Word ${logic.matchWordNo(record.guessWord[record.guessWord.length - 1])}!\n`;
-  }
+  let gridBlock = `${name} ${seedLabel} ${countText}\n\n`;
+  for (const row of results) gridBlock += `${rowEmoji(row)}\n`;
+
+  const wordNo = cleared ? logic.matchWordNo(record.guessWord[record.guessWord.length - 1]) : null;
+  const guessedLine = cleared ? `You guessed Word ${wordNo}!\n` : "";
+  const shortGuessedLine = cleared ? `Guessed Word ${wordNo}!\n` : "";
   // EXTRA SHOT は挑戦した記録なら成功・失敗どちらの判定も載せる（惜しかったのが伝わる）
   const extraShot = getExtraShot(record);
   const extraResult = extraShot ? getExtraShotResult(record, logic) : null;
   const extraLine = extraResult ? `EX:\n${rowEmoji(extraResult)}\n` : "";
   const doubleLine = extraShot?.success ? "DOUBLE ⭐️ CLEAR!!\n" : "";
 
-  const full = `${text}${extraLine}${doubleLine}${SHARE_URL}`;
-  if (extraLine && tweetLength(full) > TWEET.limit - TWEET.margin) {
-    return `${text}${doubleLine}${SHARE_URL}`;
-  }
-  return full;
+  // 収まるものを上から順に選ぶ。EXTRA SHOT の判定行は「You guessed」の短縮より優先して残す。
+  // 並びは「判定グリッド → EX: の追加推理 → 空行 → 結果の文言 → URL」。
+  const compose = (guessed, extra) => `${gridBlock}${extra}\n${guessed}${doubleLine}${SHARE_URL}`;
+  const candidates = [
+    compose(guessedLine, extraLine),
+    compose(shortGuessedLine, extraLine),
+    compose(guessedLine, ""),
+    compose(shortGuessedLine, ""),
+  ];
+  return candidates.find((text) => tweetLength(text) <= TWEET.limit - TWEET.margin) ?? candidates.at(-1);
 }
 
 function render(args) {

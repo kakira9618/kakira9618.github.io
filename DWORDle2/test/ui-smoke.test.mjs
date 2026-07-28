@@ -1065,17 +1065,23 @@ try {
     `the worst-case share text must fit in a tweet: ${tweetLength(worstShareText)}\n${worstShareText}`
   );
   assert.ok(worstShareText.includes("DOUBLE ⭐️ CLEAR!!"), `the DOUBLE CLEAR line should be announced: ${worstShareText}`);
+  // 最悪ケースでも EXTRA SHOT の判定行は残し、代わりに "You guessed" の方を短縮する
   assert.ok(
-    !worstShareText.includes("EX:"),
-    `the EXTRA SHOT row must be dropped when it would not fit: ${worstShareText}`
+    /EX:\n[🟩🟨⬜]{5}/u.test(worstShareText),
+    `the EXTRA SHOT row should survive in the worst case: ${worstShareText}`
+  );
+  assert.ok(
+    worstShareText.includes("Guessed Word ") && !worstShareText.includes("You guessed"),
+    `the guessed line should be shortened when the text would not fit: ${worstShareText}`
   );
 
-  // 余裕がある長さなら EXTRA SHOT の判定行も入る（失敗した挑戦も載せる）
+  // 余裕がある長さなら EXTRA SHOT の判定行も入り、"You guessed" も短縮されない
   const roomyShareText = await shareTextOf({ mode: "uso", guesses: 8, extraSuccess: false });
   assert.ok(
     /EX:\n[🟩🟨⬜]{5}/u.test(roomyShareText),
     `the EXTRA SHOT row should be included when there is room: ${roomyShareText}`
   );
+  assert.ok(roomyShareText.includes("You guessed Word "), `the guessed line should stay intact when it fits: ${roomyShareText}`);
   assert.ok(!roomyShareText.includes("DOUBLE"), `a missed EXTRA SHOT is not a DOUBLE CLEAR: ${roomyShareText}`);
   assert.ok(tweetLength(roomyShareText) <= 280, `share text must fit in a tweet: ${roomyShareText}`);
 
