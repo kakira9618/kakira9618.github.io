@@ -33,7 +33,7 @@ function displayResults(record, logic) {
 }
 
 // 原作互換のシェア文字列 + 公開 URL
-function buildShareText(record, logic, cleared, includeUrl = true) {
+function buildShareText(record, logic, cleared) {
   const results = displayResults(record, logic);
   // Daily は日付まで入れる（"Daily" だけだと別の日のシェアと見分けが付かない）。
   // 画面表示・履歴と同じ pidLabel を使う: "Daily 2026-07-26" / "No.12345"
@@ -61,7 +61,7 @@ function buildShareText(record, logic, cleared, includeUrl = true) {
   if (getExtraShot(record)?.success) {
     text += "EXTRA SHOT ⭐ DOUBLE CLEAR!!\n";
   }
-  if (includeUrl) text += SHARE_URL;
+  text += SHARE_URL;
   return text;
 }
 
@@ -234,10 +234,12 @@ function render(args) {
       "div",
       { class: "result-actions" },
       actionBtn("share", tr("シェア", "Share"), async () => {
-        const text = buildShareText(record, logic, cleared, false);
+        // url を別に渡すと、共有先アプリによっては URL だけを拾って結果のマス目が消える
+        // （X などの共有シートでよく起きる）。URL は本文に含めて text だけを渡す。
+        const text = buildShareText(record, logic, cleared);
         if (navigator.share) {
           try {
-            await navigator.share({ title: "DWORDle 2", text, url: SHARE_URL });
+            await navigator.share({ title: "DWORDle 2", text });
             return;
           } catch (error) {
             if (error?.name === "AbortError") return;

@@ -960,6 +960,28 @@ try {
   ).waitFor();
   await replayDialog.getByRole("button", { name: "キャンセル" }).click();
 
+  // シェアは navigator.share に text だけを渡す。url を別に添えると、共有先アプリが
+  // URL だけを拾って結果のマス目が落ちることがあるため（コピーしてから貼り直す必要が出る）。
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, "share", {
+      configurable: true,
+      writable: true,
+      value: (data) => {
+        window.__sharedData = data;
+        return Promise.resolve();
+      },
+    });
+  });
+  await page.getByRole("button", { name: "シェア", exact: true }).click();
+  const sharedData = await page.evaluate(() => window.__sharedData);
+  assert.ok(sharedData, "the share button should call navigator.share");
+  assert.equal(sharedData.url, undefined, "navigator.share must not receive a separate url field");
+  assert.ok(/[🟩🟨⬜]/u.test(sharedData.text ?? ""), `shared text should contain the result grid: ${sharedData.text}`);
+  assert.ok(
+    (sharedData.text ?? "").includes("https://kakira9618.github.io/DWORDle2/"),
+    `shared text should end with the site URL: ${sharedData.text}`
+  );
+
   // ハイコントラスト配色ではシェア文字列の絵文字も 🟧 / 🟦 になる（灰は ⬜ のまま）
   await page.evaluate(async () => {
     const mod = await import("./js/core/settings.js?v=20260728-a");
