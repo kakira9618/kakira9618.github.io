@@ -32,6 +32,32 @@ function displayResults(record, logic) {
   return record.guessWord.map((w) => logic.queryWord(w));
 }
 
+// シェア文の長さの目安。X は絵文字を 2 文字、URL を t.co の長さで数えるため、
+// DWORDlie の 15 手 + EXTRA SHOT だと 280 文字に収まらない。収まらないときは
+// EXTRA SHOT の判定行から落とす（無くても勝敗と手数は伝わる、という優先順）。
+const TWEET = {
+  limit: 280, // X の 1 ツイートの上限（重み付き文字数）
+  margin: 8, // ひとこと添えたり、共有先が文言を足したりするぶんの余裕
+  urlWeight: 23, // URL は t.co に置き換えられて常にこの長さになる
+  // 重み 1 で数える符号位置（twitter-text と同じ）。外れる文字（絵文字・全角）は 2。
+  lightRanges: [[0, 4351], [8192, 8205], [8208, 8223], [8242, 8247]],
+};
+
+// X の重み付き文字数。twitter-text の weightedLength と同じ数え方をする。
+function tweetLength(text) {
+  let length = 0;
+  const body = text.replace(/https?:\/\/\S+/g, () => {
+    length += TWEET.urlWeight;
+    return "";
+  });
+  for (const ch of body) {
+    const cp = ch.codePointAt(0);
+    if (cp === 0xfe0f) continue; // 異体字セレクタは直前の絵文字の一部
+    length += TWEET.lightRanges.some(([from, to]) => cp >= from && cp <= to) ? 1 : 2;
+  }
+  return length;
+}
+
 // 原作互換のシェア文字列 + 公開 URL
 function buildShareText(record, logic, cleared) {
   const results = displayResults(record, logic);
@@ -43,26 +69,30 @@ function buildShareText(record, logic, cleared) {
   const countText = record.discarded
     ? `DISCARDED ${record.guessWord.length}/${maxGuess}`
     : cleared ? `${record.guessWord.length}/${maxGuess}` : `X/${maxGuess}`;
-  let text = `${name} ${seedLabel} ${countText}\n\n`;
   // ハイコントラスト設定では絵文字も本家 Wordle と同じ 🟧 / 🟦 に置き換える
   const highContrast = getSettings().highContrast;
   const correctEmoji = highContrast ? "🟧" : "🟩";
   const usedEmoji = highContrast ? "🟦" : "🟨";
-  for (const row of results) {
-    for (const s of row) {
-      text += s === CELL.CORRECT ? correctEmoji : s === CELL.USED ? usedEmoji : "⬜";
-    }
-    text += "\n";
-  }
+  const rowEmoji = (row) =>
+    row.map((s) => (s === CELL.CORRECT ? correctEmoji : s === CELL.USED ? usedEmoji : "⬜")).join("");
+
+  let text = `${name} ${seedLabel} ${countText}\n\n`;
+  for (const row of results) text += `${rowEmoji(row)}\n`;
   text += "\n";
   if (cleared) {
     text += `You guessed Word ${logic.matchWordNo(record.guessWord[record.guessWord.length - 1])}!\n`;
   }
-  if (getExtraShot(record)?.success) {
-    text += "EXTRA SHOT ⭐ DOUBLE CLEAR!!\n";
+  // EXTRA SHOT は挑戦した記録なら成功・失敗どちらの判定も載せる（惜しかったのが伝わる）
+  const extraShot = getExtraShot(record);
+  const extraResult = extraShot ? getExtraShotResult(record, logic) : null;
+  const extraLine = extraResult ? `EXTRA SHOT ${rowEmoji(extraResult)}\n` : "";
+  const doubleLine = extraShot?.success ? "DOUBLE ⭐️ CLEAR!!\n" : "";
+
+  const full = `${text}${extraLine}${doubleLine}${SHARE_URL}`;
+  if (extraLine && tweetLength(full) > TWEET.limit - TWEET.margin) {
+    return `${text}${doubleLine}${SHARE_URL}`;
   }
-  text += SHARE_URL;
-  return text;
+  return full;
 }
 
 function render(args) {
@@ -234,12 +264,12 @@ function render(args) {
       "div",
       { class: "result-actions" },
       actionBtn("share", tr("シェア", "Share"), async () => {
-        // url を別に渡すと、共有先アプリによっては URL だけを拾って結果のマス目が消える
-        // （X などの共有シートでよく起きる）。URL は本文に含めて text だけを渡す。
+        // url や title を別に渡すと、共有先アプリによっては URL だけを拾って結果のマス目が
+        // 消えたり、逆に title を本文へ足して 280 文字を超えたりする。text 一本で渡す。
         const text = buildShareText(record, logic, cleared);
         if (navigator.share) {
           try {
-            await navigator.share({ title: "DWORDle 2", text });
+            await navigator.share({ text });
             return;
           } catch (error) {
             if (error?.name === "AbortError") return;

@@ -1000,6 +1000,94 @@ try {
     mod.setSetting("highContrast", false);
   });
 
+  // シェア文は X の 1 ツイート（280 文字）に収まる。絵文字は 2 文字、URL は t.co の 23 文字
+  // として数えられるため、DWORDlie の 15 手 + EXTRA SHOT が最悪ケースになる。
+  // ここでの数え方は result-screen.js の実装とは独立に書いて、取り違えを検出できるようにする。
+  const tweetLength = (text) => {
+    let length = 0;
+    const body = text.replace(/https?:\/\/\S+/g, () => {
+      length += 23;
+      return "";
+    });
+    for (const ch of body) {
+      const cp = ch.codePointAt(0);
+      if (cp === 0xfe0f) continue;
+      const light = (cp >= 0 && cp <= 4351) || (cp >= 8192 && cp <= 8205) || (cp >= 8208 && cp <= 8223) || (cp >= 8242 && cp <= 8247);
+      length += light ? 1 : 2;
+    }
+    return length;
+  };
+  const shareFixtureTimes = [];
+  const playCountBeforeShareFixtures = await page.evaluate(() => localStorage.getItem("dwordle2.playCount"));
+  const shareTextOf = async (game) => {
+    const startTime = await page.evaluate(async (fixture) => {
+      const [{ Logic: BrowserLogic }, records, { pidForNumber }] = await Promise.all([
+        import("./js/core/logic.js?v=20260728-a"),
+        import("./js/core/records.js?v=20260728-a"),
+        import("./js/core/problems.js?v=20260728-a"),
+      ]);
+      const pid = pidForNumber(3);
+      const logic = new BrowserLogic(pid);
+      const startTime = Math.max(
+        Math.floor(Date.now() / 1000) - 10,
+        ...records.getHistory().map((record) => record.startTime + 1)
+      );
+      const guessWord = [...Array(fixture.guesses - 1).fill(logic.ans2), logic.ans1];
+      const saved = records.addFinishedGame({
+        version: "2.0.0",
+        startTime,
+        endTime: startTime + 20,
+        gameMode: fixture.mode,
+        problemID: pid,
+        guessWord,
+        clear: true,
+        usoResults: [],
+        extraShot: fixture.extraSuccess
+          ? { word: logic.ans2, success: true }
+          : { word: logic.ans2, success: false, result: ["correct", "used", "unused", "correct", "unused"] },
+      });
+      navigator.clipboard.writeText = (text) => {
+        window.__copiedShareText = text;
+        return Promise.resolve();
+      };
+      return saved.startTime; // 同秒衝突でずれることがあるので保存後の値を使う
+    }, game);
+    shareFixtureTimes.push(startTime);
+    await page.evaluate(([mode, time]) => { location.hash = `#/result/${mode}/${time}`; }, [game.mode, startTime]);
+    await page.waitForURL(new RegExp(`#/result/${game.mode}/${startTime}$`));
+    await page.getByRole("button", { name: "コピー", exact: true }).click();
+    return page.evaluate(() => window.__copiedShareText);
+  };
+
+  const worstShareText = await shareTextOf({ mode: "uso", guesses: 15, extraSuccess: true });
+  assert.ok(
+    tweetLength(worstShareText) <= 280,
+    `the worst-case share text must fit in a tweet: ${tweetLength(worstShareText)}\n${worstShareText}`
+  );
+  assert.ok(worstShareText.includes("DOUBLE ⭐️ CLEAR!!"), `the DOUBLE CLEAR line should be announced: ${worstShareText}`);
+  assert.ok(
+    !worstShareText.includes("EXTRA SHOT"),
+    `the EXTRA SHOT row must be dropped when it would not fit: ${worstShareText}`
+  );
+
+  // 余裕がある長さなら EXTRA SHOT の判定行も入る（失敗した挑戦も載せる）
+  const roomyShareText = await shareTextOf({ mode: "uso", guesses: 8, extraSuccess: false });
+  assert.ok(
+    /EXTRA SHOT [🟩🟨⬜]{5}/u.test(roomyShareText),
+    `the EXTRA SHOT row should be included when there is room: ${roomyShareText}`
+  );
+  assert.ok(!roomyShareText.includes("DOUBLE"), `a missed EXTRA SHOT is not a DOUBLE CLEAR: ${roomyShareText}`);
+  assert.ok(tweetLength(roomyShareText) <= 280, `share text must fit in a tweet: ${roomyShareText}`);
+
+  // 文字数確認用の記録は履歴から取り除く（以降の統計・フィルターの検証を汚さない）
+  await page.evaluate(async ({ times, playCount }) => {
+    const records = await import("./js/core/records.js?v=20260728-a");
+    const kept = records.getHistory().filter((record) => !times.includes(record.startTime));
+    localStorage.setItem("dwordle2.history", JSON.stringify(kept));
+    localStorage.setItem("dwordle2.playCount", playCount);
+    records._reload();
+  }, { times: shareFixtureTimes, playCount: playCountBeforeShareFixtures });
+
   // 結果フィルターで EXTRA SHOT 成功（DOUBLE CLEAR）だけを抽出できる。
   await page.evaluate(async () => {
     const [{ Logic: BrowserLogic }, records] = await Promise.all([
