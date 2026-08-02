@@ -4,10 +4,10 @@
 // style.css の「EXTRA SHOT」セクションが body.theme-* / body.mode-uso で出し分ける。
 // 表示時間は config.js の FX.extraShot にまとまっている（CSS と同期）。
 
-import { el } from "./dom.js?v=20260803-b";
-import { FX } from "../config.js?v=20260803-b";
-import { shouldReduceMotion } from "../core/motion.js?v=20260803-b";
-import { tr } from "../core/i18n.js?v=20260803-b";
+import { el } from "./dom.js?v=20260803-c";
+import { FX } from "../config.js?v=20260803-c";
+import { shouldReduceMotion } from "../core/motion.js?v=20260803-c";
+import { tr } from "../core/i18n.js?v=20260803-c";
 
 let activeOverlay = null;
 let activeTimer = null;

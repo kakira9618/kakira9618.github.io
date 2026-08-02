@@ -1,6 +1,6 @@
 // localStorage の薄いラッパ。キーは全て "dwordle2." プレフィックスで名前空間を切る。
 
-import { isDebugMode } from "./debug.js?v=20260803-b";
+import { isDebugMode } from "./debug.js?v=20260803-c";
 
 const PREFIX = "dwordle2.";
 

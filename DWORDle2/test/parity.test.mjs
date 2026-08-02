@@ -2,9 +2,9 @@
 // 本作のロジック (js/core/logic.js) の出題・判定が一致することを確認するテスト。
 // 実行: node test/parity.test.mjs
 
-import { ALL_WORDS, EASY_WORDS } from "../js/data/words.js?v=20260803-b";
-import { Logic, queryWordPair } from "../js/core/logic.js?v=20260803-b";
-import { todayPID, isDailyPID, candidateWordsForPID, usesNewGenerator } from "../js/core/problems.js?v=20260803-b";
+import { ALL_WORDS, EASY_WORDS } from "../js/data/words.js?v=20260803-c";
+import { Logic, queryWordPair } from "../js/core/logic.js?v=20260803-c";
+import { todayPID, isDailyPID, candidateWordsForPID, usesNewGenerator } from "../js/core/problems.js?v=20260803-c";
 
 // ---- 参照実装: 原作 WordList.tonyu / Logic.tonyu の逐語移植 ----
 // 原作は defaultCandWordsList / defaultAllWordsList を共有参照し、pickAns が
@@ -186,7 +186,7 @@ console.log(`出題一致テスト: ${seedsToTest.length} seeds`);
 // ---- 5. usoConvert（DWORDlie の嘘変換）----
 // 原作 Game.usoConvert(): 真の判定と必ず異なる状態を、残り 2 状態から等確率で返す。
 {
-  const { CELL, usoConvert } = await import("../js/core/logic.js?v=20260803-b");
+  const { CELL, usoConvert } = await import("../js/core/logic.js?v=20260803-c");
   const STATES = [CELL.UNUSED, CELL.USED, CELL.CORRECT];
 
   check(usoConvert(CELL.GUESSING) === CELL.GUESSING, "guessing は変換されないはず");

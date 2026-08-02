@@ -32,13 +32,13 @@
 //   hadLostBefore, // この問題で過去に敗北していたか
 // }
 
-import { loadJSON, saveJSON, onExternalChange } from "./store.js?v=20260803-b";
-import { isClassicPID, isDailyPID, NEW_ERA, PID, problemNumber } from "./problems.js?v=20260803-b";
-import { getHistory, getExtraShot, MODES } from "./records.js?v=20260803-b";
-import { CELL, Logic } from "./logic.js?v=20260803-b";
-import { isDebugMode } from "./debug.js?v=20260803-b";
-import { reveal } from "./secret.js?v=20260803-b";
-import { MARK, signAchievement, verifyAchievementMark } from "./achievement-mark.js?v=20260803-b";
+import { loadJSON, saveJSON, onExternalChange } from "./store.js?v=20260803-c";
+import { isClassicPID, isDailyPID, NEW_ERA, PID, problemNumber } from "./problems.js?v=20260803-c";
+import { getHistory, getExtraShot, MODES } from "./records.js?v=20260803-c";
+import { CELL, Logic } from "./logic.js?v=20260803-c";
+import { isDebugMode } from "./debug.js?v=20260803-c";
+import { reveal } from "./secret.js?v=20260803-c";
+import { MARK, signAchievement, verifyAchievementMark } from "./achievement-mark.js?v=20260803-c";
 
 // v7: 月間皆勤（30 日）→ 二週間皆勤（14 日）の緩和を既存履歴にも適用する
 // v8: 無限の探求の緩和（5000 → 1000 回）と、新設した DOUBLE CLEAR 系実績を既存履歴に適用する

@@ -4,7 +4,7 @@
 // キーワードそのものはソースに置かず、指紋（js/core/secret.js の fingerprint）だけを持つ。
 // 値の作り直しは `node tools/make-secret.mjs fingerprint "<キーワード>"`。
 
-import { fingerprint } from "./secret.js?v=20260803-b";
+import { fingerprint } from "./secret.js?v=20260803-c";
 
 const DEBUG_KEYWORD_FINGERPRINT = "1f0qpte.bdnro";
 

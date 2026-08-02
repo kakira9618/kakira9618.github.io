@@ -6,28 +6,28 @@
 // 原作と同じく、Guess は確定するたびに保存され、リロードしても再開できる。
 // 追加推理タイムの途中でリロード・離脱した場合、チャンスは消滅して通常クリアで記録される。
 
-import { el, clear, effectiveZoom } from "./dom.js?v=20260803-b";
-import { APP_VERSION, UI, FX } from "../config.js?v=20260803-b";
-import { Logic, CELL, displayResultForMode } from "../core/logic.js?v=20260803-b";
-import { MODES, saveCurrentGame, clearCurrentGame, getCurrentGame, addFinishedGame, addDiscardedGame, isAlreadyPlayed, getHistory, getExtraShot } from "../core/records.js?v=20260803-b";
-import { NEW_ERA, isClassicPID, isDailyPID, numberPrefix, pidLabel, todayPID } from "../core/problems.js?v=20260803-b";
-import { checkOnGameFinish } from "../core/achievements.js?v=20260803-b";
-import { addReloadBlocker } from "../core/critical-update.js?v=20260803-b";
-import { registerScreen, navigate, redirect, getAppMode, currentScreenName } from "./app.js?v=20260803-b";
-import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration, extraShotUnlockCelebration } from "./toast.js?v=20260803-b";
-import { isExtraShotEnabled, claimExtraShotUnlockNotice } from "../core/extra-shot.js?v=20260803-b";
-import { playExtraShotCutin, playDoubleClearCutin, cancelExtraShotFx } from "./extra-shot-fx.js?v=20260803-b";
-import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js?v=20260803-b";
-import { hiddenThemesUnlockedBy } from "../core/settings.js?v=20260803-b";
-import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/effects.js?v=20260803-b";
-import { showHelpModal, hasSeenHelp } from "./help.js?v=20260803-b";
-import { trackEvent } from "../core/analytics.js?v=20260803-b";
-import { soundToggleButton } from "./sound-toggle.js?v=20260803-b";
-import { icon } from "./icons.js?v=20260803-b";
-import { tr } from "../core/i18n.js?v=20260803-b";
-import { getSettings } from "../core/settings.js?v=20260803-b";
-import { shouldReduceMotion } from "../core/motion.js?v=20260803-b";
-import { announce, feedbackName, rowAriaLabel, tileAriaLabel } from "./a11y.js?v=20260803-b";
+import { el, clear, effectiveZoom } from "./dom.js?v=20260803-c";
+import { APP_VERSION, UI, FX } from "../config.js?v=20260803-c";
+import { Logic, CELL, displayResultForMode } from "../core/logic.js?v=20260803-c";
+import { MODES, saveCurrentGame, clearCurrentGame, getCurrentGame, addFinishedGame, addDiscardedGame, isAlreadyPlayed, getHistory, getExtraShot } from "../core/records.js?v=20260803-c";
+import { NEW_ERA, isClassicPID, isDailyPID, numberPrefix, pidLabel, todayPID } from "../core/problems.js?v=20260803-c";
+import { checkOnGameFinish } from "../core/achievements.js?v=20260803-c";
+import { addReloadBlocker } from "../core/critical-update.js?v=20260803-c";
+import { registerScreen, navigate, redirect, getAppMode, currentScreenName } from "./app.js?v=20260803-c";
+import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration, extraShotUnlockCelebration } from "./toast.js?v=20260803-c";
+import { isExtraShotEnabled, claimExtraShotUnlockNotice } from "../core/extra-shot.js?v=20260803-c";
+import { playExtraShotCutin, playDoubleClearCutin, cancelExtraShotFx } from "./extra-shot-fx.js?v=20260803-c";
+import { bgmTracksUnlockedBy, playSfx } from "../audio/sound.js?v=20260803-c";
+import { hiddenThemesUnlockedBy } from "../core/settings.js?v=20260803-c";
+import { burstAtElement, cancelTileFlights, winBurst, colorForState, flyInTiles } from "../fx/effects.js?v=20260803-c";
+import { showHelpModal, hasSeenHelp } from "./help.js?v=20260803-c";
+import { trackEvent } from "../core/analytics.js?v=20260803-c";
+import { soundToggleButton } from "./sound-toggle.js?v=20260803-c";
+import { icon } from "./icons.js?v=20260803-c";
+import { tr } from "../core/i18n.js?v=20260803-c";
+import { getSettings } from "../core/settings.js?v=20260803-c";
+import { shouldReduceMotion } from "../core/motion.js?v=20260803-c";
+import { announce, feedbackName, rowAriaLabel, tileAriaLabel } from "./a11y.js?v=20260803-c";
 
 const KEY_ROWS = [
   [..."qwertyuiop".split(""), "backspace"],
@@ -278,7 +278,7 @@ addReloadBlocker(isExtraShotActive);
 // 中断 = 保存を残して「つづきから」で再開できる（従来の挙動）／破棄 = 履歴へ残して終了する。
 // × ・背景タップ・Escape・キャンセルはどれも「ゲームに戻る」。
 async function askLeaveGame() {
-  const { showModal } = await import("./modal.js?v=20260803-b");
+  const { showModal } = await import("./modal.js?v=20260803-c");
   return new Promise((resolve) => {
     let decided = null;
     showModal({
@@ -357,7 +357,7 @@ async function requestBackToTitle() {
   }
   if (extraShotLeavePromptOpen) return;
   extraShotLeavePromptOpen = true;
-  const { confirmModal } = await import("./modal.js?v=20260803-b");
+  const { confirmModal } = await import("./modal.js?v=20260803-c");
   const forfeit = await confirmModal(
     tr("EXTRA SHOTを棄権しますか？", "Forfeit EXTRA SHOT?"),
     tr(
@@ -1049,7 +1049,7 @@ export async function confirmAndStart(pid, mode) {
   if (playedInCurrentMode || playedToday) {
     // 注意: 動的 import にも必ず ?v= トークンを付ける。素の URL だと古いキャッシュの
     // modal.js（旧トークンで sound.js を import する）が混ざり、BGM が二重再生される。
-    const { confirmModal } = await import("./modal.js?v=20260803-b");
+    const { confirmModal } = await import("./modal.js?v=20260803-c");
     const label = pidLabel(pid);
     const countNote = discardedToday
       ? tr(
@@ -1091,7 +1091,7 @@ export async function confirmAndStart(pid, mode) {
   }
   const current = getCurrentGame(mode);
   if (current && current.guessWord.length > 0) {
-    const { confirmModal } = await import("./modal.js?v=20260803-b");
+    const { confirmModal } = await import("./modal.js?v=20260803-c");
     const ok = await confirmModal(
       tr("進行中のゲーム", "Game in progress"),
       tr(

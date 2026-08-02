@@ -1,30 +1,30 @@
 // 設定画面。テーマ・サウンド・履歴の移行 / エクスポート / 削除。
 // ルート: #/settings
 
-import { el, clear } from "./dom.js?v=20260803-b";
-import { registerScreen, navigate, currentScreenName } from "./app.js?v=20260803-b";
-import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js?v=20260803-b";
-import { importFromLocalStorage, importFromText, scanLegacyHistory } from "../core/migrate.js?v=20260803-b";
-import { exportJSON } from "../core/records.js?v=20260803-b";
-import { removeKey } from "../core/store.js?v=20260803-b";
-import { getUnlocked } from "../core/achievements.js?v=20260803-b";
-import { BGM_TRACKS, playSfx } from "../audio/sound.js?v=20260803-b";
-import { toast } from "./toast.js?v=20260803-b";
-import { showModal, confirmModal } from "./modal.js?v=20260803-b";
-import { icon } from "./icons.js?v=20260803-b";
-import { finishHistoryImport } from "./history-import.js?v=20260803-b";
-import { APP_VERSION, AUDIO } from "../config.js?v=20260803-b";
-import { SOURCE_HASH } from "../version.js?v=20260803-b";
-import { isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js?v=20260803-b";
-import { isDebugMode, tryEnableDebugMode } from "../core/debug.js?v=20260803-b";
-import { isExtraShotUnlocked, extraShotRemainingPlays } from "../core/extra-shot.js?v=20260803-b";
+import { el, clear } from "./dom.js?v=20260803-c";
+import { registerScreen, navigate, currentScreenName } from "./app.js?v=20260803-c";
+import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js?v=20260803-c";
+import { importFromLocalStorage, importFromText, scanLegacyHistory } from "../core/migrate.js?v=20260803-c";
+import { exportJSON } from "../core/records.js?v=20260803-c";
+import { removeKey } from "../core/store.js?v=20260803-c";
+import { getUnlocked } from "../core/achievements.js?v=20260803-c";
+import { BGM_TRACKS, playSfx } from "../audio/sound.js?v=20260803-c";
+import { toast } from "./toast.js?v=20260803-c";
+import { showModal, confirmModal } from "./modal.js?v=20260803-c";
+import { icon } from "./icons.js?v=20260803-c";
+import { finishHistoryImport } from "./history-import.js?v=20260803-c";
+import { APP_VERSION, AUDIO } from "../config.js?v=20260803-c";
+import { SOURCE_HASH } from "../version.js?v=20260803-c";
+import { isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js?v=20260803-c";
+import { isDebugMode, tryEnableDebugMode } from "../core/debug.js?v=20260803-c";
+import { isExtraShotUnlocked, extraShotRemainingPlays } from "../core/extra-shot.js?v=20260803-c";
 import {
   analyticsAllowed,
   getStoredConsent,
   onAnalyticsConsentChange,
   setAnalyticsConsent,
-} from "../core/analytics.js?v=20260803-b";
-import { dismissConsentBanner } from "./consent-banner.js?v=20260803-b";
+} from "../core/analytics.js?v=20260803-c";
+import { dismissConsentBanner } from "./consent-banner.js?v=20260803-c";
 
 let root = null;
 let debugEntryTaps = 0;

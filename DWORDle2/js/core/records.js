@@ -16,10 +16,10 @@
 //       // 旧キー finalAnswer は読込時に extraShot へ移行する。
 //   }
 
-import { loadJSON, saveJSON, onExternalChange } from "./store.js?v=20260803-b";
-import { Logic, CELL, queryWordSingle } from "./logic.js?v=20260803-b";
-import { isDailyPID } from "./problems.js?v=20260803-b";
-import { signatureAvailable, signPayload } from "./signature.js?v=20260803-b";
+import { loadJSON, saveJSON, onExternalChange } from "./store.js?v=20260803-c";
+import { Logic, CELL, queryWordSingle } from "./logic.js?v=20260803-c";
+import { isDailyPID } from "./problems.js?v=20260803-c";
+import { signatureAvailable, signPayload } from "./signature.js?v=20260803-c";
 
 export const MODES = {
   normal: { key: "normal", title: "DWORDle", maxGuess: 10 },

@@ -3,28 +3,28 @@
 // カードのデザインはテーマによらず共通（ダーク + ランク色のフレーム）。
 // 通算 5 回プレイで解放（タイトルメニューの段階解放と同じ仕組み）。
 
-import { el, clear, effectiveZoom } from "./dom.js?v=20260803-b";
-import { registerScreen, navigate, redirect } from "./app.js?v=20260803-b";
-import { getHistory, countPlays, localDayNumber } from "../core/records.js?v=20260803-b";
+import { el, clear, effectiveZoom } from "./dom.js?v=20260803-c";
+import { registerScreen, navigate, redirect } from "./app.js?v=20260803-c";
+import { getHistory, countPlays, localDayNumber } from "../core/records.js?v=20260803-c";
 import {
   ACHIEVEMENTS,
   achievementProgress,
   formatAchievementProgress,
   getUnlocked,
-} from "../core/achievements.js?v=20260803-b";
-import { HIDDEN_THEMES } from "../core/settings.js?v=20260803-b";
-import { favoriteBgmTrackId, favoriteThemeId } from "../core/activity.js?v=20260803-b";
-import { BGM_TRACKS, currentBgmTrackId, playSfx } from "../audio/sound.js?v=20260803-b";
-import { loadJSON, saveJSON } from "../core/store.js?v=20260803-b";
-import { isDebugMode } from "../core/debug.js?v=20260803-b";
-import { toast } from "./toast.js?v=20260803-b";
-import { soundToggleButton } from "./sound-toggle.js?v=20260803-b";
-import { winBurst } from "../fx/effects.js?v=20260803-b";
-import { shouldReduceMotion } from "../core/motion.js?v=20260803-b";
-import { icon, iconSvg } from "./icons.js?v=20260803-b";
-import { announce } from "./a11y.js?v=20260803-b";
-import { SHARE_URL } from "../config.js?v=20260803-b";
-import { tr } from "../core/i18n.js?v=20260803-b";
+} from "../core/achievements.js?v=20260803-c";
+import { HIDDEN_THEMES } from "../core/settings.js?v=20260803-c";
+import { favoriteBgmTrackId, favoriteThemeId } from "../core/activity.js?v=20260803-c";
+import { BGM_TRACKS, currentBgmTrackId, playSfx } from "../audio/sound.js?v=20260803-c";
+import { loadJSON, saveJSON } from "../core/store.js?v=20260803-c";
+import { isDebugMode } from "../core/debug.js?v=20260803-c";
+import { toast } from "./toast.js?v=20260803-c";
+import { soundToggleButton } from "./sound-toggle.js?v=20260803-c";
+import { winBurst } from "../fx/effects.js?v=20260803-c";
+import { shouldReduceMotion } from "../core/motion.js?v=20260803-c";
+import { icon, iconSvg } from "./icons.js?v=20260803-c";
+import { announce } from "./a11y.js?v=20260803-c";
+import { SHARE_URL } from "../config.js?v=20260803-c";
+import { tr } from "../core/i18n.js?v=20260803-c";
 
 // 解放しきい値（タイトルメニューの MENU_UNLOCKS と同じ値を参照させる）
 export const CARD_UNLOCK_PLAYS = 5;
@@ -135,12 +135,24 @@ const CARD = {
 // 実績を全解除すると MASTER（虹フレーム）になり、
 // さらに通算 1000 プレイに到達すると最上位 KING（王）になる。
 // 王の称号は多くプレイしている方のモードで決まる（同数なら DWORDle）。
+// shareJa / shareEn: 「画像をシェア」時の本文。BRONZE は発行報告、
+// それ以降は「アップデートされた」＋ランクに合わせた一言にする。
 const RANKS = [
-  { min: 5, tier: 1, id: "BRONZE", frame: ["#f0a35e", "#9a5b2d"], accent: "#f0a35e", titleJa: "見習いDWORDler", titleEn: "Apprentice DWORDler", titleSize: 26, icon: "star" },
-  { min: 25, tier: 2, id: "SILVER", frame: ["#eef3fa", "#8fa3b8"], accent: "#c9d6e8", titleJa: "一人前DWORDler", titleEn: "Seasoned DWORDler", icon: "shield" },
-  { min: 75, tier: 3, id: "GOLD", frame: ["#ffe08a", "#d99a1b"], accent: "#ffd166", titleJa: "凄腕DWORDler", titleEn: "Ace DWORDler", icon: "swords" },
-  { min: 200, tier: 4, id: "PLATINUM", frame: ["#c5fff2", "#4fc3d8"], accent: "#8ee9dd", titleJa: "達人DWORDler", titleEn: "Master DWORDler", icon: "flame" },
-  { min: 500, tier: 5, id: "DIAMOND", frame: ["#b9e0ff", "#8a6bff"], accent: "#a8ccff", titleJa: "頂のDWORDler", titleEn: "Peerless DWORDler", icon: "gem" },
+  { min: 5, tier: 1, id: "BRONZE", frame: ["#f0a35e", "#9a5b2d"], accent: "#f0a35e", titleJa: "見習いDWORDler", titleEn: "Apprentice DWORDler", titleSize: 26, icon: "star",
+    shareJa: "DWORDle 2 のプレイヤーカードを発行しました！ #DWORDle2",
+    shareEn: "My DWORDle 2 player card! #DWORDle2" },
+  { min: 25, tier: 2, id: "SILVER", frame: ["#eef3fa", "#8fa3b8"], accent: "#c9d6e8", titleJa: "一人前DWORDler", titleEn: "Seasoned DWORDler", icon: "shield",
+    shareJa: "DWORDle 2 のプレイヤーカードが SILVER RANK にアップデート！一人前DWORDlerの仲間入り、ここからが本番！ #DWORDle2",
+    shareEn: "My DWORDle 2 player card got updated to SILVER RANK! A Seasoned DWORDler now — the real game starts here! #DWORDle2" },
+  { min: 75, tier: 3, id: "GOLD", frame: ["#ffe08a", "#d99a1b"], accent: "#ffd166", titleJa: "凄腕DWORDler", titleEn: "Ace DWORDler", icon: "swords",
+    shareJa: "DWORDle 2 のプレイヤーカードが GOLD RANK にアップデート！凄腕DWORDlerの称号、輝きが違う！ #DWORDle2",
+    shareEn: "My DWORDle 2 player card got updated to GOLD RANK! Ace DWORDler, shining bright! #DWORDle2" },
+  { min: 200, tier: 4, id: "PLATINUM", frame: ["#c5fff2", "#4fc3d8"], accent: "#8ee9dd", titleJa: "達人DWORDler", titleEn: "Master DWORDler", icon: "flame",
+    shareJa: "DWORDle 2 のプレイヤーカードが PLATINUM RANK にアップデート！達人DWORDlerの炎、燃え尽きるまで挑み続ける！ #DWORDle2",
+    shareEn: "My DWORDle 2 player card got updated to PLATINUM RANK! Master DWORDler, burning hotter than ever! #DWORDle2" },
+  { min: 500, tier: 5, id: "DIAMOND", frame: ["#b9e0ff", "#8a6bff"], accent: "#a8ccff", titleJa: "頂のDWORDler", titleEn: "Peerless DWORDler", icon: "gem",
+    shareJa: "DWORDle 2 のプレイヤーカードが DIAMOND RANK にアップデート！頂のDWORDler、この輝きは伊達じゃない！ #DWORDle2",
+    shareEn: "My DWORDle 2 player card got updated to DIAMOND RANK! Peerless DWORDler, standing at the summit! #DWORDle2" },
 ];
 const RANK_MASTER = {
   tier: 6,
@@ -150,6 +162,8 @@ const RANK_MASTER = {
   titleJa: "伝説のDWORDler",
   titleEn: "Legendary DWORDler",
   icon: "trophy",
+  shareJa: "DWORDle 2 のプレイヤーカードが MASTER RANK にアップデート！全実績制覇、伝説のDWORDler爆誕！ #DWORDle2",
+  shareEn: "My DWORDle 2 player card got updated to MASTER RANK! All achievements complete — a Legendary DWORDler is born! #DWORDle2",
 };
 // KING に必要な通算プレイ回数（実績全解除も必要）
 export const KING_MIN_PLAYS = 1000;
@@ -161,6 +175,8 @@ const RANK_KING_NORMAL = {
   titleJa: "DWORDleの王",
   titleEn: "DWORDle King",
   icon: "crown",
+  shareJa: "DWORDle 2 のプレイヤーカードが KING RANK にアップデート！ついに玉座へ…DWORDleの王、ここに君臨！ #DWORDle2",
+  shareEn: "My DWORDle 2 player card got updated to KING RANK! The DWORDle King has claimed the throne! #DWORDle2",
 };
 const RANK_KING_USO = {
   tier: 7,
@@ -170,6 +186,8 @@ const RANK_KING_USO = {
   titleJa: "DWORDlieの王",
   titleEn: "DWORDlie King",
   icon: "mask",
+  shareJa: "DWORDle 2 のプレイヤーカードが KING RANK にアップデート！嘘を極めし者…DWORDlieの王、ここに降臨！ #DWORDle2",
+  shareEn: "My DWORDle 2 player card got updated to KING RANK! Master of lies — the DWORDlie King has descended! #DWORDle2",
 };
 
 // カテゴリバッジ: 実績の 1 カテゴリを全解除すると獲得できる。
@@ -729,6 +747,7 @@ async function downloadCard(cv) {
 }
 
 async function shareCard(cv) {
+  const rank = rankForStats(collectStats());
   const blob = await new Promise((resolve) => cv.toBlob(resolve, "image/png"));
   if (blob && navigator.canShare) {
     const file = new File([blob], "dwordle2-player-card.png", { type: "image/png" });
@@ -737,7 +756,7 @@ async function shareCard(cv) {
         await navigator.share({
           files: [file],
           title: "DWORDle 2",
-          text: `${tr("DWORDle 2 のプレイヤーカードを発行しました！ #DWORDle2", "My DWORDle 2 player card! #DWORDle2")}\n${SHARE_URL}`,
+          text: `${tr(rank.shareJa, rank.shareEn)}\n${SHARE_URL}`,
         });
         return;
       } catch (error) {

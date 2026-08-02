@@ -6,10 +6,10 @@
 // classic テーマでは canvas ごと非表示になり、描画ループも止める。
 
 import * as THREE from "three";
-import { FX } from "../config.js?v=20260803-b";
-import { getSettings, onSettingsChange } from "../core/settings.js?v=20260803-b";
-import { onMotionPreferenceChange, shouldReduceMotion } from "../core/motion.js?v=20260803-b";
-import { viewportWidth, viewportHeight, uiZoom } from "./viewport.js?v=20260803-b";
+import { FX } from "../config.js?v=20260803-c";
+import { getSettings, onSettingsChange } from "../core/settings.js?v=20260803-c";
+import { onMotionPreferenceChange, shouldReduceMotion } from "../core/motion.js?v=20260803-c";
+import { viewportWidth, viewportHeight, uiZoom } from "./viewport.js?v=20260803-c";
 
 let renderer = null;
 let scene = null;

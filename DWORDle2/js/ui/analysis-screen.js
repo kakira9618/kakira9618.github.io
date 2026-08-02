@@ -3,19 +3,19 @@
 // 計算は Worker (js/core/analysis.worker.js) で行う。
 // ルート: #/analysis/<mode>/<startTime>
 
-import { el, clear } from "./dom.js?v=20260803-b";
-import { registerScreen, navigate, setViewMood } from "./app.js?v=20260803-b";
-import { findGame, MODES } from "../core/records.js?v=20260803-b";
-import { Logic } from "../core/logic.js?v=20260803-b";
-import { pidLabel } from "../core/problems.js?v=20260803-b";
-import { computeTruePatternIds, resultToPatternId, patternIdToStates } from "../core/analysis-core.js?v=20260803-b";
-import { checkOnEvent } from "../core/achievements.js?v=20260803-b";
-import { achievementCelebration } from "./toast.js?v=20260803-b";
-import { playSfx } from "../audio/sound.js?v=20260803-b";
-import { soundToggleButton } from "./sound-toggle.js?v=20260803-b";
-import { icon } from "./icons.js?v=20260803-b";
-import { currentLanguage, isEnglish, tr } from "../core/i18n.js?v=20260803-b";
-import { rowAriaLabel } from "./a11y.js?v=20260803-b";
+import { el, clear } from "./dom.js?v=20260803-c";
+import { registerScreen, navigate, setViewMood } from "./app.js?v=20260803-c";
+import { findGame, MODES } from "../core/records.js?v=20260803-c";
+import { Logic } from "../core/logic.js?v=20260803-c";
+import { pidLabel } from "../core/problems.js?v=20260803-c";
+import { computeTruePatternIds, resultToPatternId, patternIdToStates } from "../core/analysis-core.js?v=20260803-c";
+import { checkOnEvent } from "../core/achievements.js?v=20260803-c";
+import { achievementCelebration } from "./toast.js?v=20260803-c";
+import { playSfx } from "../audio/sound.js?v=20260803-c";
+import { soundToggleButton } from "./sound-toggle.js?v=20260803-c";
+import { icon } from "./icons.js?v=20260803-c";
+import { currentLanguage, isEnglish, tr } from "../core/i18n.js?v=20260803-c";
+import { rowAriaLabel } from "./a11y.js?v=20260803-c";
 
 let root = null;
 let worker = null;
@@ -151,7 +151,7 @@ function render(args) {
     record.gameMode === "uso" ? record.usoResults.map((r) => resultToPatternId(r)) : truePatternIds;
 
   if (worker) worker.terminate();
-  worker = new Worker(new URL("../core/analysis.worker.js?v=20260803-b", import.meta.url), { type: "module" });
+  worker = new Worker(new URL("../core/analysis.worker.js?v=20260803-c", import.meta.url), { type: "module" });
   worker.onmessage = (e) => {
     if (token !== renderToken) return; // 画面遷移後の古い結果
     const msg = e.data;
