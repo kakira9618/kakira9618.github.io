@@ -22,9 +22,9 @@ import {
   problemNumber,
   usesNewGenerator,
   LEVELS,
-} from "../js/core/problems.js?v=20260728-a";
-import { Logic } from "../js/core/logic.js?v=20260728-a";
-import { achievementIdsFromHistory } from "../js/core/achievements.js?v=20260728-a";
+} from "../js/core/problems.js?v=20260803-a";
+import { Logic } from "../js/core/logic.js?v=20260803-a";
+import { achievementIdsFromHistory } from "../js/core/achievements.js?v=20260803-a";
 
 // ---- 番号と内部 PID の対応 ----
 

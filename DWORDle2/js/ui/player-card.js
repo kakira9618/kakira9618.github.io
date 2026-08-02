@@ -3,28 +3,28 @@
 // カードのデザインはテーマによらず共通（ダーク + ランク色のフレーム）。
 // 通算 5 回プレイで解放（タイトルメニューの段階解放と同じ仕組み）。
 
-import { el, clear } from "./dom.js?v=20260728-a";
-import { registerScreen, navigate, redirect } from "./app.js?v=20260728-a";
-import { getHistory, countPlays, localDayNumber } from "../core/records.js?v=20260728-a";
+import { el, clear, effectiveZoom } from "./dom.js?v=20260803-a";
+import { registerScreen, navigate, redirect } from "./app.js?v=20260803-a";
+import { getHistory, countPlays, localDayNumber } from "../core/records.js?v=20260803-a";
 import {
   ACHIEVEMENTS,
   achievementProgress,
   formatAchievementProgress,
   getUnlocked,
-} from "../core/achievements.js?v=20260728-a";
-import { HIDDEN_THEMES } from "../core/settings.js?v=20260728-a";
-import { favoriteBgmTrackId, favoriteThemeId } from "../core/activity.js?v=20260728-a";
-import { BGM_TRACKS, currentBgmTrackId, playSfx } from "../audio/sound.js?v=20260728-a";
-import { loadJSON, saveJSON } from "../core/store.js?v=20260728-a";
-import { isDebugMode } from "../core/debug.js?v=20260728-a";
-import { toast } from "./toast.js?v=20260728-a";
-import { soundToggleButton } from "./sound-toggle.js?v=20260728-a";
-import { winBurst } from "../fx/effects.js?v=20260728-a";
-import { shouldReduceMotion } from "../core/motion.js?v=20260728-a";
-import { icon, iconSvg } from "./icons.js?v=20260728-a";
-import { announce } from "./a11y.js?v=20260728-a";
-import { SHARE_URL } from "../config.js?v=20260728-a";
-import { tr } from "../core/i18n.js?v=20260728-a";
+} from "../core/achievements.js?v=20260803-a";
+import { HIDDEN_THEMES } from "../core/settings.js?v=20260803-a";
+import { favoriteBgmTrackId, favoriteThemeId } from "../core/activity.js?v=20260803-a";
+import { BGM_TRACKS, currentBgmTrackId, playSfx } from "../audio/sound.js?v=20260803-a";
+import { loadJSON, saveJSON } from "../core/store.js?v=20260803-a";
+import { isDebugMode } from "../core/debug.js?v=20260803-a";
+import { toast } from "./toast.js?v=20260803-a";
+import { soundToggleButton } from "./sound-toggle.js?v=20260803-a";
+import { winBurst } from "../fx/effects.js?v=20260803-a";
+import { shouldReduceMotion } from "../core/motion.js?v=20260803-a";
+import { icon, iconSvg } from "./icons.js?v=20260803-a";
+import { announce } from "./a11y.js?v=20260803-a";
+import { SHARE_URL } from "../config.js?v=20260803-a";
+import { tr } from "../core/i18n.js?v=20260803-a";
 
 // 解放しきい値（タイトルメニューの MENU_UNLOCKS と同じ値を参照させる）
 export const CARD_UNLOCK_PLAYS = 5;
@@ -853,8 +853,11 @@ function attachCardGestures(stage, tiltEl) {
   };
   const applyZoom = () => {
     constrainPan();
+    // panX/panY は画面座標（大画面での全体拡大 --app-zoom 適用後の px）で持つ。
+    // transform の px は拡大前の座標系なので、適用時にだけ倍率で割って換算する
+    const uiZoom = effectiveZoom(stage);
     tiltEl.style.transform =
-      `translate3d(${panX.toFixed(2)}px, ${panY.toFixed(2)}px, 0) scale(${zoomScale.toFixed(4)})`;
+      `translate3d(${(panX / uiZoom).toFixed(2)}px, ${(panY / uiZoom).toFixed(2)}px, 0) scale(${zoomScale.toFixed(4)})`;
   };
   const stopTilt = () => {
     gestureRect = null;

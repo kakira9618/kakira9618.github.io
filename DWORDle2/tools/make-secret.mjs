@@ -7,7 +7,7 @@
 //
 // 隠し実績の名前・説明や、デバッグモードのキーワードを足し引きするときに使う。
 // ソースに平文を残さないため、結果だけをコードへ貼ること。
-import { conceal, reveal, fingerprint } from "../js/core/secret.js?v=20260728-a";
+import { conceal, reveal, fingerprint } from "../js/core/secret.js?v=20260803-a";
 
 const [command, value] = process.argv.slice(2);
 if (!command || value === undefined) {

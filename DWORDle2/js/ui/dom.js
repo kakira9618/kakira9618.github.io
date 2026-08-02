@@ -38,6 +38,15 @@ export function clear(node) {
   return node;
 }
 
+// 祖先の CSS zoom（大画面での全体拡大。style.css の --app-zoom）の実効倍率。
+// getBoundingClientRect は zoom 適用後の px を、offsetWidth は適用前の px を返す差を
+// 利用する。rect や clientX 由来の座標を、style の px や scroll 量（適用前の座標系）へ
+// 書き戻すときは、この値で割ってから使う。
+export function effectiveZoom(elem) {
+  const layoutWidth = elem.offsetWidth;
+  return layoutWidth ? elem.getBoundingClientRect().width / layoutWidth : 1;
+}
+
 export function fmtDateTime(unixSec) {
   const d = new Date(unixSec * 1000);
   const pad = (n) => String(n).padStart(2, "0");

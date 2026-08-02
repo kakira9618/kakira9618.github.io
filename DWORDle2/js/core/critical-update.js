@@ -15,7 +15,7 @@
 // - リロードループに入らない。新しいコードが載らないまま同じフラグを受け取り続けても、
 //   1 つのハッシュにつき 1 回しか強制しない
 
-import { loadJSON, saveJSON } from "./store.js?v=20260728-a";
+import { loadJSON, saveJSON } from "./store.js?v=20260803-a";
 
 export const CRITICAL_RELOAD = {
   noticeMs: 5000, // 予告してから実際にリロードするまで

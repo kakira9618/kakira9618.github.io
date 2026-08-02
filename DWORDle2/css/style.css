@@ -17,6 +17,10 @@
   --radius: 10px;
   /* モーダルと画面端の最小余白（backdrop の padding と .modal の幅上限で共用） */
   --modal-edge-gap: 18px;
+  /* 大画面での全体拡大率。#app とモーダル・トースト等のオーバーレイに zoom として掛かる。
+     高さに十分な余裕がある画面（4K モニタ等）でだけ、直下の @media が 1 より大きくする。
+     従来想定の画面（ノート PC・スマホ・タブレット）では 1 のまま＝見た目は一切変わらない */
+  --app-zoom: 1;
 
   /* 判定色（classic 既定。theme-cyber で上書き） */
   --tile-unused: #787c7e;
@@ -59,6 +63,28 @@
      バーの伸び始めが遅くなりすぎる（70ms だと最後は 1.7 秒待ち） */
   --bar-grow-dur: 0.7s;
   --bar-grow-stagger: 30ms;
+}
+
+/* 大画面での全体拡大（--app-zoom の段階）。500px コラムのままでは 4K などで
+   コンテンツが小さく孤立するため、UI 全体を等倍拡大して FHD 相当の見え方に寄せる。
+   段の閾値は「拡大後の実効高さが、設計上の最大レイアウト（ヘッダー + 10 段の盤面 +
+   キーボード ≒ 1000px）を収められる」高さで刻む。幅の条件は、拡大後のコラムが
+   余白込みで収まることに加え、タブレット縦持ち（iPad Pro 12.9 で 1024px 幅）を
+   対象外にするためのもの。zoom 未対応の旧ブラウザでは #app の高さ補正だけが残って
+   崩れるため、@supports で対応環境に限定する */
+@supports (zoom: 2) {
+  @media (min-width: 1200px) and (min-height: 1250px) {
+    :root { --app-zoom: 1.2; }
+  }
+  @media (min-width: 1200px) and (min-height: 1450px) {
+    :root { --app-zoom: 1.4; }
+  }
+  @media (min-width: 1200px) and (min-height: 1750px) {
+    :root { --app-zoom: 1.7; }
+  }
+  @media (min-width: 1280px) and (min-height: 2050px) {
+    :root { --app-zoom: 2; }
+  }
 }
 
 body.theme-cyber {
@@ -350,14 +376,17 @@ body.theme-pop #bgPop {
   z-index: 1;
   width: var(--col-w);
   height: 100vh;
-  height: var(--app-height, 100vh);
+  /* zoom は vh 由来の長さにも掛かるため、高さは拡大率で割って
+     「拡大後にちょうど画面いっぱい」に合わせる（--app-zoom: 1 なら従来どおり） */
+  height: calc(var(--app-height, 100vh) / var(--app-zoom));
   margin: 0 auto;
   display: flex;
   flex-direction: column;
+  zoom: var(--app-zoom);
 }
 @supports (height: 100dvh) {
   #app {
-    height: 100dvh;
+    height: calc(100dvh / var(--app-zoom));
   }
 }
 
@@ -1131,7 +1160,10 @@ body.theme-cyber .key.state-correct { box-shadow: 0 0 10px color-mix(in srgb, va
      ダイアログが右寄りに見えてしまう */
   width: min(440px, 100vw - var(--modal-edge-gap) * 2);
   max-height: 86vh; /* dvh 未対応ブラウザ向けフォールバック */
-  max-height: 86dvh;
+  /* 大画面では #app と同率で拡大する。zoom は dvh 由来の長さにも掛かるため拡大率で割る
+     （幅上限は拡大が働く画面では 440px 側が勝つので補正不要） */
+  max-height: calc(86dvh / var(--app-zoom));
+  zoom: var(--app-zoom);
   overflow-y: auto;
   touch-action: var(--touch-action-scroll); /* スクロールコンテナには祖先の指定が届かないため個別に指定 */
   background: var(--bg-panel-2);
@@ -1341,7 +1373,8 @@ body.theme-pop.mode-normal .modal input[type="number"] {
   z-index: 200;
   left: 0;
   right: 0;
-  top: calc(var(--header-h) + 14px);
+  /* ヘッダーは #app と一緒に拡大されるので、その分だけ下げる */
+  top: calc((var(--header-h) + 14px) * var(--app-zoom));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1349,6 +1382,7 @@ body.theme-pop.mode-normal .modal input[type="number"] {
   pointer-events: none;
 }
 .toast {
+  zoom: var(--app-zoom); /* 大画面では #app と同率で拡大 */
   background: var(--bg-panel-2);
   border: 1px solid var(--border);
   color: var(--fg);
@@ -1384,6 +1418,11 @@ body.theme-cyber .toast {
 }
 #unlock-layer.is-active {
   display: grid;
+}
+/* 解放演出のカード類も大画面では #app と同率で拡大する（レイヤー自体は
+   fixed + inset: 0 のままにし、中身だけ拡大して中央寄せを保つ） */
+#unlock-layer > * {
+  zoom: var(--app-zoom);
 }
 
 /* Extra BGM 解放演出 */
@@ -3692,6 +3731,7 @@ body.reduce-motion .player-card-wrap.motion::after,
   justify-items: center;
   gap: 16px;
   text-align: center;
+  zoom: var(--app-zoom); /* 大画面では本編（#app）と同率で拡大 */
   animation: entryGateIn 0.55s cubic-bezier(0, 0.7, 0.25, 1) both;
 }
 .entry-gate-note {

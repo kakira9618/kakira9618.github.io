@@ -1,10 +1,10 @@
 // タイトル画面。モード選択・問題選択の入り口。
 // 右上のマスクボタンで DWORDlie（裏モード）に切り替わる。
 
-import { el, clear } from "./dom.js?v=20260728-a";
-import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260728-a";
-import { countPlays, getCurrentGame, getHistory, isAlreadyPlayed } from "../core/records.js?v=20260728-a";
-import { isDebugMode } from "../core/debug.js?v=20260728-a";
+import { el, clear, effectiveZoom } from "./dom.js?v=20260803-a";
+import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260803-a";
+import { countPlays, getCurrentGame, getHistory, isAlreadyPlayed } from "../core/records.js?v=20260803-a";
+import { isDebugMode } from "../core/debug.js?v=20260803-a";
 import {
   LEVELS,
   PID,
@@ -15,25 +15,25 @@ import {
   pidLabel,
   pidRangeForLevel,
   todayPID,
-} from "../core/problems.js?v=20260728-a";
-import { getSettings, setSetting } from "../core/settings.js?v=20260728-a";
-import { loadJSON, saveJSON } from "../core/store.js?v=20260728-a";
-import { importFromLocalStorage, scanLegacyHistory } from "../core/migrate.js?v=20260728-a";
-import { playSfx } from "../audio/sound.js?v=20260728-a";
-import { toast, extraShotUnlockCelebration } from "./toast.js?v=20260728-a";
-import { claimExtraShotUnlockNotice } from "../core/extra-shot.js?v=20260728-a";
-import { showModal } from "./modal.js?v=20260728-a";
-import { finishHistoryImport } from "./history-import.js?v=20260728-a";
-import { showFirstTutorial, showHelpModal } from "./help.js?v=20260728-a";
-import { confirmAndStart } from "./game-screen.js?v=20260728-a";
-import { soundToggleButton } from "./sound-toggle.js?v=20260728-a";
-import { burstAtElement } from "../fx/effects.js?v=20260728-a";
-import { shouldReduceMotion } from "../core/motion.js?v=20260728-a";
-import { icon } from "./icons.js?v=20260728-a";
-import { APP_VERSION } from "../config.js?v=20260728-a";
-import { SOURCE_HASH } from "../version.js?v=20260728-a";
-import { localizedLevel, tr } from "../core/i18n.js?v=20260728-a";
-import { CARD_UNLOCK_PLAYS } from "./player-card.js?v=20260728-a";
+} from "../core/problems.js?v=20260803-a";
+import { getSettings, setSetting } from "../core/settings.js?v=20260803-a";
+import { loadJSON, saveJSON } from "../core/store.js?v=20260803-a";
+import { importFromLocalStorage, scanLegacyHistory } from "../core/migrate.js?v=20260803-a";
+import { playSfx } from "../audio/sound.js?v=20260803-a";
+import { toast, extraShotUnlockCelebration } from "./toast.js?v=20260803-a";
+import { claimExtraShotUnlockNotice } from "../core/extra-shot.js?v=20260803-a";
+import { showModal } from "./modal.js?v=20260803-a";
+import { finishHistoryImport } from "./history-import.js?v=20260803-a";
+import { showFirstTutorial, showHelpModal } from "./help.js?v=20260803-a";
+import { confirmAndStart } from "./game-screen.js?v=20260803-a";
+import { soundToggleButton } from "./sound-toggle.js?v=20260803-a";
+import { burstAtElement } from "../fx/effects.js?v=20260803-a";
+import { shouldReduceMotion } from "../core/motion.js?v=20260803-a";
+import { icon } from "./icons.js?v=20260803-a";
+import { APP_VERSION } from "../config.js?v=20260803-a";
+import { SOURCE_HASH } from "../version.js?v=20260803-a";
+import { localizedLevel, tr } from "../core/i18n.js?v=20260803-a";
+import { CARD_UNLOCK_PLAYS } from "./player-card.js?v=20260803-a";
 
 let root = null;
 let legacyImportCheckDone = false;
@@ -474,6 +474,9 @@ function render() {
       // body 直下 (z:120) に同じ位置で重ね、明るいまま見せて矢印で場所を指す。
       // 複製のタップでもそのまま切り替えられる。
       const rect = modeToggle.getBoundingClientRect();
+      // 複製・矢印は body 直下（--app-zoom 非適用）に置くので、rect の座標・寸法
+      // （拡大後の px）はそのまま使える。中のアイコンだけは拡大率を掛けて描く
+      const uiZoom = effectiveZoom(modeToggle);
       let spotlight = null;
       let guideArrow = null;
       let closeModal = () => {};
@@ -490,16 +493,16 @@ function render() {
               switchToUso();
             },
           },
-          icon("moon")
+          icon("moon", Math.round(20 * uiZoom))
         );
         guideArrow = el(
           "div",
           {
             class: "unlock-arrow",
             "aria-hidden": "true",
-            style: { left: `${rect.left + rect.width / 2}px`, top: `${rect.bottom + USO_ARROW_GAP_PX}px` },
+            style: { left: `${rect.left + rect.width / 2}px`, top: `${rect.bottom + USO_ARROW_GAP_PX * uiZoom}px` },
           },
-          icon("arrowUp", USO_ARROW_SIZE)
+          icon("arrowUp", Math.round(USO_ARROW_SIZE * uiZoom))
         );
         document.body.append(spotlight, guideArrow);
       }
