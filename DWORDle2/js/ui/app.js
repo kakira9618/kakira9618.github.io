@@ -10,13 +10,13 @@
 //   #/result/<mode>/<startTime>   結果画面
 //   #/analysis/<mode>/<startTime> 分析画面
 
-import { loadJSON, saveJSON } from "../core/store.js?v=20260803-d";
-import { setUsoMood } from "../audio/sound.js?v=20260803-d";
-import { setBackgroundMood } from "../fx/effects.js?v=20260803-d";
-import { setPopBackgroundMood } from "../fx/pop-background.js?v=20260803-d";
-import { closeAllModals } from "./modal.js?v=20260803-d";
-import { trackScreen } from "../core/activity.js?v=20260803-d";
-import { trackPageView } from "../core/analytics.js?v=20260803-d";
+import { loadJSON, saveJSON } from "../core/store.js?v=20260803-e";
+import { setUsoMood } from "../audio/sound.js?v=20260803-e";
+import { setBackgroundMood } from "../fx/effects.js?v=20260803-e";
+import { setPopBackgroundMood } from "../fx/pop-background.js?v=20260803-e";
+import { closeAllModals } from "./modal.js?v=20260803-e";
+import { trackScreen } from "../core/activity.js?v=20260803-e";
+import { trackPageView } from "../core/analytics.js?v=20260803-e";
 
 const screens = new Map(); // name -> { element, render(params) }
 let currentName = null;

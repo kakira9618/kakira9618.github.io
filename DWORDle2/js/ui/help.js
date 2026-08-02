@@ -3,15 +3,15 @@
 // 参照した判定なのかを線とハイライトで順番に示す。
 // DWORDle では解説後、同じパネルを使って「全部緑でも不正解」の例を再生する。
 
-import { el, effectiveZoom } from "./dom.js?v=20260803-d";
-import { showModal } from "./modal.js?v=20260803-d";
-import { playSfx } from "../audio/sound.js?v=20260803-d";
-import { queryWordPair, usoConvert } from "../core/logic.js?v=20260803-d";
-import { currentLanguage } from "../core/i18n.js?v=20260803-d";
-import { getSettings } from "../core/settings.js?v=20260803-d";
-import { shouldReduceMotion } from "../core/motion.js?v=20260803-d";
-import { isExtraShotUnlocked } from "../core/extra-shot.js?v=20260803-d";
-import { loadJSON, saveJSON } from "../core/store.js?v=20260803-d";
+import { el, effectiveZoom } from "./dom.js?v=20260803-e";
+import { showModal } from "./modal.js?v=20260803-e";
+import { playSfx } from "../audio/sound.js?v=20260803-e";
+import { queryWordPair, usoConvert } from "../core/logic.js?v=20260803-e";
+import { currentLanguage } from "../core/i18n.js?v=20260803-e";
+import { getSettings } from "../core/settings.js?v=20260803-e";
+import { shouldReduceMotion } from "../core/motion.js?v=20260803-e";
+import { isExtraShotUnlocked } from "../core/extra-shot.js?v=20260803-e";
+import { loadJSON, saveJSON } from "../core/store.js?v=20260803-e";
 
 // 判定色の呼び名。ハイコントラスト設定では 緑→オレンジ / 黄→青 に置き換わる。
 // *Chip は凡例の 1 文字ラベル（日本語はオレンジを「橙」と略記）。

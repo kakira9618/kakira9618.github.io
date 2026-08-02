@@ -1,7 +1,7 @@
 // 分析コアのテスト。
 // 実行: node test/analysis.test.mjs
 
-import { Logic, queryWordPair } from "../js/core/logic.js?v=20260803-d";
+import { Logic, queryWordPair } from "../js/core/logic.js?v=20260803-e";
 import {
   encodeWords,
   patternIdFast,
@@ -10,8 +10,8 @@ import {
   computeTruePatternIds,
   analyzeGame,
   makeRng,
-} from "../js/core/analysis-core.js?v=20260803-d";
-import { ALL_WORDS } from "../js/data/words.js?v=20260803-d";
+} from "../js/core/analysis-core.js?v=20260803-e";
+import { ALL_WORDS } from "../js/data/words.js?v=20260803-e";
 
 let failures = 0;
 function check(cond, message) {

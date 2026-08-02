@@ -58,9 +58,12 @@
   --unlock-card-fg-dim: #a7b0bf;
   --font-display: "Avenir Next", "Helvetica Neue", "Segoe UI", sans-serif;
 
-  /* 設定「判定マーク」（body.state-symbols）でタイル右下に出す記号の寸法 */
-  --state-symbol-size: calc(var(--tile-size) * 0.3);
-  --state-symbol-inset: calc(var(--tile-size) * 0.05);
+  /* 設定「判定マーク」（body.state-symbols）でタイル右下に出す記号の寸法。
+     scale はタイル内の文字サイズに対する比率（em 基準なので盤面・結果・分析・遊び方の
+     どのサイズのタイルでも同じ見た目の比率になる）。inset は記号サイズ基準の右下余白 */
+  --state-symbol-scale: 0.58;
+  --state-symbol-scale-used: 0.48; /* △ は字形が大きく見えるため少し絞る */
+  --state-symbol-inset: 0.17em;
 
   /* 統計・分析のバーが伸びるアニメーション（.bar-grow）。
      stagger は統計モーダルで最大 25 本が連なるため、大きくすると後半の
@@ -1001,28 +1004,32 @@ body.theme-cyber .tile.state-unused {
   box-shadow: none;
 }
 /* 設定「判定マーク」: 色だけに頼らず判定を区別できるよう（WCAG 2.1「1.4.1 色の使用」）、
-   判定済みタイルの右下に記号を重ねる。文字色はタイルのインク色（--tile-ink-*）を継承
-   するので、テーマ・ハイコントラストの組み合わせでもコントラストが保たれる。
-   タイルは role="img" + aria-label で読み上げ済みなので、記号は支援技術には出さない。 */
-body.state-symbols .tile.state-unused,
-body.state-symbols .tile.state-used,
-body.state-symbols .tile.state-correct {
+   判定済みタイルの右下に記号を重ねる。盤面 (.tile.state-*) のほか、結果・分析・
+   遊び方の小タイル (.rcell の unused/used/correct) にも同じ記号を出す。
+   文字色はタイルのインク色（--tile-ink-*）を継承するので、テーマ・ハイコントラストの
+   組み合わせでもコントラストが保たれる。
+   タイルは role="img" + aria-label（.rcell は aria-hidden）で読み上げ済みなので、
+   記号が支援技術に二重に出ることはない。 */
+body.state-symbols :is(.tile.state-unused, .tile.state-used, .tile.state-correct,
+    .rcell.unused, .rcell.used, .rcell.correct) {
   position: relative;
 }
-body.state-symbols .tile.state-unused::after,
-body.state-symbols .tile.state-used::after,
-body.state-symbols .tile.state-correct::after {
+body.state-symbols :is(.tile.state-unused, .tile.state-used, .tile.state-correct,
+    .rcell.unused, .rcell.used, .rcell.correct)::after {
   position: absolute;
   right: var(--state-symbol-inset);
   bottom: var(--state-symbol-inset);
-  font-size: var(--state-symbol-size);
+  font-size: calc(1em * var(--state-symbol-scale));
   font-weight: 700;
   line-height: 1;
   pointer-events: none;
 }
-body.state-symbols .tile.state-correct::after { content: "●"; }
-body.state-symbols .tile.state-used::after { content: "△"; }
-body.state-symbols .tile.state-unused::after { content: "×"; }
+body.state-symbols :is(.tile.state-correct, .rcell.correct)::after { content: "●"; }
+body.state-symbols :is(.tile.state-used, .rcell.used)::after {
+  content: "△";
+  font-size: calc(1em * var(--state-symbol-scale-used));
+}
+body.state-symbols :is(.tile.state-unused, .rcell.unused)::after { content: "×"; }
 .row.shake {
   animation: shake var(--shake-ms, 500ms) ease;
 }

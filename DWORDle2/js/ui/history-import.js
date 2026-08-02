@@ -1,11 +1,11 @@
 // 履歴インポート後のキャッシュ更新・実績復元・通知を各画面で共通化する。
 
-import { _reload } from "../core/records.js?v=20260803-d";
-import { checkOnEvent, reconcileAchievementsFromHistory } from "../core/achievements.js?v=20260803-d";
-import { bgmTracksUnlockedBy } from "../audio/sound.js?v=20260803-d";
-import { hiddenThemesUnlockedBy } from "../core/settings.js?v=20260803-d";
-import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./toast.js?v=20260803-d";
-import { tr } from "../core/i18n.js?v=20260803-d";
+import { _reload } from "../core/records.js?v=20260803-e";
+import { checkOnEvent, reconcileAchievementsFromHistory } from "../core/achievements.js?v=20260803-e";
+import { bgmTracksUnlockedBy } from "../audio/sound.js?v=20260803-e";
+import { hiddenThemesUnlockedBy } from "../core/settings.js?v=20260803-e";
+import { toast, achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } from "./toast.js?v=20260803-e";
+import { tr } from "../core/i18n.js?v=20260803-e";
 
 // withAchievements=false のとき（「実績は解除しない」を選んだインポート）は、
 // 実績の再集計も migrate 実績も走らせない。取り込まれたレコード自体は

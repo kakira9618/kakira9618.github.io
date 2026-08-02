@@ -14,9 +14,9 @@ globalThis.localStorage = {
   removeItem: (key) => storage.delete(key),
 };
 
-const { Logic, CELL } = await import("../js/core/logic.js?v=20260803-d");
-const { ALL_WORDS } = await import("../js/data/words.js?v=20260803-d");
-const records = await import("../js/core/records.js?v=20260803-d");
+const { Logic, CELL } = await import("../js/core/logic.js?v=20260803-e");
+const { ALL_WORDS } = await import("../js/data/words.js?v=20260803-e");
+const records = await import("../js/core/records.js?v=20260803-e");
 const { MODES } = records;
 
 let scenarioSerial = 0;

@@ -9,9 +9,9 @@ globalThis.localStorage = {
   removeItem: (key) => storage.delete(key),
 };
 
-const { DEFAULT_SETTINGS, HIDDEN_THEMES, normalizeVolume } = await import("../js/core/settings.js?v=20260803-d");
-const { shouldReduceMotion } = await import("../js/core/motion.js?v=20260803-d");
-const { AUDIO } = await import("../js/config.js?v=20260803-d");
+const { DEFAULT_SETTINGS, HIDDEN_THEMES, normalizeVolume } = await import("../js/core/settings.js?v=20260803-e");
+const { shouldReduceMotion } = await import("../js/core/motion.js?v=20260803-e");
+const { AUDIO } = await import("../js/config.js?v=20260803-e");
 
 // 音量は AUDIO.volumeUnityPercent (50) が従来の音量で、100 まで上げると 2 倍になる
 assert.equal(DEFAULT_SETTINGS.sfxVolume, AUDIO.volumeUnityPercent);

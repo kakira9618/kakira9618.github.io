@@ -17,8 +17,8 @@
 //
 // 原作と同じ Cls. 番号は必ず同じ問題になるよう、リスト内容・順序を変更しないこと。
 
-import { ALL_WORDS, EASY_WORDS } from "../data/words.js?v=20260803-d";
-import { FREQ_ORDER } from "../data/levels.js?v=20260803-d";
+import { ALL_WORDS, EASY_WORDS } from "../data/words.js?v=20260803-e";
+import { FREQ_ORDER } from "../data/levels.js?v=20260803-e";
 
 export const PID = {
   EASY_MIN: 1,

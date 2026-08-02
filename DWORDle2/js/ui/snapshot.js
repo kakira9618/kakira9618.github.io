@@ -3,12 +3,12 @@
 // canvas に再レンダリングして PNG としてダウンロードする。
 // コンテンツ配置は全テーマ共通で、配色・装飾だけを現在のテーマに合わせる。
 
-import { SHARE_URL, tileColorsFor, tileInkFor } from "../config.js?v=20260803-d";
-import { MODES, getExtraShot, getExtraShotResult } from "../core/records.js?v=20260803-d";
-import { pidLabel } from "../core/problems.js?v=20260803-d";
-import { CELL } from "../core/logic.js?v=20260803-d";
-import { getSettings } from "../core/settings.js?v=20260803-d";
-import { drawCrown3D } from "./crown.js?v=20260803-d";
+import { SHARE_URL, tileColorsFor, tileInkFor } from "../config.js?v=20260803-e";
+import { MODES, getExtraShot, getExtraShotResult } from "../core/records.js?v=20260803-e";
+import { pidLabel } from "../core/problems.js?v=20260803-e";
+import { CELL } from "../core/logic.js?v=20260803-e";
+import { getSettings } from "../core/settings.js?v=20260803-e";
+import { drawCrown3D } from "./crown.js?v=20260803-e";
 
 // レイアウト定数（すべて基準幅 720px に対する px）
 const SS = {
@@ -21,7 +21,26 @@ const SS = {
   tileGap: 8,
   tileRadius: 10,
   footerSize: 18,
+  /* 設定「判定マーク」ON のとき判定タイルの右下に描く記号。比率は CSS の
+     --state-symbol-scale 系と同じ見た目になるようタイル幅基準で合わせてある */
+  symbolScale: 0.3, // ● と × のサイズ（タイル幅比）
+  symbolScaleUsed: 0.25, // △ は字形が大きく見えるため少し絞る
+  symbolInset: 0.055, // 右下の余白（タイル幅比）
 };
+
+const STATE_SYMBOL = { [CELL.CORRECT]: "●", [CELL.USED]: "△", [CELL.UNUSED]: "×" };
+
+function drawStateSymbol(ctx, stateName, x, y, ink) {
+  const size = SS.tile * (stateName === CELL.USED ? SS.symbolScaleUsed : SS.symbolScale);
+  const inset = SS.tile * SS.symbolInset;
+  ctx.save();
+  ctx.font = `700 ${size}px "Avenir Next", sans-serif`;
+  ctx.textAlign = "right";
+  ctx.textBaseline = "bottom";
+  ctx.fillStyle = ink;
+  ctx.fillText(STATE_SYMBOL[stateName], x + SS.tile - inset, y + SS.tile - inset);
+  ctx.restore();
+}
 
 const THEME_STYLES = {
   cyber: {
@@ -107,7 +126,7 @@ function extraShotInfo(record, logic) {
 
 // record + logic + 表示用判定から PNG canvas を作る
 export function renderResultCanvas(record, logic, displayRows) {
-  const { theme, highContrast } = getSettings();
+  const { theme, highContrast, stateSymbols } = getSettings();
   const st = THEME_STYLES[theme] ?? THEME_STYLES.cyber;
   const tileColors = tileColorsFor(theme, highContrast);
   const tileInk = tileInkFor(theme);
@@ -243,6 +262,7 @@ export function renderResultCanvas(record, logic, displayRows) {
       ctx.shadowBlur = 0;
       ctx.fillStyle = inkFor(s);
       ctx.fillText(record.guessWord[r][i].toUpperCase(), x + SS.tile / 2, y + SS.tile / 2 + 1);
+      if (stateSymbols) drawStateSymbol(ctx, s, x, y, inkFor(s));
     }
     y += SS.tile + SS.tileGap;
   }
@@ -276,6 +296,7 @@ export function renderResultCanvas(record, logic, displayRows) {
       ctx.fill();
       ctx.fillStyle = inkFor(stateName);
       ctx.fillText(extraInfo.word[i].toUpperCase(), x + SS.tile / 2, rowY + SS.tile / 2 + 1);
+      if (stateSymbols) drawStateSymbol(ctx, stateName, x, rowY, inkFor(stateName));
     }
     ctx.fillStyle = st.dim;
     ctx.font = `600 14px "Avenir Next", sans-serif`;

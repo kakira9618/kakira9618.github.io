@@ -1,10 +1,10 @@
 // モーダルダイアログ。
 
-import { el, clear } from "./dom.js?v=20260803-d";
-import { playSfx } from "../audio/sound.js?v=20260803-d";
-import { tr } from "../core/i18n.js?v=20260803-d";
-import { logEvent } from "../core/activity.js?v=20260803-d";
-import { icon } from "./icons.js?v=20260803-d";
+import { el, clear } from "./dom.js?v=20260803-e";
+import { playSfx } from "../audio/sound.js?v=20260803-e";
+import { tr } from "../core/i18n.js?v=20260803-e";
+import { logEvent } from "../core/activity.js?v=20260803-e";
+import { icon } from "./icons.js?v=20260803-e";
 
 const layer = () => document.getElementById("modal-layer");
 const openCloseFns = new Set(); // closeAllModals 用

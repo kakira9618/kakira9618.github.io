@@ -2,8 +2,8 @@
 // 隠し実績は用意されている個数も伏せるため、一覧にも進捗にも未解放分は出さない。
 // ルート: #/achievements
 
-import { el, clear, fmtDateTime } from "./dom.js?v=20260803-d";
-import { registerScreen, navigate } from "./app.js?v=20260803-d";
+import { el, clear, fmtDateTime } from "./dom.js?v=20260803-e";
+import { registerScreen, navigate } from "./app.js?v=20260803-e";
 import {
   ACHIEVEMENT_CATEGORIES,
   HIDDEN_ACHIEVEMENTS,
@@ -11,12 +11,12 @@ import {
   achievementProgress,
   formatAchievementProgress,
   getUnlocked,
-} from "../core/achievements.js?v=20260803-d";
-import { playSfx } from "../audio/sound.js?v=20260803-d";
-import { soundToggleButton } from "./sound-toggle.js?v=20260803-d";
-import { icon } from "./icons.js?v=20260803-d";
-import { localizedAchievement, tr } from "../core/i18n.js?v=20260803-d";
-import { isDebugMode } from "../core/debug.js?v=20260803-d";
+} from "../core/achievements.js?v=20260803-e";
+import { playSfx } from "../audio/sound.js?v=20260803-e";
+import { soundToggleButton } from "./sound-toggle.js?v=20260803-e";
+import { icon } from "./icons.js?v=20260803-e";
+import { localizedAchievement, tr } from "../core/i18n.js?v=20260803-e";
+import { isDebugMode } from "../core/debug.js?v=20260803-e";
 
 let root = null;
 

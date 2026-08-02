@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { Logic } from "../js/core/logic.js?v=20260803-d";
+import { Logic } from "../js/core/logic.js?v=20260803-e";
 
 const storage = new Map();
 globalThis.localStorage = {
@@ -39,9 +39,9 @@ storage.set(
   })
 );
 
-const { scanLegacyHistory, importFromLocalStorage } = await import("../js/core/migrate.js?v=20260803-d");
-const { getHistory } = await import("../js/core/records.js?v=20260803-d");
-const { achievementIdsFromHistory } = await import("../js/core/achievements.js?v=20260803-d");
+const { scanLegacyHistory, importFromLocalStorage } = await import("../js/core/migrate.js?v=20260803-e");
+const { getHistory } = await import("../js/core/records.js?v=20260803-e");
+const { achievementIdsFromHistory } = await import("../js/core/achievements.js?v=20260803-e");
 
 assert.equal(scanLegacyHistory().length, 2, "both original games should be detected");
 assert.equal(importFromLocalStorage(), 2);
@@ -56,7 +56,7 @@ assert(achievementIds.has("uso-clear"));
 
 // ---- (startTime, gameMode) の衝突: 別 problemID は 1 秒ずらして共存し、再インポートは冪等 ----
 {
-  const { addImportedGames } = await import("../js/core/records.js?v=20260803-d");
+  const { addImportedGames } = await import("../js/core/records.js?v=20260803-e");
   const makeImported = (problemID) => {
     const logic = new Logic(problemID);
     return {
@@ -76,7 +76,7 @@ assert(achievementIds.has("uso-clear"));
 
 // ---- 壊れたレコードの除外: No.0（デイリーエイリアス）や不正な Guess は取り込まない ----
 {
-  const { importFromText } = await import("../js/core/migrate.js?v=20260803-d");
+  const { importFromText } = await import("../js/core/migrate.js?v=20260803-e");
   const before = getHistory().length;
   const { added } = await importFromText(JSON.stringify({
     app: "dwordle2",
@@ -95,8 +95,8 @@ assert(achievementIds.has("uso-clear"));
 // 未知の gameMode をそのまま履歴へ入れると MODES[gameMode] を引く画面が例外で開けなくなり、
 // 非数値の startTime は履歴のソートと結果画面 URL のキーを壊す。
 {
-  const { importFromText } = await import("../js/core/migrate.js?v=20260803-d");
-  const { MODES } = await import("../js/core/records.js?v=20260803-d");
+  const { importFromText } = await import("../js/core/migrate.js?v=20260803-e");
+  const { MODES } = await import("../js/core/records.js?v=20260803-e");
   const before = getHistory().length;
   const { added } = await importFromText(
     JSON.stringify({
@@ -122,8 +122,8 @@ assert(achievementIds.has("uso-clear"));
 
 // ---- 壊れた usoResults: 画面が各行を配列として反復するので、形が完全なものだけ通す ----
 {
-  const { importFromText } = await import("../js/core/migrate.js?v=20260803-d");
-  const { CELL } = await import("../js/core/logic.js?v=20260803-d");
+  const { importFromText } = await import("../js/core/migrate.js?v=20260803-e");
+  const { CELL } = await import("../js/core/logic.js?v=20260803-e");
   const goodRow = [CELL.UNUSED, CELL.USED, CELL.CORRECT, CELL.UNUSED, CELL.USED];
   const { added } = await importFromText(
     JSON.stringify({
@@ -181,7 +181,7 @@ assert(achievementIds.has("uso-clear"));
 
 // ---- 実績を解除しないインポート: noAchievements が付き、実績判定から恒久的に除外される ----
 {
-  const { importFromText } = await import("../js/core/migrate.js?v=20260803-d");
+  const { importFromText } = await import("../js/core/migrate.js?v=20260803-e");
   const logic = new Logic(11);
   storage.set(
     "/Tonyu/Projects/dwordle/history_3.json",
@@ -216,7 +216,7 @@ assert(achievementIds.has("uso-clear"));
 
 // ---- 段階解放のプレイ回数: インポートは数えず、同じ問題の再プレイは数える ----
 {
-  const { addFinishedGame, countPlays } = await import("../js/core/records.js?v=20260803-d");
+  const { addFinishedGame, countPlays } = await import("../js/core/records.js?v=20260803-e");
   assert.equal(countPlays(), 1, "imported records must not count toward menu unlock plays");
   const logic = new Logic(7);
   const play = () =>
@@ -234,7 +234,7 @@ assert(achievementIds.has("uso-clear"));
 
 // ---- 貼り付けからの取り込みは本作のエクスポート専用（旧作の履歴は自動検出へ誘導する）----
 {
-  const { importFromText } = await import("../js/core/migrate.js?v=20260803-d");
+  const { importFromText } = await import("../js/core/migrate.js?v=20260803-e");
   const before = getHistory().length;
   await assert.rejects(
     () => importFromText(JSON.stringify({
@@ -251,8 +251,8 @@ assert(achievementIds.has("uso-clear"));
 
 // ---- エクスポート JSON の署名: 書き出したままなら ok、1 文字でも変われば invalid ----
 {
-  const { exportJSON } = await import("../js/core/records.js?v=20260803-d");
-  const { importFromText } = await import("../js/core/migrate.js?v=20260803-d");
+  const { exportJSON } = await import("../js/core/records.js?v=20260803-e");
+  const { importFromText } = await import("../js/core/migrate.js?v=20260803-e");
   const exported = JSON.parse(await exportJSON());
   assert.match(exported.signature, /^[0-9a-f]{64}$/, "the export should carry an HMAC signature");
 

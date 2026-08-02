@@ -22,7 +22,7 @@ const {
   requestCriticalReload,
   resetCriticalUpdateForTest,
   wasCriticalReloadDone,
-} = await import("../js/core/critical-update.js?v=20260803-d");
+} = await import("../js/core/critical-update.js?v=20260803-e");
 
 // setTimeout の代わり。溜めたコールバックを好きなタイミングで進める
 function fakeClock() {
