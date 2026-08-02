@@ -1,6 +1,6 @@
 // UI・演出のチューニング用定数。見た目の調整はこのファイルにまとめる。
 
-export const APP_VERSION = "2.3.0";
+export const APP_VERSION = "2.3.1";
 
 // 公開 URL（シェア文言・スクリーンショットに入る）
 export const SHARE_URL = "https://kakira9618.github.io/DWORDle2/";
