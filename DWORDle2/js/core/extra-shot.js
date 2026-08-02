@@ -7,10 +7,10 @@
 // - 有効/無効は設定 extraShot で切り替え、DWORDle / DWORDlie の両方に適用される。
 // - 旧 finalAnswerUnlockSeen / finalAnswer 設定は互換移行する。
 
-import { countPlays } from "./records.js?v=20260803-c";
-import { isDebugMode } from "./debug.js?v=20260803-c";
-import { getSettings } from "./settings.js?v=20260803-c";
-import { loadJSON, saveJSON } from "./store.js?v=20260803-c";
+import { countPlays } from "./records.js?v=20260803-d";
+import { isDebugMode } from "./debug.js?v=20260803-d";
+import { getSettings } from "./settings.js?v=20260803-d";
+import { loadJSON, saveJSON } from "./store.js?v=20260803-d";
 
 export const EXTRA_SHOT_UNLOCK_PLAYS = 10;
 

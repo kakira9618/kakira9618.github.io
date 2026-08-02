@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { FX } from "../js/config.js?v=20260803-c";
-import { randomTileLineScale } from "../js/fx/pop-background.js?v=20260803-c";
+import { FX } from "../js/config.js?v=20260803-d";
+import { randomTileLineScale } from "../js/fx/pop-background.js?v=20260803-d";
 
 assert.deepEqual(FX.popBg.tiles.scale, [0.5, 0.8]);
 assert.equal(randomTileLineScale(() => 0), 0.5);

@@ -10,8 +10,8 @@ globalThis.localStorage = {
   removeItem: (key) => storage.delete(key),
 };
 
-const { Logic } = await import("../js/core/logic.js?v=20260803-c");
-const records = await import("../js/core/records.js?v=20260803-c");
+const { Logic } = await import("../js/core/logic.js?v=20260803-d");
+const records = await import("../js/core/records.js?v=20260803-d");
 const achievements = await import("../js/core/achievements.js?discard-test");
 
 const base = Math.floor(new Date(2026, 6, 20, 10, 0, 0).getTime() / 1000);
@@ -96,7 +96,7 @@ assert.deepEqual(
 // v2 エクスポートを別端末相当の空ストレージへ取り込んでも破棄状態を失わない。
 storage.clear();
 records._reload();
-const { importFromText } = await import("../js/core/migrate.js?v=20260803-c");
+const { importFromText } = await import("../js/core/migrate.js?v=20260803-d");
 assert.equal((await importFromText(JSON.stringify(exported))).added, 1);
 assert.equal(records.getHistory()[0].discarded, true, "インポート後も破棄状態を維持するはず");
 assert.equal(records.getHistory()[0].clear, false, "インポート後も破棄をクリア扱いにしないはず");

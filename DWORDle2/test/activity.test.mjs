@@ -25,7 +25,7 @@ data.set("dwordle2.activity", JSON.stringify({
   events: [],
 }));
 
-const { setSetting } = await import("../js/core/settings.js?v=20260803-c");
+const { setSetting } = await import("../js/core/settings.js?v=20260803-d");
 const {
   COUNTER_KEY_LIMIT,
   favoriteBgmTrackId,
@@ -35,7 +35,7 @@ const {
   logBgmTime,
   logCount,
   logEvent,
-} = await import("../js/core/activity.js?v=20260803-c");
+} = await import("../js/core/activity.js?v=20260803-d");
 
 // usage の無い既存データでも壊れず、お気に入りは「無し」(null) になる
 assert.equal(favoriteBgmTrackId(), null, "no favorite BGM before any listening time is logged");

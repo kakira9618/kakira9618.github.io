@@ -1,12 +1,12 @@
 // どの画面からもワンタップで音（BGM + 効果音）をまとめてオン/オフするボタン。
 // オフにする前の個別設定（BGM だけオン等）を覚えておき、復帰時にそのまま戻す。
 
-import { el } from "./dom.js?v=20260803-c";
-import { getSettings, setSetting, onSettingsChange } from "../core/settings.js?v=20260803-c";
-import { loadJSON, saveJSON } from "../core/store.js?v=20260803-c";
-import { playSfx } from "../audio/sound.js?v=20260803-c";
-import { icon } from "./icons.js?v=20260803-c";
-import { tr } from "../core/i18n.js?v=20260803-c";
+import { el } from "./dom.js?v=20260803-d";
+import { getSettings, setSetting, onSettingsChange } from "../core/settings.js?v=20260803-d";
+import { loadJSON, saveJSON } from "../core/store.js?v=20260803-d";
+import { playSfx } from "../audio/sound.js?v=20260803-d";
+import { icon } from "./icons.js?v=20260803-d";
+import { tr } from "../core/i18n.js?v=20260803-d";
 
 const isSoundOn = (s = getSettings()) => s.bgm || s.sfx;
 

@@ -1,22 +1,22 @@
 // 結果画面。ゲーム終了直後にも、履歴・問題一覧からも開ける。
 // ルート: #/result/<mode>/<startTime>
 
-import { el, clear, fmtDateTime } from "./dom.js?v=20260803-c";
-import { registerScreen, navigate, setViewMood } from "./app.js?v=20260803-c";
-import { findGame, MODES, getExtraShot, getExtraShotResult } from "../core/records.js?v=20260803-c";
-import { Logic, CELL } from "../core/logic.js?v=20260803-c";
-import { pidLabel } from "../core/problems.js?v=20260803-c";
-import { playSfx } from "../audio/sound.js?v=20260803-c";
-import { toast } from "./toast.js?v=20260803-c";
-import { confirmAndStart } from "./game-screen.js?v=20260803-c";
-import { soundToggleButton } from "./sound-toggle.js?v=20260803-c";
-import { icon } from "./icons.js?v=20260803-c";
-import { downloadResultPNG } from "./snapshot.js?v=20260803-c";
-import { SHARE_URL } from "../config.js?v=20260803-c";
-import { getSettings } from "../core/settings.js?v=20260803-c";
-import { tr } from "../core/i18n.js?v=20260803-c";
-import { rowAriaLabel } from "./a11y.js?v=20260803-c";
-import { createRotatingCrownCanvas } from "./crown.js?v=20260803-c";
+import { el, clear, fmtDateTime } from "./dom.js?v=20260803-d";
+import { registerScreen, navigate, setViewMood } from "./app.js?v=20260803-d";
+import { findGame, MODES, getExtraShot, getExtraShotResult } from "../core/records.js?v=20260803-d";
+import { Logic, CELL } from "../core/logic.js?v=20260803-d";
+import { pidLabel } from "../core/problems.js?v=20260803-d";
+import { playSfx } from "../audio/sound.js?v=20260803-d";
+import { toast } from "./toast.js?v=20260803-d";
+import { confirmAndStart } from "./game-screen.js?v=20260803-d";
+import { soundToggleButton } from "./sound-toggle.js?v=20260803-d";
+import { icon } from "./icons.js?v=20260803-d";
+import { downloadResultPNG } from "./snapshot.js?v=20260803-d";
+import { SHARE_URL } from "../config.js?v=20260803-d";
+import { getSettings } from "../core/settings.js?v=20260803-d";
+import { tr } from "../core/i18n.js?v=20260803-d";
+import { rowAriaLabel } from "./a11y.js?v=20260803-d";
+import { createRotatingCrownCanvas } from "./crown.js?v=20260803-d";
 
 let root = null;
 

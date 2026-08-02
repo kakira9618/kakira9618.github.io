@@ -1,30 +1,30 @@
 // 設定画面。テーマ・サウンド・履歴の移行 / エクスポート / 削除。
 // ルート: #/settings
 
-import { el, clear } from "./dom.js?v=20260803-c";
-import { registerScreen, navigate, currentScreenName } from "./app.js?v=20260803-c";
-import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js?v=20260803-c";
-import { importFromLocalStorage, importFromText, scanLegacyHistory } from "../core/migrate.js?v=20260803-c";
-import { exportJSON } from "../core/records.js?v=20260803-c";
-import { removeKey } from "../core/store.js?v=20260803-c";
-import { getUnlocked } from "../core/achievements.js?v=20260803-c";
-import { BGM_TRACKS, playSfx } from "../audio/sound.js?v=20260803-c";
-import { toast } from "./toast.js?v=20260803-c";
-import { showModal, confirmModal } from "./modal.js?v=20260803-c";
-import { icon } from "./icons.js?v=20260803-c";
-import { finishHistoryImport } from "./history-import.js?v=20260803-c";
-import { APP_VERSION, AUDIO } from "../config.js?v=20260803-c";
-import { SOURCE_HASH } from "../version.js?v=20260803-c";
-import { isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js?v=20260803-c";
-import { isDebugMode, tryEnableDebugMode } from "../core/debug.js?v=20260803-c";
-import { isExtraShotUnlocked, extraShotRemainingPlays } from "../core/extra-shot.js?v=20260803-c";
+import { el, clear } from "./dom.js?v=20260803-d";
+import { registerScreen, navigate, currentScreenName } from "./app.js?v=20260803-d";
+import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js?v=20260803-d";
+import { importFromLocalStorage, importFromText, scanLegacyHistory } from "../core/migrate.js?v=20260803-d";
+import { exportJSON } from "../core/records.js?v=20260803-d";
+import { removeKey } from "../core/store.js?v=20260803-d";
+import { getUnlocked } from "../core/achievements.js?v=20260803-d";
+import { BGM_TRACKS, playSfx } from "../audio/sound.js?v=20260803-d";
+import { toast } from "./toast.js?v=20260803-d";
+import { showModal, confirmModal } from "./modal.js?v=20260803-d";
+import { icon } from "./icons.js?v=20260803-d";
+import { finishHistoryImport } from "./history-import.js?v=20260803-d";
+import { APP_VERSION, AUDIO } from "../config.js?v=20260803-d";
+import { SOURCE_HASH } from "../version.js?v=20260803-d";
+import { isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js?v=20260803-d";
+import { isDebugMode, tryEnableDebugMode } from "../core/debug.js?v=20260803-d";
+import { isExtraShotUnlocked, extraShotRemainingPlays } from "../core/extra-shot.js?v=20260803-d";
 import {
   analyticsAllowed,
   getStoredConsent,
   onAnalyticsConsentChange,
   setAnalyticsConsent,
-} from "../core/analytics.js?v=20260803-c";
-import { dismissConsentBanner } from "./consent-banner.js?v=20260803-c";
+} from "../core/analytics.js?v=20260803-d";
+import { dismissConsentBanner } from "./consent-banner.js?v=20260803-d";
 
 let root = null;
 let debugEntryTaps = 0;
@@ -482,6 +482,14 @@ function render() {
         tr("ハイコントラスト配色", "High contrast colors"),
         tr("判定色を 緑→オレンジ / 黄→青 に置き換えます", "Replace green with orange and yellow with blue"),
         toggle("highContrast", tr("ハイコントラスト配色", "High contrast colors"))
+      ),
+      settingRow(
+        tr("判定マーク", "Feedback symbols"),
+        tr(
+          "判定結果をタイルの記号（正解=● / 位置違い=△ / 不使用=×）でも表示します",
+          "Also mark tiles with symbols (correct=●, misplaced=△, unused=×)"
+        ),
+        toggle("stateSymbols", tr("判定マーク", "Feedback symbols"))
       ),
       settingRow(
         tr("キーボードヒント", "Keyboard hints"),

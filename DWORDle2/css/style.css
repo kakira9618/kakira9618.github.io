@@ -58,6 +58,10 @@
   --unlock-card-fg-dim: #a7b0bf;
   --font-display: "Avenir Next", "Helvetica Neue", "Segoe UI", sans-serif;
 
+  /* 設定「判定マーク」（body.state-symbols）でタイル右下に出す記号の寸法 */
+  --state-symbol-size: calc(var(--tile-size) * 0.3);
+  --state-symbol-inset: calc(var(--tile-size) * 0.05);
+
   /* 統計・分析のバーが伸びるアニメーション（.bar-grow）。
      stagger は統計モーダルで最大 25 本が連なるため、大きくすると後半の
      バーの伸び始めが遅くなりすぎる（70ms だと最後は 1.7 秒待ち） */
@@ -996,6 +1000,29 @@ body.theme-cyber .tile.state-unused {
   background: var(--tile-unused);
   box-shadow: none;
 }
+/* 設定「判定マーク」: 色だけに頼らず判定を区別できるよう（WCAG 2.1「1.4.1 色の使用」）、
+   判定済みタイルの右下に記号を重ねる。文字色はタイルのインク色（--tile-ink-*）を継承
+   するので、テーマ・ハイコントラストの組み合わせでもコントラストが保たれる。
+   タイルは role="img" + aria-label で読み上げ済みなので、記号は支援技術には出さない。 */
+body.state-symbols .tile.state-unused,
+body.state-symbols .tile.state-used,
+body.state-symbols .tile.state-correct {
+  position: relative;
+}
+body.state-symbols .tile.state-unused::after,
+body.state-symbols .tile.state-used::after,
+body.state-symbols .tile.state-correct::after {
+  position: absolute;
+  right: var(--state-symbol-inset);
+  bottom: var(--state-symbol-inset);
+  font-size: var(--state-symbol-size);
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+}
+body.state-symbols .tile.state-correct::after { content: "●"; }
+body.state-symbols .tile.state-used::after { content: "△"; }
+body.state-symbols .tile.state-unused::after { content: "×"; }
 .row.shake {
   animation: shake var(--shake-ms, 500ms) ease;
 }

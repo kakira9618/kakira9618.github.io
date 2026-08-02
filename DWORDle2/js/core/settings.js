@@ -1,6 +1,6 @@
 // 設定管理。変更は即 localStorage に保存され、リスナーに通知される。
 
-import { loadJSON, saveJSON } from "./store.js?v=20260803-c";
+import { loadJSON, saveJSON } from "./store.js?v=20260803-d";
 
 export const DEFAULT_SETTINGS = {
   theme: "cyber", // "cyber"（ネオン3D演出）| "classic"（原作風フラット表示）| "pop"（隠し: キャンディポップ）
@@ -13,6 +13,9 @@ export const DEFAULT_SETTINGS = {
   bgmTrack: "auto", // "auto"（モード・テーマ連動）または BGM_TRACKS のトラック id
   language: "system", // "system"（ブラウザの言語に連動。日本語なら ja、それ以外は en）| "ja" | "en"
   highContrast: false, // 色覚特性向け: 全テーマの判定色を 緑→オレンジ / 黄→青 に置き換える
+  // 色だけに頼らない判定表示 (WCAG 2.1「1.4.1 色の使用」対応)。
+  // ON にすると盤面タイルの右下に 正解=● / 位置違い=△ / 不使用=× を重ねる。
+  stateSymbols: false,
   // 音量の保存スケールの版数（ユーザー設定ではない）。1 = 旧「100% = 等倍」、
   // 2 = 現行「AUDIO.volumeUnityPercent (50%) = 等倍」。下の移行処理が参照する。
   volumeScale: 2,

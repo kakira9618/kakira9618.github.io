@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
 
 const { canonicalJSON, signPayload, signatureAvailable, verifyPayload } =
-  await import("../js/core/signature.js?v=20260803-c");
+  await import("../js/core/signature.js?v=20260803-d");
 
 assert.equal(signatureAvailable(), true, "Node でも crypto.subtle が使えるはず");
 

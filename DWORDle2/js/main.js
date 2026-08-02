@@ -6,23 +6,23 @@
 // 画面・実績・トーストは扉絵を出したあとに appReady が動的 import する
 // （扉絵到達 70KB gz / 19 モジュール。中位 Android 相当で約 1 秒短縮）。
 
-import { startRouter, initAppMode } from "./ui/app.js?v=20260803-c";
-import { initEffects } from "./fx/effects.js?v=20260803-c";
-import { initPopBackground } from "./fx/pop-background.js?v=20260803-c";
-import { audioNeedsRecovery, bgmTracksUnlockedBy, restartBgmIfReady, scheduleAudioRecovery, stopBgm, unlockAudio } from "./audio/sound.js?v=20260803-c";
-import { getSettings, onSettingsChange, hiddenThemesUnlockedBy } from "./core/settings.js?v=20260803-c";
-import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js?v=20260803-c";
-import { syncDocumentLanguage, tr } from "./core/i18n.js?v=20260803-c";
-import { initActivity } from "./core/activity.js?v=20260803-c";
-import { initAnalytics } from "./core/analytics.js?v=20260803-c";
-import { maybeShowConsentBanner } from "./ui/consent-banner.js?v=20260803-c";
-import { onSaveError } from "./core/store.js?v=20260803-c";
-import { showEntryGate } from "./ui/gate.js?v=20260803-c";
-import { VIEWPORT } from "./config.js?v=20260803-c";
+import { startRouter, initAppMode } from "./ui/app.js?v=20260803-d";
+import { initEffects } from "./fx/effects.js?v=20260803-d";
+import { initPopBackground } from "./fx/pop-background.js?v=20260803-d";
+import { audioNeedsRecovery, bgmTracksUnlockedBy, restartBgmIfReady, scheduleAudioRecovery, stopBgm, unlockAudio } from "./audio/sound.js?v=20260803-d";
+import { getSettings, onSettingsChange, hiddenThemesUnlockedBy } from "./core/settings.js?v=20260803-d";
+import { onMotionPreferenceChange, shouldReduceMotion } from "./core/motion.js?v=20260803-d";
+import { syncDocumentLanguage, tr } from "./core/i18n.js?v=20260803-d";
+import { initActivity } from "./core/activity.js?v=20260803-d";
+import { initAnalytics } from "./core/analytics.js?v=20260803-d";
+import { maybeShowConsentBanner } from "./ui/consent-banner.js?v=20260803-d";
+import { onSaveError } from "./core/store.js?v=20260803-d";
+import { showEntryGate } from "./ui/gate.js?v=20260803-d";
+import { VIEWPORT } from "./config.js?v=20260803-d";
 
 // トーストは扉絵の critical path から外してある（保存エラー・SW 更新は稀で、即時性も要らない）
 function notify(message) {
-  void import("./ui/toast.js?v=20260803-c")
+  void import("./ui/toast.js?v=20260803-d")
     .then((m) => m.toast(message))
     .catch(() => {});
 }
@@ -31,25 +31,25 @@ function notify(message) {
 // 画面モジュールは import するだけで registerScreen される。
 const appReady = (async () => {
   await Promise.all([
-    import("./ui/title-screen.js?v=20260803-c"),
-    import("./ui/game-screen.js?v=20260803-c"),
-    import("./ui/result-screen.js?v=20260803-c"),
-    import("./ui/history-screen.js?v=20260803-c"),
-    import("./ui/problems-screen.js?v=20260803-c"),
-    import("./ui/achievements-screen.js?v=20260803-c"),
-    import("./ui/player-card.js?v=20260803-c"),
-    import("./ui/analysis-screen.js?v=20260803-c"),
-    import("./ui/settings-screen.js?v=20260803-c"),
+    import("./ui/title-screen.js?v=20260803-d"),
+    import("./ui/game-screen.js?v=20260803-d"),
+    import("./ui/result-screen.js?v=20260803-d"),
+    import("./ui/history-screen.js?v=20260803-d"),
+    import("./ui/problems-screen.js?v=20260803-d"),
+    import("./ui/achievements-screen.js?v=20260803-d"),
+    import("./ui/player-card.js?v=20260803-d"),
+    import("./ui/analysis-screen.js?v=20260803-d"),
+    import("./ui/settings-screen.js?v=20260803-d"),
   ]);
   // 物理キーボード（ゲーム画面が読み込まれてから登録する。扉絵の間は入力を受けない）
   const { handlePhysicalKey, handlePhysicalKeyUp, releaseKeyboardPresses } =
-    await import("./ui/game-screen.js?v=20260803-c");
+    await import("./ui/game-screen.js?v=20260803-d");
   addEventListener("keydown", handlePhysicalKey);
   addEventListener("keyup", handlePhysicalKeyUp);
   addEventListener("blur", releaseKeyboardPresses);
   // 履歴からの実績復元。重いのは初回（RECONCILE_VERSION 更新後）だけで、
   // ここに置くことで扉絵の描画を塞がなくなる。
-  const { reconcileAchievementsOnce } = await import("./core/achievements.js?v=20260803-c");
+  const { reconcileAchievementsOnce } = await import("./core/achievements.js?v=20260803-d");
   return reconcileAchievementsOnce();
 })();
 // 失敗の扱いは扉絵側（再読み込みを促して閉じない）。ここでは未処理リジェクト警告だけ抑える。
@@ -94,7 +94,7 @@ if (/Android/i.test(navigator.userAgent)) document.body.classList.add("android-f
     // critical-update.js が持つ。
     navigator.serviceWorker.addEventListener("message", (event) => {
       if (event.data?.type !== "critical-update") return;
-      void import("./core/critical-update.js?v=20260803-c").then((m) => {
+      void import("./core/critical-update.js?v=20260803-d").then((m) => {
         m.requestCriticalReload(event.data.hash, {
           notify: () =>
             notify(
@@ -134,6 +134,7 @@ function syncDisplayClasses(settings = getSettings()) {
   document.body.classList.toggle("theme-classic", settings.theme === "classic");
   document.body.classList.toggle("theme-pop", settings.theme === "pop");
   document.body.classList.toggle("high-contrast", Boolean(settings.highContrast));
+  document.body.classList.toggle("state-symbols", Boolean(settings.stateSymbols));
   document.body.classList.toggle("reduce-motion", shouldReduceMotion(settings));
 }
 
@@ -150,7 +151,7 @@ syncDisplayClasses();
 syncZoomLock();
 syncDocumentLanguage();
 onSettingsChange((settings, key) => {
-  if (key === "theme" || key === "reduceFx" || key === "highContrast") syncDisplayClasses(settings);
+  if (key === "theme" || key === "reduceFx" || key === "highContrast" || key === "stateSymbols") syncDisplayClasses(settings);
   if (key === "lockZoom") syncZoomLock(settings);
   if (key === "language") syncDocumentLanguage(settings.language);
   if (key === "theme" && settings.theme === "cyber") void initEffects(); // 後から cyber に切り替えたら遅延初期化
@@ -242,7 +243,7 @@ showEntryGate(
     if (recoveredAchievements.length) {
       setTimeout(async () => {
         const { achievementCelebration, bgmUnlockCelebration, themeUnlockCelebration } =
-          await import("./ui/toast.js?v=20260803-c");
+          await import("./ui/toast.js?v=20260803-d");
         achievementCelebration(recoveredAchievements);
         const bgmUnlocks = bgmTracksUnlockedBy(recoveredAchievements);
         if (bgmUnlocks.length) {

@@ -11,10 +11,10 @@
 // ペア数が膨大な帯（極など、最大 14847*14846/2 ≈ 1.1 億）は一様サンプリングで
 // 推定する（結果に sampled フラグを立てる）。乱数はシード付きで再現可能。
 
-import { queryWordPair, CELL } from "./logic.js?v=20260803-c";
-import { candidateWordsForPID } from "./problems.js?v=20260803-c";
-import { EASY_WORDS, ALL_WORDS } from "../data/words.js?v=20260803-c";
-import { FREQ_ORDER } from "../data/levels.js?v=20260803-c";
+import { queryWordPair, CELL } from "./logic.js?v=20260803-d";
+import { candidateWordsForPID } from "./problems.js?v=20260803-d";
+import { EASY_WORDS, ALL_WORDS } from "../data/words.js?v=20260803-d";
+import { FREQ_ORDER } from "../data/levels.js?v=20260803-d";
 
 // ---- 計算量の上限(調整用定数) ----
 export const ANALYSIS_LIMITS = {
