@@ -5,9 +5,9 @@
 //   曲の実体は TRACKS（テンポ・コード進行・1 小節のスケジューラ）に定義する。
 //   設定やモード切替時はバスをクロスフェードしてシームレスに移行する。
 
-import { AUDIO } from "../config.js?v=20260803-a";
-import { getSettings, onSettingsChange } from "../core/settings.js?v=20260803-a";
-import { logBgmTime } from "../core/activity.js?v=20260803-a";
+import { AUDIO } from "../config.js?v=20260803-b";
+import { getSettings, onSettingsChange } from "../core/settings.js?v=20260803-b";
+import { logBgmTime } from "../core/activity.js?v=20260803-b";
 
 // ノイズ系打楽器の立ち上がり時間（クリック防止。短いので打点の鋭さは保たれる）
 const BGM_NOISE_ATTACK_SEC = 0.0015;

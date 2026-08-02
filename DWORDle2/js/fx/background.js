@@ -6,10 +6,10 @@
 // classic テーマでは canvas ごと非表示になり、描画ループも止める。
 
 import * as THREE from "three";
-import { FX } from "../config.js?v=20260803-a";
-import { getSettings, onSettingsChange } from "../core/settings.js?v=20260803-a";
-import { onMotionPreferenceChange, shouldReduceMotion } from "../core/motion.js?v=20260803-a";
-import { viewportWidth, viewportHeight } from "./viewport.js?v=20260803-a";
+import { FX } from "../config.js?v=20260803-b";
+import { getSettings, onSettingsChange } from "../core/settings.js?v=20260803-b";
+import { onMotionPreferenceChange, shouldReduceMotion } from "../core/motion.js?v=20260803-b";
+import { viewportWidth, viewportHeight, uiZoom } from "./viewport.js?v=20260803-b";
 
 let renderer = null;
 let scene = null;
@@ -295,6 +295,7 @@ function makeFireflyMaterial() {
       uTrailPoints: { value: ff.trailPoints },
       uTrailSize: { value: ff.trailSize },
       uTrailGlow: { value: ff.trailGlow },
+      uSizeZoom: { value: uiZoom() },
     },
     vertexShader: `
       attribute float size;
@@ -309,6 +310,7 @@ function makeFireflyMaterial() {
       uniform float uTrailPoints;
       uniform float uTrailSize;
       uniform float uTrailGlow;
+      uniform float uSizeZoom;
       varying vec3 vColor;
       varying float vGlow;
       void main() {
@@ -335,7 +337,9 @@ function makeFireflyMaterial() {
 
         vec4 mv = modelViewMatrix * vec4(p, 1.0);
         float sizeScale = mix(0.85 + 0.45 * flare, uTrailSize * (1.0 - 0.5 * k), isTrail);
-        gl_PointSize = size * sizeScale * (240.0 / -mv.z);
+        // uSizeZoom: 大画面での UI 全体拡大率（gl_PointSize は px なので明示的に掛ける。
+        // グリッド等のジオメトリは透視投影で画面高さに追従するため補正不要）
+        gl_PointSize = size * sizeScale * uSizeZoom * (240.0 / -mv.z);
         gl_Position = projectionMatrix * mv;
       }
     `,
@@ -365,14 +369,16 @@ function makeSpriteShaderMaterial(opacity) {
     uniforms: {
       map: { value: glowTex },
       opacity: { value: opacity },
+      uSizeZoom: { value: uiZoom() }, // 大画面での UI 全体拡大率（蛍と同じ補正）
     },
     vertexShader: `
       attribute float size;
+      uniform float uSizeZoom;
       varying vec3 vColor;
       void main() {
         vColor = color;
         vec4 mv = modelViewMatrix * vec4(position, 1.0);
-        gl_PointSize = size * (240.0 / -mv.z);
+        gl_PointSize = size * uSizeZoom * (240.0 / -mv.z);
         gl_Position = projectionMatrix * mv;
       }
     `,
@@ -408,6 +414,10 @@ function resize() {
   renderer.setSize(viewportWidth(), viewportHeight(), false);
   camera.aspect = viewportWidth() / viewportHeight();
   camera.updateProjectionMatrix();
+  // ウィンドウがモニタ間を移動して --app-zoom が変わったときに点サイズを追従させる
+  const zoom = uiZoom();
+  if (fireflies?.points) fireflies.points.material.uniforms.uSizeZoom.value = zoom;
+  if (dust?.points) dust.points.material.uniforms.uSizeZoom.value = zoom;
 }
 
 function applyTheme(theme) {

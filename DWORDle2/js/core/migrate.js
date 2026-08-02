@@ -10,10 +10,10 @@
 //      localStorage を走査して履歴らしき JSON を見つけて取り込む
 //   2. 手動: 旧作の履歴 JSON（クリップボードダンプ）または本作のエクスポート JSON を貼り付け
 
-import { addImportedGames } from "./records.js?v=20260803-a";
-import { isValidPID } from "./problems.js?v=20260803-a";
-import { CELL } from "./logic.js?v=20260803-a";
-import { signatureAvailable, verifyPayload } from "./signature.js?v=20260803-a";
+import { addImportedGames } from "./records.js?v=20260803-b";
+import { isValidPID } from "./problems.js?v=20260803-b";
+import { CELL } from "./logic.js?v=20260803-b";
+import { signatureAvailable, verifyPayload } from "./signature.js?v=20260803-b";
 
 // オブジェクトが旧作の 1 ゲームレコードかどうか
 function looksLikeGame(v) {

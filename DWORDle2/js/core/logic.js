@@ -10,8 +10,8 @@
 // デイリーは上の原作 LCG、それ以外は下の pickAnsNew。どの PID がどちらかは
 // problems.js の usesNewGenerator() が決める。
 
-import { ALL_WORDS } from "../data/words.js?v=20260803-a";
-import { candidateWordsForPID, isDailyPID, problemNumber, usesNewGenerator } from "./problems.js?v=20260803-a";
+import { ALL_WORDS } from "../data/words.js?v=20260803-b";
+import { candidateWordsForPID, isDailyPID, problemNumber, usesNewGenerator } from "./problems.js?v=20260803-b";
 
 export const CELL = {
   GUESSING: "guessing",

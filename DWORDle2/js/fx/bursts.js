@@ -7,10 +7,10 @@
 // 本物の遠近感が付く。CSS 座標 (y 下向き) → ワールド座標は y を反転して使う。
 
 import * as THREE from "three";
-import { FX, tileColorsFor } from "../config.js?v=20260803-a";
-import { getSettings } from "../core/settings.js?v=20260803-a";
-import { shouldReduceMotion } from "../core/motion.js?v=20260803-a";
-import { viewportWidth, viewportHeight } from "./viewport.js?v=20260803-a";
+import { FX, tileColorsFor } from "../config.js?v=20260803-b";
+import { getSettings } from "../core/settings.js?v=20260803-b";
+import { shouldReduceMotion } from "../core/motion.js?v=20260803-b";
+import { viewportWidth, viewportHeight, uiZoom } from "./viewport.js?v=20260803-b";
 
 let renderer = null;
 let scene = null;
@@ -92,6 +92,9 @@ export function burstAt(cx, cy, colorHex, count) {
   if ((s.theme !== "cyber" && s.theme !== "pop") || shouldReduceMotion(s)) return;
   const cfg = FX.burst;
   const n = count;
+  // 大画面での UI 全体拡大に合わせ、粒の大きさ・速度・重力も同率で拡大する
+  // （このキャンバスは #app の zoom の外にあり、1px = 1 world のため）
+  const zoom = uiZoom();
 
   const geo = new THREE.BufferGeometry();
   const pos = new Float32Array(n * 3);
@@ -101,14 +104,14 @@ export function burstAt(cx, cy, colorHex, count) {
     pos[i * 3 + 1] = toWorldY(cy);
     pos[i * 3 + 2] = 0;
     const ang = Math.random() * Math.PI * 2;
-    const spd = cfg.speed * (0.3 + Math.random() * 0.9);
+    const spd = cfg.speed * zoom * (0.3 + Math.random() * 0.9);
     vel[i * 2] = Math.cos(ang) * spd;
-    vel[i * 2 + 1] = Math.sin(ang) * spd - cfg.speed * 0.25; // やや上向き
+    vel[i * 2 + 1] = Math.sin(ang) * spd - cfg.speed * zoom * 0.25; // やや上向き
   }
   geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
   const mat = new THREE.PointsMaterial({
     color: colorHex,
-    size: cfg.sizePx * (1 + Math.random() * 0.6),
+    size: cfg.sizePx * zoom * (1 + Math.random() * 0.6),
     transparent: true,
     opacity: 1,
     blending: s.theme === "pop" ? THREE.NormalBlending : THREE.AdditiveBlending,
@@ -117,7 +120,7 @@ export function burstAt(cx, cy, colorHex, count) {
   const mesh = new THREE.Points(geo, mat);
   mesh.userData.vel = vel;
   scene.add(mesh);
-  particles.push({ mesh, born: performance.now(), life: cfg.lifeMs });
+  particles.push({ mesh, born: performance.now(), life: cfg.lifeMs, gravity: cfg.gravity * zoom });
   ensureLoop();
 }
 
@@ -334,7 +337,6 @@ function loop(now) {
 function renderFrame(now) {
   const dt = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
-  const cfg = FX.burst;
 
   // パーティクル更新
   particles = particles.filter((p) => {
@@ -348,7 +350,7 @@ function renderFrame(now) {
     const pos = p.mesh.geometry.attributes.position;
     const vel = p.mesh.userData.vel;
     for (let i = 0; i < pos.count; i++) {
-      vel[i * 2 + 1] += cfg.gravity * dt; // CSS 方向 (下向き) に重力
+      vel[i * 2 + 1] += p.gravity * dt; // CSS 方向 (下向き) に重力（生成時の拡大率込み）
       pos.array[i * 3] += vel[i * 2] * dt;
       pos.array[i * 3 + 1] -= vel[i * 2 + 1] * dt; // ワールドは y 反転
     }

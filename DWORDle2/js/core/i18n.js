@@ -2,8 +2,8 @@
 // language 設定は "system" | "ja" | "en"。"system"（既定）はブラウザの言語に連動し、
 // 日本語なら ja、それ以外はすべて en として扱う。
 
-import { getSettings } from "./settings.js?v=20260803-a";
-import { reveal } from "./secret.js?v=20260803-a";
+import { getSettings } from "./settings.js?v=20260803-b";
+import { reveal } from "./secret.js?v=20260803-b";
 
 // ブラウザ / OS の言語設定から表示言語を決める
 function systemLanguage() {

@@ -85,6 +85,19 @@
   @media (min-width: 1280px) and (min-height: 2050px) {
     :root { --app-zoom: 2; }
   }
+  /* 5K〜8K（8K@100% は 7680x4320 → 4 倍で FHD 相当の見え方になる） */
+  @media (min-width: 1280px) and (min-height: 2450px) {
+    :root { --app-zoom: 2.4; }
+  }
+  @media (min-width: 1440px) and (min-height: 2900px) {
+    :root { --app-zoom: 2.8; }
+  }
+  @media (min-width: 1750px) and (min-height: 3500px) {
+    :root { --app-zoom: 3.4; }
+  }
+  @media (min-width: 2050px) and (min-height: 4150px) {
+    :root { --app-zoom: 4; }
+  }
 }
 
 body.theme-cyber {
@@ -1320,6 +1333,7 @@ body.theme-pop.mode-normal .modal input[type="number"] {
   position: fixed;
   left: 50%;
   bottom: max(10px, env(safe-area-inset-bottom));
+  zoom: var(--app-zoom); /* 大画面では #app と同率で拡大 */
   z-index: 240;
   transform: translateX(-50%);
   width: min(460px, calc(100vw - 20px));
@@ -3734,6 +3748,10 @@ body.reduce-motion .player-card-wrap.motion::after,
   zoom: var(--app-zoom); /* 大画面では本編（#app）と同率で拡大 */
   animation: entryGateIn 0.55s cubic-bezier(0, 0.7, 0.25, 1) both;
 }
+/* 扉絵の版数表示も本編（#app 内では zoom がかかる）と大きさを揃える */
+#entry-gate .app-version {
+  zoom: var(--app-zoom);
+}
 .entry-gate-note {
   color: var(--fg-dim);
   font-size: 13.5px;
@@ -3850,6 +3868,8 @@ body.reduce-motion #entry-gate.waiting .entry-gate-pressed::after {
 }
 .fa-cutin-band {
   position: relative;
+  /* 帯と文字は大画面では #app と同率で拡大する（外側の暗幕・フラッシュは画面基準のまま） */
+  zoom: var(--app-zoom);
   top: clamp(-24px, -2.5vh, -14px);
   width: 135%;
   padding: clamp(18px, 4vh, 30px) 0;
@@ -4083,6 +4103,8 @@ body.reduce-motion .row.fa-row.fa-charging .tile {
 }
 .fa-double-inner {
   position: relative;
+  /* 文字は大画面では #app と同率で拡大（光背・リングは vmax/vmin 指定で画面に追従済み） */
+  zoom: var(--app-zoom);
   text-align: center;
   padding: 0 12px;
 }

@@ -14,3 +14,13 @@ export function viewportWidth() {
 export function viewportHeight() {
   return document.documentElement?.clientHeight || window.innerHeight;
 }
+
+// 大画面での UI 全体拡大率（style.css の --app-zoom）。
+// 背景・エフェクトのキャンバスは #app の zoom の外にあるため、px 指定の
+// オブジェクトサイズ・速度をこの倍率で拡大して、拡大された UI と見た目を揃える。
+// 倍率はメディアクエリでしか変わらないので、頻繁に読む側は resize 時に取り直せばよい。
+export function uiZoom() {
+  const raw = getComputedStyle(document.documentElement).getPropertyValue("--app-zoom");
+  const value = parseFloat(raw);
+  return Number.isFinite(value) && value > 0 ? value : 1;
+}

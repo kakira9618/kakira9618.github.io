@@ -1,17 +1,17 @@
 // プレイ履歴閲覧モード。最近のプレイ一覧 → タップで結果画面へ。
 // ルート: #/history
 
-import { el, clear, fmtDateTime } from "./dom.js?v=20260803-a";
-import { registerScreen, navigate } from "./app.js?v=20260803-a";
-import { getRecentGames, getStatistics, MODES, getExtraShot } from "../core/records.js?v=20260803-a";
-import { Logic, CELL } from "../core/logic.js?v=20260803-a";
-import { pidLabel } from "../core/problems.js?v=20260803-a";
-import { playSfx } from "../audio/sound.js?v=20260803-a";
-import { showModal } from "./modal.js?v=20260803-a";
-import { soundToggleButton } from "./sound-toggle.js?v=20260803-a";
-import { icon } from "./icons.js?v=20260803-a";
-import { currentLanguage, tr } from "../core/i18n.js?v=20260803-a";
-import { rowAriaLabel } from "./a11y.js?v=20260803-a";
+import { el, clear, fmtDateTime } from "./dom.js?v=20260803-b";
+import { registerScreen, navigate } from "./app.js?v=20260803-b";
+import { getRecentGames, getStatistics, MODES, getExtraShot } from "../core/records.js?v=20260803-b";
+import { Logic, CELL } from "../core/logic.js?v=20260803-b";
+import { pidLabel } from "../core/problems.js?v=20260803-b";
+import { playSfx } from "../audio/sound.js?v=20260803-b";
+import { showModal } from "./modal.js?v=20260803-b";
+import { soundToggleButton } from "./sound-toggle.js?v=20260803-b";
+import { icon } from "./icons.js?v=20260803-b";
+import { currentLanguage, tr } from "../core/i18n.js?v=20260803-b";
+import { rowAriaLabel } from "./a11y.js?v=20260803-b";
 
 let root = null;
 let filter = "all"; // "all" | "normal" | "uso"

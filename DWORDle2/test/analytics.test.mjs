@@ -55,7 +55,7 @@ function setupDom({ hostname = "kakira9618.github.io", doNotTrack = null, stored
 // 未選択: 地域を問わずバナー対象だが、タグも dataLayer も作らない。
 {
   const { scripts } = setupDom();
-  const analytics = await import(`../js/core/analytics.js?case=unselected&v=20260803-a`);
+  const analytics = await import(`../js/core/analytics.js?case=unselected&v=20260803-b`);
   assert.equal(analytics.analyticsAllowed(), true);
   assert.equal(analytics.needsConsentPrompt(), true);
   analytics.initAnalytics();
@@ -68,7 +68,7 @@ function setupDom({ hostname = "kakira9618.github.io", doNotTrack = null, stored
 // 初回拒否: Google には何も積まず、構造化した選択と時刻を端末に保存する。
 {
   const { scripts, storage, cookieWrites } = setupDom();
-  const analytics = await import(`../js/core/analytics.js?case=decline&v=20260803-a`);
+  const analytics = await import(`../js/core/analytics.js?case=decline&v=20260803-b`);
   analytics.initAnalytics();
   analytics.setAnalyticsConsent(false);
   assert.equal(scripts.length, 0);
@@ -86,7 +86,7 @@ function setupDom({ hostname = "kakira9618.github.io", doNotTrack = null, stored
 // 明示同意: default denied → analytics granted の順に積み、初めてタグとイベントを準備する。
 {
   const { scripts, storage } = setupDom();
-  const analytics = await import(`../js/core/analytics.js?case=accept&v=20260803-a`);
+  const analytics = await import(`../js/core/analytics.js?case=accept&v=20260803-b`);
   analytics.initAnalytics();
   analytics.setAnalyticsConsent(true);
   assert.equal(scripts.length, 1, "同意後にだけ gtag.js を読み込む");
@@ -116,7 +116,7 @@ function setupDom({ hostname = "kakira9618.github.io", doNotTrack = null, stored
 // 現行ポリシーへ同意済みなら、起動時にタグを読み込む。
 {
   const { scripts } = setupDom({ stored: { analyticsConsent: currentConsent("granted") } });
-  const analytics = await import(`../js/core/analytics.js?case=current-grant&v=20260803-a`);
+  const analytics = await import(`../js/core/analytics.js?case=current-grant&v=20260803-b`);
   assert.equal(analytics.needsConsentPrompt(), false);
   analytics.initAnalytics();
   assert.equal(scripts.length, 1);
@@ -125,7 +125,7 @@ function setupDom({ hostname = "kakira9618.github.io", doNotTrack = null, stored
 // 旧実装の granted は新しい全地域共通ポリシーへの同意ではないため、再確認する。
 {
   const { scripts } = setupDom({ stored: { analyticsConsent: "granted" } });
-  const analytics = await import(`../js/core/analytics.js?case=legacy-grant&v=20260803-a`);
+  const analytics = await import(`../js/core/analytics.js?case=legacy-grant&v=20260803-b`);
   assert.equal(analytics.getStoredConsent(), null);
   assert.equal(analytics.needsConsentPrompt(), true);
   analytics.initAnalytics();
@@ -135,7 +135,7 @@ function setupDom({ hostname = "kakira9618.github.io", doNotTrack = null, stored
 // 旧実装の denied は尊重し、勝手に再確認・計測しない。
 {
   const { scripts } = setupDom({ stored: { analyticsConsent: "denied" } });
-  const analytics = await import(`../js/core/analytics.js?case=legacy-denied&v=20260803-a`);
+  const analytics = await import(`../js/core/analytics.js?case=legacy-denied&v=20260803-b`);
   assert.equal(analytics.getStoredConsent(), "denied");
   assert.equal(analytics.needsConsentPrompt(), false);
   analytics.initAnalytics();
@@ -145,7 +145,7 @@ function setupDom({ hostname = "kakira9618.github.io", doNotTrack = null, stored
 // 同意後の撤回: denied をタグへ伝え、Cookie を消し、以後のゲームイベントを止める。
 {
   const { cookieWrites } = setupDom();
-  const analytics = await import(`../js/core/analytics.js?case=withdraw&v=20260803-a`);
+  const analytics = await import(`../js/core/analytics.js?case=withdraw&v=20260803-b`);
   analytics.initAnalytics();
   analytics.setAnalyticsConsent(true);
   const before = window.dataLayer.length;
@@ -159,7 +159,7 @@ function setupDom({ hostname = "kakira9618.github.io", doNotTrack = null, stored
 // 同意直後、アイドル読み込み前に撤回した場合もタグを取得しない。再許可時は読み込める。
 {
   const { scripts, idleCallbacks } = setupDom({ immediateIdle: false });
-  const analytics = await import(`../js/core/analytics.js?case=idle-race&v=20260803-a`);
+  const analytics = await import(`../js/core/analytics.js?case=idle-race&v=20260803-b`);
   analytics.initAnalytics();
   analytics.setAnalyticsConsent(true);
   analytics.setAnalyticsConsent(false);
@@ -176,7 +176,7 @@ for (const [name, options] of [
   ["dnt", { doNotTrack: "1" }],
 ]) {
   const { scripts } = setupDom(options);
-  const analytics = await import(`../js/core/analytics.js?case=${name}&v=20260803-a`);
+  const analytics = await import(`../js/core/analytics.js?case=${name}&v=20260803-b`);
   assert.equal(analytics.analyticsAllowed(), false);
   assert.equal(analytics.needsConsentPrompt(), false);
   analytics.initAnalytics();
