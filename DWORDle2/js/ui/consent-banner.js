@@ -3,9 +3,9 @@
 // 同意状態を含めて Google へ何も送信しない。
 // 画面を覆わない下部のバーにして、ゲームの操作は同意前でも普通に続けられるようにする。
 
-import { el } from "./dom.js?v=20260803-e";
-import { needsConsentPrompt, setAnalyticsConsent } from "../core/analytics.js?v=20260803-e";
-import { tr } from "../core/i18n.js?v=20260803-e";
+import { el } from "./dom.js?v=20260806-a";
+import { needsConsentPrompt, setAnalyticsConsent } from "../core/analytics.js?v=20260806-a";
+import { tr } from "../core/i18n.js?v=20260806-a";
 
 let banner = null;
 let cancelDeferredShow = null;

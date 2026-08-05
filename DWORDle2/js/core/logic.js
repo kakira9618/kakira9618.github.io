@@ -6,12 +6,12 @@
 // - queryWord: 緑（両答えのどちらかと位置一致）→ 黄（両答えの未消費文字に存在）
 //   の順で、ans1 のフラグを優先して消費する
 //
-// 出題の選び方だけは 2 系統ある（判定ルールは共通）。Cls.（旧出題）と 2026-08-01 より前の
-// デイリーは上の原作 LCG、それ以外は下の pickAnsNew。どの PID がどちらかは
-// problems.js の usesNewGenerator() が決める。
+// 出題の選び方だけは 2 系統ある（判定ルールは共通）。Cls.（旧出題）・2026-08-01 より前の
+// デイリー・旧作からインポートしたデイリー（classic-daily 帯）は上の原作 LCG、
+// それ以外は下の pickAnsNew。どの PID がどちらかは problems.js の usesNewGenerator() が決める。
 
-import { ALL_WORDS } from "../data/words.js?v=20260803-e";
-import { candidateWordsForPID, isDailyPID, problemNumber, usesNewGenerator } from "./problems.js?v=20260803-e";
+import { ALL_WORDS } from "../data/words.js?v=20260806-a";
+import { candidateWordsForPID, isDailyPID, problemNumber, usesNewGenerator } from "./problems.js?v=20260806-a";
 
 export const CELL = {
   GUESSING: "guessing",
@@ -93,9 +93,12 @@ export class Logic {
   }
 
   // 原作 Logic.pickAns() の移植。cand リストのコピー上で同じ手順を踏む。
+  // LCG のシードは原作が使う値（Cls. は番号、デイリーは日付 YYYYMMDD）でなければならないので、
+  // 内部 PID をそのまま使わず problemNumber で戻す（旧作インポートのデイリーは
+  // classic-daily 帯へオフセットされているため）。
   #pickAns(seed) {
     const cand = this.candWords.slice();
-    let x = seed;
+    let x = problemNumber(seed);
     const nextInt = (n) => {
       x = (x * 48271) % n;
       return x;

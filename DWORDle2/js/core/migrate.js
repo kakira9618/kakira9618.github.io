@@ -10,10 +10,10 @@
 //      localStorage を走査して履歴らしき JSON を見つけて取り込む
 //   2. 手動: 旧作の履歴 JSON（クリップボードダンプ）または本作のエクスポート JSON を貼り付け
 
-import { addImportedGames } from "./records.js?v=20260803-e";
-import { isValidPID } from "./problems.js?v=20260803-e";
-import { CELL } from "./logic.js?v=20260803-e";
-import { signatureAvailable, verifyPayload } from "./signature.js?v=20260803-e";
+import { addImportedGames } from "./records.js?v=20260806-a";
+import { classicDailyImportPID, isValidPID } from "./problems.js?v=20260806-a";
+import { CELL } from "./logic.js?v=20260806-a";
+import { signatureAvailable, verifyPayload } from "./signature.js?v=20260806-a";
 
 // オブジェクトが旧作の 1 ゲームレコードかどうか
 function looksLikeGame(v) {
@@ -88,7 +88,9 @@ function convertHistoryFile(obj, importedTag, withAchievements = true) {
       startTime,
       endTime: Number.isFinite(Number(game.endTime)) ? Number(game.endTime) : startTime,
       gameMode,
-      problemID: game.problemID,
+      // 2026-08-01 以降のデイリーは、原作（旧 LCG）と本作（新出題）で同じ日付でも
+      // 別問題なので、classic-daily 帯の PID へ読み替えて旧 LCG で採点する
+      problemID: classicDailyImportPID(game.problemID),
       guessWord: game.guessWord.slice(),
       usoResults: gameMode === "uso" ? usableUsoResults(game) : undefined,
       imported: importedTag,
@@ -186,6 +188,10 @@ export async function importFromText(text, { withAchievements = true } = {}) {
           startTime: Number(g.startTime),
           endTime: Number.isFinite(Number(g.endTime)) ? Number(g.endTime) : Number(g.startTime),
           gameMode,
+          // 旧作由来（imported: "auto"）のデイリーは、この読み替えが入る前の端末で
+          // 書き出された JSON だと素の日付 PID のままなので、ここでも同じ読み替えをする。
+          // 本作で遊んだデイリー（imported なし / "json"）は新出題なのでそのまま
+          problemID: g.imported === "auto" ? classicDailyImportPID(g.problemID) : g.problemID,
           usoResults: gameMode === "uso" ? usableUsoResults(g) : undefined,
           imported: g.imported ?? "json",
           ...(withAchievements ? {} : { noAchievements: true }),

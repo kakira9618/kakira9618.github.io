@@ -2,9 +2,9 @@
 // 本作のロジック (js/core/logic.js) の出題・判定が一致することを確認するテスト。
 // 実行: node test/parity.test.mjs
 
-import { ALL_WORDS, EASY_WORDS } from "../js/data/words.js?v=20260803-e";
-import { Logic, queryWordPair } from "../js/core/logic.js?v=20260803-e";
-import { todayPID, isDailyPID, candidateWordsForPID, usesNewGenerator } from "../js/core/problems.js?v=20260803-e";
+import { ALL_WORDS, EASY_WORDS } from "../js/data/words.js?v=20260806-a";
+import { Logic, queryWordPair } from "../js/core/logic.js?v=20260806-a";
+import { todayPID, isDailyPID, candidateWordsForPID, usesNewGenerator, classicDailyImportPID, PID } from "../js/core/problems.js?v=20260806-a";
 
 // ---- 参照実装: 原作 WordList.tonyu / Logic.tonyu の逐語移植 ----
 // 原作は defaultCandWordsList / defaultAllWordsList を共有参照し、pickAns が
@@ -121,6 +121,33 @@ for (const seed of seedsToTest) {
 }
 console.log(`出題一致テスト: ${seedsToTest.length} seeds`);
 
+// ---- 1b. 旧作からインポートしたデイリー（classic-daily 帯）は、新出題への切り替え後の
+// 日付でも原作の抽選と一致する（原作は 2026-08-01 以降も旧 LCG で出題を続けているため）----
+{
+  const dates = [20260801, 20260805, 20261231, 20270615, 20301231];
+  for (const date of dates) {
+    const pid = classicDailyImportPID(date);
+    check(pid === date + PID.CLASSIC_DAILY_OFFSET, `date=${date}: 切り替え後の日付は classic-daily 帯へ読み替わるはず`);
+    check(!usesNewGenerator(pid), `pid=${pid}: classic-daily は旧 LCG のはず`);
+    const mine = new Logic(pid);
+    const orig = new OrigLogic(date);
+    check(
+      mine.ans1 === orig.ans1 && mine.ans2 === orig.ans2,
+      `classic-daily date=${date}: ans mismatch mine=(${mine.ans1},${mine.ans2}) orig=(${orig.ans1},${orig.ans2})`
+    );
+    // 同じ日付の本作デイリー（新出題）とは別問題
+    const current = new Logic(date);
+    check(
+      current.ans1 !== mine.ans1 || current.ans2 !== mine.ans2,
+      `classic-daily date=${date}: 新出題のデイリーと答えが偶然一致（テスト日付を変えること）`
+    );
+  }
+  // 切り替え前の日付は読み替えず、素の PID のまま原作と一致する（セクション 1 で検証済み）
+  check(classicDailyImportPID(20260731) === 20260731, "切り替え前のデイリーは読み替えないはず");
+  check(classicDailyImportPID(123) === 123, "番号問題は読み替えないはず");
+  console.log(`classic-daily 一致テスト: ${dates.length} dates`);
+}
+
 // ---- 2. resetSeed 連鎖（原作の統計・履歴詳細再計算の呼び方）でも一致 ----
 {
   const orig = new OrigLogic(0 + 1); // 原作 getStatistics は Logic{seed:0} だが 0 は N で割った余りが 0 になるだけなので 1 始まりで模す
@@ -186,7 +213,7 @@ console.log(`出題一致テスト: ${seedsToTest.length} seeds`);
 // ---- 5. usoConvert（DWORDlie の嘘変換）----
 // 原作 Game.usoConvert(): 真の判定と必ず異なる状態を、残り 2 状態から等確率で返す。
 {
-  const { CELL, usoConvert } = await import("../js/core/logic.js?v=20260803-e");
+  const { CELL, usoConvert } = await import("../js/core/logic.js?v=20260806-a");
   const STATES = [CELL.UNUSED, CELL.USED, CELL.CORRECT];
 
   check(usoConvert(CELL.GUESSING) === CELL.GUESSING, "guessing は変換されないはず");

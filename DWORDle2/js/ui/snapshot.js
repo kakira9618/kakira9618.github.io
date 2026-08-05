@@ -3,12 +3,12 @@
 // canvas に再レンダリングして PNG としてダウンロードする。
 // コンテンツ配置は全テーマ共通で、配色・装飾だけを現在のテーマに合わせる。
 
-import { SHARE_URL, tileColorsFor, tileInkFor } from "../config.js?v=20260803-e";
-import { MODES, getExtraShot, getExtraShotResult } from "../core/records.js?v=20260803-e";
-import { pidLabel } from "../core/problems.js?v=20260803-e";
-import { CELL } from "../core/logic.js?v=20260803-e";
-import { getSettings } from "../core/settings.js?v=20260803-e";
-import { drawCrown3D } from "./crown.js?v=20260803-e";
+import { SHARE_URL, tileColorsFor, tileInkFor } from "../config.js?v=20260806-a";
+import { MODES, getExtraShot, getExtraShotResult } from "../core/records.js?v=20260806-a";
+import { pidLabel } from "../core/problems.js?v=20260806-a";
+import { CELL } from "../core/logic.js?v=20260806-a";
+import { getSettings } from "../core/settings.js?v=20260806-a";
+import { drawCrown3D } from "./crown.js?v=20260806-a";
 
 // レイアウト定数（すべて基準幅 720px に対する px）
 const SS = {

@@ -14,11 +14,11 @@ globalThis.localStorage = {
   removeItem: (key) => storage.delete(key),
 };
 
-const { Logic } = await import("../js/core/logic.js?v=20260803-e");
-const records = await import("../js/core/records.js?v=20260803-e");
+const { Logic } = await import("../js/core/logic.js?v=20260806-a");
+const records = await import("../js/core/records.js?v=20260806-a");
 const { MODES } = records;
 const { MARK, MARK_STATES, signAchievement, verifyAchievementMark } =
-  await import("../js/core/achievement-mark.js?v=20260803-e");
+  await import("../js/core/achievement-mark.js?v=20260806-a");
 
 let scenarioSerial = 0;
 

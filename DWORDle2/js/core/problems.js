@@ -14,11 +14,14 @@
 // - 20000-39999      : Cls. レベル別（DWORDle 2 で追加した帯）
 // - 100001-139999    : 新出題（表示番号 + NEW_OFFSET。帯の並びは上と同じ）
 // - YYYYMMDD         : デイリー問題（1000000 より大きい PID。やさしい語彙）
+// - 1YYYYMMDD        : 旧作からインポートしたデイリー（YYYYMMDD + CLASSIC_DAILY_OFFSET）。
+//                      原作は 2026-08-01 以降も旧 LCG で出題を続けているため、
+//                      本作の同日デイリー（新出題）とは別問題として持ち、旧 LCG で採点する
 //
 // 原作と同じ Cls. 番号は必ず同じ問題になるよう、リスト内容・順序を変更しないこと。
 
-import { ALL_WORDS, EASY_WORDS } from "../data/words.js?v=20260803-e";
-import { FREQ_ORDER } from "../data/levels.js?v=20260803-e";
+import { ALL_WORDS, EASY_WORDS } from "../data/words.js?v=20260806-a";
+import { FREQ_ORDER } from "../data/levels.js?v=20260806-a";
 
 export const PID = {
   EASY_MIN: 1,
@@ -31,6 +34,9 @@ export const PID = {
   NUMBER_MAX: 39999, // 表示番号の上限（両セット共通）
   NEW_OFFSET: 100000, // 新出題の内部 PID = 表示番号 + これ。100 の倍数なので 100 問ブロックの区切りも揃う
   DAILY_THRESHOLD: 1000000, // これより大きい PID はデイリー
+  // 旧作からインポートした 2026-08-01 以降のデイリーの内部 PID = 日付 (YYYYMMDD) + これ。
+  // 同じ日付でも原作（旧 LCG）と本作（新出題）で答えが違うので、PID を分けて両方を持てるようにする
+  CLASSIC_DAILY_OFFSET: 100000000,
 };
 
 // 新出題への切り替え。デイリーはこの日付の問題から新アルゴリズムになり、
@@ -83,6 +89,28 @@ export function isDailyPID(pid) {
   return pid > PID.DAILY_THRESHOLD;
 }
 
+// 旧作からインポートしたデイリー（旧 LCG で出題・採点する）か。
+// 日付 (YYYYMMDD) は 8 桁までなので、CLASSIC_DAILY_OFFSET を超える PID はこの帯だけ
+export function isClassicDailyPID(pid) {
+  return Number.isInteger(pid) && pid > PID.CLASSIC_DAILY_OFFSET;
+}
+
+// デイリー PID から日付部分 (YYYYMMDD) を取り出す
+export function dailyDatePID(pid) {
+  return isClassicDailyPID(pid) ? pid - PID.CLASSIC_DAILY_OFFSET : pid;
+}
+
+// 旧作の履歴レコードの PID を本作の内部 PID へ読み替える。
+// 原作のデイリーは 2026-08-01 以降も旧 LCG で出題を続けているため、本作が新出題へ
+// 切り替えた日付以降は classic-daily 帯へ移し、旧 LCG で採点できるようにする。
+// それ以外（番号問題・切り替え前のデイリー）は原作と同じ PID のまま。
+export function classicDailyImportPID(pid) {
+  if (isDailyPID(pid) && !isClassicDailyPID(pid) && pid >= NEW_ERA.dailyFromPID) {
+    return pid + PID.CLASSIC_DAILY_OFFSET;
+  }
+  return pid;
+}
+
 // 旧出題（Cls.）か。リリース済みの履歴に入っている PID はすべてこちら。
 export function isClassicPID(pid) {
   return Number.isInteger(pid) && pid >= PID.EASY_MIN && pid <= PID.NUMBER_MAX;
@@ -92,8 +120,11 @@ export function isNewPID(pid) {
   return Number.isInteger(pid) && pid > PID.NEW_OFFSET && pid <= PID.NEW_OFFSET + PID.NUMBER_MAX;
 }
 
-// 内部 PID から表示上の番号へ。デイリーは番号を持たないのでそのまま返す。
+// 内部 PID から表示上の番号へ。デイリーは番号を持たないので日付 (YYYYMMDD) を返す。
+// 旧 LCG（logic.js の #pickAns）はこの値をシードに使うため、旧作インポートのデイリーは
+// 必ず日付そのもの（原作と同じシード）へ戻すこと。
 export function problemNumber(pid) {
+  if (isDailyPID(pid)) return dailyDatePID(pid);
   return isNewPID(pid) ? pid - PID.NEW_OFFSET : pid;
 }
 
@@ -107,7 +138,9 @@ export function numberPrefix(classic) {
 }
 
 // この PID の出題に新しい乱数を使うか。デイリーは日付、それ以外はセットで決まる。
+// 旧作からインポートしたデイリー（classic-daily 帯）は日付によらず旧 LCG。
 export function usesNewGenerator(pid) {
+  if (isClassicDailyPID(pid)) return false;
   return isDailyPID(pid) ? pid >= NEW_ERA.dailyFromPID : isNewPID(pid);
 }
 
@@ -158,7 +191,11 @@ export function pidForLevelIndex(level, index, classic = false) {
 
 export function pidLabel(pid) {
   if (isDailyPID(pid)) {
-    return `Daily ${String(pid).slice(0, 4)}-${String(pid).slice(4, 6)}-${String(pid).slice(6, 8)}`;
+    const date = String(dailyDatePID(pid));
+    // 旧作インポートのデイリーは、同じ日付の本作デイリーと区別できるよう Cls. を添える。
+    // ヘッダの 2 行表示（空白で分割）を崩さないよう、ラベルは 2 語のままにする
+    const kind = isClassicDailyPID(pid) ? "Daily(Cls.)" : "Daily";
+    return `${kind} ${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6, 8)}`;
   }
   return `${numberPrefix(isClassicPID(pid))}${problemNumber(pid)}`;
 }

@@ -3,9 +3,9 @@
 // 2 段ドリルダウンで一覧・選択しやすくしている。
 // ルート: #/problems
 
-import { el, clear, fmtDateTime } from "./dom.js?v=20260803-e";
-import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260803-e";
-import { buildProblemStatus, MODES } from "../core/records.js?v=20260803-e";
+import { el, clear, fmtDateTime } from "./dom.js?v=20260806-a";
+import { registerScreen, navigate, getAppMode, setAppMode } from "./app.js?v=20260806-a";
+import { buildProblemStatus, MODES } from "../core/records.js?v=20260806-a";
 import {
   LEVELS,
   PID,
@@ -17,14 +17,14 @@ import {
   pidRangeForLevel,
   problemNumber,
   todayPID,
-} from "../core/problems.js?v=20260803-e";
-import { playSfx } from "../audio/sound.js?v=20260803-e";
-import { showModal } from "./modal.js?v=20260803-e";
-import { confirmAndStart } from "./game-screen.js?v=20260803-e";
-import { toast } from "./toast.js?v=20260803-e";
-import { soundToggleButton } from "./sound-toggle.js?v=20260803-e";
-import { icon } from "./icons.js?v=20260803-e";
-import { localizedLevel, tr } from "../core/i18n.js?v=20260803-e";
+} from "../core/problems.js?v=20260806-a";
+import { playSfx } from "../audio/sound.js?v=20260806-a";
+import { showModal } from "./modal.js?v=20260806-a";
+import { confirmAndStart } from "./game-screen.js?v=20260806-a";
+import { toast } from "./toast.js?v=20260806-a";
+import { soundToggleButton } from "./sound-toggle.js?v=20260806-a";
+import { icon } from "./icons.js?v=20260806-a";
+import { localizedLevel, tr } from "../core/i18n.js?v=20260806-a";
 
 const BLOCK_SIZE = 100;
 

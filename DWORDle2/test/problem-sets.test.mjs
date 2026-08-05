@@ -11,6 +11,9 @@ import {
   NEW_ERA,
   PID,
   candidateWordsForPID,
+  classicDailyImportPID,
+  dailyDatePID,
+  isClassicDailyPID,
   isClassicPID,
   isDailyPID,
   isNewPID,
@@ -22,9 +25,9 @@ import {
   problemNumber,
   usesNewGenerator,
   LEVELS,
-} from "../js/core/problems.js?v=20260803-e";
-import { Logic } from "../js/core/logic.js?v=20260803-e";
-import { achievementIdsFromHistory } from "../js/core/achievements.js?v=20260803-e";
+} from "../js/core/problems.js?v=20260806-a";
+import { Logic } from "../js/core/logic.js?v=20260806-a";
+import { achievementIdsFromHistory } from "../js/core/achievements.js?v=20260806-a";
 
 // ---- 番号と内部 PID の対応 ----
 
@@ -96,6 +99,31 @@ assert.equal(
   new Date(NEW_ERA.achievementCutoffSec * 1000).toDateString(),
   new Date(2026, 7, 1).toDateString(),
   "実績カットオフとデイリーの切り替え日をずらさない"
+);
+
+// ---- 旧作からインポートしたデイリー（classic-daily 帯）----
+// 原作は切り替え後も旧 LCG でデイリーを出題し続けるので、インポート時に
+// 切り替え日以降の日付だけ classic-daily 帯へ読み替え、旧 LCG で採点する。
+
+assert.equal(classicDailyImportPID(20260731), 20260731, "切り替え前のデイリーは素の PID のまま");
+assert.equal(classicDailyImportPID(20260801), 120260801, "切り替え日以降は classic-daily 帯へ");
+assert.equal(classicDailyImportPID(12345), 12345, "番号問題は読み替えない");
+assert.equal(classicDailyImportPID(120260801), 120260801, "読み替え済みの PID は二重に読み替えない");
+
+assert.equal(isClassicDailyPID(120260801), true);
+assert.equal(isClassicDailyPID(20260801), false);
+assert.equal(isClassicDailyPID(100001), false, "新出題の番号帯を classic-daily と誤認しない");
+assert.equal(isDailyPID(120260801), true, "classic-daily もデイリーの一種");
+assert.equal(isValidPID(120260801), true);
+assert.equal(usesNewGenerator(120260801), false, "classic-daily は日付によらず旧 LCG");
+assert.equal(dailyDatePID(120260805), 20260805);
+assert.equal(dailyDatePID(20260805), 20260805);
+assert.equal(problemNumber(120260805), 20260805, "旧 LCG のシードは日付そのもの");
+assert.equal(pidLabel(120260805), "Daily(Cls.) 2026-08-05");
+assert.equal(
+  candidateWordsForPID(120260805),
+  candidateWordsForPID(20260805),
+  "候補語リストはデイリーと同じ（やさしい語彙）"
 );
 
 // ---- Cls. の出題は 1 問も変わらない ----

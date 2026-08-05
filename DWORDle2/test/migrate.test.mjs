@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { Logic } from "../js/core/logic.js?v=20260803-e";
+import { Logic } from "../js/core/logic.js?v=20260806-a";
 
 const storage = new Map();
 globalThis.localStorage = {
@@ -39,9 +39,9 @@ storage.set(
   })
 );
 
-const { scanLegacyHistory, importFromLocalStorage } = await import("../js/core/migrate.js?v=20260803-e");
-const { getHistory } = await import("../js/core/records.js?v=20260803-e");
-const { achievementIdsFromHistory } = await import("../js/core/achievements.js?v=20260803-e");
+const { scanLegacyHistory, importFromLocalStorage } = await import("../js/core/migrate.js?v=20260806-a");
+const { getHistory } = await import("../js/core/records.js?v=20260806-a");
+const { achievementIdsFromHistory } = await import("../js/core/achievements.js?v=20260806-a");
 
 assert.equal(scanLegacyHistory().length, 2, "both original games should be detected");
 assert.equal(importFromLocalStorage(), 2);
@@ -56,7 +56,7 @@ assert(achievementIds.has("uso-clear"));
 
 // ---- (startTime, gameMode) の衝突: 別 problemID は 1 秒ずらして共存し、再インポートは冪等 ----
 {
-  const { addImportedGames } = await import("../js/core/records.js?v=20260803-e");
+  const { addImportedGames } = await import("../js/core/records.js?v=20260806-a");
   const makeImported = (problemID) => {
     const logic = new Logic(problemID);
     return {
@@ -76,7 +76,7 @@ assert(achievementIds.has("uso-clear"));
 
 // ---- 壊れたレコードの除外: No.0（デイリーエイリアス）や不正な Guess は取り込まない ----
 {
-  const { importFromText } = await import("../js/core/migrate.js?v=20260803-e");
+  const { importFromText } = await import("../js/core/migrate.js?v=20260806-a");
   const before = getHistory().length;
   const { added } = await importFromText(JSON.stringify({
     app: "dwordle2",
@@ -95,8 +95,8 @@ assert(achievementIds.has("uso-clear"));
 // 未知の gameMode をそのまま履歴へ入れると MODES[gameMode] を引く画面が例外で開けなくなり、
 // 非数値の startTime は履歴のソートと結果画面 URL のキーを壊す。
 {
-  const { importFromText } = await import("../js/core/migrate.js?v=20260803-e");
-  const { MODES } = await import("../js/core/records.js?v=20260803-e");
+  const { importFromText } = await import("../js/core/migrate.js?v=20260806-a");
+  const { MODES } = await import("../js/core/records.js?v=20260806-a");
   const before = getHistory().length;
   const { added } = await importFromText(
     JSON.stringify({
@@ -122,8 +122,8 @@ assert(achievementIds.has("uso-clear"));
 
 // ---- 壊れた usoResults: 画面が各行を配列として反復するので、形が完全なものだけ通す ----
 {
-  const { importFromText } = await import("../js/core/migrate.js?v=20260803-e");
-  const { CELL } = await import("../js/core/logic.js?v=20260803-e");
+  const { importFromText } = await import("../js/core/migrate.js?v=20260806-a");
+  const { CELL } = await import("../js/core/logic.js?v=20260806-a");
   const goodRow = [CELL.UNUSED, CELL.USED, CELL.CORRECT, CELL.UNUSED, CELL.USED];
   const { added } = await importFromText(
     JSON.stringify({
@@ -181,7 +181,7 @@ assert(achievementIds.has("uso-clear"));
 
 // ---- 実績を解除しないインポート: noAchievements が付き、実績判定から恒久的に除外される ----
 {
-  const { importFromText } = await import("../js/core/migrate.js?v=20260803-e");
+  const { importFromText } = await import("../js/core/migrate.js?v=20260806-a");
   const logic = new Logic(11);
   storage.set(
     "/Tonyu/Projects/dwordle/history_3.json",
@@ -216,7 +216,7 @@ assert(achievementIds.has("uso-clear"));
 
 // ---- 段階解放のプレイ回数: インポートは数えず、同じ問題の再プレイは数える ----
 {
-  const { addFinishedGame, countPlays } = await import("../js/core/records.js?v=20260803-e");
+  const { addFinishedGame, countPlays } = await import("../js/core/records.js?v=20260806-a");
   assert.equal(countPlays(), 1, "imported records must not count toward menu unlock plays");
   const logic = new Logic(7);
   const play = () =>
@@ -234,7 +234,7 @@ assert(achievementIds.has("uso-clear"));
 
 // ---- 貼り付けからの取り込みは本作のエクスポート専用（旧作の履歴は自動検出へ誘導する）----
 {
-  const { importFromText } = await import("../js/core/migrate.js?v=20260803-e");
+  const { importFromText } = await import("../js/core/migrate.js?v=20260806-a");
   const before = getHistory().length;
   await assert.rejects(
     () => importFromText(JSON.stringify({
@@ -251,8 +251,8 @@ assert(achievementIds.has("uso-clear"));
 
 // ---- エクスポート JSON の署名: 書き出したままなら ok、1 文字でも変われば invalid ----
 {
-  const { exportJSON } = await import("../js/core/records.js?v=20260803-e");
-  const { importFromText } = await import("../js/core/migrate.js?v=20260803-e");
+  const { exportJSON } = await import("../js/core/records.js?v=20260806-a");
+  const { importFromText } = await import("../js/core/migrate.js?v=20260806-a");
   const exported = JSON.parse(await exportJSON());
   assert.match(exported.signature, /^[0-9a-f]{64}$/, "the export should carry an HMAC signature");
 
@@ -282,6 +282,102 @@ assert(achievementIds.has("uso-clear"));
   // 署名の無い JSON（署名を入れる前のエクスポート）は missing。取り込みは通す
   const { signature: _dropped, ...unsigned } = exported;
   assert.equal((await importFromText(JSON.stringify(unsigned))).signature, "missing");
+}
+
+// ---- 旧作インポートのデイリー: 2026-08-01 以降は classic-daily 帯へ読み替えて旧 LCG で採点 ----
+// 原作は新出題への切り替え後も旧 LCG でデイリーを出題し続けているため、同じ日付でも
+// 本作のデイリーとは別問題。素の日付 PID のまま取り込むと新出題の答えで誤採点される。
+{
+  const { importFromText } = await import("../js/core/migrate.js?v=20260806-a");
+  const { PID } = await import("../js/core/problems.js?v=20260806-a");
+  const { _reload } = await import("../js/core/records.js?v=20260806-a");
+
+  const date = 20260805;
+  const classicPid = date + PID.CLASSIC_DAILY_OFFSET;
+  const oldAnswer = new Logic(classicPid).ans1; // 原作（旧 LCG）の答え
+  const newAnswer = new Logic(date).ans1; // 本作（新出題）の答え
+  assert.notEqual(oldAnswer, newAnswer, "新旧の答えが偶然一致（テストの日付を変えること）");
+
+  // 自動検出からの取り込みで読み替え・旧 LCG 採点される
+  storage.set(
+    "/Tonyu/Projects/dwordle/history_4.json",
+    JSON.stringify({
+      version: 1,
+      "1790000000": {
+        complete: true,
+        startTime: 1_790_000_000,
+        endTime: 1_790_000_100,
+        gameMode: "normal",
+        problemID: date,
+        guessWord: [oldAnswer],
+      },
+    })
+  );
+  assert.equal(importFromLocalStorage(), 1);
+  const imported = getHistory().find((r) => r.startTime === 1_790_000_000);
+  assert.equal(imported.problemID, classicPid, "切り替え後の旧作デイリーは classic-daily 帯で保存される");
+  assert.equal(imported.clear, true, "旧 LCG の答えでクリアと採点される");
+  assert.equal(importFromLocalStorage(), 0, "読み替え後も再インポートは冪等");
+
+  // classic-daily は Cls. と同様、切り替え後のプレイなので実績には数えない
+  const ids = achievementIdsFromHistory(getHistory());
+  assert(!ids.has("daily-clear"), "旧作インポートのデイリークリアで実績を解除しない");
+
+  // classic-daily 帯の導入前に取り込まれた誤採点レコード（素の日付 PID・新出題で採点）は、
+  // 読み込み時に読み替えて採点し直す
+  const stored = JSON.parse(storage.get("dwordle2.history"));
+  stored.push({
+    startTime: 1_790_100_000,
+    endTime: 1_790_100_100,
+    gameMode: "normal",
+    problemID: date,
+    guessWord: [oldAnswer],
+    clear: false, // 新出題の答えで誤採点されていた
+    imported: "auto",
+  });
+  storage.set("dwordle2.history", JSON.stringify(stored));
+  _reload();
+  const repaired = getHistory().find((r) => r.startTime === 1_790_100_000);
+  assert.equal(repaired.problemID, classicPid, "導入前に取り込まれたレコードも読み込み時に読み替える");
+  assert.equal(repaired.clear, true, "clear も旧 LCG で採点し直す");
+  assert.equal(
+    JSON.parse(storage.get("dwordle2.history")).some((r) => r.startTime === 1_790_100_000 && r.problemID === classicPid),
+    true,
+    "読み替えた結果は保存し直される"
+  );
+
+  // 読み替え前の端末で書き出したエクスポート JSON（旧作由来 = imported: "auto"）も読み替える。
+  // 本作で遊んだデイリー（imported なし）は新出題のままにする
+  const { added } = await importFromText(
+    JSON.stringify({
+      app: "dwordle2",
+      version: 2,
+      history: [
+        {
+          startTime: 1_790_200_000,
+          endTime: 1_790_200_100,
+          gameMode: "normal",
+          problemID: date,
+          guessWord: [oldAnswer],
+          imported: "auto",
+        },
+        {
+          startTime: 1_790_300_000,
+          endTime: 1_790_300_100,
+          gameMode: "normal",
+          problemID: date,
+          guessWord: [newAnswer],
+        },
+      ],
+    })
+  );
+  assert.equal(added, 2);
+  const viaExport = getHistory().find((r) => r.startTime === 1_790_200_000);
+  assert.equal(viaExport.problemID, classicPid, "エクスポート経由でも旧作由来のデイリーは読み替える");
+  assert.equal(viaExport.clear, true);
+  const ownDaily = getHistory().find((r) => r.startTime === 1_790_300_000);
+  assert.equal(ownDaily.problemID, date, "本作で遊んだデイリーは読み替えない");
+  assert.equal(ownDaily.clear, true, "本作のデイリーは新出題のまま採点される");
 }
 
 console.log("履歴移行テスト: OK");

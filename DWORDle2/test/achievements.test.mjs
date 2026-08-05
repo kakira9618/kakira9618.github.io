@@ -8,13 +8,13 @@ import {
   achievementIdsFromHistory,
   achievementProgress,
   formatAchievementProgress,
-} from "../js/core/achievements.js?v=20260803-e";
-import { Logic, queryWordPair } from "../js/core/logic.js?v=20260803-e";
+} from "../js/core/achievements.js?v=20260806-a";
+import { Logic, queryWordPair } from "../js/core/logic.js?v=20260806-a";
 // 隠し実績の名前・条件はソースに平文を置かない方針なので、テストでも符号化して比較する
 // （符号化は node tools/make-secret.mjs encode "<文章>"）
-import { reveal } from "../js/core/secret.js?v=20260803-e";
-import { ALL_WORDS } from "../js/data/words.js?v=20260803-e";
-import { pidForNumber } from "../js/core/problems.js?v=20260803-e";
+import { reveal } from "../js/core/secret.js?v=20260806-a";
+import { ALL_WORDS } from "../js/data/words.js?v=20260806-a";
+import { pidForNumber } from "../js/core/problems.js?v=20260806-a";
 
 function clearRecord({
   pid = 1,

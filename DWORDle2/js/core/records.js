@@ -16,10 +16,10 @@
 //       // 旧キー finalAnswer は読込時に extraShot へ移行する。
 //   }
 
-import { loadJSON, saveJSON, onExternalChange } from "./store.js?v=20260803-e";
-import { Logic, CELL, queryWordSingle } from "./logic.js?v=20260803-e";
-import { isDailyPID } from "./problems.js?v=20260803-e";
-import { signatureAvailable, signPayload } from "./signature.js?v=20260803-e";
+import { loadJSON, saveJSON, onExternalChange } from "./store.js?v=20260806-a";
+import { Logic, CELL, queryWordSingle } from "./logic.js?v=20260806-a";
+import { classicDailyImportPID, isDailyPID } from "./problems.js?v=20260806-a";
+import { signatureAvailable, signPayload } from "./signature.js?v=20260806-a";
 
 export const MODES = {
   normal: { key: "normal", title: "DWORDle", maxGuess: 10 },
@@ -67,12 +67,26 @@ onExternalChange("history", () => {
   history = null;
 });
 
+// classic-daily 帯（problems.js 参照）を導入する前に旧作から取り込まれた
+// 2026-08-01 以降のデイリーは、素の日付 PID のまま保存されており、新出題の答えで
+// 誤採点されている。旧 LCG の問題として読み替え、clear も採点し直す。
+// 旧作由来のレコードは importFromLocalStorage が付ける imported: "auto" だけ
+// （本作で遊んだデイリーや、エクスポート JSON 経由の "json" は新出題なので触らない）。
+function normalizeImportedDailyRecord(record) {
+  if (record?.imported !== "auto") return record;
+  const problemID = classicDailyImportPID(record.problemID);
+  if (problemID === record.problemID) return record;
+  const fixed = { ...record, problemID };
+  fixed.clear = computeClear(fixed);
+  return fixed;
+}
+
 function ensureLoaded() {
   if (history === null) {
     const loaded = loadJSON("history", []);
-    history = loaded.map(normalizeExtraShotRecord);
+    history = loaded.map((record) => normalizeImportedDailyRecord(normalizeExtraShotRecord(record)));
     history.sort((a, b) => a.startTime - b.startTime);
-    // 一度読み込んだ旧履歴は新キーで保存し直す。以後のエクスポートも extraShot になる。
+    // 一度読み込んだ旧履歴は新キー・新 PID で保存し直す。以後のエクスポートにも反映される。
     if (history.some((record, index) => record !== loaded[index])) persist();
   }
   return history;

@@ -32,13 +32,13 @@
 //   hadLostBefore, // この問題で過去に敗北していたか
 // }
 
-import { loadJSON, saveJSON, onExternalChange } from "./store.js?v=20260803-e";
-import { isClassicPID, isDailyPID, NEW_ERA, PID, problemNumber } from "./problems.js?v=20260803-e";
-import { getHistory, getExtraShot, MODES } from "./records.js?v=20260803-e";
-import { CELL, Logic } from "./logic.js?v=20260803-e";
-import { isDebugMode } from "./debug.js?v=20260803-e";
-import { reveal } from "./secret.js?v=20260803-e";
-import { MARK, signAchievement, verifyAchievementMark } from "./achievement-mark.js?v=20260803-e";
+import { loadJSON, saveJSON, onExternalChange } from "./store.js?v=20260806-a";
+import { isClassicDailyPID, isClassicPID, isDailyPID, NEW_ERA, PID, problemNumber } from "./problems.js?v=20260806-a";
+import { getHistory, getExtraShot, MODES } from "./records.js?v=20260806-a";
+import { CELL, Logic } from "./logic.js?v=20260806-a";
+import { isDebugMode } from "./debug.js?v=20260806-a";
+import { reveal } from "./secret.js?v=20260806-a";
+import { MARK, signAchievement, verifyAchievementMark } from "./achievement-mark.js?v=20260806-a";
 
 // v7: 月間皆勤（30 日）→ 二週間皆勤（14 日）の緩和を既存履歴にも適用する
 // v8: 無限の探求の緩和（5000 → 1000 回）と、新設した DOUBLE CLEAR 系実績を既存履歴に適用する
@@ -428,6 +428,10 @@ function achievementDayProblemKey(record) {
 // そのまま有効なので、既に解除した実績が取り消されることはない。
 // 完了時刻の分からない移行レコードは、必ず切り替え前のものなので数える。
 export function isScoredRecord(record) {
+  // 旧作からインポートした 2026-08-01 以降のデイリー（classic-daily 帯）も旧 LCG の
+  // 出題なので、切り替え後の Cls. と同様に実績へは数えない（日付が切り替え以降のものしか
+  // この帯に入らないため、時刻の判定は不要）。
+  if (isClassicDailyPID(record?.problemID)) return false;
   if (!isClassicPID(record?.problemID)) return true;
   const at = completedAtSec(record);
   return at === null || at < NEW_ERA.achievementCutoffSec;
