@@ -114,12 +114,37 @@ if (/Android/i.test(navigator.userAgent)) document.body.classList.add("android-f
 
     // 新しい SW への切替 = 新デプロイの事前キャッシュ完了。扉絵の間なら再読み込みだけで
     // 最新版になるので自動で行い、プレイが始まっていたらトーストで知らせるに留める。
+    //
+    // ただし自動リロードは間隔を制限する。GitHub Pages の CDN はデプロイ後 max-age=600 の間、
+    // エッジにより新旧どちらの sw.js も返るため、更新チェックのたびに「別バージョン」として
+    // SW が入れ替わり続けることがある。無条件にリロードすると扉絵で無限リロードになる
+    // （Android Chrome で実発生。tools/verify-sw-update.mjs の混在シナリオで再現できる）。
+    // sessionStorage はリロードを跨いでタブ内に残るので、直近の自動リロード時刻を覚えておき、
+    // 間隔内の 2 回目以降はトースト通知に格下げする。
+    const AUTO_RELOAD_MIN_INTERVAL_MS = 60 * 1000;
+    const AUTO_RELOAD_AT_KEY = "dwordle2.autoReloadAt";
+    const lastAutoReloadAt = () => {
+      try {
+        return Number(sessionStorage.getItem(AUTO_RELOAD_AT_KEY)) || 0;
+      } catch {
+        return 0; // sessionStorage が使えない環境では間隔制限なし（従来どおり）
+      }
+    };
+    const markAutoReload = () => {
+      try {
+        sessionStorage.setItem(AUTO_RELOAD_AT_KEY, String(Date.now()));
+      } catch {}
+    };
     const hadController = Boolean(navigator.serviceWorker.controller);
     let reloadedForUpdate = false;
     navigator.serviceWorker.addEventListener("controllerchange", () => {
       if (!hadController || reloadedForUpdate) return; // 初回インストール時は何もしない
       reloadedForUpdate = true;
-      if (document.getElementById("entry-gate")) {
+      if (
+        document.getElementById("entry-gate") &&
+        Date.now() - lastAutoReloadAt() >= AUTO_RELOAD_MIN_INTERVAL_MS
+      ) {
+        markAutoReload();
         location.reload();
       } else {
         notify(tr("新しいバージョンがあります。再読み込みで最新になります", "A new version is available. Reload to get the latest."));

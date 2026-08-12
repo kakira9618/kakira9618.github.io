@@ -6,6 +6,8 @@
 //   3) プレイ開始後に更新が届いたらリロードせずトーストで知らせること
 //   4) 緊急フラグ付き（--force-reload）ならプレイ開始後でも強制リロードし、
 //      同じ版ではリロードを繰り返さないこと
+//   5) CDN のエッジ新旧混在（sw.js がリクエストごとに交互に返る。GitHub Pages は
+//      デプロイ後 max-age=600 の間これが起こり得る）でも、リロードループにならないこと
 // を確認する。使い方: node tools/verify-sw-update.mjs（npm test とは独立の手動検証）
 import { spawnSync } from "node:child_process";
 import http from "node:http";
@@ -20,6 +22,8 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PORT = 8963;
 // 緊急更新の予告（5 秒）より長く待って、二度目のリロードが来ないことを見る
 const CRITICAL_LOOP_WATCH_MS = 9000;
+// 新旧混在（flap）でのループ観察時間。修正前は毎秒 1 回リロードし続けていた
+const FLAP_WATCH_MS = 12000;
 const CONTENT_TYPES = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -29,13 +33,23 @@ const CONTENT_TYPES = {
   ".md": "text/markdown; charset=utf-8",
 };
 
-// GitHub Pages と同じく max-age=600 + Last-Modified 再検証で配信する（毎回ディスクから読む）
-function serve(siteRoot) {
+// GitHub Pages と同じく max-age=600 + Last-Modified 再検証で配信する（毎回ディスクから読む）。
+// state.flapSw に [bytesA, bytesB] を入れると、/sw.js だけリクエストごとに交互に返して
+// CDN エッジの新旧混在を再現する。
+function serve(siteRoot, state) {
   return new Promise((resolve) => {
     const server = http.createServer(async (req, res) => {
       try {
         let pathname = decodeURIComponent(new URL(req.url, "http://localhost").pathname);
         if (pathname.endsWith("/")) pathname += "index.html";
+        if (pathname === "/sw.js" && state.flapSw) {
+          res.writeHead(200, {
+            "Cache-Control": "public, max-age=600",
+            "Content-Type": CONTENT_TYPES[".js"],
+          });
+          res.end(state.flapSw[state.flapCount++ % state.flapSw.length]);
+          return;
+        }
         const file = path.join(siteRoot, pathname);
         const info = await stat(file);
         const lastModified = info.mtime.toUTCString();
@@ -88,7 +102,8 @@ async function main() {
   for (const entry of entries) {
     await cp(path.join(root, entry), path.join(siteRoot, entry), { recursive: true });
   }
-  const server = await serve(siteRoot);
+  const serverState = { flapSw: null, flapCount: 0 };
+  const server = await serve(siteRoot, serverState);
   const browser = await chromium.launch();
   const failures = [];
   try {
@@ -96,6 +111,7 @@ async function main() {
     const baseUrl = `http://127.0.0.1:${PORT}/?sw=1`; // localhost は ?sw=1 のときだけ SW を登録する
 
     // 初回訪問: SW が install（事前キャッシュ）を終えるまで待つ
+    const originalSw = await readFile(path.join(siteRoot, "sw.js")); // 混在シナリオの「旧」役
     const oldHash = await readSourceHash(siteRoot);
     await page.goto(baseUrl, { waitUntil: "networkidle" });
     // install が失敗した場合 ready は永遠に解決しないので、上限を付けて原因ごと落とす
@@ -224,6 +240,29 @@ async function main() {
         console.log("リロードループ防止: OK（同じ版では二度目のリロードをしない）");
       }
     }
+
+    // CDN のエッジ新旧混在を再現: sw.js がリクエストごとに新旧交互に返り続けても、
+    // 扉絵での自動リロードは間隔制限（main.js の AUTO_RELOAD_MIN_INTERVAL_MS）で
+    // 1 回に収まり、リロードループにならない
+    await wait(1100);
+    await appendFile(path.join(siteRoot, "js", "config.js"), `\n// flap marker ${Date.now()}\n`);
+    const regen4 = spawnSync("node", [path.join("tools", "make-source-hash.mjs")], { cwd: siteRoot });
+    if (regen4.status !== 0) throw new Error(`make-source-hash に失敗: ${regen4.stderr}`);
+    serverState.flapSw = [originalSw, await readFile(path.join(siteRoot, "sw.js"))];
+    serverState.flapCount = 0;
+    const flapPage = await browser.newPage(); // sessionStorage が新品のタブで扉絵から始める
+    let flapReloads = 0;
+    flapPage.on("load", () => { flapReloads++; });
+    await flapPage.goto(baseUrl, { waitUntil: "load" });
+    flapReloads = 0; // 初回表示は数えない
+    await wait(FLAP_WATCH_MS);
+    if (flapReloads > 2) {
+      failures.push(`CDN の新旧混在でリロードループ（${FLAP_WATCH_MS / 1000} 秒に ${flapReloads} 回リロード）`);
+    } else {
+      console.log(`CDN 新旧混在: OK（自動リロード ${flapReloads} 回で収束）`);
+    }
+    serverState.flapSw = null;
+    await flapPage.close();
 
     if (failures.length > 0) {
       console.error("SW 更新フロー検証: NG");
