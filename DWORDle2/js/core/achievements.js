@@ -1,4 +1,4 @@
-// 実績システム。通常 50 種 + 隠し 20 種。
+// 実績システム。通常 50 種 + 隠し 23 種。
 //
 // 同日・同問題の再プレイ（achievementCountableRecords のカウント対象外）では、
 // カウント系実績に加えて隠し実績と、1 手/2 手クリア・幻の正解のように答えを知っていれば
@@ -42,7 +42,9 @@ import { MARK, signAchievement, verifyAchievementMark } from "./achievement-mark
 
 // v7: 月間皆勤（30 日）→ 二週間皆勤（14 日）の緩和を既存履歴にも適用する
 // v8: 無限の探求の緩和（5000 → 1000 回）と、新設した DOUBLE CLEAR 系実績を既存履歴に適用する
-const RECONCILE_VERSION = 8;
+// v9: DOUBLE CLEAR 系実績の追加（デイリー連続・極の裏・60 秒）を既存履歴に適用する
+//     （深淵の両取りは DWORDle 限定へ変更。解除済みの実績は取り消さない）
+const RECONCILE_VERSION = 9;
 export const COLLECTOR_REQUIREMENT = 30;
 
 // 実績画面の見出しに使うカテゴリ。ACHIEVEMENTS はこの順に並べる
@@ -139,8 +141,11 @@ export const ACHIEVEMENTS = [
   { id: "h-double-uso", hidden: true, icon: "eye", color: "#ff9ad0", name: reveal("2PzLSpd9ixCdntMj/mLjeLvnsSiB"), desc: reveal("fyod+1KoAfQbntMONoAnxHkxF4lViC3QaV2xKI8n6hrUwdpMjlyLEJWY2g3zavJyut2xKIcn6RrY/9tNrmWOB4Ke0wfxafxyuvWxK4Qszhrd985Kl0uHLbI=") },
   { id: "h-double-oneshot", hidden: true, icon: "bolt", color: "#8fe3ff", name: reveal("3NjMSpdqjCu3m9si"), desc: reveal("Cl20IJ0n6j7Y/vhKlGaLELCe0CA2gCfEeTEXiVWILdBpXbEojyfqGtTB2kyGTIA5s11gifBN43K62rYRtyL+KNj8/E67UIsQs57QO/N5+3K627ErnSvUGA==") },
   { id: "h-double-10", glow: true, hidden: true, icon: "crown", color: "#ffd166", name: reveal("38feTJNKixOpmOw+9Ubjebv4"), desc: reveal("fzIH61qBSNJ3OBP7NifqA9L9yE64U0igC123Mogt6QXd9cJKl12LE7A=") },
-  { id: "h-double-abyss", hidden: true, icon: "deepGem", color: "#a0d8e8", name: reveal("3crjT6FxixCVmeoI80v+crn3"), desc: reveal("3djniT6KB78KTWKZJulZqAJEa4A2J+k2Gzkd/FSILbF4MRfoROSLEKKe0CI=") },
+  { id: "h-double-abyss", hidden: true, icon: "deepGem", color: "#a0d8e8", name: reveal("3crjT6FxixCVmeoI80v+crn3"), desc: reveal("3djniT6KB78KTWKZJulZqAJEa4A2J+k/GzkF5kSABPQbntMONoAnxHkxF4lViC3QaV2xKI8n6ho=") },
+  { id: "h-double-abyss-uso", glow: true, hidden: true, icon: "deepGem", color: "#a0d8e8", name: reveal("3crjT6FxixO5ntMj/mLjeLvnsSiB"), desc: reveal("3djniT6KB78KTWKZJulZqAJEa4A2J+k/GzkF5kSABPheXbEoseQs3m4/Huw2hyTUei9ySpddixOw") },
+  { id: "h-double-speed", hidden: true, icon: "gauge", color: "#ffe066", name: reveal("3OvsQLRsixCVmeoI80v+crn3"), desc: reveal("0uvZTLFPixCwntAgNvJYsdzawE2tYY0Xvp7TAjaAJ8R5MReJVYgt0GldsSiPJ+oa") },
   { id: "h-double-streak-3", hidden: true, icon: "chain", color: "#ffb0e0", name: reveal("3vLeToRjixCVlNIK/0r+"), desc: reveal("CF2xK6Qn6y3Y/vJAlmePJ6Ge0w42gCfEeTEXiVWILdBpXbEojyfqGg==") },
+  { id: "h-double-daily-7", hidden: true, icon: "flag", color: "#ffd166", name: reveal("38feTJNKixCVmsgv80/M"), desc: reveal("2P7VSpRgixKRntEV81HneJrxsSuE5F+x3er3QJZnjyehntMONoAnxHkxF4lViC3QaV2xKI8n6ho=") },
 ];
 
 let unlocked = loadJSON("achievements", {}); // { id: unlockedAt(sec) }
@@ -190,7 +195,7 @@ const PLAY_ACHIEVEMENT_IDS = new Set([
   // 1 局の難度・速さが条件の隠し実績
   "h-abyss", "h-lightning",
   // EXTRA SHOT（DOUBLE CLEAR）
-  "h-double-clear", "h-double-uso", "h-double-oneshot", "h-double-abyss",
+  "h-double-clear", "h-double-uso", "h-double-oneshot", "h-double-abyss", "h-double-abyss-uso", "h-double-speed",
 ]);
 
 let marks = loadJSON("achievements.sig", {}); // { id: signature }
@@ -601,6 +606,7 @@ export function achievementIdsFromHistory(records) {
 
   const words = new Set();
   const dailyClears = [];
+  const dailyDoubleClears = [];
   const lostProblems = new Set();
   const winStreak = { normal: 0, uso: 0 };
   let wins = 0;
@@ -714,7 +720,9 @@ export function achievementIdsFromHistory(records) {
       ids.add("h-double-clear");
       if (mode === "uso") ids.add("h-double-uso");
       if (guesses === 1) ids.add("h-double-oneshot");
-      if (isExtremeProblem(pid)) ids.add("h-double-abyss");
+      if (isExtremeProblem(pid)) ids.add(mode === "uso" ? "h-double-abyss-uso" : "h-double-abyss");
+      if (durationKnown && endTime - startTime <= 60) ids.add("h-double-speed");
+      if (isDailyPID(pid)) dailyDoubleClears.push(pid);
     }
 
     if (countable) {
@@ -734,6 +742,7 @@ export function achievementIdsFromHistory(records) {
   if (words.size >= 1000) ids.add("h-lexicon");
   if (clearedZoromeCount(countableGames) >= 10) ids.add("h-zorome");
   if (maxHistoricalDailyStreak(dailyClears) >= 7) ids.add("daily-7");
+  if (maxHistoricalDailyStreak(dailyDoubleClears) >= 7) ids.add("h-double-daily-7");
   // 継続系のために、Cls. を除く前の履歴を渡す（内部で対象を選び分ける）
   for (const id of calendarAndCountIds(source)) ids.add(id);
   return ids;
@@ -906,12 +915,17 @@ function checkOnGameFinishInner(ctx) {
       unlock("h-double-clear", newly);
       if (isUso) unlock("h-double-uso", newly);
       if (guesses === 1) unlock("h-double-oneshot", newly);
-      if (isExtremeProblem(pid)) unlock("h-double-abyss", newly);
+      if (isExtremeProblem(pid)) unlock(isUso ? "h-double-abyss-uso" : "h-double-abyss", newly);
+      if (durationSec <= 60) unlock("h-double-speed", newly);
     }
     if (countableHistory.filter((g) => g.clear && getExtraShot(g)?.success).length >= 10) {
       unlock("h-double-10", newly);
     }
     if (maxDoubleClearStreak(countableHistory) >= 3) unlock("h-double-streak-3", newly);
+    const dailyDoubleClearPids = countableHistory
+      .filter((game) => game.clear && isDailyPID(game.problemID) && getExtraShot(game)?.success)
+      .map((game) => game.problemID);
+    if (maxHistoricalDailyStreak(dailyDoubleClearPids) >= 7) unlock("h-double-daily-7", newly);
   }
 
   // 日付・回数系（record は履歴に保存済みなので、現在のゲームも集計に含まれる）

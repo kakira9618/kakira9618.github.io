@@ -4,8 +4,9 @@
 // - モード準拠の判定 / 旧 queryWordSingle 互換 / Logic.otherAnswer
 // - レコードの追加スキーマ（extraShot）の保存・再読込・旧 finalAnswer 互換
 // - 解放条件（10 回プレイ / デバッグモード）と解放通知の一回性
-// - 隠し実績 6 種（h-double-clear / h-double-uso / h-double-oneshot / h-double-10 /
-//   h-double-abyss / h-double-streak-3）
+// - 隠し実績 9 種（h-double-clear / h-double-uso / h-double-oneshot / h-double-10 /
+//   h-double-abyss / h-double-abyss-uso / h-double-speed / h-double-streak-3 /
+//   h-double-daily-7）
 //
 // デバッグモードはプロセス内で解除できない（unlock が恒久スキップになる）ため、
 // デバッグ関連の検証は必ずファイル末尾で行う。
@@ -379,7 +380,7 @@ function fillerWord(logic) {
   assert.ok(tenIds.has("h-double-10"), "10 回目の DOUBLE CLEAR で h-double-10 が解放されるはず");
 }
 
-// 極 (No.10000-19999) の DOUBLE CLEAR で h-double-abyss
+// 極 (No.10000-19999) の DOUBLE CLEAR: DWORDle は h-double-abyss、DWORDlie は h-double-abyss-uso
 {
   const logic = new Logic(10001);
   const ctx = finishCtx({
@@ -388,7 +389,9 @@ function fillerWord(logic) {
     extraShot: { word: logic.ans2, success: true },
   });
   const mod = await scenario([ctx.record]);
-  assert.ok(idsOf(mod.checkOnGameFinish(ctx)).has("h-double-abyss"), "極の DOUBLE CLEAR で h-double-abyss が解放されるはず");
+  const ids = idsOf(mod.checkOnGameFinish(ctx));
+  assert.ok(ids.has("h-double-abyss"), "極の DOUBLE CLEAR で h-double-abyss が解放されるはず");
+  assert.ok(!ids.has("h-double-abyss-uso"), "DWORDle では h-double-abyss-uso は解放されないはず");
   assert.ok(mod.achievementIdsFromHistory([ctx.record]).has("h-double-abyss"), "履歴復元でも h-double-abyss を推定するはず");
 
   const usoCtx = finishCtx({
@@ -399,18 +402,79 @@ function fillerWord(logic) {
     extraShot: { word: logic.ans2, success: true },
   });
   const usoMod = await scenario([usoCtx.record]);
-  assert.ok(
-    idsOf(usoMod.checkOnGameFinish(usoCtx)).has("h-double-abyss"),
-    "DWORDlie の極でも h-double-abyss が解放されるはず"
-  );
-  assert.ok(
-    usoMod.achievementIdsFromHistory([usoCtx.record]).has("h-double-abyss"),
-    "DWORDlie の極の履歴復元でも h-double-abyss を推定するはず"
-  );
+  const usoIds = idsOf(usoMod.checkOnGameFinish(usoCtx));
+  assert.ok(usoIds.has("h-double-abyss-uso"), "DWORDlie の極で h-double-abyss-uso が解放されるはず");
+  assert.ok(!usoIds.has("h-double-abyss"), "DWORDlie の極では h-double-abyss は解放されないはず");
+  const usoHistoryIds = usoMod.achievementIdsFromHistory([usoCtx.record]);
+  assert.ok(usoHistoryIds.has("h-double-abyss-uso"), "DWORDlie の極の履歴復元でも h-double-abyss-uso を推定するはず");
+  assert.ok(!usoHistoryIds.has("h-double-abyss"), "履歴復元でも DWORDlie の極を h-double-abyss にはしないはず");
 
   const easy = finishCtx({ pid: 123, guessWords: [new Logic(123).ans1], extraShot: { word: new Logic(123).ans2, success: true } });
   const easyIds = idsOf((await scenario([easy.record])).checkOnGameFinish(easy));
   assert.ok(!easyIds.has("h-double-abyss"), "やさしい問題では h-double-abyss は解放されないはず");
+}
+
+// 開始から 60 秒以内の DOUBLE CLEAR で h-double-speed（時間は EXTRA SHOT 込み）
+{
+  const logic = new Logic(123);
+  const fast = finishCtx({
+    guessWords: [fillerWord(logic), logic.ans1],
+    extraShot: { word: logic.ans2, success: true },
+    durationSec: 60,
+  });
+  const fastMod = await scenario([fast.record]);
+  assert.ok(idsOf(fastMod.checkOnGameFinish(fast)).has("h-double-speed"), "60 秒以内の DOUBLE CLEAR で h-double-speed が解放されるはず");
+  assert.ok(fastMod.achievementIdsFromHistory([fast.record]).has("h-double-speed"), "履歴復元でも h-double-speed を推定するはず");
+
+  const slow = finishCtx({
+    guessWords: [fillerWord(logic), logic.ans1],
+    extraShot: { word: logic.ans2, success: true },
+    durationSec: 61,
+  });
+  const slowIds = idsOf((await scenario([slow.record])).checkOnGameFinish(slow));
+  assert.ok(!slowIds.has("h-double-speed"), "61 秒では h-double-speed は解放されないはず");
+
+  const fastMiss = finishCtx({
+    guessWords: [fillerWord(logic), logic.ans1],
+    extraShot: { word: fillerWord(logic), success: false },
+    durationSec: 30,
+  });
+  const fastMissIds = idsOf((await scenario([fastMiss.record])).checkOnGameFinish(fastMiss));
+  assert.ok(!fastMissIds.has("h-double-speed"), "速くても EXTRA SHOT 失敗では h-double-speed は解放されないはず");
+}
+
+// デイリー問題を 7 日連続で DOUBLE CLEAR すると h-double-daily-7
+{
+  const makeDailyCtxs = (successes) =>
+    successes.map((success, i) => {
+      const pid = 20260701 + i; // 2026-07-01 からの連続した日付 PID
+      const logic = new Logic(pid);
+      return finishCtx({
+        pid,
+        guessWords: [logic.ans1],
+        extraShot: success ? { word: logic.ans2, success: true } : { word: fillerWord(logic), success: false },
+        startTime: 1_700_000_000 + i * 86_400,
+      });
+    });
+  const seven = makeDailyCtxs(Array(7).fill(true));
+  const sevenMod = await scenario(seven.map((c) => c.record));
+  assert.ok(
+    idsOf(sevenMod.checkOnGameFinish(seven[6])).has("h-double-daily-7"),
+    "デイリー 7 日連続の DOUBLE CLEAR で h-double-daily-7 が解放されるはず"
+  );
+  assert.ok(
+    sevenMod.achievementIdsFromHistory(seven.map((c) => c.record)).has("h-double-daily-7"),
+    "履歴復元でも h-double-daily-7 を推定するはず"
+  );
+
+  const six = makeDailyCtxs(Array(6).fill(true));
+  const sixIds = idsOf((await scenario(six.map((c) => c.record))).checkOnGameFinish(six[5]));
+  assert.ok(!sixIds.has("h-double-daily-7"), "6 日連続では h-double-daily-7 は解放されないはず");
+
+  // 途中の日がデイリークリアのみ（EXTRA SHOT 失敗）だと連続が途切れる
+  const broken = makeDailyCtxs([true, true, true, false, true, true, true, true]);
+  const brokenIds = idsOf((await scenario(broken.map((c) => c.record))).checkOnGameFinish(broken[7]));
+  assert.ok(!brokenIds.has("h-double-daily-7"), "DOUBLE CLEAR できなかった日を挟むと h-double-daily-7 は解放されないはず");
 }
 
 // 3 ゲーム連続の DOUBLE CLEAR で h-double-streak-3
