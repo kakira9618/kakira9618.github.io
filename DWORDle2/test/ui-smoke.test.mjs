@@ -4085,8 +4085,10 @@ try {
         hiddenSlotTop: brightest((1136 - 28) * 2, (320 - 28) * 2),
       };
     });
+    // アークは下地の線と同じ細さ + 控えめな濃さ（progressAlpha）なので、判定は
+    // 「金色寄りの明るい画素があるか」まで緩める（実測: おおよそ r205 g170 b97）
     assert.ok(
-      arcPixels.winsArcTop.r > 200 && arcPixels.winsArcTop.g > 150 && arcPixels.winsArcTop.b < 140,
+      arcPixels.winsArcTop.r > 170 && arcPixels.winsArcTop.g > 135 && arcPixels.winsArcTop.b < 150,
       `the wins badge should draw a gold progress arc at 12 o'clock (got ${JSON.stringify(arcPixels.winsArcTop)})`
     );
     assert.ok(

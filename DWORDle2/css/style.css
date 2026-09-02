@@ -3438,9 +3438,10 @@ body.reduce-motion .guess-flag-cloth {
 
 /* ---- 実績バッジ ---- */
 .ach-card .badge-icon {
-  /* 進捗リング: バッジ円の外側の間隔と線幅 */
-  --ach-ring-inset: -5px;
-  --ach-ring-width: 3px;
+  /* 進捗リング: 下地の円の線と同じ位置・同じ太さでなぞる（円の線幅と揃えること） */
+  --ach-ring-inset: -1.5px; /* 線幅ぶん外へ出して、下地の線の真上に重ねる */
+  --ach-ring-width: 1.5px;
+  --ach-ring-alpha: 70%; /* ハイライトの濃さ（控えめに） */
   position: relative;
   width: 42px;
   height: 42px;
@@ -3451,18 +3452,19 @@ body.reduce-motion .guess-flag-cloth {
   border: 1.5px solid currentColor;
   background: color-mix(in srgb, currentColor 12%, transparent);
 }
-/* 進捗リング: バッジ外周を 12 時から時計回りに実績色（--ach-ring-color）で埋める。
-   割合は JS が --ach-ring (0〜1) で渡し、1 周そろうと解除を表す */
+/* 進捗リング: 下地の円の線そのものを、12 時から時計回りに実績色（--ach-ring-color）で
+   塗っていく。割合は JS が --ach-ring (0〜1) で渡し、1 周そろうと解除を表す。
+   塗られていない残りは透明のままにして、下地の線をトラックとして見せる */
 .ach-card .badge-icon::after {
   content: "";
   position: absolute;
   inset: var(--ach-ring-inset);
   border-radius: 50%;
   background: conic-gradient(
-    var(--ach-ring-color, currentColor) calc(var(--ach-ring, 0) * 1turn),
-    color-mix(in srgb, var(--fg-dim) 26%, transparent) 0
+    color-mix(in srgb, var(--ach-ring-color, currentColor) var(--ach-ring-alpha), transparent) calc(var(--ach-ring, 0) * 1turn),
+    transparent 0
   );
-  /* 中を抜いて外周のリングだけ残す */
+  /* 中を抜いて、下地の線に重なるリングだけ残す */
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--ach-ring-width) - 0.5px), #000 calc(100% - var(--ach-ring-width)));
   mask: radial-gradient(farthest-side, transparent calc(100% - var(--ach-ring-width) - 0.5px), #000 calc(100% - var(--ach-ring-width)));
   pointer-events: none;

@@ -128,9 +128,11 @@ const CARD = {
     socketRing: "rgba(255, 255, 255, 0.20)", // 未獲得スロット内側の破線リング
     socketIcon: "#8b9bbd", // 未獲得スロットに透かすバッジシルエットの色
     socketIconAlpha: 0.32,
-    // カテゴリ内の実績解除数に応じて、台座の縁を 12 時から時計回りにバッジ色で
-    // 埋める進捗リングの線幅（1 周そろうと獲得。隠しカテゴリには出さない）
-    progressWidth: 3,
+    // カテゴリ内の実績解除数に応じて、台座の縁の線そのものを 12 時から時計回りに
+    // バッジ色で塗っていく進捗リング（1 周そろうと獲得。隠しカテゴリには出さない）。
+    // 線幅は下地（socketStroke の lineWidth 1）と揃え、濃さも控えめにする
+    progressWidth: 1,
+    progressAlpha: 0.75,
   },
 };
 
@@ -626,17 +628,18 @@ export async function renderPlayerCardCanvas(name) {
       } catch {
         // アイコン画像が作れない環境でもカード本体は成立させる
       }
-      // 進捗リング: カテゴリ内の解除数ぶん、台座の縁を 12 時から時計回りに
-      // バッジ色でハイライトする（1 周そろうと獲得）。隠しカテゴリは progress が
-      // null なので描かない（総数のネタバレ防止）
+      // 進捗リング: カテゴリ内の解除数ぶん、台座の縁の線を 12 時から時計回りに
+      // バッジ色で塗っていく（下地と同じ太さ・1 周そろうと獲得）。隠しカテゴリは
+      // progress が null なので描かない（総数のネタバレ防止）
       if (badge.progress) {
         ctx.beginPath();
         ctx.arc(cx, cy, bd.slotR, -Math.PI / 2, -Math.PI / 2 + badge.progress * Math.PI * 2);
         ctx.strokeStyle = badge.color;
         ctx.lineWidth = bd.progressWidth;
-        ctx.lineCap = "round";
+        ctx.save();
+        ctx.globalAlpha = bd.progressAlpha;
         ctx.stroke();
-        ctx.lineCap = "butt";
+        ctx.restore();
       }
       continue;
     }
