@@ -16,7 +16,7 @@ import { HIDDEN_THEMES } from "../core/settings.js?v=20260806-a";
 import { favoriteBgmTrackId, favoriteThemeId } from "../core/activity.js?v=20260806-a";
 import { BGM_TRACKS, currentBgmTrackId, playSfx } from "../audio/sound.js?v=20260806-a";
 import { loadJSON, saveJSON } from "../core/store.js?v=20260806-a";
-import { isDebugMode } from "../core/debug.js?v=20260806-a";
+import { claimCardNewsPreview, isCardNewsPreviewArmed, isDebugMode } from "../core/debug.js?v=20260806-a";
 import { toast } from "./toast.js?v=20260806-a";
 import { soundToggleButton } from "./sound-toggle.js?v=20260806-a";
 import { winBurst } from "../fx/effects.js?v=20260806-a";
@@ -805,6 +805,9 @@ function getSavedCard() {
 // 新しいカテゴリバッジの獲得があるか。
 // DEBUG 中は全実績解除扱いでランク・バッジが最大化されるため、誤検知を避けて出さない。
 export function hasUnseenCardProgress() {
+  // プレビュー合言葉（js/core/debug.js）が入っている間は、実データによらず未読扱いにして
+  // NEW バッジ → 昇格演出 → 消灯の一巡を確認できるようにする
+  if (isCardNewsPreviewArmed()) return true;
   if (isDebugMode()) return false;
   const saved = getSavedCard();
   if (!saved) return false; // 未発行なら差分の基準が無い
@@ -1276,10 +1279,13 @@ function render() {
     saveJSON("playerCard", { ...prev, name, issuedAt: Math.floor(Date.now() / 1000), seenRankTier: rank.tier, seenBadgeCats });
     await drawInto(stage, name, { deal: true });
     actions.hidden = false;
+    // プレビュー合言葉が入っていたら、カードを開いたこのタイミングで消費して
+    // 昇格演出を 1 回見せる（タイトルへ戻ると NEW バッジも消えている）
+    const previewPromotion = claimCardNewsPreview();
     if (isFirst) {
       playSfx("achievementBig");
       winBurst([0x00d5ff, 0xffd166, 0xb45cff]);
-    } else if (typeof prev?.seenRankTier === "number" && rank.tier > prev.seenRankTier) {
+    } else if (previewPromotion || (typeof prev?.seenRankTier === "number" && rank.tier > prev.seenRankTier)) {
       // 前回カードを見たときよりランクが上がっていたら昇格演出
       celebratePromotion(stage, rank);
     }

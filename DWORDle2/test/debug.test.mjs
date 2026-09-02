@@ -9,7 +9,13 @@ globalThis.localStorage = {
 
 const { ACHIEVEMENTS, getUnlocked } = await import("../js/core/achievements.js?v=20260806-a");
 const { getSettings, setSetting } = await import("../js/core/settings.js?v=20260806-a");
-const { isDebugMode, tryEnableDebugMode } = await import("../js/core/debug.js?v=20260806-a");
+const {
+  claimCardNewsPreview,
+  isCardNewsPreviewArmed,
+  isDebugMode,
+  tryEnableCardNewsPreview,
+  tryEnableDebugMode,
+} = await import("../js/core/debug.js?v=20260806-a");
 // キーワードはソースの全文検索に出ないよう符号化して持つ（js/core/secret.js と同じ方針）
 const { reveal } = await import("../js/core/secret.js?v=20260806-a");
 const { loadJSON, removeKey, saveJSON } = await import("../js/core/store.js?v=20260806-a");
@@ -52,6 +58,18 @@ removeKey("keep");
 assert.equal(data.has("dwordle2.keep"), false, "explicit data deletion should still work in debug mode");
 removeKey("current.normal");
 assert.equal(loadJSON("current.normal", null), null, "removeKey should also clear the debug overlay");
+
+// カード更新プレビュー: 専用の合言葉で 1 回ぶんだけ有効になり、消費すると戻る
+assert.equal(isCardNewsPreviewArmed(), false);
+assert.equal(tryEnableCardNewsPreview("wrong"), false);
+assert.equal(tryEnableCardNewsPreview(reveal("GxklxmSgBPRJXQ==")), false, "the debug keyword must not arm the card-news preview");
+assert.equal(claimCardNewsPreview(), false, "claiming while unarmed must be a no-op");
+assert.equal(tryEnableCardNewsPreview(reveal("aTwc4kOU")), true);
+assert.equal(isCardNewsPreviewArmed(), true);
+assert.equal(tryEnableDebugMode(reveal("aTwc4kOU")), false, "the preview keyword must not enable debug mode");
+assert.equal(claimCardNewsPreview(), true, "the armed preview should be claimed once");
+assert.equal(isCardNewsPreviewArmed(), false, "claiming must disarm the preview");
+assert.equal(claimCardNewsPreview(), false, "a second claim must find nothing");
 
 delete globalThis.localStorage;
 console.log("デバッグモードテスト: OK");

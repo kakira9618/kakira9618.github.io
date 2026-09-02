@@ -4104,6 +4104,31 @@ try {
       0,
       "viewing the card must clear the NEW notice on the title menu"
     );
+
+    // カード更新プレビューの合言葉: NEW バッジ → 昇格演出 → 消灯を実データなしで一巡できる
+    await ringPage.evaluate(() => { location.hash = "#/settings"; });
+    await ringPage.waitForURL(/#\/settings$/);
+    const previewEntry = ringPage.locator(".debug-entry");
+    for (let i = 0; i < 5; i++) await previewEntry.click();
+    const previewDialog = ringPage.getByRole("dialog", { name: "シークレット" });
+    await previewDialog.getByLabel("秘密のキーワード").fill(reveal("aTwc4kOU"));
+    await previewDialog.getByLabel("秘密のキーワード").press("Enter");
+    await ringPage.locator("#toast-layer .toast").filter({ hasText: "カード更新プレビュー ON" }).waitFor();
+    await ringPage.evaluate(() => { location.hash = "#/"; });
+    await ringPage.waitForURL(/#\/$/);
+    await ringPage.locator(".menu-news-badge").waitFor();
+    await ringPage.evaluate(() => { location.hash = "#/card"; });
+    await ringPage.waitForURL(/#\/card$/);
+    await ringPage.locator(".player-card-canvas").waitFor();
+    await ringPage.locator(".rank-up-overlay .rank-up-name").filter({ hasText: "BRONZE RANK" }).waitFor();
+    await ringPage.evaluate(() => { location.hash = "#/"; });
+    await ringPage.waitForURL(/#\/$/);
+    await ringPage.locator("#screen-title.active").waitFor();
+    assert.equal(
+      await ringPage.locator(".menu-news-badge").count(),
+      0,
+      "the card-news preview must disarm after the card is opened once"
+    );
   } finally {
     await ringContext.close();
   }

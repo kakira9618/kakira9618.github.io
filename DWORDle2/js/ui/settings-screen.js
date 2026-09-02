@@ -16,7 +16,7 @@ import { finishHistoryImport } from "./history-import.js?v=20260806-a";
 import { APP_VERSION, AUDIO } from "../config.js?v=20260806-a";
 import { SOURCE_HASH } from "../version.js?v=20260806-a";
 import { isEnglish, syncDocumentLanguage, tr } from "../core/i18n.js?v=20260806-a";
-import { isDebugMode, tryEnableDebugMode } from "../core/debug.js?v=20260806-a";
+import { isDebugMode, tryEnableCardNewsPreview, tryEnableDebugMode } from "../core/debug.js?v=20260806-a";
 import { isExtraShotUnlocked, extraShotRemainingPlays } from "../core/extra-shot.js?v=20260806-a";
 import {
   analyticsAllowed,
@@ -171,10 +171,7 @@ function restoreScrollPosition(scroller, scrollTop) {
 }
 
 function showDebugKeywordModal() {
-  if (isDebugMode()) {
-    toast("DEBUG ON");
-    return;
-  }
+  // DEBUG 中でもモーダルは開く（カード更新プレビューの合言葉を後から入れられるように）
   const input = el("input", {
     type: "password",
     autocomplete: "off",
@@ -183,11 +180,25 @@ function showDebugKeywordModal() {
     "aria-label": tr("秘密のキーワード", "Secret keyword"),
   });
   const activate = () => {
+    // カード更新プレビュー（デバッグモードとは別の合言葉）
+    if (tryEnableCardNewsPreview(input.value)) {
+      toast(tr(
+        "カード更新プレビュー ON：タイトルに NEW が出ます。カードを開くと昇格演出のあと消えます",
+        "Card-news preview ON: NEW appears on the title until you open the card and watch the rank-up celebration"
+      ));
+      return true;
+    }
+    const wasDebug = isDebugMode();
     if (!tryEnableDebugMode(input.value)) {
       playSfx("invalid");
       toast(tr("キーワードが違います", "Incorrect keyword"));
       input.select();
       return false;
+    }
+    if (wasDebug) {
+      // すでに DEBUG 中の再入力は現状だけ知らせる
+      toast("DEBUG ON");
+      return true;
     }
     render();
     toast(tr("DEBUG ON：実績と隠し要素を一時的に全開放しました", "DEBUG ON: achievements and hidden content are temporarily unlocked"));
