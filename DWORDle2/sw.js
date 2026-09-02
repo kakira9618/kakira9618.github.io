@@ -2,8 +2,8 @@
 // DWORDle 2 の Service Worker。全資産をインストール時に事前キャッシュし、
 // オフラインでも完全動作させる（キャッシュ優先 + ネットワークフォールバック）。
 // キャッシュ名はコミットのハッシュ入りで、デプロイのたびに新しいキャッシュへ入れ替わる。
-const CACHE_NAME = "dwordle2-b11b4fe";
-const SOURCE_HASH = "b11b4fe";
+const CACHE_NAME = "dwordle2-6142eb8";
+const SOURCE_HASH = "6142eb8";
 // 緊急更新フラグ。true なら、開いているページに強制リロードを促す
 // （make-source-hash.mjs --force-reload で立てる。既定は false）。
 // 実際にいつリロードするかはページ側の js/core/critical-update.js が決める。
