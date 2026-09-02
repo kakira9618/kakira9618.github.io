@@ -3441,7 +3441,7 @@ body.reduce-motion .guess-flag-cloth {
   /* 進捗リング: 下地の円の線と同じ位置・同じ太さでなぞる（円の線幅と揃えること） */
   --ach-ring-inset: -1.5px; /* 線幅ぶん外へ出して、下地の線の真上に重ねる */
   --ach-ring-width: 1.5px;
-  --ach-ring-alpha: 70%; /* ハイライトの濃さ（控えめに） */
+  --ach-ring-alpha: 100%; /* ハイライトの濃さ（線は細いので色は実績色そのままが好み） */
   position: relative;
   width: 42px;
   height: 42px;

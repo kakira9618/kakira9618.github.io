@@ -130,9 +130,9 @@ const CARD = {
     socketIconAlpha: 0.32,
     // カテゴリ内の実績解除数に応じて、台座の縁の線そのものを 12 時から時計回りに
     // バッジ色で塗っていく進捗リング（1 周そろうと獲得。隠しカテゴリには出さない）。
-    // 線幅は下地（socketStroke の lineWidth 1）と揃え、濃さも控えめにする
+    // 線幅は下地（socketStroke の lineWidth 1）と揃え、色はバッジ色そのまま
     progressWidth: 1,
-    progressAlpha: 0.75,
+    progressAlpha: 1,
   },
 };
 
