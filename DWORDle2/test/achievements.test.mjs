@@ -7,6 +7,7 @@ import {
   achievementCountableRecords,
   achievementIdsFromHistory,
   achievementProgress,
+  achievementProgressValues,
   formatAchievementProgress,
 } from "../js/core/achievements.js?v=20260806-a";
 import { Logic, queryWordPair } from "../js/core/logic.js?v=20260806-a";
@@ -515,6 +516,67 @@ assert.deepEqual(
     imported: "json",
   }]);
   assert(ids.has("h-phantom"), "an all-green non-answer should restore Phantom Answer");
+}
+
+// ---- 進捗リング用の現在値（achievementProgressValues）----
+
+{
+  // 載っている id はすべて通常実績で、target は実績の説明文の数値と一致する
+  // （weekend は「土曜日と日曜日の両方」なので数値が説明文に出ない）
+  const values = achievementProgressValues([]);
+  for (const [id, { value, target }] of Object.entries(values)) {
+    const achievement = NORMAL_ACHIEVEMENTS.find((a) => a.id === id);
+    assert(achievement, `progress values must cover only normal achievements: ${id}`);
+    assert.equal(value, 0, `empty history should leave ${id} at 0`);
+    if (id === "weekend") continue;
+    assert(
+      achievement.desc.includes(String(target)),
+      `target of ${id} (${target}) should match the number in its description`
+    );
+  }
+  // 1 局の内容だけで決まる実績（例: 1 手クリア・盤面の模様）は載せない
+  for (const id of ["one-shot", "all-gray", "night-owl", "revenge", "analyst"]) {
+    assert.equal(values[id], undefined, `${id} has no gradual progress and must not be listed`);
+  }
+}
+
+{
+  const base = 1_700_000_000;
+  const day = 86_400;
+  const loseGuess = new Logic(9).ans1 === "about" ? "other" : "about";
+  const records = [
+    // 1 日目: 表 2 連勝 → 裏 1 勝 → 表で敗北（表の連勝はここで途切れる）
+    clearRecord({ pid: 1, startTime: base }),
+    clearRecord({ pid: 2, guesses: 4, startTime: base + 100 }),
+    clearRecord({ pid: 3, mode: "uso", startTime: base + 200 }),
+    {
+      startTime: base + 300,
+      endTime: base + 330,
+      gameMode: "normal",
+      problemID: 9,
+      guessWord: [loseGuess],
+      clear: false,
+      imported: "json",
+    },
+    // 3 日目（1 日空けて連続日数をリセット）: 表 1 勝
+    clearRecord({ pid: 4, startTime: base + day * 2 }),
+    // 同じ日の同じ問題の再プレイはカウントに入らない
+    clearRecord({ pid: 4, startTime: base + day * 2 + 100 }),
+  ];
+  const values = achievementProgressValues(records);
+  assert.deepEqual(values["plays-30"], { value: 5, target: 30 });
+  assert.deepEqual(values["wins-10"], { value: 4, target: 10 });
+  assert.deepEqual(values["uso-5"], { value: 1, target: 5 });
+  assert.deepEqual(values["streak-3"], { value: 2, target: 3 }, "the loss should cut the win streak at 2");
+  assert.deepEqual(values["guesses-1000"], { value: 3 + 4 + 3 + 1 + 3, target: 1000 });
+  assert.deepEqual(values["play-days-30"], { value: 2, target: 30 });
+  assert.deepEqual(values["play-streak-3"], { value: 1, target: 3 }, "a skipped day should reset the play streak");
+  assert.deepEqual(values["same-day-5"], { value: 3, target: 5 });
+  assert.deepEqual(values["daily-30"], { value: 0, target: 30 });
+  // 週末クリアは実行環境のタイムゾーンに依存するので、期待値もレコードから導く
+  const weekdays = new Set(records.filter((r) => r.clear).map((r) => new Date(r.endTime * 1000).getDay()));
+  const expectedWeekend = (weekdays.has(0) ? 1 : 0) + (weekdays.has(6) ? 1 : 0);
+  assert.deepEqual(values["weekend"], { value: expectedWeekend, target: 2 });
 }
 
 console.log("実績遡及判定テスト: OK");

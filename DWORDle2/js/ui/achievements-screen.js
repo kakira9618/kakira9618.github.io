@@ -9,6 +9,7 @@ import {
   HIDDEN_ACHIEVEMENTS,
   NORMAL_ACHIEVEMENTS,
   achievementProgress,
+  achievementProgressValues,
   formatAchievementProgress,
   getUnlocked,
 } from "../core/achievements.js?v=20260806-a";
@@ -24,16 +25,24 @@ function build() {
   root = document.getElementById("screen-achievements");
 }
 
-// 隠し実績は解放済みのものしか渡ってこないので、内容非公開のカードは通常実績には無い
-function achCard(ach, unlockedAt) {
+// 隠し実績は解放済みのものしか渡ってこないので、内容非公開のカードは通常実績には無い。
+// counts はカウント系実績の現在値 { value, target }（achievementProgressValues）。
+// バッジ外周のリングを 12 時から時計回りに実績色で埋め、1 周そろうと解除を表す。
+function achCard(ach, unlockedAt, counts) {
   const localized = localizedAchievement(ach);
+  // 解除済みは満円。未解除はカウント系だけ現在値ぶん埋まる（1 局で決まる実績は 0%）
+  const ringRatio = unlockedAt ? 1 : Math.min(1, (counts?.value ?? 0) / (counts?.target ?? 1));
   return el(
     "div",
     {
       // glow（系列の最上位）は解除後だけ光らせる。未解除で光ると隠し実績のヒントになる
       class: `card ach-card ${unlockedAt ? "unlocked" : "locked"} ${ach.glow && unlockedAt ? "ach-top" : ""}`,
     },
-    el("div", { class: "badge-icon", style: { color: ach.color } }, icon(ach.icon, 22)),
+    el(
+      "div",
+      { class: "badge-icon", style: { color: ach.color, "--ach-ring": ringRatio.toFixed(4), "--ach-ring-color": ach.color } },
+      icon(ach.icon, 22)
+    ),
     el(
       "div",
       {},
@@ -45,7 +54,9 @@ function achCard(ach, unlockedAt) {
             { class: "desc", style: { color: "var(--tile-correct)" } },
             tr(`解除: ${fmtDateTime(unlockedAt)}`, `Unlocked: ${fmtDateTime(unlockedAt)}`)
           )
-        : null
+        : counts
+          ? el("div", { class: "desc ach-progress-count" }, `${Math.min(counts.value, counts.target)} / ${counts.target}`)
+          : null
     )
   );
 }
@@ -55,6 +66,7 @@ function render() {
   clear(root);
   const unlocked = getUnlocked();
   const progress = achievementProgress(unlocked);
+  const progressValues = achievementProgressValues();
   const normal = NORMAL_ACHIEVEMENTS;
   // 隠し実績は解放済みだけを、解放が早かった順に並べる（未解放の存在は数も含めて伏せる）
   const revealedHidden = HIDDEN_ACHIEVEMENTS
@@ -110,7 +122,7 @@ function render() {
     body.append(
       el("div", { class: "progress-note", style: { marginTop: "8px" } },
         `${tr(category.ja, category.en)}  ${items.filter((a) => unlocked[a.id]).length} / ${items.length}`),
-      el("div", { class: "ach-grid" }, items.map((a) => achCard(a, unlocked[a.id])))
+      el("div", { class: "ach-grid" }, items.map((a) => achCard(a, unlocked[a.id], progressValues[a.id])))
     );
   }
   // 隠し実績: 用意されている個数は伏せ、解放したものだけを並べる

@@ -277,6 +277,94 @@ export function formatAchievementProgress(progress, { spaced = true } = {}) {
   return `${progress.normalUnlocked}${slash}${progress.normalTotal} + ${progress.hiddenUnlocked}`;
 }
 
+// 通常実績のうち、回数・日数を積み上げるタイプの現在値。実績画面の進捗リング表示に使う。
+// 返り値: { [id]: { value, target } }。1 局の内容だけで決まる実績（1 手クリアや盤面の
+// 模様など）は「徐々に近づく」数が無いので載せない（解除までリングは 0% のまま）。
+// 数え方と母数は解除判定（calendarAndCountIds / achievementIdsFromHistory）に揃え、
+// target は各実績の解除条件の数値と一致させる（test/achievements.test.mjs で照合）。
+export function achievementProgressValues(records = getHistory()) {
+  const source = records.filter((record) => !record?.noAchievements);
+
+  // 遊んだ日（継続系。Cls. のプレイも数える）
+  const playDays = new Set();
+  for (const record of habitCountableRecords(source)) {
+    const at = completedAtSec(record);
+    if (at === null) continue;
+    const date = new Date(at * 1000);
+    playDays.add(Math.floor(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000));
+  }
+
+  // 週末クリア（日時系は同日・同問題の再プレイでも判定するので、母数を dedupe しない）
+  const clearedWeekdays = new Set();
+  for (const record of achievementEligibleRecords(source)) {
+    if (!record.clear) continue;
+    const at = completedAtSec(record);
+    if (at !== null) clearedWeekdays.add(new Date(at * 1000).getDay());
+  }
+
+  // カウント系（同日・同問題の再プレイは最初の 1 回だけ）
+  const winsPerDay = new Map();
+  const dailyClears = [];
+  const winStreak = { normal: 0, uso: 0 };
+  let bestWinStreak = 0;
+  let games = 0;
+  let wins = 0;
+  let usoWins = 0;
+  let guessTotal = 0;
+  for (const record of achievementCountableRecords(source)) {
+    games++;
+    guessTotal += record.guessWord.length;
+    const mode = record.gameMode === "uso" ? "uso" : "normal";
+    if (!record.clear) {
+      winStreak[mode] = 0;
+      continue;
+    }
+    wins++;
+    if (mode === "uso") usoWins++;
+    winStreak[mode]++;
+    bestWinStreak = Math.max(bestWinStreak, winStreak[mode]);
+    if (isDailyPID(record.problemID)) dailyClears.push(record.problemID);
+    const at = completedAtSec(record);
+    if (at === null) continue;
+    const day = new Date(at * 1000).toDateString();
+    winsPerDay.set(day, (winsPerDay.get(day) ?? 0) + 1);
+  }
+
+  const playStreak = maxConsecutiveDays(playDays);
+  const dailyStreak = maxHistoricalDailyStreak(dailyClears);
+  const sameDayWins = Math.max(0, ...winsPerDay.values());
+  const weekendDays = (clearedWeekdays.has(0) ? 1 : 0) + (clearedWeekdays.has(6) ? 1 : 0);
+
+  return {
+    "wins-10": { value: wins, target: 10 },
+    "wins-50": { value: wins, target: 50 },
+    "wins-100": { value: wins, target: 100 },
+    "wins-200": { value: wins, target: 200 },
+    "streak-3": { value: bestWinStreak, target: 3 },
+    "streak-5": { value: bestWinStreak, target: 5 },
+    "streak-10": { value: bestWinStreak, target: 10 },
+    "play-streak-3": { value: playStreak, target: 3 },
+    "play-streak-7": { value: playStreak, target: 7 },
+    "play-streak-14": { value: playStreak, target: 14 },
+    "daily-7": { value: dailyStreak, target: 7 },
+    "daily-streak-14": { value: dailyStreak, target: 14 },
+    "daily-30": { value: dailyClears.length, target: 30 },
+    "play-days-30": { value: playDays.size, target: 30 },
+    "play-days-100": { value: playDays.size, target: 100 },
+    "plays-30": { value: games, target: 30 },
+    "plays-100": { value: games, target: 100 },
+    "plays-300": { value: games, target: 300 },
+    "plays-500": { value: games, target: 500 },
+    "guesses-1000": { value: guessTotal, target: 1000 },
+    "guesses-3000": { value: guessTotal, target: 3000 },
+    "same-day-5": { value: sameDayWins, target: 5 },
+    "uso-5": { value: usoWins, target: 5 },
+    "uso-20": { value: usoWins, target: 20 },
+    "weekend": { value: weekendDays, target: 2 },
+    "collector": { value: Object.keys(getUnlocked()).length, target: COLLECTOR_REQUIREMENT },
+  };
+}
+
 function unlock(id, newly) {
   if (isDebugMode()) return;
   if (unlocked[id] !== undefined) return;

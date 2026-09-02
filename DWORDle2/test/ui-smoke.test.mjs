@@ -3977,6 +3977,136 @@ try {
     await cardContext.close();
   }
 
+  // 実績の進捗リング（実績画面・カードのバッジ棚）と、タイトルの更新通知（NEW バッジ）
+  const ringContext = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });
+  const ringPage = await ringContext.newPage();
+  try {
+    await ringPage.addInitScript(() => {
+      localStorage.setItem("dwordle2.tutorialSeen", "true");
+      localStorage.setItem("dwordle2.helpSeen", "true");
+      localStorage.setItem("dwordle2.helpSeenUso", "true");
+      localStorage.setItem("dwordle2.legacyImportPrompted", "true");
+      localStorage.setItem("dwordle2.playCount", "99");
+      localStorage.setItem("dwordle2.extraShotUnlockSeen", "true");
+      localStorage.setItem("dwordle2.menuUnlockSeen", "99");
+      localStorage.setItem("dwordle2.achievements.reconcileVersion", "99");
+      localStorage.setItem("dwordle2.achievements.sigVersion", "99");
+      // 入門カテゴリを全解除（バッジ獲得）+ 勝利系と隠しを 1 つずつ解除
+      localStorage.setItem("dwordle2.achievements", JSON.stringify({
+        "first-play": 1750000000, "first-clear": 1750000000, "daily-clear": 1750000000,
+        "wins-10": 1750000000, "h-mirror": 1750000000,
+      }));
+      // 5 勝ぶんの履歴（別日・別問題）→ 歴戦の勇者（50 勝）の進捗は 5 / 50
+      const games = [];
+      for (let i = 0; i < 5; i++) {
+        games.push({
+          gameMode: "normal",
+          problemID: 401 + i,
+          startTime: 1750000000 + i * 86400,
+          endTime: 1750000300 + i * 86400,
+          guessWord: ["about", "crane"],
+          clear: true,
+        });
+      }
+      localStorage.setItem("dwordle2.history", JSON.stringify(games));
+      // カード発行済み・既読バッジ無し → 入門バッジの獲得が未読なのでタイトルに NEW が出る
+      localStorage.setItem("dwordle2.playerCard", JSON.stringify({
+        name: "リング", issuedAt: 1750000000, seenRankTier: 1, seenBadgeCats: [],
+      }));
+    });
+    await ringPage.goto(baseUrl, { waitUntil: "networkidle" });
+    await passGate(ringPage);
+    await ringPage.locator(".menu-news-badge").waitFor();
+    assert.equal(
+      await ringPage.getByRole("button", { name: "プレイヤーカード（ランクアップまたは新しいバッジがあります）" }).count(),
+      1,
+      "an unseen category badge must show the NEW notice on the title menu"
+    );
+
+    // 実績画面: 解除済みは満円、カウント系は現在値ぶんのリング + 数値、二値系は 0%
+    await ringPage.evaluate(() => { location.hash = "#/achievements"; });
+    await ringPage.waitForURL(/#\/achievements$/);
+    const ringStates = await ringPage.evaluate(() => {
+      const cards = [...document.querySelectorAll("#screen-achievements .ach-card")];
+      const read = (name) => {
+        const card = cards.find((c) => c.querySelector(".name")?.textContent === name);
+        if (!card) return null;
+        const badge = card.querySelector(".badge-icon");
+        return {
+          ring: Number(badge.style.getPropertyValue("--ach-ring")),
+          count: card.querySelector(".ach-progress-count")?.textContent ?? null,
+          locked: card.classList.contains("locked"),
+        };
+      };
+      return {
+        unlocked: read("勝ち星コレクター"), // wins-10 解除済み
+        counting: read("歴戦の勇者"), // wins-50 未解除（5 勝）
+        binary: read("神の一手"), // one-shot 未解除（1 局で決まる実績）
+      };
+    });
+    assert.deepEqual(ringStates.unlocked, { ring: 1, count: null, locked: false }, "an unlocked achievement must show a full ring");
+    assert.deepEqual(ringStates.counting, { ring: 0.1, count: "5 / 50", locked: true }, "a counting achievement must show its partial ring and value");
+    assert.deepEqual(ringStates.binary, { ring: 0, count: null, locked: true }, "a per-game achievement must stay at 0% until unlocked");
+
+    // カードのバッジ棚: 勝利カテゴリは 1/8 の進捗、隠しカテゴリは進捗を出さない（null）
+    await ringPage.evaluate(() => { location.hash = "#/card"; });
+    await ringPage.waitForURL(/#\/card$/);
+    await ringPage.locator(".player-card-canvas").waitFor();
+    const badgeProgress = await ringPage.evaluate(async () => {
+      const mod = await import("./js/ui/player-card.js?v=20260806-a");
+      const states = mod.categoryBadgeStates();
+      const byCat = (cat) => states.find((b) => b.cat === cat);
+      return {
+        basicEarned: byCat("basic").earned,
+        wins: byCat("wins").progress,
+        hidden: byCat("hidden").progress,
+      };
+    });
+    assert.equal(badgeProgress.basicEarned, true);
+    assert.equal(badgeProgress.wins, 1 / 8, "the wins badge should be 1/8 complete");
+    assert.equal(badgeProgress.hidden, null, "the hidden badge must not expose progress (it would leak the total)");
+    // 描画面でも確認: 勝利バッジ台座の 12 時位置に金色の進捗アークが乗り、
+    // 隠しバッジの台座の縁には（隠し実績を 1 つ解除していても）ハイライトが無い。
+    // 座標は js/ui/player-card.js の CARD.badges（slotR 28, gapX 12, 右端 1136）と scale = 2 に対応。
+    const arcPixels = await ringPage.locator(".player-card-canvas").evaluate((cv) => {
+      const ctx = cv.getContext("2d");
+      const brightest = (x, y) => {
+        const data = ctx.getImageData(x - 4, y - 4, 9, 9).data;
+        let best = { r: 0, g: 0, b: 0 };
+        for (let i = 0; i < data.length; i += 4) {
+          if (data[i] + data[i + 1] + data[i + 2] > best.r + best.g + best.b) {
+            best = { r: data[i], g: data[i + 1], b: data[i + 2] };
+          }
+        }
+        return best;
+      };
+      return {
+        winsArcTop: brightest((1136 - 28 - 3 * 68) * 2, (248 - 28) * 2),
+        hiddenSlotTop: brightest((1136 - 28) * 2, (320 - 28) * 2),
+      };
+    });
+    assert.ok(
+      arcPixels.winsArcTop.r > 200 && arcPixels.winsArcTop.g > 150 && arcPixels.winsArcTop.b < 140,
+      `the wins badge should draw a gold progress arc at 12 o'clock (got ${JSON.stringify(arcPixels.winsArcTop)})`
+    );
+    assert.ok(
+      arcPixels.hiddenSlotTop.r + arcPixels.hiddenSlotTop.g + arcPixels.hiddenSlotTop.b < 400,
+      `the hidden badge rim must stay unhighlighted (got ${JSON.stringify(arcPixels.hiddenSlotTop)})`
+    );
+
+    // カードを見ると既読になり、タイトルの NEW は消える
+    await ringPage.evaluate(() => { location.hash = "#/"; });
+    await ringPage.waitForURL(/#\/$/);
+    await ringPage.locator("#screen-title.active").waitFor();
+    assert.equal(
+      await ringPage.locator(".menu-news-badge").count(),
+      0,
+      "viewing the card must clear the NEW notice on the title menu"
+    );
+  } finally {
+    await ringContext.close();
+  }
+
   // 履歴から別モードの記録を開いたときは、その記録のモードの配色で表示し、離れたら戻す。
   // あわせて行動ログ（画面滞在・クリック）が記録されることも確認する。
   const moodContext = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: "ja-JP" });

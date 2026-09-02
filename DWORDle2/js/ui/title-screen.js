@@ -33,7 +33,7 @@ import { icon } from "./icons.js?v=20260806-a";
 import { APP_VERSION } from "../config.js?v=20260806-a";
 import { SOURCE_HASH } from "../version.js?v=20260806-a";
 import { localizedLevel, tr } from "../core/i18n.js?v=20260806-a";
-import { CARD_UNLOCK_PLAYS } from "./player-card.js?v=20260806-a";
+import { CARD_UNLOCK_PLAYS, hasUnseenCardProgress } from "./player-card.js?v=20260806-a";
 
 let root = null;
 let legacyImportCheckDone = false;
@@ -268,7 +268,8 @@ const USO_ARROW_GAP_PX = 8;
 // 位置ガイド矢印のサイズ
 const USO_ARROW_SIZE = 30;
 
-// プレイヤーカードはメニュー最下段の行を独占させて特別感を出す（グリッド 2 列ぶち抜き）
+// プレイヤーカードはメニュー最下段の行を独占させて特別感を出す（グリッド 2 列ぶち抜き）。
+// 前回カードを見たあとにランクアップ / 新バッジ獲得があるときは、開くまで NEW バッジで知らせる
 function playerCardMenuButton(menuBtn) {
   const button = menuBtn(
     "card",
@@ -278,6 +279,14 @@ function playerCardMenuButton(menuBtn) {
     MENU_UNLOCKS.card
   );
   button.style.gridColumn = "1 / -1";
+  if (!button.classList.contains("menu-locked") && hasUnseenCardProgress()) {
+    button.classList.add("has-card-news");
+    button.append(el("span", { class: "menu-news-badge", "aria-hidden": "true" }, "NEW"));
+    button.setAttribute(
+      "aria-label",
+      tr("プレイヤーカード（ランクアップまたは新しいバッジがあります）", "Player Card (rank up or new badge earned)")
+    );
+  }
   return button;
 }
 

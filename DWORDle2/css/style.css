@@ -719,6 +719,35 @@ body.mode-uso .uso-banner {
   color: var(--fg-dim);
   white-space: nowrap;
 }
+/* タイトル「プレイヤーカード」の更新通知バッジ（ランクアップ / 新バッジ獲得）。
+   カードを開いて既読になるまで出続ける */
+.has-card-news {
+  position: relative;
+}
+.menu-news-badge {
+  position: absolute;
+  top: -7px;
+  right: -6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  color: #4a3200;
+  background: linear-gradient(135deg, #ffe08a, #ffb14e);
+  pointer-events: none;
+  animation: menu-news-pulse 1.8s ease-in-out infinite;
+}
+@keyframes menu-news-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 8px rgba(255, 193, 84, 0.45); }
+  50% { transform: scale(1.1); box-shadow: 0 0 14px rgba(255, 193, 84, 0.85); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .menu-news-badge {
+    animation: none;
+    box-shadow: 0 0 10px rgba(255, 193, 84, 0.6);
+  }
+}
 /* DWORDlie 解放モーダルのマスク: 裏モードの色で光らせる */
 .uso-unlock-mask {
   display: grid;
@@ -2426,11 +2455,17 @@ body.theme-cyber .num-cell.double-clear {
   font-size: 26px;
   filter: grayscale(0);
 }
-.ach-card.locked {
+/* 未解除カードはカード全体の opacity ではなく中身だけ沈ませる
+   （全体を沈ませると進捗リングまで暗くなり「明るくハイライト」にならない） */
+.ach-card.locked > :not(.badge-icon) {
   opacity: 0.5;
 }
 .ach-card.locked .icon {
   filter: grayscale(1) brightness(0.7);
+}
+/* 未解除のカウント系実績に添える現在値（例: 7 / 10） */
+.ach-progress-count {
+  font-variant-numeric: tabular-nums;
 }
 .ach-card .name {
   font-weight: 800;
@@ -3403,6 +3438,10 @@ body.reduce-motion .guess-flag-cloth {
 
 /* ---- 実績バッジ ---- */
 .ach-card .badge-icon {
+  /* 進捗リング: バッジ円の外側の間隔と線幅 */
+  --ach-ring-inset: -5px;
+  --ach-ring-width: 3px;
+  position: relative;
   width: 42px;
   height: 42px;
   flex: none;
@@ -3412,9 +3451,26 @@ body.reduce-motion .guess-flag-cloth {
   border: 1.5px solid currentColor;
   background: color-mix(in srgb, currentColor 12%, transparent);
 }
+/* 進捗リング: バッジ外周を 12 時から時計回りに実績色（--ach-ring-color）で埋める。
+   割合は JS が --ach-ring (0〜1) で渡し、1 周そろうと解除を表す */
+.ach-card .badge-icon::after {
+  content: "";
+  position: absolute;
+  inset: var(--ach-ring-inset);
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--ach-ring-color, currentColor) calc(var(--ach-ring, 0) * 1turn),
+    color-mix(in srgb, var(--fg-dim) 26%, transparent) 0
+  );
+  /* 中を抜いて外周のリングだけ残す */
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--ach-ring-width) - 0.5px), #000 calc(100% - var(--ach-ring-width)));
+  mask: radial-gradient(farthest-side, transparent calc(100% - var(--ach-ring-width) - 0.5px), #000 calc(100% - var(--ach-ring-width)));
+  pointer-events: none;
+}
 .ach-card.locked .badge-icon {
-  color: var(--fg-dim) !important;
-  opacity: 0.6;
+  /* リング（::after）は実績色のまま明るく残したいので、opacity ではなく
+     currentColor 側（円・背景・アイコン）だけを透過で沈ませる */
+  color: color-mix(in srgb, var(--fg-dim) 55%, transparent) !important;
 }
 /* 系列の最上位実績（glow）は、同じ色・同じアイコンの下位と見分けが付くよう
    バッジを光らせる。box-shadow の色を直接アニメーションさせると補間が粗くて

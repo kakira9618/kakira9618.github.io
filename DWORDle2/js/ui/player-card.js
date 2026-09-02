@@ -128,6 +128,9 @@ const CARD = {
     socketRing: "rgba(255, 255, 255, 0.20)", // 未獲得スロット内側の破線リング
     socketIcon: "#8b9bbd", // 未獲得スロットに透かすバッジシルエットの色
     socketIconAlpha: 0.32,
+    // カテゴリ内の実績解除数に応じて、台座の縁を 12 時から時計回りにバッジ色で
+    // 埋める進捗リングの線幅（1 周そろうと獲得。隠しカテゴリには出さない）
+    progressWidth: 3,
   },
 };
 
@@ -206,14 +209,21 @@ export const CATEGORY_BADGES = [
   { cat: "hidden", icon: "ghost", color: "#c9a0ff" },
 ];
 
-// 各バッジの獲得状態。カテゴリ内の実績をすべて解除していたら earned
+// 各バッジの獲得状態。カテゴリ内の実績をすべて解除していたら earned。
+// progress はカテゴリ内の解除割合（0〜1。バッジ外周の進捗リング用）。
+// 隠しカテゴリは割合が総数のネタバレになるので null（リングを描かない）。
 export function categoryBadgeStates() {
   const unlocked = getUnlocked();
   return CATEGORY_BADGES.map((badge) => {
     const items = badge.cat === "hidden"
       ? ACHIEVEMENTS.filter((a) => a.hidden)
       : ACHIEVEMENTS.filter((a) => a.cat === badge.cat);
-    return { ...badge, earned: items.length > 0 && items.every((a) => unlocked[a.id] !== undefined) };
+    const unlockedCount = items.filter((a) => unlocked[a.id] !== undefined).length;
+    return {
+      ...badge,
+      earned: items.length > 0 && unlockedCount === items.length,
+      progress: badge.cat === "hidden" ? null : (items.length > 0 ? unlockedCount / items.length : 0),
+    };
   });
 }
 
@@ -616,6 +626,18 @@ export async function renderPlayerCardCanvas(name) {
       } catch {
         // アイコン画像が作れない環境でもカード本体は成立させる
       }
+      // 進捗リング: カテゴリ内の解除数ぶん、台座の縁を 12 時から時計回りに
+      // バッジ色でハイライトする（1 周そろうと獲得）。隠しカテゴリは progress が
+      // null なので描かない（総数のネタバレ防止）
+      if (badge.progress) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, bd.slotR, -Math.PI / 2, -Math.PI / 2 + badge.progress * Math.PI * 2);
+        ctx.strokeStyle = badge.color;
+        ctx.lineWidth = bd.progressWidth;
+        ctx.lineCap = "round";
+        ctx.stroke();
+        ctx.lineCap = "butt";
+      }
       continue;
     }
     // 獲得済み: カテゴリ色のグロー + 面 + リング + アイコン
@@ -773,6 +795,20 @@ async function shareCard(cv) {
 
 function getSavedCard() {
   return loadJSON("playerCard", null);
+}
+
+// タイトル画面の「プレイヤーカード」更新通知。最後にカードを見たとき
+// （issue() が seenRankTier / seenBadgeCats を保存）からランクアップ、または
+// 新しいカテゴリバッジの獲得があるか。
+// DEBUG 中は全実績解除扱いでランク・バッジが最大化されるため、誤検知を避けて出さない。
+export function hasUnseenCardProgress() {
+  if (isDebugMode()) return false;
+  const saved = getSavedCard();
+  if (!saved) return false; // 未発行なら差分の基準が無い
+  if (typeof saved.seenRankTier === "number" && rankForStats(collectStats()).tier > saved.seenRankTier) return true;
+  // 既読バッジの記録が無い旧データは、誤通知を避けて次にカードを見たときに基準を作る
+  if (!Array.isArray(saved.seenBadgeCats)) return false;
+  return categoryBadgeStates().some((badge) => badge.earned && !saved.seenBadgeCats.includes(badge.cat));
 }
 
 function sanitizeName(raw) {
@@ -1231,7 +1267,10 @@ function render() {
     const name = sanitizeName(nameInput.value);
     const prev = getSavedCard();
     const rank = rankForStats(collectStats());
-    saveJSON("playerCard", { ...prev, name, issuedAt: Math.floor(Date.now() / 1000), seenRankTier: rank.tier });
+    // タイトルの更新通知（hasUnseenCardProgress）は「最後にカードを見たときの状態」との
+    // 差分で出すので、開いた時点のランクと獲得済みバッジを既読として記録する
+    const seenBadgeCats = categoryBadgeStates().filter((badge) => badge.earned).map((badge) => badge.cat);
+    saveJSON("playerCard", { ...prev, name, issuedAt: Math.floor(Date.now() / 1000), seenRankTier: rank.tier, seenBadgeCats });
     await drawInto(stage, name, { deal: true });
     actions.hidden = false;
     if (isFirst) {
