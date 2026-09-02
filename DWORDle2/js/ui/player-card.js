@@ -128,11 +128,11 @@ const CARD = {
     socketRing: "rgba(255, 255, 255, 0.20)", // 未獲得スロット内側の破線リング
     socketIcon: "#8b9bbd", // 未獲得スロットに透かすバッジシルエットの色
     socketIconAlpha: 0.32,
-    // カテゴリ内の実績解除数に応じて、台座の縁の線そのものを 12 時から時計回りに
-    // バッジ色で塗っていく進捗リング（1 周そろうと獲得。隠しカテゴリには出さない）。
-    // 線幅は下地（socketStroke の lineWidth 1）と揃え、色はバッジ色そのまま
-    progressWidth: 1,
-    progressAlpha: 1,
+    // 獲得済みバッジの色リングと、未獲得バッジの進捗アークで共通の線幅。
+    // 進捗アークはこのリングと同じ位置・同じ太さで、カテゴリ内の実績解除数ぶんだけ
+    // 12 時から時計回りに途中まで描く（1 周そろうと獲得。隠しカテゴリには出さない）
+    ringWidth: 2.5,
+    progressAlpha: 1, // 進捗アークの濃さ（バッジ色そのまま）
   },
 };
 
@@ -628,14 +628,14 @@ export async function renderPlayerCardCanvas(name) {
       } catch {
         // アイコン画像が作れない環境でもカード本体は成立させる
       }
-      // 進捗リング: カテゴリ内の解除数ぶん、台座の縁の線を 12 時から時計回りに
-      // バッジ色で塗っていく（下地と同じ太さ・1 周そろうと獲得）。隠しカテゴリは
-      // progress が null なので描かない（総数のネタバレ防止）
+      // 進捗アーク: 獲得済みバッジの色リングと同じ位置・太さの線を、カテゴリ内の
+      // 解除数ぶんだけ 12 時から時計回りに途中まで描く（1 周そろうと獲得）。
+      // 隠しカテゴリは progress が null なので描かない（総数のネタバレ防止）
       if (badge.progress) {
         ctx.beginPath();
-        ctx.arc(cx, cy, bd.slotR, -Math.PI / 2, -Math.PI / 2 + badge.progress * Math.PI * 2);
+        ctx.arc(cx, cy, bd.slotR - 1, -Math.PI / 2, -Math.PI / 2 + badge.progress * Math.PI * 2);
         ctx.strokeStyle = badge.color;
-        ctx.lineWidth = bd.progressWidth;
+        ctx.lineWidth = bd.ringWidth;
         ctx.save();
         ctx.globalAlpha = bd.progressAlpha;
         ctx.stroke();
@@ -662,7 +662,7 @@ export async function renderPlayerCardCanvas(name) {
     ctx.beginPath();
     ctx.arc(cx, cy, bd.slotR - 1, 0, Math.PI * 2);
     ctx.strokeStyle = badge.color;
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = bd.ringWidth;
     ctx.stroke();
     ctx.beginPath();
     ctx.arc(cx, cy, bd.slotR - 6, 0, Math.PI * 2);
