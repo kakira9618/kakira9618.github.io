@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { decryptBackup } from "../../js/core/backup-crypto.js?v=20260806-a";
 import { BACKUP } from "../../js/config.js?v=20260806-a";
-import { openApp, goHash, TEST_BACKUP_ENDPOINT, useTestBackupEndpoint } from "./harness.mjs";
+import { assertNoSeriousA11yViolations, openApp, goHash, toast, TEST_BACKUP_ENDPOINT, useTestBackupEndpoint } from "./harness.mjs";
 
 const PLAYER_ID = "1A2B3C4D";
 const games = (count) => Array.from({ length: count }, (_, i) => ({
@@ -54,8 +54,18 @@ export default [
       await goHash(page, "#/settings");
       await page.getByRole("tab", { name: "データ" }).click();
       const panel = page.getByRole("tabpanel");
-      await panel.getByText("最終バックアップ:").waitFor();
-      await panel.getByText(`プレイヤー ID: ${PLAYER_ID}`).waitFor();
+      await panel.getByText(/最終バックアップ: \d{4}\/\d{1,2}\/\d{1,2} \d{2}:\d{2}/).waitFor();
+      // プレイヤー ID はタップでコピーできる
+      await page.evaluate(() => {
+        navigator.clipboard.writeText = (text) => {
+          window.__copiedText = text;
+          return Promise.resolve();
+        };
+      });
+      await panel.getByRole("button", { name: `プレイヤー ID ${PLAYER_ID} をコピー` }).click();
+      await toast(page, "クリップボードにコピーしました").waitFor();
+      assert.equal(await page.evaluate(() => window.__copiedText), PLAYER_ID);
+      await assertNoSeriousA11yViolations(page, "Settings data tab with backup");
       await panel.getByRole("switch", { name: "自動バックアップ" }).click();
       await panel.getByText("オフ", { exact: true }).waitFor();
       const settings = await page.evaluate(() => JSON.parse(localStorage.getItem("dwordle2.settings")));

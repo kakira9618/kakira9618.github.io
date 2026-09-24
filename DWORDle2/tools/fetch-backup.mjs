@@ -7,10 +7,10 @@
 //
 // 認証トークンは環境変数 DWORDLE2_BACKUP_TOKEN（wrangler secret の ADMIN_TOKEN と同じ値）。
 // 送り先は js/config.js の BACKUP.endpoint（--endpoint か DWORDLE2_BACKUP_ENDPOINT で上書き可）。
-// 出力は dwordle2_history_restore_<ID>_<日付>.json（--out で変更）。プレイヤーに渡し、
+// 出力は backup/dwordle2_history_restore_<ID>_<日付>.json（--out で変更。backup/ は .gitignore 済み）。プレイヤーに渡し、
 // 設定 → データ → インポート（DWORDle 2 のエクスポート JSON を貼り付け）で取り込んでもらう。
 
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
@@ -71,9 +71,10 @@ try {
   const data = JSON.parse(text);
   const { signature, ...payload } = data;
   const signed = signature ? await verifyPayload(payload, signature) : null;
-  const out = values.out ?? `dwordle2_history_restore_${playerId}_${envelope.day}.json`;
+  const out = values.out ?? path.join(root, "backup", `dwordle2_history_restore_${playerId}_${envelope.day}.json`);
+  await mkdir(path.dirname(path.resolve(out)), { recursive: true });
   await writeFile(out, text);
-  console.log(`${envelope.day} の世代を復元: ${out}`);
+  console.log(`${envelope.day} の世代を復元: ${path.relative(process.cwd(), path.resolve(out))}`);
   console.log(`  書き出し時刻 ${fmtTime(data.exportedAt)} / 履歴 ${data.history?.length ?? 0} 件 / 実績 ${Object.keys(data.achievements ?? {}).length} 件`);
   console.log(`  署名: ${signed === null ? "なし" : signed ? "一致" : "不一致（改ざんの可能性）"}`);
 } catch (error) {

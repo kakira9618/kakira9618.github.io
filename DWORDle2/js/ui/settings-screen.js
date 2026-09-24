@@ -133,9 +133,32 @@ function autoBackupStatusText() {
   if (status === "no-card") return tr("プレイヤーカードを発行すると有効になります", "Turns on once you issue a player card");
   const { lastSuccessAt } = getBackupState();
   const last = lastSuccessAt
-    ? new Date(lastSuccessAt).toLocaleString(isEnglish() ? "en-US" : "ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })
+    ? new Date(lastSuccessAt).toLocaleString(isEnglish() ? "en-US" : "ja-JP", { year: "numeric", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })
     : null;
   return last ? tr(`最終バックアップ: ${last}`, `Last backup: ${last}`) : tr("まだバックアップしていません", "Not backed up yet");
+}
+
+// プレイヤー ID（タップでクリップボードへコピー。復旧の依頼に使う）
+function playerIdCopyButton(id) {
+  return el(
+    "button",
+    {
+      type: "button",
+      class: "backup-player-id",
+      "aria-label": tr(`プレイヤー ID ${id} をコピー`, `Copy player ID ${id}`),
+      onclick: async () => {
+        playSfx("ui");
+        try {
+          await navigator.clipboard.writeText(id);
+          toast(tr("クリップボードにコピーしました", "Copied to clipboard"));
+        } catch {
+          toast(tr("コピーに失敗しました", "Copy failed"));
+        }
+      },
+    },
+    tr(`プレイヤー ID: ${id}`, `Player ID: ${id}`),
+    icon("copy", 13)
+  );
 }
 
 let unsubscribeBackupStatus = null;
@@ -154,12 +177,11 @@ function autoBackupRow() {
     el(
       "span",
       {},
-      tr(
-        "プレイデータを暗号化してサーバーに保存します。データが消えたときは、プレイヤー ID を添えて作者に連絡すると復旧できます。",
-        "Your play data is encrypted and saved to a server. If it is lost, contact the author with your player ID to restore it."
-      ),
+      tr("プレイデータを暗号化してサーバーに保存します。データが消えたときは、プレイヤー ID を添えて ", "Your play data is encrypted and saved to a server. If it is lost, contact "),
+      el("a", { class: "backup-contact", href: "https://x.com/kakira9618", target: "_blank", rel: "noopener noreferrer" }, "X:@kakira9618"),
+      tr(" に連絡すると復旧できます。", " on X with your player ID to restore it."),
       id ? el("br") : null,
-      id ? el("b", { class: "backup-player-id" }, tr(`プレイヤー ID: ${id}（控えておいてください）`, `Player ID: ${id} (keep a note of it)`)) : null,
+      id ? playerIdCopyButton(id) : null,
       el("br"),
       statusEl
     ),

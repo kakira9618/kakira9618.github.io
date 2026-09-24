@@ -2800,6 +2800,27 @@ body.reduce-motion .bar-grow {
   color: var(--fg-dim);
   margin-top: 2px;
 }
+/* 設定 → データ: プレイヤー ID（タップでコピー） */
+.backup-player-id {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 2px 0;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--fg);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.backup-contact {
+  color: inherit;
+  text-decoration: underline;
+}
+.backup-player-id svg {
+  opacity: 0.7;
+}
 .volume-control {
   width: min(190px, 44vw);
   display: flex;

@@ -24,6 +24,7 @@ const BUILD = {
     ".gitignore",
     ".DS_Store",
     "CLAUDE.md",
+    "backup", // 復元したプレイヤーのデータ（tools/fetch-backup.mjs の出力）
     "backup-server", // Cloudflare Worker（wrangler で別途デプロイ）
     "README.md",
     "dist",

@@ -34,7 +34,7 @@ Worker のコードを変えたときは `cd backup-server && npx wrangler deplo
 ```sh
 export DWORDLE2_BACKUP_TOKEN=$(cat ~/.config/dwordle2/backup-admin-token)
 node tools/fetch-backup.mjs 1A2B3C4D --list            # 世代一覧
-node tools/fetch-backup.mjs 1A2B3C4D                   # 最新を復元 → dwordle2_history_restore_*.json
+node tools/fetch-backup.mjs 1A2B3C4D                   # 最新を復元 → backup/dwordle2_history_restore_*.json
 node tools/fetch-backup.mjs 1A2B3C4D --day 2026-09-20  # 日付を指定して復元
 ```
 
