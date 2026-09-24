@@ -2,8 +2,8 @@
 // DWORDle 2 の Service Worker。全資産をインストール時に事前キャッシュし、
 // オフラインでも完全動作させる（キャッシュ優先 + ネットワークフォールバック）。
 // キャッシュ名はコミットのハッシュ入りで、デプロイのたびに新しいキャッシュへ入れ替わる。
-const CACHE_NAME = "dwordle2-6142eb8";
-const SOURCE_HASH = "6142eb8";
+const CACHE_NAME = "dwordle2-1590b46";
+const SOURCE_HASH = "1590b46";
 // 緊急更新フラグ。true なら、開いているページに強制リロードを促す
 // （make-source-hash.mjs --force-reload で立てる。既定は false）。
 // 実際にいつリロードするかはページ側の js/core/critical-update.js が決める。
@@ -29,6 +29,8 @@ const PRECACHE = [
   "js/core/analysis-core.js",
   "js/core/analysis.worker.js",
   "js/core/analytics.js",
+  "js/core/backup-crypto.js",
+  "js/core/backup.js",
   "js/core/critical-update.js",
   "js/core/debug.js",
   "js/core/extra-shot.js",
@@ -54,6 +56,7 @@ const PRECACHE = [
   "js/ui/achievements-screen.js",
   "js/ui/analysis-screen.js",
   "js/ui/app.js",
+  "js/ui/backup-reminder.js",
   "js/ui/consent-banner.js",
   "js/ui/crown.js",
   "js/ui/dom.js",
