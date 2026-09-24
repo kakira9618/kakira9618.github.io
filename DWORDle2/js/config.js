@@ -204,7 +204,7 @@ export const AUDIO = {
 // プレイデータのバックアップ（js/core/backup.js）。
 export const BACKUP = {
   // リモートバックアップの送り先（backup-server/ の Cloudflare Worker）。空なら送らない。
-  endpoint: "",
+  endpoint: "https://dwordle2-backup.backup-server.workers.dev",
   // 同じ日のうちは、前回の成功からこれだけ空くまで送り直さない（日付が変われば即送る）
   minIntervalMs: 30 * 60 * 1000,
   // 失敗（オフライン・サーバー停止など）のあと、次に試すまでの間隔

@@ -8,7 +8,10 @@
 - 取り出し: `tools/fetch-backup.mjs`（管理者の手元で復号する）
 - このディレクトリはサイトには公開しない（`tools/build.mjs` の `BUILD.exclude`）
 
-## 初回セットアップ
+本番: `https://dwordle2-backup.backup-server.workers.dev`（kakira9618 の Cloudflare アカウント）。
+管理者トークンは `~/.config/dwordle2/backup-admin-token`（リポジトリには入れない）。
+
+## 初回セットアップ（済み。作り直すときの手順）
 
 ```sh
 cd backup-server
@@ -19,6 +22,9 @@ npx wrangler secret put ADMIN_TOKEN           # 取り出し用のトークン�
 npx wrangler deploy                           # 表示された URL を js/config.js の BACKUP.endpoint へ
 ```
 
+Worker のコードを変えたときは `cd backup-server && npx wrangler deploy` だけでよい
+（GitHub Pages への push とは連動しない）。
+
 `openssl rand -hex 32` などでトークンを作る。トークンはリポジトリに入れない。
 
 ## 復旧の手順（プレイヤーから依頼が来たら）
@@ -26,7 +32,7 @@ npx wrangler deploy                           # 表示された URL を js/confi
 プレイヤー ID（カード右端・設定 → データに出る 8 桁）を教えてもらう。
 
 ```sh
-export DWORDLE2_BACKUP_TOKEN=...                       # ADMIN_TOKEN と同じ値
+export DWORDLE2_BACKUP_TOKEN=$(cat ~/.config/dwordle2/backup-admin-token)
 node tools/fetch-backup.mjs 1A2B3C4D --list            # 世代一覧
 node tools/fetch-backup.mjs 1A2B3C4D                   # 最新を復元 → dwordle2_history_restore_*.json
 node tools/fetch-backup.mjs 1A2B3C4D --day 2026-09-20  # 日付を指定して復元

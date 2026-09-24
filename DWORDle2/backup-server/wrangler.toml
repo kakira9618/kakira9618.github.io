@@ -10,5 +10,4 @@ ALLOWED_ORIGINS = "https://kakira9618.github.io"
 [[d1_databases]]
 binding = "DB"
 database_name = "dwordle2-backup"
-# `npx wrangler d1 create dwordle2-backup` が表示する database_id に置き換える
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "b0ef8bdc-663c-43cd-a834-6c8fbb6fbbf8"
