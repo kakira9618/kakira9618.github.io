@@ -5,7 +5,15 @@ import { el, clear } from "./dom.js?v=20260806-a";
 import { registerScreen, navigate, currentScreenName } from "./app.js?v=20260806-a";
 import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js?v=20260806-a";
 import { importFromLocalStorage, importFromText, scanLegacyHistory } from "../core/migrate.js?v=20260806-a";
-import { exportJSON } from "../core/records.js?v=20260806-a";
+import { saveExportFile } from "./backup-reminder.js?v=20260806-a";
+import {
+  getBackupState,
+  issuedPlayerId,
+  maybeBackup,
+  onBackupStateChange,
+  remoteBackupConfigured,
+  remoteBackupStatus,
+} from "../core/backup.js?v=20260806-a";
 import { removeKey } from "../core/store.js?v=20260806-a";
 import { getUnlocked } from "../core/achievements.js?v=20260806-a";
 import { BGM_TRACKS, playSfx } from "../audio/sound.js?v=20260806-a";
@@ -100,7 +108,7 @@ function settingsTabList() {
   );
 }
 
-function toggle(key, label) {
+function toggle(key, label, onChange = null) {
   const sw = el("button", {
     class: `switch ${getSettings()[key] ? "on" : ""}`,
     role: "switch",
@@ -112,9 +120,55 @@ function toggle(key, label) {
       setSetting(key, now);
       sw.classList.toggle("on", now);
       sw.setAttribute("aria-checked", String(now));
+      onChange?.(now);
     },
   });
   return sw;
+}
+
+// 自動バックアップ（js/core/backup.js）。状態と、復旧の依頼に必要なプレイヤー ID を出す。
+function autoBackupStatusText() {
+  const status = remoteBackupStatus();
+  if (status === "off") return tr("オフ", "Off");
+  if (status === "no-card") return tr("プレイヤーカードを発行すると有効になります", "Turns on once you issue a player card");
+  const { lastSuccessAt } = getBackupState();
+  const last = lastSuccessAt
+    ? new Date(lastSuccessAt).toLocaleString(isEnglish() ? "en-US" : "ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })
+    : null;
+  return last ? tr(`最終バックアップ: ${last}`, `Last backup: ${last}`) : tr("まだバックアップしていません", "Not backed up yet");
+}
+
+let unsubscribeBackupStatus = null;
+
+function autoBackupRow() {
+  const statusEl = el("span", { class: "backup-status", role: "status" }, autoBackupStatusText());
+  const refresh = () => {
+    statusEl.textContent = autoBackupStatusText();
+  };
+  // 描き直しのたびに行が作り直されるので、購読は常に最新の行の 1 つだけにする
+  unsubscribeBackupStatus?.();
+  unsubscribeBackupStatus = onBackupStateChange(refresh);
+  const id = issuedPlayerId();
+  const row = settingRow(
+    tr("自動バックアップ", "Automatic backup"),
+    el(
+      "span",
+      {},
+      tr(
+        "プレイデータを暗号化してサーバーに保存します。データが消えたときは、プレイヤー ID を添えて作者に連絡すると復旧できます。",
+        "Your play data is encrypted and saved to a server. If it is lost, contact the author with your player ID to restore it."
+      ),
+      id ? el("br") : null,
+      id ? el("b", { class: "backup-player-id" }, tr(`プレイヤー ID: ${id}（控えておいてください）`, `Player ID: ${id} (keep a note of it)`)) : null,
+      el("br"),
+      statusEl
+    ),
+    toggle("autoBackup", tr("自動バックアップ", "Automatic backup"), (on) => {
+      refresh();
+      if (on) void maybeBackup().then(refresh);
+    })
+  );
+  return row;
 }
 
 // 音量は AUDIO.volumeUnityPercent (50%) が標準で、そこから上は増幅になる。
@@ -665,19 +719,12 @@ function render() {
         hidden: activeSettingsTab !== "data",
       },
       el("div", { style: { fontWeight: "800", marginBottom: "4px" } }, tr("データ", "Data")),
+      remoteBackupConfigured() ? autoBackupRow() : null,
       el("div", { style: { display: "flex", flexDirection: "column", gap: "8px", marginTop: "8px" } },
         el("button", { class: "btn", onclick: showImportModal }, icon("box"), tr("プレイ履歴をインポート（移行）", "Import play history (migration)")),
         el("button", {
           class: "btn",
-          onclick: async () => {
-            const blob = new Blob([await exportJSON()], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const a = el("a", { href: url, download: `dwordle2_history_${Date.now()}.json` });
-            a.click();
-            // ダウンロード開始後に解放する（エクスポート連打で Blob が溜まらないように）
-            setTimeout(() => URL.revokeObjectURL(url), 1000);
-            toast(tr("プレイ履歴をダウンロードしました", "Play history downloaded"));
-          },
+          onclick: () => saveExportFile(),
         }, icon("download"), tr("プレイ履歴をエクスポート", "Export play history")),
         el("button", {
           class: "btn",
@@ -719,6 +766,9 @@ function render() {
               "playerId", // プレイヤー ID も新規プレイヤーとして発番し直す
               "activity", // 行動ログ（クリック・画面滞在などの端末内記録）
               "analyticsConsent", // 分析の選択も削除し、次回本番起動時に改めて確認する
+              "backup", // リモートバックアップの送信記録（サーバー上の世代は消えない）
+              "exportReminder", // 書き出しの促しの記録
+              "persistRequested",
             ]) {
               removeKey(key);
             }
@@ -732,8 +782,8 @@ function render() {
         "p",
         { class: "hint settings-privacy-note" },
         tr(
-          "プレイ履歴・実績・設定はこの端末内に保存されます。Google アナリティクスは、上で許可した場合だけ読み込まれます。",
-          "Play history, achievements, and settings are stored on this device. Google Analytics is loaded only if you allow it above."
+          "プレイ履歴・実績・設定はこの端末内に保存されます（自動バックアップが有効な場合は、暗号化した写しをサーバーにも保存します）。Google アナリティクスは、上で許可した場合だけ読み込まれます。",
+          "Play history, achievements, and settings are stored on this device (with automatic backup on, an encrypted copy is also kept on a server). Google Analytics is loaded only if you allow it above."
         ),
         el("br"),
         el(

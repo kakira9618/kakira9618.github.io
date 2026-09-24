@@ -18,7 +18,7 @@ import { initAnalytics } from "./core/analytics.js?v=20260806-a";
 import { maybeShowConsentBanner } from "./ui/consent-banner.js?v=20260806-a";
 import { onSaveError } from "./core/store.js?v=20260806-a";
 import { showEntryGate } from "./ui/gate.js?v=20260806-a";
-import { VIEWPORT } from "./config.js?v=20260806-a";
+import { BACKUP, VIEWPORT } from "./config.js?v=20260806-a";
 
 // トーストは扉絵の critical path から外してある（保存エラー・SW 更新は稀で、即時性も要らない）
 function notify(message) {
@@ -54,6 +54,16 @@ const appReady = (async () => {
 })();
 // 失敗の扱いは扉絵側（再読み込みを促して閉じない）。ここでは未処理リジェクト警告だけ抑える。
 appReady.catch(() => {});
+
+// プレイデータのバックアップ（js/core/backup.js）。起動時と、オフラインから戻ったときに試す
+// （ゲーム終了時は game-screen.js から）。条件を満たさなければ何もしない。
+appReady
+  .then(() => import("./core/backup.js?v=20260806-a"))
+  .then(({ scheduleBackup, maybeBackup }) => {
+    scheduleBackup(BACKUP.startupDelayMs);
+    addEventListener("online", () => void maybeBackup());
+  })
+  .catch(() => {});
 
 // 古い Android Chrome は dvh に未対応のため、実際の表示領域を CSS 変数で補う。
 // 対応ブラウザでは CSS 側の 100dvh が優先される。

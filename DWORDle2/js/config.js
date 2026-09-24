@@ -200,3 +200,30 @@ export const AUDIO = {
   // これだけ鳴り続けたら「繰り返し中断」ではないと見なして上の回数を戻す
   autoRecoverySettleMs: 30000,
 };
+
+// プレイデータのバックアップ（js/core/backup.js）。
+export const BACKUP = {
+  // リモートバックアップの送り先（backup-server/ の Cloudflare Worker）。空なら送らない。
+  endpoint: "",
+  // 同じ日のうちは、前回の成功からこれだけ空くまで送り直さない（日付が変われば即送る）
+  minIntervalMs: 30 * 60 * 1000,
+  // 失敗（オフライン・サーバー停止など）のあと、次に試すまでの間隔
+  retryAfterMs: 5 * 60 * 1000,
+  requestTimeoutMs: 15000,
+  // 起動・ゲーム終了から送るまでの待ち（扉絵や結果演出の描画を邪魔しないため）
+  startupDelayMs: 4000,
+  afterGameDelayMs: 2500,
+  // navigator.storage.persist() を頼むプレイ数（Firefox は許可ダイアログを出すので、
+  // 定着した人にだけ・1 回だけ頼む）
+  persistAfterPlays: 3,
+  // 手元への書き出しを促すダイアログ（リモートと別経路の予備）
+  reminder: {
+    minPlays: 20, // 累計プレイ数がこれ未満なら出さない
+    playsSinceExport: 20, // 前回の書き出しからこれだけ遊んだら
+    intervalDays: 14, // かつ前回の書き出し（または「あとで」）からこれだけ経ったら
+    intervalDaysWithRemote: 30, // リモートバックアップが動いている人は間隔を広げる
+    delayMs: 1200, // タイトル表示から出すまでの待ち（他のダイアログを優先する）
+    retryMs: 1000, // 他のダイアログが開いていたら、この間隔で閉じるのを待つ
+    maxWaitMs: 60000, // それ以上待っても閉じなければ、今回は出さない
+  },
+};

@@ -28,6 +28,8 @@ export const DEFAULT_SETTINGS = {
   // EXTRA SHOT モード（10 回プレイで解放）。ON だとクリア後に追加推理タイムが入り、
   // もう一つの答えを 1 回だけ推理できる（成功で DOUBLE CLEAR）。DWORDle / DWORDlie 共通。
   extraShot: false,
+  // プレイヤーカード発行後、プレイデータを暗号化してサーバーへ定期バックアップする（js/core/backup.js）
+  autoBackup: true,
 };
 
 // 実績で解放される隠しテーマ。設定画面では解放まで「???」表示になる。

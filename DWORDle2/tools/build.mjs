@@ -24,6 +24,7 @@ const BUILD = {
     ".gitignore",
     ".DS_Store",
     "CLAUDE.md",
+    "backup-server", // Cloudflare Worker（wrangler で別途デプロイ）
     "README.md",
     "dist",
     "node_modules",

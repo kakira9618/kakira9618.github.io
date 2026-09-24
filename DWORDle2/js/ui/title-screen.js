@@ -23,6 +23,7 @@ import { playSfx } from "../audio/sound.js?v=20260806-a";
 import { toast, extraShotUnlockCelebration } from "./toast.js?v=20260806-a";
 import { claimExtraShotUnlockNotice } from "../core/extra-shot.js?v=20260806-a";
 import { showModal } from "./modal.js?v=20260806-a";
+import { maybeShowExportReminder } from "./backup-reminder.js?v=20260806-a";
 import { finishHistoryImport } from "./history-import.js?v=20260806-a";
 import { showFirstTutorial, showHelpModal } from "./help.js?v=20260806-a";
 import { confirmAndStart } from "./game-screen.js?v=20260806-a";
@@ -573,6 +574,8 @@ function render() {
   // アプリ更新前から 10 回プレイに到達していた人にも、初回のタイトル表示で
   // EXTRA SHOT モードの解放を通知する（通常はゲーム終了時に通知される）。
   if (claimExtraShotUnlockNotice()) extraShotUnlockCelebration();
+  // 手元への書き出しの促し（ほかのダイアログが出ていれば次の機会に回す）
+  if (!shouldShowTutorial) maybeShowExportReminder(() => root.classList.contains("active"));
 }
 
 registerScreen("title", {

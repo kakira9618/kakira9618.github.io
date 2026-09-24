@@ -7,7 +7,7 @@
 // 追加推理タイムの途中でリロード・離脱した場合、チャンスは消滅して通常クリアで記録される。
 
 import { el, clear, effectiveZoom } from "./dom.js?v=20260806-a";
-import { APP_VERSION, UI, FX } from "../config.js?v=20260806-a";
+import { APP_VERSION, UI, FX, BACKUP } from "../config.js?v=20260806-a";
 import { Logic, CELL, displayResultForMode } from "../core/logic.js?v=20260806-a";
 import { MODES, saveCurrentGame, clearCurrentGame, getCurrentGame, addFinishedGame, addDiscardedGame, isAlreadyPlayed, getHistory, getExtraShot } from "../core/records.js?v=20260806-a";
 import { NEW_ERA, isClassicPID, isDailyPID, numberPrefix, pidLabel, todayPID } from "../core/problems.js?v=20260806-a";
@@ -28,6 +28,7 @@ import { tr } from "../core/i18n.js?v=20260806-a";
 import { getSettings } from "../core/settings.js?v=20260806-a";
 import { shouldReduceMotion } from "../core/motion.js?v=20260806-a";
 import { announce, feedbackName, rowAriaLabel, tileAriaLabel } from "./a11y.js?v=20260806-a";
+import { maybeRequestPersistentStorage, scheduleBackup } from "../core/backup.js?v=20260806-a";
 
 const KEY_ROWS = [
   [..."qwertyuiop".split(""), "backspace"],
@@ -946,6 +947,9 @@ function persistFinishedGame({ includeExtraShot = true } = {}) {
     maxGuess: MODES[game.gameMode].maxGuess,
     hadLostBefore,
   });
+  // 保存し終えたデータのバックアップ（条件を満たさなければ何もしない）
+  scheduleBackup(BACKUP.afterGameDelayMs);
+  void maybeRequestPersistentStorage();
   return { record, newly };
 }
 

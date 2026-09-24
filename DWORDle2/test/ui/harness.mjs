@@ -7,6 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { chromium } from "playwright";
+import { BACKUP } from "../../js/config.js?v=20260806-a";
 
 const require = createRequire(import.meta.url);
 export const axePath = require.resolve("axe-core/axe.min.js");
@@ -63,6 +64,18 @@ export function launchBrowser(options = {}) {
   return chromium.launch({ headless: true, ...options });
 }
 
+// バックアップの送り先。本番の BACKUP.endpoint が未設定でも検証できるよう、
+// シナリオは useTestBackupEndpoint でテスト用の URL を差し込む。
+export const TEST_BACKUP_ENDPOINT = "https://dwordle2-backup.test.invalid";
+const isBackupUrl = (url) =>
+  url.href.startsWith(TEST_BACKUP_ENDPOINT) || (BACKUP.endpoint !== "" && url.href.startsWith(BACKUP.endpoint));
+
+export async function useTestBackupEndpoint(page) {
+  await page.evaluate(async (endpoint) => {
+    (await import("./js/config.js?v=20260806-a")).BACKUP.endpoint = endpoint;
+  }, TEST_BACKUP_ENDPOINT);
+}
+
 // 「遊び慣れたプレイヤー」の既定シード。段階解放と初回案内をすべて済ませ、音は切ってある。
 // 値は JSON で保存する（js/core/store.js の loadJSON と同じ形）。
 export const VETERAN = {
@@ -87,6 +100,8 @@ export const VETERAN = {
   "dwordle2.extraShotUnlockSeen": true,
   "dwordle2.menuUnlockSeen": 99,
   "dwordle2.achievements.reconcileVersion": 99,
+  "dwordle2.exportReminder": { snoozedAt: 4102444800000 }, // 書き出しの促しは 2100 年まで出さない
+  "dwordle2.persistRequested": true,
 };
 
 // 設定だけ差し替えたいときの補助（VETERAN の settings に上書き）
@@ -130,6 +145,10 @@ export async function openPage(browser, { storage = {}, fresh = false, axe = tru
     sessionStorage.setItem("__uiSmokeSeeded", "1");
   }, seed);
   if (axe) await context.addInitScript({ path: axePath });
+  // リモートバックアップは外へ出さない（検証するシナリオは page.route で上書きする）
+  await context.route(isBackupUrl, (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", headers: { "Access-Control-Allow-Origin": "*" }, body: '{"ok":true}' })
+  );
   return { page, context, errors };
 }
 

@@ -1,0 +1,14 @@
+# DWORDle 2 バックアップ用 Worker。手順は README.md。
+name = "dwordle2-backup"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+[vars]
+# POST /backup を受け付ける Origin（カンマ区切り）
+ALLOWED_ORIGINS = "https://kakira9618.github.io"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "dwordle2-backup"
+# `npx wrangler d1 create dwordle2-backup` が表示する database_id に置き換える
+database_id = "00000000-0000-0000-0000-000000000000"
