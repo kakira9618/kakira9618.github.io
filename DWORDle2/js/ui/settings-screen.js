@@ -6,6 +6,7 @@ import { registerScreen, navigate, currentScreenName } from "./app.js?v=20260806
 import { getSettings, setSetting, HIDDEN_THEMES } from "../core/settings.js?v=20260806-a";
 import { importFromLocalStorage, importFromText, scanLegacyHistory } from "../core/migrate.js?v=20260806-a";
 import { saveExportFile } from "./backup-reminder.js?v=20260806-a";
+import { playerIdCopyButton } from "./player-id.js?v=20260806-a";
 import {
   getBackupState,
   issuedPlayerId,
@@ -136,29 +137,6 @@ function autoBackupStatusText() {
     ? new Date(lastSuccessAt).toLocaleString(isEnglish() ? "en-US" : "ja-JP", { year: "numeric", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })
     : null;
   return last ? tr(`最終バックアップ: ${last}`, `Last backup: ${last}`) : tr("まだバックアップしていません", "Not backed up yet");
-}
-
-// プレイヤー ID（タップでクリップボードへコピー。復旧の依頼に使う）
-function playerIdCopyButton(id) {
-  return el(
-    "button",
-    {
-      type: "button",
-      class: "backup-player-id",
-      "aria-label": tr(`プレイヤー ID ${id} をコピー`, `Copy player ID ${id}`),
-      onclick: async () => {
-        playSfx("ui");
-        try {
-          await navigator.clipboard.writeText(id);
-          toast(tr("クリップボードにコピーしました", "Copied to clipboard"));
-        } catch {
-          toast(tr("コピーに失敗しました", "Copy failed"));
-        }
-      },
-    },
-    tr(`プレイヤー ID: ${id}`, `Player ID: ${id}`),
-    icon("copy", 13)
-  );
 }
 
 let unsubscribeBackupStatus = null;

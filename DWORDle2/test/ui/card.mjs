@@ -1,6 +1,6 @@
 // プレイヤーカード: 解放条件・発行と保存・拡大操作・称号と昇格演出・カテゴリバッジ
 import assert from "node:assert/strict";
-import { goHash, openApp, passGate, settings } from "./harness.mjs";
+import { goHash, openApp, passGate, settings, toast } from "./harness.mjs";
 
 const games = (count) => Array.from({ length: count }, (_, i) => ({
   gameMode: "normal", problemID: 200 + i, startTime: 1750000000 + i * 86400, endTime: 1750000300 + i * 86400, guessWord: ["about", "crane"], clear: i % 2 === 0,
@@ -52,6 +52,7 @@ export default [
       // シェア / 保存ボタンは発行前には見えない（[hidden] が display: flex に負ける退行の防止）
       await page.getByRole("button", { name: "カードを発行" }).waitFor();
       assert.equal(await page.getByRole("button", { name: "画像をシェア" }).isVisible(), false, "the share/save buttons must stay hidden until the card is issued");
+      assert.equal(await page.locator(".player-card-id").isVisible(), false, "the player ID panel must stay hidden until the card is issued");
       await page.getByLabel("プレイヤー名").fill("テスト太郎");
       await page.getByRole("button", { name: "カードを発行" }).click();
       const canvas = page.locator(".player-card-canvas");
@@ -74,6 +75,17 @@ export default [
       assert.match(download.url(), /^blob:/, "the card image must be saved via a Blob URL, not a data: URL");
       const playerId = await page.evaluate(() => JSON.parse(localStorage.getItem("dwordle2.playerId")));
       assert.match(playerId, /^[0-9A-F]{8}$/, "the player ID must be 8 uppercase hex digits");
+      // ID はタップでコピーでき、復旧のために控えるよう案内する
+      await page.evaluate(() => {
+        navigator.clipboard.writeText = (text) => {
+          window.__copiedText = text;
+          return Promise.resolve();
+        };
+      });
+      await page.getByRole("button", { name: `プレイヤー ID ${playerId} をコピー` }).click();
+      await toast(page, "クリップボードにコピーしました").waitFor();
+      assert.equal(await page.evaluate(() => window.__copiedText), playerId);
+      await page.getByText("控えておいてください").waitFor();
 
       // ダブルタップで 3 倍に拡大し、もう一度ダブルタップで等倍 Tilt に戻る（実タッチ）
       const tiltBox = await page.locator(".player-card-tilt").boundingBox();

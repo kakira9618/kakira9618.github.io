@@ -23,6 +23,8 @@ import { winBurst } from "../fx/effects.js?v=20260806-a";
 import { shouldReduceMotion } from "../core/motion.js?v=20260806-a";
 import { icon, iconSvg } from "./icons.js?v=20260806-a";
 import { announce } from "./a11y.js?v=20260806-a";
+import { playerIdCopyButton } from "./player-id.js?v=20260806-a";
+import { remoteBackupStatus } from "../core/backup.js?v=20260806-a";
 import { SHARE_URL } from "../config.js?v=20260806-a";
 import { tr } from "../core/i18n.js?v=20260806-a";
 
@@ -1269,6 +1271,18 @@ function render() {
     )
   );
 
+  // プレイヤー ID（発行後に出す）。自動バックアップからの復旧に必要なので控えてもらう
+  const playerId = getPlayerId();
+  const idNote = el(
+    "p",
+    { class: "hint" },
+    tr(
+      "データが消えてしまったときは、この ID でバックアップから復旧できます。控えておいてください。",
+      "If your data is ever lost, this ID lets it be restored from the backup. Please keep a note of it."
+    )
+  );
+  const idPanel = el("div", { class: "card player-card-id", hidden: true }, playerIdCopyButton(playerId), idNote);
+
   const issue = async (isFirst) => {
     const name = sanitizeName(nameInput.value);
     const prev = getSavedCard();
@@ -1279,6 +1293,9 @@ function render() {
     saveJSON("playerCard", { ...prev, name, issuedAt: Math.floor(Date.now() / 1000), seenRankTier: rank.tier, seenBadgeCats });
     await drawInto(stage, name, { deal: true });
     actions.hidden = false;
+    idPanel.hidden = false;
+    // 自動バックアップが動いているときだけ（発行した瞬間から有効になるので、ここで判定する）
+    idNote.hidden = remoteBackupStatus() !== "on";
     // プレビュー合言葉が入っていたら、カードを開いたこのタイミングで消費して
     // 昇格演出を 1 回見せる（タイトルへ戻ると NEW バッジも消えている）
     const previewPromotion = claimCardNewsPreview();
@@ -1320,6 +1337,7 @@ function render() {
     ),
     stage,
     actions,
+    idPanel,
     saved ? null : issueButton
   );
 
